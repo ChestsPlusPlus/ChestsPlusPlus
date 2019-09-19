@@ -1,12 +1,11 @@
 package com.jamesdpeters.minecraft.chests.listeners;
 
-import com.comphenix.protocol.wrappers.BlockPosition;
 import com.jamesdpeters.minecraft.chests.Config;
+import com.jamesdpeters.minecraft.chests.Messages;
+import com.jamesdpeters.minecraft.chests.Permissions;
 import com.jamesdpeters.minecraft.chests.Utils;
 import com.jamesdpeters.minecraft.chests.interfaces.VirtualInventoryHolder;
-import com.jamesdpeters.minecraft.chests.protocollib.WrapperPlayServerBlockAction;
 import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
-import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -30,20 +29,11 @@ public class InventoryListener implements Listener {
             InventoryStorage storage = Config.getInventoryStorage(event.getInventory().getLocation());
             if(storage != null){
                 event.setCancelled(true);
-
-                Location chestLocation = event.getInventory().getLocation();
-                BlockPosition blockPosition = new BlockPosition((int) chestLocation.getX(),(int)chestLocation.getY(),(int)chestLocation.getZ());
-
-                WrapperPlayServerBlockAction packet = new WrapperPlayServerBlockAction();
-                packet.setLocation(blockPosition);
-                packet.setBlockType(event.getInventory().getLocation().getBlock().getType());
-                packet.setByte1(1);
-                packet.setByte2(1);
-
-                packet.broadcastPacket();
-                packet.sendPacket((Player) event.getPlayer());
-
-                Utils.openInventory((Player) event.getPlayer(),storage.getInventory());
+                if(event.getPlayer().hasPermission(Permissions.OPEN)) {
+                    Utils.openInventory((Player) event.getPlayer(), storage.getInventory());
+                } else {
+                    if(event.getPlayer() instanceof Player) Messages.NO_PERMISSION((Player) event.getPlayer());
+                }
             }
         }
     }

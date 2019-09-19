@@ -24,4 +24,8 @@ public class Messages {
     public static void MUST_HOLD_SIGN(Player target){
         target.sendMessage(ChatColor.RED+"You must be hold a sign to do that!");
     }
+
+    public static void NO_PERMISSION(Player target){
+        target.sendMessage(ChatColor.RED+""+ChatColor.BOLD+"You don't have permission to do that!");
+    }
 }

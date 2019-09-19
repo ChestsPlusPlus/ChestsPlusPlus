@@ -6,12 +6,16 @@ import com.jamesdpeters.minecraft.chests.listeners.HopperListener;
 import com.jamesdpeters.minecraft.chests.listeners.InventoryListener;
 import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
 import com.jamesdpeters.minecraft.chests.serialize.LinkedChest;
+import fr.minuskube.inv.InventoryManager;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.io.IOException;
 
 public class ChestsPlusPlus extends JavaPlugin {
 
     public static JavaPlugin PLUGIN;
+    public static InventoryManager INVENTORY_MANAGER;
 
     static {
         ConfigurationSerialization.registerClass(LinkedChest.class, "LinkedChest");
@@ -27,6 +31,10 @@ public class ChestsPlusPlus extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new HopperListener(),this);
 
         new Config();
+
+        INVENTORY_MANAGER = new InventoryManager(this);
+        INVENTORY_MANAGER.init();
+
         getLogger().info("Chests++ enabled!");
     }
 

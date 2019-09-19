@@ -2,10 +2,14 @@ package com.jamesdpeters.minecraft.chests.serialize;
 
 
 import com.jamesdpeters.minecraft.chests.Messages;
+import com.jamesdpeters.minecraft.chests.Utils;
 import com.jamesdpeters.minecraft.chests.interfaces.VirtualInventoryHolder;
 import com.jamesdpeters.minecraft.chests.runnables.VirtualChestToHopper;
+import fr.minuskube.inv.ClickableItem;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
@@ -13,13 +17,15 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import java.lang.reflect.Array;
 import java.util.*;
 
 public class InventoryStorage implements ConfigurationSerializable {
 
-    Inventory inventory;
+    Inventory inventory; //Old Inventory
+    ArrayList<ItemStack> items;
     ArrayList<Location> locationsList;
     String inventoryName = "Chest";
     VirtualChestToHopper chestToHopper;
@@ -46,6 +52,7 @@ public class InventoryStorage implements ConfigurationSerializable {
 
         inventory.setContents(itemStacks);
         locationsList = (ArrayList<Location>) map.get("locations");
+        locationsList.removeAll(Collections.singletonList(null));
 
         playerUUID = UUID.fromString((String) map.get("playerUUID"));
         player = Bukkit.getOfflinePlayer(playerUUID).getPlayer();
@@ -109,5 +116,29 @@ public class InventoryStorage implements ConfigurationSerializable {
     @Override
     public String toString() {
         return inventoryName+": "+locationsList.toString();
+    }
+
+    public ItemStack getIventoryIcon(){
+        ItemStack toReturn = null;
+        for(ItemStack item : inventory.getContents()){
+            if(item != null){
+                toReturn = item.clone();
+            }
+        }
+        if(toReturn == null) toReturn = new ItemStack(Material.CHEST);
+
+        ItemMeta meta = toReturn.getItemMeta();
+        if(meta != null) {
+            meta.setDisplayName(ChatColor.BOLD + "" + ChatColor.GREEN + "" + getIdentifier());
+            toReturn.setItemMeta(meta);
+        }
+        toReturn.setAmount(1);
+        return toReturn;
+    }
+
+    public ClickableItem getClickableItem(Player player) {
+        return ClickableItem.of(getIventoryIcon(), event -> {
+            Utils.openInventory(player,getInventory());
+        });
     }
 }

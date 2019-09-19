@@ -3,9 +3,25 @@ version: 1.14.4-v1
 main: com.jamesdpeters.minecraft.chests.ChestsPlusPlus
 api-version: "1.14"
 
-depend: [ProtocolLib]
-
 commands:
   chestlink:
     description: Chest++ Commands.
     usage: Use /chestlink help for more info.
+
+permissions:
+  chestlink.*:
+    description: Gives permission for all ChestLink commands.
+    default: op
+    children:
+      chestlink.add: true
+      chestlink.open: true
+      chestlink.menu: true
+  chestlink.add:
+    description: Gives permission to add ChestLinks!
+    default: false
+  chestlink.open:
+    description: Gives permission to open ChestLinks!
+    default: false
+  chestlink.menu:
+    description: Gives permission to open the ChestLink menu!
+    default: false

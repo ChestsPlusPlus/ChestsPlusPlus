@@ -8,12 +8,19 @@
     <artifactId>ChestsPlusPlus</artifactId>
     <version>1.0-SNAPSHOT</version>
 
+
+
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
     </properties>
 
     <repositories>
+        <repository>
+            <id>mcstats</id>
+            <url>https://repo.mcstats.org/content/repositories/releases/</url>
+        </repository>
+
         <repository>
             <id>spigotmc-repo</id>
             <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
@@ -28,6 +35,9 @@
             <id>dmulloy2-repo</id>
             <url>http://repo.dmulloy2.net/nexus/repository/public/</url>
         </repository>
+
+
+
     </repositories>
 
     <dependencies>
@@ -46,9 +56,9 @@
         </dependency>
 
         <dependency>
-            <groupId>com.comphenix.protocol</groupId>
-            <artifactId>ProtocolLib</artifactId>
-            <version>4.4.0</version>
+            <groupId>fr.minuskube.inv</groupId>
+            <artifactId>smart-invs</artifactId>
+            <version>1.2.7</version>
         </dependency>
 
     </dependencies>
@@ -62,6 +72,21 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>3.1.0</version>
+                <configuration>
+                    <artifactSet>
+                        <includes>
+                            <include>fr.minuskube.inv*:*</include>
+                        </includes>
+                    </artifactSet>
+                    <relocations>
+                        <relocation>
+                            <pattern>fr.minuskube.inv</pattern>
+                            <shadedPattern>com.jamesdpeters.minecraft.chests</shadedPattern>
+                        </relocation>
+                    </relocations>
+                </configuration>
+
+
                 <executions>
                     <!--Tell the shade plugin when it should be run during a maven build-->
                     <execution>

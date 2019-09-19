@@ -33,10 +33,12 @@ public class VirtualChestToHopper extends BukkitRunnable {
     @Override
     public void run() {
         for(Location location : storage.getLocations()) {
-            Location below = location.clone().subtract(0, 1, 0);
-            if (below.getBlock().getState() instanceof Hopper) {
-                Hopper hopper = (Hopper) below.getBlock().getState();
-                Utils.moveToOtherInventory(storage.getInventory(),1,hopper.getInventory(),Utils.getHopperFilters(below.getBlock()));
+            if(location != null) {
+                Location below = location.clone().subtract(0, 1, 0);
+                if (below.getBlock().getState() instanceof Hopper) {
+                    Hopper hopper = (Hopper) below.getBlock().getState();
+                    Utils.moveToOtherInventory(storage.getInventory(), 1, hopper.getInventory(), Utils.getHopperFilters(below.getBlock()));
+                }
             }
         }
     }

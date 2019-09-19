@@ -1,9 +1,7 @@
 package com.jamesdpeters.minecraft.chests.commands;
 
-import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
-import com.jamesdpeters.minecraft.chests.Config;
-import com.jamesdpeters.minecraft.chests.Messages;
-import com.jamesdpeters.minecraft.chests.Utils;
+import com.jamesdpeters.minecraft.chests.*;
+import com.jamesdpeters.minecraft.chests.inventories.ChestLinkMenu;
 import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.Bukkit;
@@ -32,7 +30,8 @@ public class RemoteChestCommand extends ServerCommand  {
 
     private enum OPTIONS {
         ADD("/chestlink add <Group>", "Create/add a chest to a ChestLink group"),
-        OPEN("/chestlink open <Group>","Open the inventory of a ChestLink group");
+        OPEN("/chestlink open <Group>","Open the inventory of a ChestLink group"),
+        MENU("/chestlink menu","Open the ChestLink menu to display all groups!");
 
         String description, commandHelp;
         static List<String> valuesList;
@@ -77,10 +76,15 @@ public class RemoteChestCommand extends ServerCommand  {
             switch (OPTIONS.valueOf(args[0].toUpperCase())){
                 case ADD:
                     if(args.length > 1){
-                        Block targetBlock = player.getTargetBlockExact(5);
-                        if(targetBlock != null) Utils.createChestLink(player,targetBlock,args[1]);
-                        else Messages.MUST_LOOK_AT_CHEST(player);
-                        return true;
+                        if(sender.hasPermission(Permissions.ADD)) {
+                            Block targetBlock = player.getTargetBlockExact(5);
+                            if (targetBlock != null) Utils.createChestLink(player, targetBlock, args[1]);
+                            else Messages.MUST_LOOK_AT_CHEST(player);
+                            return true;
+                        } else {
+                            Messages.NO_PERMISSION(player);
+                            return true;
+                        }
                     } else {
                         player.sendMessage(ChatColor.RED+OPTIONS.ADD.commandHelp);
                         player.sendMessage(ChatColor.RED+OPTIONS.ADD.description);
@@ -88,12 +92,25 @@ public class RemoteChestCommand extends ServerCommand  {
                     }
                 case OPEN:
                     if(args.length > 1){
-                        InventoryStorage invs = Config.getInventoryStorage(player,args[1]);
-                        Utils.openInventory(player,invs.getInventory());
-                        return true;
+                        if(sender.hasPermission(Permissions.OPEN)) {
+                            InventoryStorage invs = Config.getInventoryStorage(player, args[1]);
+                            Utils.openInventory(player, invs.getInventory());
+                            return true;
+                        } else {
+                            Messages.NO_PERMISSION(player);
+                            return true;
+                        }
                     } else {
                         player.sendMessage(ChatColor.RED+OPTIONS.OPEN.commandHelp);
                         player.sendMessage(ChatColor.RED+OPTIONS.OPEN.description);
+                        return true;
+                    }
+                case MENU:
+                    if(sender.hasPermission(Permissions.MENU)) {
+                        ChestLinkMenu.getMenu(player).open(player);
+                        return true;
+                    } else {
+                        Messages.NO_PERMISSION(player);
                         return true;
                     }
             }

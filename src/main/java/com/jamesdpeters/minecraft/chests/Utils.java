@@ -16,6 +16,7 @@ import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.*;
@@ -209,5 +210,14 @@ public class Utils {
             }
         }
         return filters;
+    }
+
+    public static ItemStack getNamedItem(ItemStack item, String name){
+        ItemMeta meta = item.getItemMeta();
+        if(meta != null) {
+            meta.setDisplayName(name);
+            item.setItemMeta(meta);
+        }
+        return item;
     }
 }
