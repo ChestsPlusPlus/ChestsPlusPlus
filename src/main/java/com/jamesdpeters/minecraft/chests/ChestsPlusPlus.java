@@ -7,6 +7,7 @@ import com.jamesdpeters.minecraft.chests.listeners.InventoryListener;
 import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
 import com.jamesdpeters.minecraft.chests.serialize.LinkedChest;
 import fr.minuskube.inv.InventoryManager;
+import org.bstats.bukkit.Metrics;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -24,6 +25,9 @@ public class ChestsPlusPlus extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        int pluginId = 7166;
+        Metrics metrics = new Metrics(this, pluginId);
+
         PLUGIN = this;
         new RemoteChestCommand().register(this);
         getServer().getPluginManager().registerEvents(new ChestLinkListener(),this);

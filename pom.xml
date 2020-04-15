@@ -36,6 +36,11 @@
             <url>http://repo.dmulloy2.net/nexus/repository/public/</url>
         </repository>
 
+        <repository>
+            <id>CodeMC</id>
+            <url>https://repo.codemc.org/repository/maven-public</url>
+        </repository>
+
 
 
     </repositories>
@@ -61,6 +66,12 @@
             <version>1.2.7</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.bstats</groupId>
+            <artifactId>bstats-bukkit</artifactId>
+            <version>1.7</version>
+        </dependency>
+
     </dependencies>
 
     <!--Tell maven how to prepare and build our jar file from our source and dependancies-->
@@ -76,9 +87,15 @@
                     <artifactSet>
                         <includes>
                             <include>fr.minuskube.inv*:*</include>
+                            <include>org.bstats*:*</include>
                         </includes>
                     </artifactSet>
                     <relocations>
+                        <relocation>
+                            <pattern>org.bstats</pattern>
+                            <!-- Replace this with your package! -->
+                            <shadedPattern>com.jamesdpeters.minecraft.chests</shadedPattern>
+                        </relocation>
                         <relocation>
                             <pattern>fr.minuskube.inv</pattern>
                             <shadedPattern>com.jamesdpeters.minecraft.chests</shadedPattern>
@@ -100,7 +117,7 @@
                         <configuration>
                             <!--Tell the shade plugin where to put our jar file-->
                             <outputFile>${project.basedir}/Server/plugins/${project.artifactId}.jar</outputFile>
-                            <minimizeJar>true</minimizeJar>
+<!--                            <minimizeJar>true</minimizeJar>-->
                         </configuration>
                     </execution>
                 </executions>
