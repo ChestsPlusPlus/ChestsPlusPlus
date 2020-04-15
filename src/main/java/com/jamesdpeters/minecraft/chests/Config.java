@@ -118,6 +118,20 @@ public class Config {
         return null;
     }
 
+    public static void removeChestLink(Player player, String group){
+        InventoryStorage storage = getInventoryStorage(player,group);
+        if(storage != null) {
+            storage.getLocations().forEach(location -> {
+                if (location != null) {
+                    Block block = location.getBlock();
+                    block.breakNaturally();
+                }
+            });
+            storage.dropInventory(player.getLocation());
+        }
+        save();
+    }
+
     public static InventoryStorage removeChest(Player player, String identifier, Location chestLocation){
         return removeChest(getPlayer(player).get(identifier),chestLocation);
     }

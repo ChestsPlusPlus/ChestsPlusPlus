@@ -1,6 +1,7 @@
 package com.jamesdpeters.minecraft.chests.serialize;
 
 
+import com.jamesdpeters.minecraft.chests.Config;
 import com.jamesdpeters.minecraft.chests.Messages;
 import com.jamesdpeters.minecraft.chests.Utils;
 import com.jamesdpeters.minecraft.chests.interfaces.VirtualInventoryHolder;
@@ -27,6 +28,8 @@ public class InventoryStorage implements ConfigurationSerializable {
     Inventory inventory; //Old Inventory
     ArrayList<ItemStack> items;
     ArrayList<Location> locationsList;
+    ArrayList<String> members; //Members UUID
+    List<Player> bukkitMembers;
     String inventoryName = "Chest";
     VirtualChestToHopper chestToHopper;
     Player player;
@@ -39,6 +42,7 @@ public class InventoryStorage implements ConfigurationSerializable {
         hashMap.put("locations",locationsList);
         hashMap.put("inventoryName",inventoryName);
         hashMap.put("playerUUID",playerUUID.toString());
+        hashMap.put("members", members);
         return hashMap;
     }
 
@@ -56,6 +60,14 @@ public class InventoryStorage implements ConfigurationSerializable {
 
         playerUUID = UUID.fromString((String) map.get("playerUUID"));
         player = Bukkit.getOfflinePlayer(playerUUID).getPlayer();
+
+        if(map.get("members") != null){
+            members = (ArrayList<String>) map.get("members");
+            bukkitMembers = new ArrayList<>();
+            for(String uuid : members){
+                bukkitMembers.add(Bukkit.getOfflinePlayer(UUID.fromString(uuid)).getPlayer());
+            }
+        }
 
         init();
     }
@@ -140,5 +152,43 @@ public class InventoryStorage implements ConfigurationSerializable {
         return ClickableItem.of(getIventoryIcon(), event -> {
             Utils.openInventory(player,getInventory());
         });
+    }
+
+    public boolean hasPermission(Player player){
+        if(player.getUniqueId().equals(playerUUID)) return true;
+        if(members != null) {
+            for (String uuid : members) {
+                if (player.getUniqueId().toString().equals(uuid)) return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean addMember(Player player){
+        if(player != null){
+            if(members == null) members = new ArrayList<>();
+            if(bukkitMembers == null) bukkitMembers = new ArrayList<>();
+            members.add(player.getUniqueId().toString());
+            bukkitMembers.add(player);
+            Config.save();
+            return true;
+        }
+        return false;
+    }
+
+    public boolean removeMember(Player player){
+        if(player != null){
+            if(bukkitMembers != null) bukkitMembers.remove(player);
+            if(members != null){
+                members.remove(player.getUniqueId().toString());
+                Config.save();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public List<Player> getMembers(){
+        return bukkitMembers;
     }
 }

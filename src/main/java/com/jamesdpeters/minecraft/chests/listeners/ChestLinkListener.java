@@ -31,25 +31,30 @@ public class ChestLinkListener implements Listener {
         if(event.getPlayer().hasPermission(Permissions.ADD)){
             if(event.getBlockPlaced().getState() instanceof Sign){
                 if(event.getBlockAgainst().getState() instanceof Chest) {
-                    new TempListener(){
-                        @EventHandler
-                        public void onSignChange(SignChangeEvent signChangeEvent){
-                            if(event.getBlockPlaced().getLocation().equals(signChangeEvent.getBlock().getLocation())) {
-                                Sign sign = (Sign) signChangeEvent.getBlock().getState();
-                                ChestLinkInfo info = Utils.getChestLinkInfo(sign, signChangeEvent.getLines(), signChangeEvent.getPlayer());
-                                if (info != null) {
-                                    Config.addChest(info.getPlayer(), info.getGroup(), event.getBlockAgainst().getLocation());
-                                    Messages.CHEST_ADDED(event.getPlayer(), info.getGroup(), event.getPlayer().getDisplayName());
-                                    setLine(sign,signChangeEvent,0, ChatColor.RED + signChangeEvent.getLine(0));
-                                    setLine(sign,signChangeEvent,1, ChatColor.GREEN + signChangeEvent.getLine(1));
-                                    setLine(sign,signChangeEvent,2, ChatColor.BOLD + event.getPlayer().getDisplayName());
-                                    sign.getPersistentDataContainer().set(Values.playerUUID, PersistentDataType.STRING, event.getPlayer().getUniqueId().toString());
-                                    sign.update();
+                        new TempListener() {
+                            @EventHandler
+                            public void onSignChange(SignChangeEvent signChangeEvent) {
+                                if (event.getBlockPlaced().getLocation().equals(signChangeEvent.getBlock().getLocation())) {
+                                    Sign sign = (Sign) signChangeEvent.getBlock().getState();
+                                    ChestLinkInfo info = Utils.getChestLinkInfo(sign, signChangeEvent.getLines(), signChangeEvent.getPlayer());
+                                    if (info != null) {
+                                        if(Utils.isValidSignPosition(event.getBlockAgainst().getLocation())) {
+                                            Config.addChest(info.getPlayer(), info.getGroup(), event.getBlockAgainst().getLocation());
+                                            Messages.CHEST_ADDED(event.getPlayer(), info.getGroup(), event.getPlayer().getDisplayName());
+                                            setLine(sign, signChangeEvent, 0, ChatColor.RED + ChatColor.stripColor(signChangeEvent.getLine(0)));
+                                            setLine(sign, signChangeEvent, 1, ChatColor.GREEN + ChatColor.stripColor(signChangeEvent.getLine(1)));
+                                            setLine(sign, signChangeEvent, 2, ChatColor.BOLD + ChatColor.stripColor(event.getPlayer().getDisplayName()));
+                                            sign.getPersistentDataContainer().set(Values.playerUUID, PersistentDataType.STRING, event.getPlayer().getUniqueId().toString());
+                                            sign.update();
+                                        } else {
+                                            Messages.SIGN_FRONT_OF_CHEST(event.getPlayer());
+                                        }
+                                    }
+                                    done();
                                 }
-                                done();
                             }
-                        }
-                    };
+                        };
+
 
                 }
             }

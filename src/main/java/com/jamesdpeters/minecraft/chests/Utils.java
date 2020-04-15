@@ -10,7 +10,6 @@ import org.bukkit.block.data.type.WallSign;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Event;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.inventory.EquipmentSlot;
@@ -71,6 +70,17 @@ public class Utils {
             }
         }
         return null;
+    }
+
+    public static boolean isValidSignPosition(Location chestLocation){
+        Block block = chestLocation.getBlock();
+        if(block.getBlockData() instanceof Directional) {
+            Directional chest = (Directional) block.getBlockData();
+            BlockFace facing = chest.getFacing();
+            Block sign = block.getRelative(facing);
+            return (sign.getState() instanceof Sign);
+        }
+        return false;
     }
 
     public static String locationPrettyPrint(Location location){
@@ -163,6 +173,8 @@ public class Utils {
 
                     SignChangeEvent signChangeEvent = new SignChangeEvent(sign.getBlock(),player,lines);
                     ChestsPlusPlus.PLUGIN.getServer().getPluginManager().callEvent(signChangeEvent);
+                } else {
+                    Messages.NO_SPACE_FOR_SIGN(player);
                 }
             }
         }
@@ -219,5 +231,31 @@ public class Utils {
             item.setItemMeta(meta);
         }
         return item;
+    }
+
+    public static List<String> getOnlinePlayers(){
+        return getPlayersAsNameList(Bukkit.getOnlinePlayers());
+    }
+
+    public static List<String> getPlayersAsNameList(Collection<? extends Player> players){
+        List<String> arr = new ArrayList<>();
+        for(Player player : players){
+            arr.add(ChatColor.stripColor(player.getDisplayName()));
+        }
+        return arr;
+    }
+
+    public static String prettyPrintPlayers(ChatColor highlight, List<Player> players){
+        StringBuilder str = new StringBuilder();
+        str.append(players.size());
+        if(players.size() > 0) {
+            str.append(" - " + highlight + "[");
+            for (Player player : players) {
+                str.append(ChatColor.WHITE + ChatColor.stripColor(player.getDisplayName())).append(", ");
+            }
+            str.delete(str.length() - 2, str.length());
+            str.append(highlight + "]");
+        }
+        return str.toString();
     }
 }

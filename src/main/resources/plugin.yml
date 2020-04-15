@@ -16,12 +16,24 @@ permissions:
       chestlink.add: true
       chestlink.open: true
       chestlink.menu: true
+      chestlink.remove : true
+      chestlink.openall: true
+      chestlink.addmember: true
   chestlink.add:
     description: Gives permission to add ChestLinks!
-    default: false
+    default: true
   chestlink.open:
     description: Gives permission to open ChestLinks!
-    default: false
+    default: true
   chestlink.menu:
     description: Gives permission to open the ChestLink menu!
+    default: true
+  chestlink.remove:
+    description: Gives permission to remove a ChestLink!
     default: false
+  chestlink.openall:
+    description: Gives permission to open all chests, for admin use.
+    default: false
+chestlink.member:
+    description: Gives permission to add/remove a member to/from their chestlink.
+    default: true
