@@ -102,6 +102,9 @@ public class RemoteChestCommand extends ServerCommand  {
                         if (sender.hasPermission(Permissions.REMOVE)) {
                             Config.removeChestLink(player, args[1]);
                             return true;
+                        } else {
+                            Messages.NO_PERMISSION(player);
+                            return true;
                         }
                     } else {
                         player.sendMessage(ChatColor.RED+OPTIONS.REMOVE.commandHelp);

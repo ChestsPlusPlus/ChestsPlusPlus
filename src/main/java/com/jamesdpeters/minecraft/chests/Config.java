@@ -128,7 +128,12 @@ public class Config {
                 }
             });
             storage.dropInventory(player.getLocation());
+            getPlayer(player).remove(group);
+            Messages.REMOVED_GROUP(player,group);
+        } else {
+            Messages.GROUP_DOESNT_EXIST(player,group);
         }
+
         save();
     }
 

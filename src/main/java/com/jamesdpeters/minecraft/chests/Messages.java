@@ -58,4 +58,12 @@ public class Messages {
     public static void UNABLE_TO_REMOVE_MEMBER(Player target, String toAdd){
         target.sendMessage(ChatColor.RED+""+ChatColor.BOLD+TAG+" Unable to remove player "+toAdd+" from ChestLink! Were they already removed?");
     }
+
+    public static void REMOVED_GROUP(Player target, String toRemove){
+        target.sendMessage(ChatColor.RED+""+ChatColor.BOLD+TAG+" Succesfully removed group "+toRemove+" from your ChestLink!");
+    }
+
+    public static void GROUP_DOESNT_EXIST(Player target, String toRemove){
+        target.sendMessage(ChatColor.RED+""+ChatColor.BOLD+TAG+" "+toRemove+" isn't a valid group to remove!");
+    }
 }
