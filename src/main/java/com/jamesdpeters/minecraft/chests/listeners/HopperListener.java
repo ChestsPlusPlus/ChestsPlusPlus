@@ -31,6 +31,9 @@ public class HopperListener implements Listener {
     public void onHopperMoveEvent(InventoryMoveItemEvent event) {
         //TO HOPPER
         if(event.getDestination().getHolder() instanceof Hopper){
+            if(event.getDestination().getLocation() != null){
+                if(event.getDestination().getLocation().getBlock().isBlockPowered()) return;
+            }
             event.setCancelled(!isItemInFilter(event.getDestination().getLocation().getBlock(),event.getItem()));
         }
     }
