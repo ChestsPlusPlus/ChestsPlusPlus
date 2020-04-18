@@ -1,7 +1,10 @@
 package com.jamesdpeters.minecraft.chests.commands;
 
-import com.jamesdpeters.minecraft.chests.*;
 import com.jamesdpeters.minecraft.chests.inventories.ChestLinkMenu;
+import com.jamesdpeters.minecraft.chests.misc.Config;
+import com.jamesdpeters.minecraft.chests.misc.Messages;
+import com.jamesdpeters.minecraft.chests.misc.Permissions;
+import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -77,7 +80,7 @@ public class RemoteChestCommand extends ServerCommand  {
                 case OPEN:
                     if(args.length > 1){
                         if(sender.hasPermission(Permissions.OPEN)) {
-                            InventoryStorage invs = Config.getInventoryStorage(player, args[1]);
+                            InventoryStorage invs = Config.getInventoryStorage(player.getUniqueId(), args[1]);
                             Utils.openInventory(player, invs.getInventory());
                             return true;
                         } else {
@@ -115,7 +118,7 @@ public class RemoteChestCommand extends ServerCommand  {
                     if(args.length > 2){
                         if(sender.hasPermission(Permissions.MEMBER)){
                             Player toAdd = Bukkit.getPlayer(args[2]);
-                            InventoryStorage storage = Config.getInventoryStorage(player,args[1]);
+                            InventoryStorage storage = Config.getInventoryStorage(player.getUniqueId(),args[1]);
                             if(storage != null && storage.addMember(toAdd)) Messages.ADDED_MEMBER(player,storage,args[2]);
                             else Messages.UNABLE_TO_ADD_MEMBER(player,args[2]);
                         }
@@ -129,7 +132,7 @@ public class RemoteChestCommand extends ServerCommand  {
                     if(args.length > 2){
                         if(sender.hasPermission(Permissions.MEMBER)){
                             Player toAdd = Bukkit.getPlayer(args[2]);
-                            InventoryStorage storage = Config.getInventoryStorage(player,args[1]);
+                            InventoryStorage storage = Config.getInventoryStorage(player.getUniqueId(),args[1]);
                             if(storage != null && storage.removeMember(toAdd)) Messages.REMOVE_MEMBER(player,storage,args[2]);
                             else Messages.UNABLE_TO_REMOVE_MEMBER(player,args[2]);
                         }
@@ -163,7 +166,7 @@ public class RemoteChestCommand extends ServerCommand  {
                         case REMOVE:
                         case ADDMEMBER:
                         case REMOVEMEMBER:
-                            return new ArrayList<>(Config.getPlayer(player).keySet());
+                            return new ArrayList<>(Config.getPlayer(player.getUniqueId()).keySet());
                     }
                 } catch (IllegalArgumentException ignored) { }
             }
@@ -173,7 +176,7 @@ public class RemoteChestCommand extends ServerCommand  {
                         case ADDMEMBER:
                             return Utils.getOnlinePlayers();
                         case REMOVEMEMBER:
-                            return Utils.getPlayersAsNameList(Config.getInventoryStorage(player,args[1]).getMembers());
+                            return Utils.getPlayersAsNameList(Config.getInventoryStorage(player.getUniqueId(),args[1]).getMembers());
                     }
                 } catch (IllegalArgumentException ignored) { }
             }

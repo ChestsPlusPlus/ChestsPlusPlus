@@ -1,6 +1,6 @@
 package com.jamesdpeters.minecraft.chests.containers;
 
-import com.jamesdpeters.minecraft.chests.Config;
+import com.jamesdpeters.minecraft.chests.misc.Config;
 import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -15,14 +15,14 @@ public class ChestLinkInfo {
     private InventoryStorage storage;
 
     public ChestLinkInfo(String playerUUID, String group){
-        this(Bukkit.getOfflinePlayer(UUID.fromString(playerUUID)).getPlayer(),group);
+        this(UUID.fromString(playerUUID),group);
     }
 
-    public ChestLinkInfo(Player player, String group){
+    public ChestLinkInfo(UUID playerUUID, String group){
         this.group = group;
-        this.storage = Config.getInventoryStorage(player,group);
-        this.player = player;
-        this.playerUUID = player.getUniqueId();
+        this.storage = Config.getInventoryStorage(playerUUID,group);
+        this.player = Bukkit.getOfflinePlayer(playerUUID).getPlayer();
+        this.playerUUID = playerUUID;
     }
 
     public String getGroup() {

@@ -1,7 +1,7 @@
 package com.jamesdpeters.minecraft.chests.inventories;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
-import com.jamesdpeters.minecraft.chests.Utils;
+import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
 import fr.minuskube.inv.ClickableItem;
 import fr.minuskube.inv.SmartInventory;
