@@ -10,7 +10,6 @@ public class Stats {
     public static void addCharts(Metrics metrics){
         metrics.addCustomChart(new Metrics.SimplePie("chestlink-amount", () -> {
             int chestlinks = Config.getTotalChestLinks();
-            Bukkit.broadcastMessage("CHESTLINKS: "+chestlinks);
             return chestlinks+"";
         }));
     }
