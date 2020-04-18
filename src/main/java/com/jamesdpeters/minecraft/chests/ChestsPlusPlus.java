@@ -4,6 +4,9 @@ import com.jamesdpeters.minecraft.chests.commands.RemoteChestCommand;
 import com.jamesdpeters.minecraft.chests.listeners.ChestLinkListener;
 import com.jamesdpeters.minecraft.chests.listeners.HopperListener;
 import com.jamesdpeters.minecraft.chests.listeners.InventoryListener;
+import com.jamesdpeters.minecraft.chests.misc.Config;
+import com.jamesdpeters.minecraft.chests.misc.Settings;
+import com.jamesdpeters.minecraft.chests.misc.Stats;
 import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
 import com.jamesdpeters.minecraft.chests.serialize.LinkedChest;
 import com.jamesdpeters.minecraft.chests.versionchecker.UpdateCheck;
@@ -13,13 +16,13 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.plugin.java.JavaPlugin;
-
-import java.io.IOException;
+import org.bukkit.scheduler.BukkitScheduler;
 
 public class ChestsPlusPlus extends JavaPlugin {
 
     public static JavaPlugin PLUGIN;
     public static InventoryManager INVENTORY_MANAGER;
+    private static boolean boot = false;
 
     static {
         ConfigurationSerialization.registerClass(LinkedChest.class, "LinkedChest");
@@ -30,6 +33,7 @@ public class ChestsPlusPlus extends JavaPlugin {
     public void onEnable() {
         int pluginId = 7166;
         Metrics metrics = new Metrics(this, pluginId);
+        Stats.addCharts(metrics);
 
         Settings.initConfig(this);
 
@@ -46,10 +50,10 @@ public class ChestsPlusPlus extends JavaPlugin {
 
         if(Settings.isUpdateCheckEnabled()) {
             String SPIGOT_URL = "https://www.spigotmc.org/resources/chests-chest-linking-hopper-filtering-remote-chests-menus.71355/";
-            UpdateCheck
+            UpdateCheck updateChecker = UpdateCheck
                     .of(this)
                     .resourceId(71355)
-                    .currentVersion("1.15 v1.2.2")
+                    .currentVersion(getDescription().getVersion())
                     .handleResponse((versionResponse, version) -> {
                         switch (versionResponse) {
                             case FOUND_NEW:
@@ -58,13 +62,14 @@ public class ChestsPlusPlus extends JavaPlugin {
                                 Bukkit.broadcastMessage(ChatColor.RED + "[Chests++] New version of the plugin was found: " + version);
                                 break;
                             case LATEST:
-                                getLogger().info("Plugin is up to date! Thank you for supporting Chests++!");
+                                if(!boot) getLogger().info("Plugin is up to date! Thank you for supporting Chests++!");
                                 break;
                             case UNAVAILABLE:
                                 Bukkit.broadcastMessage("Unable to perform an update check.");
                         }
-                    })
-                    .check();
+                        boot = true;
+                    });
+            Bukkit.getScheduler().scheduleSyncRepeatingTask(this, updateChecker::check,0,Settings.getUpdateCheckerPeriodTicks());
         }
 
         getLogger().info("Chests++ enabled!");
