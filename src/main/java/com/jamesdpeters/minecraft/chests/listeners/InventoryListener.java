@@ -1,12 +1,11 @@
 package com.jamesdpeters.minecraft.chests.listeners;
 
-import com.jamesdpeters.minecraft.chests.Config;
-import com.jamesdpeters.minecraft.chests.Messages;
-import com.jamesdpeters.minecraft.chests.Permissions;
-import com.jamesdpeters.minecraft.chests.Utils;
+import com.jamesdpeters.minecraft.chests.misc.Config;
+import com.jamesdpeters.minecraft.chests.misc.Messages;
+import com.jamesdpeters.minecraft.chests.misc.Permissions;
+import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.interfaces.VirtualInventoryHolder;
 import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;

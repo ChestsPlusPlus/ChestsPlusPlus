@@ -1,4 +1,4 @@
-package com.jamesdpeters.minecraft.chests;
+package com.jamesdpeters.minecraft.chests.misc;
 
 public class Permissions {
 

@@ -1,10 +1,8 @@
-package com.jamesdpeters.minecraft.chests;
+package com.jamesdpeters.minecraft.chests.misc;
 
 import com.jamesdpeters.minecraft.chests.containers.ChestLinkInfo;
 import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
 import com.jamesdpeters.minecraft.chests.serialize.LinkedChest;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.block.*;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -15,6 +13,7 @@ import org.bukkit.inventory.ItemStack;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Config {
 
@@ -41,8 +40,8 @@ public class Config {
         }
     }
 
-    public static HashMap<String, InventoryStorage> getPlayer(Player player){
-        String id = player.getUniqueId().toString();
+    public static HashMap<String, InventoryStorage> getPlayer(UUID playerUUID){
+        String id = playerUUID.toString();
         if(store.chests.containsKey(id)){
             return store.chests.get(id);
         } else {
@@ -52,8 +51,8 @@ public class Config {
         }
     }
 
-    public static InventoryStorage getInventoryStorage(Player player, String identifier){
-        HashMap<String, InventoryStorage> map = getPlayer(player);
+    public static InventoryStorage getInventoryStorage(UUID playerUUID, String identifier){
+        HashMap<String, InventoryStorage> map = getPlayer(playerUUID);
         return map.getOrDefault(identifier, null);
     }
 
@@ -73,7 +72,7 @@ public class Config {
 
     public static void addChest(Player player, String identifier, Location chestLocation){
         //List of groups this player has.
-        HashMap<String, InventoryStorage> map = getPlayer(player);
+        HashMap<String, InventoryStorage> map = getPlayer(player.getUniqueId());
 
         //Get Inventory Storage for the given group or create it if it doesnt exist.
         if(!map.containsKey(identifier)){
@@ -110,7 +109,7 @@ public class Config {
             storage.getLocations().remove(location);
             if (storage.getLocations().size() == 0) {
                 storage.dropInventory(location);
-                getPlayer(storage.getOwner()).remove(storage.getIdentifier());
+                getPlayer(storage.getOwner().getUniqueId()).remove(storage.getIdentifier());
             }
             save();
             return storage;
@@ -119,7 +118,7 @@ public class Config {
     }
 
     public static void removeChestLink(Player player, String group){
-        InventoryStorage storage = getInventoryStorage(player,group);
+        InventoryStorage storage = getInventoryStorage(player.getUniqueId(),group);
         if(storage != null) {
             storage.getLocations().forEach(location -> {
                 if (location != null) {
@@ -128,7 +127,7 @@ public class Config {
                 }
             });
             storage.dropInventory(player.getLocation());
-            getPlayer(player).remove(group);
+            getPlayer(player.getUniqueId()).remove(group);
             Messages.REMOVED_GROUP(player,group);
         } else {
             Messages.GROUP_DOESNT_EXIST(player,group);
@@ -138,7 +137,7 @@ public class Config {
     }
 
     public static InventoryStorage removeChest(Player player, String identifier, Location chestLocation){
-        return removeChest(getPlayer(player).get(identifier),chestLocation);
+        return removeChest(getPlayer(player.getUniqueId()).get(identifier),chestLocation);
     }
 
     public static InventoryStorage removeChest(Location chestLocation){
@@ -147,12 +146,20 @@ public class Config {
     }
 
     public static boolean setChests(Player player, String group, InventoryStorage storage){
-        HashMap<String, InventoryStorage> groups = getPlayer(player);
+        HashMap<String, InventoryStorage> groups = getPlayer(player.getUniqueId());
         groups.put(group,storage);
         save();
         return true;
     }
 
-
+    public static int getTotalChestLinks(){
+        AtomicInteger total = new AtomicInteger();
+        store.chests.forEach((s, InventoryStorageHashMap) -> {
+            InventoryStorageHashMap.forEach((s1, storage) -> {
+                if(storage != null) total.getAndIncrement();
+            });
+        });
+        return total.get();
+    }
 
 }

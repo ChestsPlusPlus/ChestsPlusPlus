@@ -1,5 +1,6 @@
-package com.jamesdpeters.minecraft.chests;
+package com.jamesdpeters.minecraft.chests.misc;
 
+import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import org.bukkit.NamespacedKey;
 
 public class Values {

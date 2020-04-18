@@ -1,5 +1,6 @@
-package com.jamesdpeters.minecraft.chests;
+package com.jamesdpeters.minecraft.chests.misc;
 
+import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.containers.ChestLinkInfo;
 import com.jamesdpeters.minecraft.chests.runnables.ChestLinkVerifier;
 import org.apache.commons.lang.StringUtils;
@@ -34,19 +35,21 @@ public class Utils {
 //        return null;
 //    }
 
-    public static ChestLinkInfo getChestLinkInfo(Location location){
-        return getChestLinkInfo(location,null);
-    }
-    public static ChestLinkInfo getChestLinkInfo(Sign sign, Player player){ return getChestLinkInfo(sign,sign.getLines(),player);}
 
-    public static ChestLinkInfo getChestLinkInfo(Sign sign, String[] lines, Player player){
-        if(lines.length >= 2 && lines[0].contains(Values.signTag)) {
-            String playerUUID = sign.getPersistentDataContainer().get(Values.playerUUID, PersistentDataType.STRING);
-            String group = ChatColor.stripColor(StringUtils.substringBetween(lines[1], "[", "]"));
-            if(playerUUID != null){
+    public static ChestLinkInfo getChestLinkInfo(Sign sign){ return getChestLinkInfo(sign,sign.getLines());}
+
+    public static ChestLinkInfo getChestLinkInfo(Sign sign, String[] lines){
+        return getChestLinkInfo(sign, lines,null);
+    }
+
+    public static ChestLinkInfo getChestLinkInfo(Sign sign, String[] lines, UUID uuid){
+        if(lines != null) {
+            if (lines.length >= 2 && lines[0].contains(Values.signTag)) {
+                String playerUUID = sign.getPersistentDataContainer().get(Values.playerUUID, PersistentDataType.STRING);
+                String group = ChatColor.stripColor(StringUtils.substringBetween(lines[1], "[", "]"));
+                if(playerUUID == null) playerUUID = uuid.toString();
                 return new ChestLinkInfo(playerUUID, group);
             }
-            else if(player != null) return new ChestLinkInfo(player, group);
         }
         return null;
     }
@@ -54,10 +57,9 @@ public class Utils {
     /**
      * Returns ChestLinkInfo for a sign.
      * @param location - Location of ChestLink to find.
-     * @param player - Player that ChestLink belongs to if it doesn't already exist.
      * @return @{@link ChestLinkInfo}
      */
-    public static ChestLinkInfo getChestLinkInfo(Location location, Player player){
+    public static ChestLinkInfo getChestLinkInfo(Location location){
         Block block = location.getBlock();
         if(block.getBlockData() instanceof Directional) {
             Directional chest = (Directional) block.getBlockData();
@@ -66,7 +68,7 @@ public class Utils {
 
             if (sign.getState() instanceof Sign) {
                 Sign s = (Sign) sign.getState();
-                return getChestLinkInfo(s,player);
+                return getChestLinkInfo(s);
             }
         }
         return null;
@@ -140,7 +142,7 @@ public class Utils {
                 if(toReplace.getType() == Material.AIR){
                     BlockState replacedBlockState = toReplace.getState();
 
-                    if(player.getGameMode() == GameMode.SURVIVAL) {
+                    if(player.getGameMode() != GameMode.CREATIVE) {
                         if (player.getEquipment() != null) {
                             if (!Tag.SIGNS.isTagged(player.getEquipment().getItemInMainHand().getType())) {
                                 Messages.MUST_HOLD_SIGN(player);
@@ -158,6 +160,7 @@ public class Utils {
                     WallSign signBlockData = (WallSign) sign.getBlockData();
                     signBlockData.setFacing(facing);
                     sign.setBlockData(signBlockData);
+                    sign.getPersistentDataContainer().set(Values.playerUUID, PersistentDataType.STRING, player.getUniqueId().toString());
                     sign.update();
 
                     String[] lines = new String[4];

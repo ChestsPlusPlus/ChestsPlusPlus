@@ -1,15 +1,12 @@
-package com.jamesdpeters.minecraft.chests;
+package com.jamesdpeters.minecraft.chests.misc;
 
-import org.bukkit.configuration.Configuration;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.plugin.Plugin;
-
-import java.util.concurrent.TimeUnit;
 
 public class Settings {
 
     private static String CHECK_UPDATE = "update-checker";
+    private static String CHECK_UPDATE_PERIOD = "update-checker-period";
 
     private static Settings cf;
     private FileConfiguration configuration;
@@ -22,6 +19,7 @@ public class Settings {
 
         //DEFAULT VALUES
         cf.configuration.addDefault(CHECK_UPDATE,true);
+        cf.configuration.addDefault(CHECK_UPDATE_PERIOD,60*60);
 
         cf.configuration.options().copyDefaults(true);
         cf.plugin.saveConfig();
@@ -41,4 +39,5 @@ public class Settings {
     public static boolean isUpdateCheckEnabled() {
         return cf.configuration.getBoolean(CHECK_UPDATE);
     }
+    public static int getUpdateCheckerPeriodTicks() { return 20*cf.configuration.getInt(CHECK_UPDATE_PERIOD);}
 }

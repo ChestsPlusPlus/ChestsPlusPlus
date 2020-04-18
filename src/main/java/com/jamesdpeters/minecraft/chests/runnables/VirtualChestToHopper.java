@@ -1,17 +1,12 @@
 package com.jamesdpeters.minecraft.chests.runnables;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
-import com.jamesdpeters.minecraft.chests.Utils;
-import com.jamesdpeters.minecraft.chests.interfaces.VirtualInventoryHolder;
+import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.Hopper;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
-
-import java.util.List;
 
 public class VirtualChestToHopper extends BukkitRunnable {
 

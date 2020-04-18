@@ -1,10 +1,9 @@
 package com.jamesdpeters.minecraft.chests.listeners;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
-import com.jamesdpeters.minecraft.chests.Config;
-import com.jamesdpeters.minecraft.chests.Utils;
+import com.jamesdpeters.minecraft.chests.misc.Config;
+import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Hopper;
@@ -18,12 +17,7 @@ import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
-
-import static com.jamesdpeters.minecraft.chests.Utils.hasFilter;
 
 public class HopperListener implements Listener {
 

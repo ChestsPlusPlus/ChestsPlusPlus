@@ -1,9 +1,8 @@
 package com.jamesdpeters.minecraft.chests.serialize;
 
 
-import com.jamesdpeters.minecraft.chests.Config;
-import com.jamesdpeters.minecraft.chests.Messages;
-import com.jamesdpeters.minecraft.chests.Utils;
+import com.jamesdpeters.minecraft.chests.misc.Config;
+import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.interfaces.VirtualInventoryHolder;
 import com.jamesdpeters.minecraft.chests.runnables.VirtualChestToHopper;
 import fr.minuskube.inv.ClickableItem;
@@ -15,12 +14,10 @@ import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.entity.Player;
-import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import java.lang.reflect.Array;
 import java.util.*;
 
 public class InventoryStorage implements ConfigurationSerializable {
