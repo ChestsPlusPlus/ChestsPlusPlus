@@ -6,10 +6,7 @@ import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.interfaces.VirtualInventoryHolder;
 import com.jamesdpeters.minecraft.chests.runnables.VirtualChestToHopper;
 import fr.minuskube.inv.ClickableItem;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.Location;
-import org.bukkit.Material;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
@@ -19,14 +16,14 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class InventoryStorage implements ConfigurationSerializable {
 
     Inventory inventory; //Old Inventory
-    ArrayList<ItemStack> items;
     ArrayList<Location> locationsList;
     ArrayList<String> members; //Members UUID
-    List<Player> bukkitMembers;
+    List<OfflinePlayer> bukkitMembers;
     String inventoryName = "Chest";
     VirtualChestToHopper chestToHopper;
     Player player;
@@ -62,7 +59,7 @@ public class InventoryStorage implements ConfigurationSerializable {
             members = (ArrayList<String>) map.get("members");
             bukkitMembers = new ArrayList<>();
             for(String uuid : members){
-                bukkitMembers.add(Bukkit.getOfflinePlayer(UUID.fromString(uuid)).getPlayer());
+                bukkitMembers.add(Bukkit.getOfflinePlayer(UUID.fromString(uuid)));
             }
         }
 
@@ -138,7 +135,13 @@ public class InventoryStorage implements ConfigurationSerializable {
 
         ItemMeta meta = toReturn.getItemMeta();
         if(meta != null) {
-            meta.setDisplayName(ChatColor.BOLD + "" + ChatColor.GREEN + "" + getIdentifier());
+            meta.setDisplayName(ChatColor.BOLD + "" + ChatColor.GREEN + "" + getIdentifier() + ": " +ChatColor.WHITE+ ""+getTotalItems()+" items");
+            if(getMembers() != null) {
+                List<String> memberNames = new ArrayList<>();
+                memberNames.add(ChatColor.BOLD+""+ChatColor.UNDERLINE+"Members:");
+                getMembers().forEach(player1 -> memberNames.add(ChatColor.stripColor(player1.getName())));
+                meta.setLore(memberNames);
+            }
             toReturn.setItemMeta(meta);
         }
         toReturn.setAmount(1);
@@ -146,7 +149,7 @@ public class InventoryStorage implements ConfigurationSerializable {
     }
 
     public ClickableItem getClickableItem(Player player) {
-        return ClickableItem.of(getIventoryIcon(), event -> {
+        return ClickableItem.from(getIventoryIcon(), event -> {
             Utils.openInventory(player,getInventory());
         });
     }
@@ -185,7 +188,17 @@ public class InventoryStorage implements ConfigurationSerializable {
         return false;
     }
 
-    public List<Player> getMembers(){
+    public List<OfflinePlayer> getMembers(){
         return bukkitMembers;
+    }
+
+    public int getTotalItems(){
+        int total = 0;
+        if(inventory != null) {
+            for(ItemStack itemStack : inventory.getContents()){
+                if(itemStack != null) total += itemStack.getAmount();
+            }
+        }
+        return total;
     }
 }

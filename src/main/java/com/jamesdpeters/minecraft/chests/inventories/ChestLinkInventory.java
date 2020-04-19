@@ -39,9 +39,9 @@ public class ChestLinkInventory implements InventoryProvider {
     @Override
     public void init(Player player, InventoryContents contents) {
         Pagination pagination = contents.pagination();
-        List<ClickableItem> itemList = new ArrayList<>();
-
-        pagination.setItems(itemList.toArray(new ClickableItem[0]));
+//        List<ClickableItem> itemList = new ArrayList<>();
+//
+//        pagination.setItems(itemList.toArray(new ClickableItem[0]));
         pagination.setItemsPerPage(28);
 
         contents.fillBorders(ClickableItem.empty(Utils.getNamedItem(new ItemStack(Material.GRAY_STAINED_GLASS_PANE)," ")));
@@ -49,9 +49,9 @@ public class ChestLinkInventory implements InventoryProvider {
             contents.add(item);
         }
 
-        contents.set(5, 2, ClickableItem.of(Utils.getNamedItem(new ItemStack(Material.ARROW),"Previous"),
+        contents.set(2, 2, ClickableItem.from(Utils.getNamedItem(new ItemStack(Material.ARROW),"Previous"),
                 e -> inventory.open(player, pagination.previous().getPage())));
-        contents.set(5, 6, ClickableItem.of(Utils.getNamedItem(new ItemStack(Material.ARROW),"Next"),
+        contents.set(2, 6, ClickableItem.from(Utils.getNamedItem(new ItemStack(Material.ARROW),"Next"),
                 e -> inventory.open(player, pagination.next().getPage())));
     }
 

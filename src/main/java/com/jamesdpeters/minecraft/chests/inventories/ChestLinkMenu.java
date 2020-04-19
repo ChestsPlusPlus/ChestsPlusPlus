@@ -9,8 +9,10 @@ import fr.minuskube.inv.SmartInventory;
 import fr.minuskube.inv.content.InventoryContents;
 import fr.minuskube.inv.content.InventoryProvider;
 import fr.minuskube.inv.content.Pagination;
+import fr.minuskube.inv.content.SlotPos;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
@@ -32,6 +34,7 @@ public class ChestLinkMenu implements InventoryProvider {
                 .title("Inventory Storage")
                 .provider(this)
                 .manager(ChestsPlusPlus.INVENTORY_MANAGER)
+                .size(6,9)
                 .build();
         //menu.setInsertable(true);
     }
@@ -53,21 +56,20 @@ public class ChestLinkMenu implements InventoryProvider {
         List<ClickableItem> itemList = new ArrayList<>();
         for(InventoryStorage storage : storages){
             ClickableItem item = storage.getClickableItem(player);
-            //item.setRemoveable(true);
             itemList.add(item);
         }
 
         pagination.setItems(itemList.toArray(new ClickableItem[0]));
-        pagination.setItemsPerPage(28);
+        pagination.setItemsPerPage(54);
 
         contents.fillBorders(ClickableItem.empty(Utils.getNamedItem(new ItemStack(Material.GRAY_STAINED_GLASS_PANE)," ")));
         for(ClickableItem item : pagination.getPageItems()){
             contents.add(item);
         }
 
-        contents.set(5, 2, ClickableItem.of(Utils.getNamedItem(new ItemStack(Material.ARROW),"Previous"),
+        contents.set(5, 2, ClickableItem.from(Utils.getNamedItem(new ItemStack(Material.ARROW),"Previous"),
                 e -> menu.open(player, pagination.previous().getPage())));
-        contents.set(5, 6, ClickableItem.of(Utils.getNamedItem(new ItemStack(Material.ARROW),"Next"),
+        contents.set(5, 6, ClickableItem.from(Utils.getNamedItem(new ItemStack(Material.ARROW),"Next"),
                 e -> menu.open(player, pagination.next().getPage())));
     }
 

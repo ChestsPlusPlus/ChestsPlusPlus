@@ -240,21 +240,21 @@ public class Utils {
         return getPlayersAsNameList(Bukkit.getOnlinePlayers());
     }
 
-    public static List<String> getPlayersAsNameList(Collection<? extends Player> players){
+    public static List<String> getPlayersAsNameList(Collection<? extends OfflinePlayer> players){
         List<String> arr = new ArrayList<>();
-        for(Player player : players){
-            arr.add(ChatColor.stripColor(player.getDisplayName()));
+        for(OfflinePlayer player : players){
+            arr.add(ChatColor.stripColor(player.getName()));
         }
         return arr;
     }
 
-    public static String prettyPrintPlayers(ChatColor highlight, List<Player> players){
+    public static String prettyPrintPlayers(ChatColor highlight, List<OfflinePlayer> players){
         StringBuilder str = new StringBuilder();
         str.append(players.size());
         if(players.size() > 0) {
             str.append(" - " + highlight + "[");
-            for (Player player : players) {
-                str.append(ChatColor.WHITE + ChatColor.stripColor(player.getDisplayName())).append(", ");
+            for (OfflinePlayer player : players) {
+                str.append(ChatColor.WHITE + ChatColor.stripColor(player.getName())).append(", ");
             }
             str.delete(str.length() - 2, str.length());
             str.append(highlight + "]");
