@@ -3,6 +3,7 @@ package com.jamesdpeters.minecraft.chests.misc;
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.containers.ChestLinkInfo;
 import com.jamesdpeters.minecraft.chests.runnables.ChestLinkVerifier;
+import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.*;
 import org.bukkit.block.*;
@@ -20,6 +21,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Utils {
 
@@ -249,16 +251,23 @@ public class Utils {
     }
 
     public static String prettyPrintPlayers(ChatColor highlight, List<OfflinePlayer> players){
-        StringBuilder str = new StringBuilder();
-        str.append(players.size());
-        if(players.size() > 0) {
-            str.append(" - " + highlight + "[");
-            for (OfflinePlayer player : players) {
-                str.append(ChatColor.WHITE + ChatColor.stripColor(player.getName())).append(", ");
-            }
-            str.delete(str.length() - 2, str.length());
-            str.append(highlight + "]");
-        }
-        return str.toString();
+        String playerString = players.stream().map(OfflinePlayer::getName).collect(Collectors.joining(","));
+        return highlight+"["+ChatColor.WHITE+playerString+highlight+"]";
+//
+//        StringBuilder str = new StringBuilder();
+//        str.append(players.size());
+//        if(players.size() > 0) {
+//            str.append(" - " + highlight + "[");
+//            for (OfflinePlayer player : players) {
+//                str.append(ChatColor.WHITE + ChatColor.stripColor(player.getName())).append(", ");
+//            }
+//            str.delete(str.length() - 2, str.length());
+//            str.append(highlight + "]");
+//        }
+//        return str.toString();
+    }
+
+    public static List<String> getInventoryStorageList(Player player){
+        return Config.getInventoryStorageMap(player.getUniqueId()).values().stream().map(InventoryStorage::getIdentifier).collect(Collectors.toList());
     }
 }

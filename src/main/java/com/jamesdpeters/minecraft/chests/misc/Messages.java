@@ -2,7 +2,11 @@ package com.jamesdpeters.minecraft.chests.misc;
 
 import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
 import org.bukkit.ChatColor;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
+
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 public class Messages {
 
@@ -64,5 +68,26 @@ public class Messages {
 
     public static void GROUP_DOESNT_EXIST(Player target, String toRemove){
         target.sendMessage(ChatColor.RED+""+ChatColor.BOLD+TAG+" "+toRemove+" isn't a valid group to remove!");
+    }
+
+    public static void LIST_MEMBERS(Player target, InventoryStorage storage){
+        if(storage.getMembers() != null){
+            target.sendMessage(ChatColor.GREEN+"Members of group "+ChatColor.WHITE+storage.getIdentifier()+": "+Utils.prettyPrintPlayers(ChatColor.GREEN,storage.getMembers()));
+        } else {
+            target.sendMessage(ChatColor.YELLOW+"There are no additional members in the group: "+ChatColor.WHITE+storage.getIdentifier());
+        }
+    }
+
+    public static void SET_PUBLIC(Player target, InventoryStorage storage){
+        target.sendMessage(ChatColor.GREEN+"Publicity for ChestLink "+storage.getIdentifier()+" is set to: "+ChatColor.WHITE+storage.isPublic());
+    }
+
+    public static void LIST_CHESTLINKS(Player target){
+        target.sendMessage(ChatColor.GREEN+""+ChatColor.BOLD+"List of your ChestLinks:");
+        for(InventoryStorage storage : Config.getInventoryStorageMap(target.getUniqueId()).values()){
+            if(storage != null){
+                target.sendMessage(ChatColor.GREEN+storage.getIdentifier()+ChatColor.WHITE+" - "+storage.getTotalItems()+" items");
+            }
+        }
     }
 }

@@ -9,10 +9,8 @@ import fr.minuskube.inv.SmartInventory;
 import fr.minuskube.inv.content.InventoryContents;
 import fr.minuskube.inv.content.InventoryProvider;
 import fr.minuskube.inv.content.Pagination;
-import fr.minuskube.inv.content.SlotPos;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
-import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
@@ -28,7 +26,7 @@ public class ChestLinkMenu implements InventoryProvider {
     private SmartInventory menu;
 
     private ChestLinkMenu(Player player){
-        this.storages = Config.getPlayer(player.getUniqueId()).values();
+        this.storages = Config.getInventoryStorageMap(player.getUniqueId()).values();
         menu = SmartInventory.builder()
                 .id("chestLinkMenu")
                 .title("Inventory Storage")

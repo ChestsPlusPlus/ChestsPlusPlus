@@ -20,12 +20,16 @@ import java.util.stream.Stream;
 public class RemoteChestCommand extends ServerCommand  {
 
     private enum OPTIONS {
-        ADD("/chestlink add <Group>", "Create/add a chest to a ChestLink group"),
-        REMOVE("/chestlink remove <Group>", "Delete a ChestLink and drop its inventory at your feet!"),
-        OPEN("/chestlink open <Group>","Open the inventory of a ChestLink group"),
+        ADD("/chestlink add <group>", "Create/add a chest to a ChestLink group"),
+        HELP("/chestlink help","List of commands and their uses!"),
+        LIST("/chestlink list","Lists all ChestLinks that you own!"),
+        MEMBER("/chestlink member [add/remove <group> <player>] or [list <group>]","Add, remove or list members of a group"),
         MENU("/chestlink menu","Open the ChestLink menu to display all groups!"),
-        ADDMEMBER("/chestlink addmember <group> <player>","Add a player to this ChestLink so they can access your chest!"),
-        REMOVEMEMBER("/chestlink removemember <group> <player>","Remove a player from this ChestLink!");
+        OPEN("/chestlink open <Group>","Open the inventory of a ChestLink group"),
+        REMOVE("/chestlink remove <Group>", "Delete a ChestLink and drop its inventory at your feet!"),
+        SETPUBLIC("/chestlink setpublic <group> <true/false>", "Set a ChestLink to be accessible by anyone.");
+        //SORT("/chestlink sort <group> <sort-method>","Set the sorting option for the given ChestLink.");
+
 
         String description, commandHelp;
         static List<String> valuesList;
@@ -58,9 +62,15 @@ public class RemoteChestCommand extends ServerCommand  {
             return false;
         }
         Player player = (Player) sender;
-        if(args != null) {
-
+        if(args != null &&  args.length > 0) {
             switch (OPTIONS.valueOf(args[0].toUpperCase())){
+                case HELP:
+                    for(OPTIONS option : OPTIONS.values()){
+                        if(!option.equals(OPTIONS.HELP));
+                        player.sendMessage(ChatColor.RED+option.commandHelp);
+                        player.sendMessage(ChatColor.WHITE+option.description);
+                    }
+                    return true;
                 case ADD:
                     if(args.length > 1){
                         if(sender.hasPermission(Permissions.ADD)) {
@@ -100,6 +110,9 @@ public class RemoteChestCommand extends ServerCommand  {
                         Messages.NO_PERMISSION(player);
                         return true;
                     }
+                case LIST:
+                    Messages.LIST_CHESTLINKS(player);
+                    return true;
                 case REMOVE:
                     if(args.length > 1) {
                         if (sender.hasPermission(Permissions.REMOVE)) {
@@ -114,36 +127,85 @@ public class RemoteChestCommand extends ServerCommand  {
                         player.sendMessage(ChatColor.RED+OPTIONS.REMOVE.description);
                         return true;
                     }
-                case ADDMEMBER:
-                    if(args.length > 2){
+//                case SORT:
+//                    if(args.length > 1) {
+//                        if (sender.hasPermission(Permissions.REMOVE)) {
+//                            InventoryStorage storage = Config.getInventoryStorage(player.getUniqueId(),args[1]);
+//                            if(storage != null) {
+//                                storage.setSortMethod(Enum.valueOf(InventoryStorage.SORT_METHOD.class, args[2]));
+//                                storage.sort();
+//                            }
+//                            return true;
+//                        } else {
+//                            Messages.NO_PERMISSION(player);
+//                            return true;
+//                        }
+//                    } else {
+//                        player.sendMessage(ChatColor.RED+OPTIONS.SORT.commandHelp);
+//                        player.sendMessage(ChatColor.RED+OPTIONS.SORT.description);
+//                        return true;
+//                    }
+                case MEMBER:
+                    if(args.length > 3){
                         if(sender.hasPermission(Permissions.MEMBER)){
-                            Player toAdd = Bukkit.getPlayer(args[2]);
-                            InventoryStorage storage = Config.getInventoryStorage(player.getUniqueId(),args[1]);
-                            if(storage != null && storage.addMember(toAdd)) Messages.ADDED_MEMBER(player,storage,args[2]);
-                            else Messages.UNABLE_TO_ADD_MEMBER(player,args[2]);
+                            if(args[1].equals("add")) {
+                                Player toAdd = Bukkit.getPlayer(args[3]);
+                                InventoryStorage storage = Config.getInventoryStorage(player.getUniqueId(), args[2]);
+                                if (storage != null && storage.addMember(toAdd))
+                                    Messages.ADDED_MEMBER(player, storage, args[3]);
+                                else Messages.UNABLE_TO_ADD_MEMBER(player, args[3]);
+                            } else if(args[1].equals("remove")){
+                                Player toAdd = Bukkit.getPlayer(args[3]);
+                                InventoryStorage storage = Config.getInventoryStorage(player.getUniqueId(),args[2]);
+                                if(storage != null && storage.removeMember(toAdd))
+                                    Messages.REMOVE_MEMBER(player, storage, args[3]);
+                                else Messages.UNABLE_TO_REMOVE_MEMBER(player,args[3]);
+                            } else {
+                                player.sendMessage(ChatColor.RED+OPTIONS.MEMBER.commandHelp);
+                                player.sendMessage(ChatColor.RED+OPTIONS.MEMBER.description);
+                            }
+                        } else {
+                            Messages.NO_PERMISSION(player);
                         }
                         return true;
+                    } else if(args.length > 2){
+                        if(sender.hasPermission(Permissions.MEMBER)){
+                            if(args[1].equals("list")) {
+                                InventoryStorage storage = Config.getInventoryStorage(player.getUniqueId(), args[2]);
+                                if(storage != null){
+                                    Messages.LIST_MEMBERS(player,storage);
+                                    return true;
+                                } else {
+                                    // No chest.
+                                }
+                            }
+                        }
                     } else {
-                        player.sendMessage(ChatColor.RED+OPTIONS.ADDMEMBER.commandHelp);
-                        player.sendMessage(ChatColor.RED+OPTIONS.ADDMEMBER.description);
+                        player.sendMessage(ChatColor.RED+OPTIONS.MEMBER.commandHelp);
+                        player.sendMessage(ChatColor.RED+OPTIONS.MEMBER.description);
                         return true;
                     }
-                case REMOVEMEMBER:
+                case SETPUBLIC:
                     if(args.length > 2){
-                        if(sender.hasPermission(Permissions.MEMBER)){
-                            Player toAdd = Bukkit.getPlayer(args[2]);
-                            InventoryStorage storage = Config.getInventoryStorage(player.getUniqueId(),args[1]);
-                            if(storage != null && storage.removeMember(toAdd)) Messages.REMOVE_MEMBER(player,storage,args[2]);
-                            else Messages.UNABLE_TO_REMOVE_MEMBER(player,args[2]);
+                        InventoryStorage storage = Config.getInventoryStorage(player.getUniqueId(), args[1]);
+                        if(storage != null){
+                            boolean setpublic = Boolean.parseBoolean(args[2]);
+                            storage.setPublic(setpublic);
+                            Messages.SET_PUBLIC(player,storage);
+                            return true;
+                        } else {
+                            Bukkit.broadcastMessage("Storage null");
                         }
-                        return true;
                     } else {
-                        player.sendMessage(ChatColor.RED+OPTIONS.REMOVEMEMBER.commandHelp);
-                        player.sendMessage(ChatColor.RED+OPTIONS.REMOVEMEMBER.description);
+                        player.sendMessage(ChatColor.RED+OPTIONS.SETPUBLIC.commandHelp);
+                        player.sendMessage(ChatColor.RED+OPTIONS.SETPUBLIC.description);
                         return true;
                     }
 
             }
+        }
+        else {
+
         }
 
         return false;
@@ -164,19 +226,39 @@ public class RemoteChestCommand extends ServerCommand  {
                             return null;
                         case OPEN:
                         case REMOVE:
-                        case ADDMEMBER:
-                        case REMOVEMEMBER:
-                            return new ArrayList<>(Config.getPlayer(player.getUniqueId()).keySet());
+                        //case SORT:
+                            return Utils.getInventoryStorageList(player);
+                        case MEMBER:
+                            return Arrays.asList("add","remove","list");
+//                        case ADDMEMBER:
+//                        case REMOVEMEMBER:
+//                            return new ArrayList<>(Config.getPlayer(player.getUniqueId()).keySet());
                     }
                 } catch (IllegalArgumentException ignored) { }
             }
             if(args.length == 3) {
                 try {
                     switch (OPTIONS.valueOf(args[0].toUpperCase())) {
-                        case ADDMEMBER:
+                        case MEMBER:
+                            return Utils.getInventoryStorageList(player);
+//                        case SORT:
+//                            return InventoryStorage.SORT_METHOD.valuesList;
+//                        case ADDMEMBER:
+//                            return Utils.getOnlinePlayers();
+//                        case REMOVEMEMBER:
+//                            return Utils.getPlayersAsNameList(Config.getInventoryStorage(player.getUniqueId(),args[1]).getMembers());
+                    }
+                } catch (IllegalArgumentException ignored) { }
+            }
+            if(args.length == 4) {
+                try {
+                    switch (OPTIONS.valueOf(args[0].toUpperCase())) {
+                        case MEMBER:
                             return Utils.getOnlinePlayers();
-                        case REMOVEMEMBER:
-                            return Utils.getPlayersAsNameList(Config.getInventoryStorage(player.getUniqueId(),args[1]).getMembers());
+//                        case ADDMEMBER:
+//                            return Utils.getOnlinePlayers();
+//                        case REMOVEMEMBER:
+//                            return Utils.getPlayersAsNameList(Config.getInventoryStorage(player.getUniqueId(),args[1]).getMembers());
                     }
                 } catch (IllegalArgumentException ignored) { }
             }

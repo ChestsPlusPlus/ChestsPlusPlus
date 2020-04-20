@@ -1,5 +1,5 @@
 name: ChestsPlusPlus
-version: 1.15 v1.2.3
+version: 1.15 v1.3
 main: com.jamesdpeters.minecraft.chests.ChestsPlusPlus
 api-version: "1.15"
 
@@ -7,6 +7,8 @@ commands:
   chestlink:
     description: Chest++ Commands.
     usage: Use /chestlink help for more info.
+    aliases:
+      - cl
 
 permissions:
   chestlink.*:
@@ -34,6 +36,9 @@ permissions:
   chestlink.openall:
     description: Gives permission to open all chests, for admin use.
     default: false
-chestlink.member:
+  chestlink.member:
     description: Gives permission to add/remove a member to/from their chestlink.
+    default: true
+  chestlink.sort:
+    description: Set the sorting option for the given ChestLink.
     default: true

@@ -1,7 +1,9 @@
 package com.jamesdpeters.minecraft.chests.serialize;
 
 
+import com.jamesdpeters.minecraft.chests.commands.RemoteChestCommand;
 import com.jamesdpeters.minecraft.chests.misc.Config;
+import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.interfaces.VirtualInventoryHolder;
 import com.jamesdpeters.minecraft.chests.runnables.VirtualChestToHopper;
@@ -17,6 +19,8 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class InventoryStorage implements ConfigurationSerializable {
 
@@ -28,6 +32,20 @@ public class InventoryStorage implements ConfigurationSerializable {
     VirtualChestToHopper chestToHopper;
     Player player;
     UUID playerUUID;
+    boolean isPublic;
+    SORT_METHOD sortMethod = SORT_METHOD.OFF;
+
+    public enum SORT_METHOD {
+        OFF,
+        ID,
+        AMOUNT;
+
+        public static List<String> valuesList;
+
+        static {
+            valuesList = Stream.of(SORT_METHOD.values()).map(SORT_METHOD::toString).collect(Collectors.toList());
+        }
+    }
 
     @Override
     public Map<String, Object> serialize() {
@@ -37,6 +55,8 @@ public class InventoryStorage implements ConfigurationSerializable {
         hashMap.put("inventoryName",inventoryName);
         hashMap.put("playerUUID",playerUUID.toString());
         hashMap.put("members", members);
+        hashMap.put("isPublic", isPublic);
+        hashMap.put("sortMethod", sortMethod.toString());
         return hashMap;
     }
 
@@ -55,6 +75,10 @@ public class InventoryStorage implements ConfigurationSerializable {
         playerUUID = UUID.fromString((String) map.get("playerUUID"));
         player = Bukkit.getOfflinePlayer(playerUUID).getPlayer();
 
+        if(map.containsKey("isPublic")) isPublic = (boolean) map.get("isPublic");
+        if(map.containsKey("sortMethod")) sortMethod = Enum.valueOf(SORT_METHOD.class, (String) map.get("sortMethod"));
+
+
         if(map.get("members") != null){
             members = (ArrayList<String>) map.get("members");
             bukkitMembers = new ArrayList<>();
@@ -70,6 +94,8 @@ public class InventoryStorage implements ConfigurationSerializable {
         this.inventoryName = group;
         this.player = player;
         this.playerUUID = player.getUniqueId();
+        this.isPublic = false;
+        this.sortMethod = SORT_METHOD.OFF;
         locationsList = new ArrayList<>(Collections.singleton(location));
 
         Block block = location.getBlock();
@@ -138,6 +164,7 @@ public class InventoryStorage implements ConfigurationSerializable {
             meta.setDisplayName(ChatColor.BOLD + "" + ChatColor.GREEN + "" + getIdentifier() + ": " +ChatColor.WHITE+ ""+getTotalItems()+" items");
             if(getMembers() != null) {
                 List<String> memberNames = new ArrayList<>();
+                if(isPublic) memberNames.add(ChatColor.WHITE+"Public Chest");
                 memberNames.add(ChatColor.BOLD+""+ChatColor.UNDERLINE+"Members:");
                 getMembers().forEach(player1 -> memberNames.add(ChatColor.stripColor(player1.getName())));
                 meta.setLore(memberNames);
@@ -155,6 +182,8 @@ public class InventoryStorage implements ConfigurationSerializable {
     }
 
     public boolean hasPermission(Player player){
+        if(isPublic) return true;
+        if(player.hasPermission(Permissions.OPEN_ANY)) return true;
         if(player.getUniqueId().equals(playerUUID)) return true;
         if(members != null) {
             for (String uuid : members) {
@@ -200,5 +229,34 @@ public class InventoryStorage implements ConfigurationSerializable {
             }
         }
         return total;
+    }
+
+    public void setPublic(boolean value){
+        this.isPublic = value;
+    }
+
+    public boolean isPublic() {
+        return isPublic;
+    }
+
+    public void setSortMethod(SORT_METHOD sortMethod){
+        this.sortMethod = sortMethod;
+    }
+
+    public void sort(){
+//        switch (sortMethod){
+//            case OFF: return;
+//            case ID: {
+//                ItemStack[] sorted = inventory.getContents();
+//                Arrays.sort(sorted, (item1, item2) -> {
+//                            if(item1 == null) return 1;
+//                            if(item2 == null) return -1;
+//                            else {
+//                                return item1.getType().getKey().getKey().compareTo(item2.getType().getKey().getKey());
+//                            }
+//                        });
+//                inventory.setContents(sorted);
+//            }
+//        }
     }
 }

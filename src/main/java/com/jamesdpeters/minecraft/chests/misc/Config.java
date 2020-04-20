@@ -40,7 +40,7 @@ public class Config {
         }
     }
 
-    public static HashMap<String, InventoryStorage> getPlayer(UUID playerUUID){
+    public static HashMap<String, InventoryStorage> getInventoryStorageMap(UUID playerUUID){
         String id = playerUUID.toString();
         if(store.chests.containsKey(id)){
             return store.chests.get(id);
@@ -52,7 +52,7 @@ public class Config {
     }
 
     public static InventoryStorage getInventoryStorage(UUID playerUUID, String identifier){
-        HashMap<String, InventoryStorage> map = getPlayer(playerUUID);
+        HashMap<String, InventoryStorage> map = getInventoryStorageMap(playerUUID);
         return map.getOrDefault(identifier, null);
     }
 
@@ -72,7 +72,7 @@ public class Config {
 
     public static void addChest(Player player, String identifier, Location chestLocation){
         //List of groups this player has.
-        HashMap<String, InventoryStorage> map = getPlayer(player.getUniqueId());
+        HashMap<String, InventoryStorage> map = getInventoryStorageMap(player.getUniqueId());
 
         //Get Inventory Storage for the given group or create it if it doesnt exist.
         if(!map.containsKey(identifier)){
@@ -109,7 +109,7 @@ public class Config {
             storage.getLocations().remove(location);
             if (storage.getLocations().size() == 0) {
                 storage.dropInventory(location);
-                getPlayer(storage.getOwner().getUniqueId()).remove(storage.getIdentifier());
+                getInventoryStorageMap(storage.getOwner().getUniqueId()).remove(storage.getIdentifier());
             }
             save();
             return storage;
@@ -127,7 +127,7 @@ public class Config {
                 }
             });
             storage.dropInventory(player.getLocation());
-            getPlayer(player.getUniqueId()).remove(group);
+            getInventoryStorageMap(player.getUniqueId()).remove(group);
             Messages.REMOVED_GROUP(player,group);
         } else {
             Messages.GROUP_DOESNT_EXIST(player,group);
@@ -137,7 +137,7 @@ public class Config {
     }
 
     public static InventoryStorage removeChest(Player player, String identifier, Location chestLocation){
-        return removeChest(getPlayer(player.getUniqueId()).get(identifier),chestLocation);
+        return removeChest(getInventoryStorageMap(player.getUniqueId()).get(identifier),chestLocation);
     }
 
     public static InventoryStorage removeChest(Location chestLocation){
@@ -146,7 +146,7 @@ public class Config {
     }
 
     public static boolean setChests(Player player, String group, InventoryStorage storage){
-        HashMap<String, InventoryStorage> groups = getPlayer(player.getUniqueId());
+        HashMap<String, InventoryStorage> groups = getInventoryStorageMap(player.getUniqueId());
         groups.put(group,storage);
         save();
         return true;
