@@ -36,6 +36,7 @@ public class VirtualChestToHopper extends BukkitRunnable {
                         continue;
                     }
                     Utils.moveToOtherInventory(storage.getInventory(), 1, hopper.getInventory(), Utils.getHopperFilters(below.getBlock()));
+                    storage.sort();
                 }
             }
         }

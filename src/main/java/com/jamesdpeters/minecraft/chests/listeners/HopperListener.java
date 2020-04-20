@@ -45,6 +45,7 @@ public class HopperListener implements Listener {
                         public void run() {
                             Utils.moveToOtherInventory(event.getSource(), 1, storage.getInventory());
                             event.getDestination().getHolder().getInventory().clear();
+                            storage.sort();
                         }
                     }.runTaskLater(ChestsPlusPlus.PLUGIN, 1);
                 }
