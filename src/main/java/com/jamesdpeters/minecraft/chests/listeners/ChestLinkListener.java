@@ -33,12 +33,12 @@ public class ChestLinkListener implements Listener {
                                     if (info != null) {
                                         if(event.getPlayer().hasPermission(Permissions.ADD)) {
                                             if (Utils.isValidSignPosition(event.getBlockAgainst().getLocation())) {
-                                                Config.addChest(info.getPlayer(), info.getGroup(), event.getBlockAgainst().getLocation());
-                                                Messages.CHEST_ADDED(event.getPlayer(), info.getGroup(), event.getPlayer().getDisplayName());
+                                                Config.addChest(event.getPlayer(), info.getGroup(), event.getBlockAgainst().getLocation(),info.getPlayer());
+                                                Messages.CHEST_ADDED(event.getPlayer(), info.getGroup(), info.getPlayer().getName());
                                                 setLine(sign, signChangeEvent, 0, ChatColor.RED + ChatColor.stripColor(signChangeEvent.getLine(0)));
                                                 setLine(sign, signChangeEvent, 1, ChatColor.GREEN + ChatColor.stripColor(signChangeEvent.getLine(1)));
-                                                setLine(sign, signChangeEvent, 2, ChatColor.BOLD + ChatColor.stripColor(event.getPlayer().getDisplayName()));
-                                                sign.getPersistentDataContainer().set(Values.playerUUID, PersistentDataType.STRING, event.getPlayer().getUniqueId().toString());
+                                                setLine(sign, signChangeEvent, 2, ChatColor.BOLD + ChatColor.stripColor(info.getPlayer().getName()));
+                                                sign.getPersistentDataContainer().set(Values.playerUUID, PersistentDataType.STRING, info.getPlayer().getUniqueId().toString());
                                                 sign.update();
                                             } else {
                                                 Messages.SIGN_FRONT_OF_CHEST(event.getPlayer());
@@ -71,13 +71,11 @@ public class ChestLinkListener implements Listener {
 
                 //If block sign is placed on is a chest we can remove it.
                 if(chest.getState() instanceof Chest) {
-
-                    ChestLinkInfo info = Utils.getChestLinkInfo(sign,null);
-
+                    ChestLinkInfo info = Utils.getChestLinkInfo(sign,sign.getLines());
                     if (info != null) { ;
                         Config.removeChest(info.getPlayer(), info.getGroup(), chest.getLocation());
                         ((Chest) chest.getState()).getInventory().clear();
-                        Messages.CHEST_REMOVED(event.getPlayer(),info.getGroup(),info.getPlayer().getDisplayName());
+                        Messages.CHEST_REMOVED(event.getPlayer(),info.getGroup(),info.getPlayer().getName());
                     }
                 }
             }
@@ -97,7 +95,7 @@ public class ChestLinkListener implements Listener {
         if(event.getBlock().getState() instanceof Chest){
             InventoryStorage storage = Config.removeChest(event.getBlock().getLocation());
             if(storage != null){
-                Messages.CHEST_REMOVED(event.getPlayer(),storage.getIdentifier(),storage.getOwner().getDisplayName());
+                Messages.CHEST_REMOVED(event.getPlayer(),storage.getIdentifier(),storage.getOwner().getName());
             }
         }
     }

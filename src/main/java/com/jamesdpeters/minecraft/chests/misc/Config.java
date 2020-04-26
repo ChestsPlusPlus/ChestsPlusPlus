@@ -3,7 +3,10 @@ package com.jamesdpeters.minecraft.chests.misc;
 import com.jamesdpeters.minecraft.chests.containers.ChestLinkInfo;
 import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
 import com.jamesdpeters.minecraft.chests.serialize.LinkedChest;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.OfflinePlayer;
+import org.bukkit.Sound;
 import org.bukkit.block.*;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -14,10 +17,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 public class Config {
 
-    static LinkedChest store;
+    private static LinkedChest store;
 
     public Config(){
         try {
@@ -38,6 +42,15 @@ public class Config {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public static List<InventoryStorage> getInventoryStorageMemberOf(Player player){
+        return store.chests.entrySet().stream().flatMap(map -> map.getValue().values().stream().filter(storage -> {
+            if(storage.isPublic()) return false;
+            if(storage.getOwner().getUniqueId().equals(player.getUniqueId())) return false;
+            if(storage.getMembers() == null) return false;
+            return storage.getMembers().stream().anyMatch(p -> p.getUniqueId().equals(player.getUniqueId()));
+        })).collect(Collectors.toList());
     }
 
     public static HashMap<String, InventoryStorage> getInventoryStorageMap(UUID playerUUID){
@@ -70,13 +83,13 @@ public class Config {
         return null;
     }
 
-    public static void addChest(Player player, String identifier, Location chestLocation){
+    public static void addChest(Player player, String identifier, Location chestLocation, OfflinePlayer owner){
         //List of groups this player has.
-        HashMap<String, InventoryStorage> map = getInventoryStorageMap(player.getUniqueId());
+        HashMap<String, InventoryStorage> map = getInventoryStorageMap(owner.getUniqueId());
 
         //Get Inventory Storage for the given group or create it if it doesnt exist.
         if(!map.containsKey(identifier)){
-            InventoryStorage storage = new InventoryStorage(player,identifier,chestLocation);
+            InventoryStorage storage = new InventoryStorage(owner,identifier,chestLocation);
             map.put(identifier, storage);
         }
         InventoryStorage inventoryStorage = map.get(identifier);
@@ -101,6 +114,7 @@ public class Config {
         if(!inventoryStorage.getLocations().contains(chestLocation)){
             inventoryStorage.getLocations().add(chestLocation);
         }
+        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP,1.0f,1f);
         save();
     }
 
@@ -136,8 +150,8 @@ public class Config {
         save();
     }
 
-    public static InventoryStorage removeChest(Player player, String identifier, Location chestLocation){
-        return removeChest(getInventoryStorageMap(player.getUniqueId()).get(identifier),chestLocation);
+    public static InventoryStorage removeChest(OfflinePlayer owner, String identifier, Location chestLocation){
+        return removeChest(getInventoryStorageMap(owner.getUniqueId()).get(identifier),chestLocation);
     }
 
     public static InventoryStorage removeChest(Location chestLocation){
@@ -160,6 +174,37 @@ public class Config {
             });
         });
         return total.get();
+    }
+
+    public static InventoryStorage getInventoryStorage(Player member, String playerChestID){
+        if(playerChestID.contains(":")) {
+            String[] args = playerChestID.split(":");
+            String playerName = args[0];
+            String chestlinkID = args[1];
+            Optional<InventoryStorage> invStorage = getInventoryStorageMemberOf(member).stream().filter(storage -> {
+                if (storage.getOwner().getName().equals(playerName) && storage.getIdentifier().equals(chestlinkID)) return true;
+                return false;
+            }).findFirst();
+            if(invStorage.isPresent()) return invStorage.get();
+        }
+        return null;
+    }
+
+    public static OfflinePlayer getOfflinePlayer(String name){
+        for(String uuid : store.chests.keySet()){
+            OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(UUID.fromString(uuid));
+            if(offlinePlayer.getName() != null && offlinePlayer.getName().equals(name)) return offlinePlayer;
+        }
+        return null;
+    }
+
+    public static void renameInventoryStorage(Player player, String oldIdentifier, String newIdentifier){
+        HashMap<String,InventoryStorage> map = getInventoryStorageMap(player.getUniqueId());
+        InventoryStorage storage = map.get(oldIdentifier);
+        storage.rename(newIdentifier);
+        map.remove(oldIdentifier);
+        map.put(newIdentifier,storage);
+        save();
     }
 
 }

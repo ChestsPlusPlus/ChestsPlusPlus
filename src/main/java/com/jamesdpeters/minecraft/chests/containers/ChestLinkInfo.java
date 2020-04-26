@@ -3,6 +3,7 @@ package com.jamesdpeters.minecraft.chests.containers;
 import com.jamesdpeters.minecraft.chests.misc.Config;
 import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
 import java.util.UUID;
@@ -11,7 +12,7 @@ public class ChestLinkInfo {
 
     private String group;
     private UUID playerUUID;
-    private Player player;
+    private OfflinePlayer player;
     private InventoryStorage storage;
 
     public ChestLinkInfo(String playerUUID, String group){
@@ -21,7 +22,7 @@ public class ChestLinkInfo {
     public ChestLinkInfo(UUID playerUUID, String group){
         this.group = group;
         this.storage = Config.getInventoryStorage(playerUUID,group);
-        this.player = Bukkit.getOfflinePlayer(playerUUID).getPlayer();
+        this.player = Bukkit.getOfflinePlayer(playerUUID);
         this.playerUUID = playerUUID;
     }
 
@@ -33,7 +34,7 @@ public class ChestLinkInfo {
         return playerUUID;
     }
 
-    public Player getPlayer() {
+    public OfflinePlayer getPlayer() {
         return player;
     }
 

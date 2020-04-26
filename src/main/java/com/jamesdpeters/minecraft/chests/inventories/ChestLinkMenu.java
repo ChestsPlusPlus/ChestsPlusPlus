@@ -9,6 +9,7 @@ import fr.minuskube.inv.SmartInventory;
 import fr.minuskube.inv.content.InventoryContents;
 import fr.minuskube.inv.content.InventoryProvider;
 import fr.minuskube.inv.content.Pagination;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -53,6 +54,11 @@ public class ChestLinkMenu implements InventoryProvider {
         Pagination pagination = contents.pagination();
         List<ClickableItem> itemList = new ArrayList<>();
         for(InventoryStorage storage : storages){
+            ClickableItem item = storage.getClickableItem(player);
+            itemList.add(item);
+        }
+        List<InventoryStorage> memberOfStorage = Config.getInventoryStorageMemberOf(player);
+        for(InventoryStorage storage : memberOfStorage){
             ClickableItem item = storage.getClickableItem(player);
             itemList.add(item);
         }

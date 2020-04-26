@@ -90,4 +90,9 @@ public class Messages {
             }
         }
     }
+
+    public static void INVALID_CHESTID(Player target){
+        target.sendMessage(ChatColor.RED+"Invalid ChestLink ID! Must not contain a colon ':' unless you are referencing another players group that you are a member off");
+        target.sendMessage(ChatColor.RED+"/chestlink add <owner>:<group>");
+    }
 }

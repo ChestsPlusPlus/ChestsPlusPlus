@@ -32,7 +32,6 @@ public class InventoryListener implements Listener {
                 if (event.getInventory().getLocation() != null) {
                     InventoryStorage storage = Config.getInventoryStorage(event.getInventory().getLocation());
                     if (storage != null) {
-
                         event.setCancelled(true);
                         if (event.getPlayer().hasPermission(Permissions.OPEN) && storage.hasPermission((Player) event.getPlayer())) {
                             Utils.openInventory((Player) event.getPlayer(), storage.getInventory());

@@ -1,26 +1,27 @@
 package com.jamesdpeters.minecraft.chests.serialize;
 
 
-import com.jamesdpeters.minecraft.chests.commands.RemoteChestCommand;
 import com.jamesdpeters.minecraft.chests.misc.Config;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.interfaces.VirtualInventoryHolder;
 import com.jamesdpeters.minecraft.chests.runnables.VirtualChestToHopper;
+import com.jamesdpeters.minecraft.chests.sort.InventorySorter;
+import com.jamesdpeters.minecraft.chests.sort.SortMethod;
 import fr.minuskube.inv.ClickableItem;
 import org.bukkit.*;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.Chest;
+import org.bukkit.block.Sign;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.material.Directional;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class InventoryStorage implements ConfigurationSerializable {
 
@@ -30,22 +31,10 @@ public class InventoryStorage implements ConfigurationSerializable {
     List<OfflinePlayer> bukkitMembers;
     String inventoryName = "Chest";
     VirtualChestToHopper chestToHopper;
-    Player player;
+    OfflinePlayer player;
     UUID playerUUID;
     boolean isPublic;
-    SORT_METHOD sortMethod = SORT_METHOD.OFF;
-
-    public enum SORT_METHOD {
-        OFF,
-        ID,
-        AMOUNT;
-
-        public static List<String> valuesList;
-
-        static {
-            valuesList = Stream.of(SORT_METHOD.values()).map(SORT_METHOD::toString).collect(Collectors.toList());
-        }
-    }
+    SortMethod sortMethod = SortMethod.OFF;
 
     @Override
     public Map<String, Object> serialize() {
@@ -73,10 +62,10 @@ public class InventoryStorage implements ConfigurationSerializable {
         locationsList.removeAll(Collections.singletonList(null));
 
         playerUUID = UUID.fromString((String) map.get("playerUUID"));
-        player = Bukkit.getOfflinePlayer(playerUUID).getPlayer();
+        player = Bukkit.getOfflinePlayer(playerUUID);
 
         if(map.containsKey("isPublic")) isPublic = (boolean) map.get("isPublic");
-        if(map.containsKey("sortMethod")) sortMethod = Enum.valueOf(SORT_METHOD.class, (String) map.get("sortMethod"));
+        if(map.containsKey("sortMethod")) sortMethod = Enum.valueOf(SortMethod.class, (String) map.get("sortMethod"));
 
 
         if(map.get("members") != null){
@@ -90,12 +79,12 @@ public class InventoryStorage implements ConfigurationSerializable {
         init();
     }
 
-    public InventoryStorage(Player player, String group, Location location){
+    public InventoryStorage(OfflinePlayer player, String group, Location location){
         this.inventoryName = group;
         this.player = player;
         this.playerUUID = player.getUniqueId();
         this.isPublic = false;
-        this.sortMethod = SORT_METHOD.OFF;
+        this.sortMethod = SortMethod.OFF;
         locationsList = new ArrayList<>(Collections.singleton(location));
 
         Block block = location.getBlock();
@@ -141,7 +130,7 @@ public class InventoryStorage implements ConfigurationSerializable {
         return inventoryName;
     }
 
-    public Player getOwner() {
+    public OfflinePlayer getOwner() {
         return player;
     }
 
@@ -150,7 +139,7 @@ public class InventoryStorage implements ConfigurationSerializable {
         return inventoryName+": "+locationsList.toString();
     }
 
-    public ItemStack getIventoryIcon(){
+    public ItemStack getIventoryIcon(Player player){
         ItemStack toReturn = null;
         for(ItemStack item : inventory.getContents()){
             if(item != null){
@@ -161,7 +150,10 @@ public class InventoryStorage implements ConfigurationSerializable {
 
         ItemMeta meta = toReturn.getItemMeta();
         if(meta != null) {
-            meta.setDisplayName(ChatColor.BOLD + "" + ChatColor.GREEN + "" + getIdentifier() + ": " +ChatColor.WHITE+ ""+getTotalItems()+" items");
+            String dispName = ChatColor.GREEN + "" + getIdentifier() + ": " +ChatColor.WHITE+ ""+getTotalItems()+" items";
+            if(player.getUniqueId().equals(playerUUID)) meta.setDisplayName(dispName);
+            else meta.setDisplayName(getOwner().getName()+": "+dispName);
+
             if(getMembers() != null) {
                 List<String> memberNames = new ArrayList<>();
                 if(isPublic) memberNames.add(ChatColor.WHITE+"Public Chest");
@@ -176,7 +168,7 @@ public class InventoryStorage implements ConfigurationSerializable {
     }
 
     public ClickableItem getClickableItem(Player player) {
-        return ClickableItem.from(getIventoryIcon(), event -> {
+        return ClickableItem.from(getIventoryIcon(player), event -> {
             Utils.openInventory(player,getInventory());
         });
     }
@@ -217,6 +209,24 @@ public class InventoryStorage implements ConfigurationSerializable {
         return false;
     }
 
+    public void rename(String newIdentifier){
+        this.inventoryName = newIdentifier;
+        ItemStack[] items = inventory.getContents();
+        inventory = initInventory();
+        inventory.setContents(items);
+        locationsList.forEach(location -> {
+            Block block = location.getBlock();
+            if(block.getBlockData() instanceof org.bukkit.block.data.type.Chest) {
+                org.bukkit.block.data.type.Chest chest = (org.bukkit.block.data.type.Chest) block.getBlockData();
+                BlockFace blockFace = chest.getFacing();
+                Block signBlock = block.getRelative(blockFace);
+                Sign sign = (Sign) signBlock.getState();
+                sign.setLine(1,ChatColor.GREEN + ChatColor.stripColor("[" + newIdentifier + "]"));
+                sign.update();
+            }
+        });
+    }
+
     public List<OfflinePlayer> getMembers(){
         return bukkitMembers;
     }
@@ -239,24 +249,11 @@ public class InventoryStorage implements ConfigurationSerializable {
         return isPublic;
     }
 
-    public void setSortMethod(SORT_METHOD sortMethod){
+    public void setSortMethod(SortMethod sortMethod){
         this.sortMethod = sortMethod;
     }
 
     public void sort(){
-//        switch (sortMethod){
-//            case OFF: return;
-//            case ID: {
-//                ItemStack[] sorted = inventory.getContents();
-//                Arrays.sort(sorted, (item1, item2) -> {
-//                            if(item1 == null) return 1;
-//                            if(item2 == null) return -1;
-//                            else {
-//                                return item1.getType().getKey().getKey().compareTo(item2.getType().getKey().getKey());
-//                            }
-//                        });
-//                inventory.setContents(sorted);
-//            }
-//        }
+        InventorySorter.sort(inventory, sortMethod);
     }
 }

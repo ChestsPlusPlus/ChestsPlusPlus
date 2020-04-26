@@ -4,6 +4,7 @@ import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.containers.ChestLinkInfo;
 import com.jamesdpeters.minecraft.chests.runnables.ChestLinkVerifier;
 import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
+import com.jamesdpeters.minecraft.chests.sort.InventorySorter;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.*;
 import org.bukkit.block.*;
@@ -25,19 +26,6 @@ import java.util.stream.Collectors;
 
 public class Utils {
 
-//    public static String[] getChestLinkInfo(String[] lines){
-//        if(lines.length < 2){
-//            return null;
-//        }
-//        if(lines[0].contains(Values.signTag)) {
-//            String id = StringUtils.substringBetween(lines[1], "[", "]");
-//            String username = ChatColor.stripColor(lines[2]);
-//            return new String[]{id,username};
-//        }
-//        return null;
-//    }
-
-
     public static ChestLinkInfo getChestLinkInfo(Sign sign){ return getChestLinkInfo(sign,sign.getLines());}
 
     public static ChestLinkInfo getChestLinkInfo(Sign sign, String[] lines){
@@ -49,7 +37,16 @@ public class Utils {
             if (lines.length >= 2 && lines[0].contains(Values.signTag)) {
                 String playerUUID = sign.getPersistentDataContainer().get(Values.playerUUID, PersistentDataType.STRING);
                 String group = ChatColor.stripColor(StringUtils.substringBetween(lines[1], "[", "]"));
-                if(playerUUID == null) playerUUID = uuid.toString();
+                if(playerUUID == null){
+                    playerUUID = uuid.toString();
+                    if(lines[2] != null){
+                        OfflinePlayer owner = Config.getOfflinePlayer(lines[2]);
+                        if(owner != null){
+                            InventoryStorage storage = Config.getInventoryStorage(owner.getUniqueId(),group);
+                            if(storage.hasPermission(Bukkit.getPlayer(uuid))) playerUUID = owner.getUniqueId().toString();
+                        }
+                    }
+                }
                 return new ChestLinkInfo(playerUUID, group);
             }
         }
@@ -157,17 +154,38 @@ public class Utils {
                         }
                     }
 
+                    String uuid, group, owner = null;
+                    if(identifier.contains(":")){
+                        String[] args = identifier.split(":");
+                        owner = args[0];
+                        group = args[1];
+                        OfflinePlayer ownerPlayer = Config.getOfflinePlayer(owner);
+                        if(ownerPlayer != null){
+                            uuid = ownerPlayer.getUniqueId().toString();
+                        } else {
+                            Messages.INVALID_CHESTID(player);
+                            return;
+                        }
+                    } else {
+                        group = identifier;
+                        uuid = player.getUniqueId().toString();
+                    }
+
+
+                    String[] lines = new String[4];
+                    lines[0] = Values.signTag;
+                    lines[1] = Values.identifier(group);
+                    if(owner != null) {
+                        lines[2] = owner;
+                    }
+
                     toReplace.setType(Material.OAK_WALL_SIGN);
                     Sign sign = (Sign) toReplace.getState();
                     WallSign signBlockData = (WallSign) sign.getBlockData();
                     signBlockData.setFacing(facing);
                     sign.setBlockData(signBlockData);
-                    sign.getPersistentDataContainer().set(Values.playerUUID, PersistentDataType.STRING, player.getUniqueId().toString());
+                    sign.getPersistentDataContainer().set(Values.playerUUID, PersistentDataType.STRING, uuid);
                     sign.update();
-
-                    String[] lines = new String[4];
-                    lines[0] = Values.signTag;
-                    lines[1] = Values.identifier(identifier);
 
                     BlockPlaceEvent event = new BlockPlaceEvent(sign.getBlock(),replacedBlockState,block,new ItemStack(Material.AIR),player,true, EquipmentSlot.HAND);
                     ChestsPlusPlus.PLUGIN.getServer().getPluginManager().callEvent(event);
@@ -270,4 +288,16 @@ public class Utils {
     public static List<String> getInventoryStorageList(Player player){
         return Config.getInventoryStorageMap(player.getUniqueId()).values().stream().map(InventoryStorage::getIdentifier).collect(Collectors.toList());
     }
+
+    public static List<String> getInvetoryStorageOpenableList(Player player){
+        List<String> playerList = getInventoryStorageList(player);
+        List<String> memberList = Config.getInventoryStorageMemberOf(player).stream().map(storage -> storage.getOwner().getName()+":"+storage.getIdentifier()).collect(Collectors.toList());
+        playerList.addAll(memberList);
+        return playerList;
+    }
+
+    public static boolean validateChestID(String id){
+        return !id.contains(":");
+    }
+
 }

@@ -1,7 +1,7 @@
 name: ChestsPlusPlus
 version: 1.15 v1.3
 main: com.jamesdpeters.minecraft.chests.ChestsPlusPlus
-api-version: "1.15"
+api-version: "1.14"
 
 commands:
   chestlink:
