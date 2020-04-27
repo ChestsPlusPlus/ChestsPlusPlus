@@ -1,12 +1,9 @@
 package com.jamesdpeters.minecraft.chests.misc;
 
+import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
 import org.bukkit.ChatColor;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
-
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 
 public class Messages {
 

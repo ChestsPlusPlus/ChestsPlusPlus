@@ -1,7 +1,7 @@
 package com.jamesdpeters.minecraft.chests.runnables;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
-import com.jamesdpeters.minecraft.chests.misc.Config;
+import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
 import org.bukkit.Location;
 import org.bukkit.block.Block;

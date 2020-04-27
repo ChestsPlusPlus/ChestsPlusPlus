@@ -4,7 +4,7 @@ import com.jamesdpeters.minecraft.chests.commands.RemoteChestCommand;
 import com.jamesdpeters.minecraft.chests.listeners.ChestLinkListener;
 import com.jamesdpeters.minecraft.chests.listeners.HopperListener;
 import com.jamesdpeters.minecraft.chests.listeners.InventoryListener;
-import com.jamesdpeters.minecraft.chests.misc.Config;
+import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Settings;
 import com.jamesdpeters.minecraft.chests.misc.Stats;
@@ -37,7 +37,7 @@ import org.bukkit.plugin.java.annotation.plugin.author.Author;
 @Permission(name = Permissions.OPEN, desc = "Gives permission to open ChestLinks!", defaultValue = PermissionDefault.TRUE)
 @Permission(name = Permissions.MENU, desc = "Gives permission to open the ChestLink menu!", defaultValue = PermissionDefault.TRUE)
 @Permission(name = Permissions.REMOVE, desc = "Gives permission to remove a ChestLink!", defaultValue = PermissionDefault.TRUE)
-@Permission(name = Permissions.OPEN_ANY, desc = "Gives permission to open all chests, for admin use.", defaultValue = PermissionDefault.OP)
+@Permission(name = Permissions.OPEN_ANY, desc = "Gives permission to open all chests, for admin use.", defaultValue = PermissionDefault.FALSE)
 @Permission(name = Permissions.MEMBER, desc = "Gives permission to add/remove a member to/from their chestlink.", defaultValue = PermissionDefault.TRUE)
 @Permission(name = Permissions.SORT, desc = "Set the sorting option for the given ChestLink.", defaultValue = PermissionDefault.TRUE)
 public class ChestsPlusPlus extends JavaPlugin {

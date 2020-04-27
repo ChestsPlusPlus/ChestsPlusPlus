@@ -1,7 +1,7 @@
 package com.jamesdpeters.minecraft.chests.commands;
 
 import com.jamesdpeters.minecraft.chests.inventories.ChestLinkMenu;
-import com.jamesdpeters.minecraft.chests.misc.Config;
+import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.misc.Messages;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
@@ -14,7 +14,6 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import javax.swing.*;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;

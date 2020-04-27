@@ -2,16 +2,16 @@ package com.jamesdpeters.minecraft.chests.misc;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.containers.ChestLinkInfo;
+import com.jamesdpeters.minecraft.chests.filters.Filter;
+import com.jamesdpeters.minecraft.chests.filters.HopperFilter;
 import com.jamesdpeters.minecraft.chests.runnables.ChestLinkVerifier;
+import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
-import com.jamesdpeters.minecraft.chests.sort.InventorySorter;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.*;
 import org.bukkit.block.*;
 import org.bukkit.block.data.Directional;
 import org.bukkit.block.data.type.WallSign;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.SignChangeEvent;
@@ -100,11 +100,11 @@ public class Utils {
         //player.closeInventory();
     }
 
-    public static ItemStack removeStackFromInventory(Inventory inventory, int amount, List<ItemStack> filters){
+    public static ItemStack removeStackFromInventory(Inventory inventory, int amount, List<Filter> filters){
         ItemStack toRemove;
         for(int i=0; i<inventory.getContents().length;  i++){
             ItemStack stack = inventory.getItem(i);
-            if((stack != null) && (isInFilter(filters,stack))){
+            if((stack != null) && (HopperFilter.isInFilter(filters,stack))){
                 toRemove = stack.clone();
                 toRemove.setAmount(Math.min(stack.getAmount(),amount));
                 stack.setAmount(stack.getAmount()-toRemove.getAmount());
@@ -114,7 +114,7 @@ public class Utils {
         return null;
     }
 
-    public static boolean moveToOtherInventory(Inventory from, int amount, Inventory to, List<ItemStack> filters){
+    public static boolean moveToOtherInventory(Inventory from, int amount, Inventory to, List<Filter> filters){
         ItemStack removed = removeStackFromInventory(from,amount,filters);
         if(removed != null) {
             HashMap<Integer, ItemStack> leftOvers = to.addItem(removed);
@@ -203,49 +203,26 @@ public class Utils {
         }
     }
 
-    public static List<ItemStack> hasFilter(Block block){
-        List<ItemStack> filters = new ArrayList<>();
-        addIfNotNull(filters,getFilter(block,1,0));
-        addIfNotNull(filters,getFilter(block,-1,0));
-        addIfNotNull(filters,getFilter(block,0,1));
-        addIfNotNull(filters,getFilter(block,0,-1));
-        return filters;
-    }
-
-    private static ItemStack getFilter(Block block, int xOffset, int zOffset){
-        Block frame = block.getRelative(xOffset, 0,zOffset);
-        if(frame.getState() instanceof ItemFrame){
-            return ((ItemFrame) frame.getState()).getItem();
-        }
-        return null;
-    }
-
-    private static <T> void addIfNotNull(List<T> list, T element){
-        if(element != null) list.add(element);
-    }
-
-    public static boolean isInFilter(List<ItemStack> filters, ItemStack item){
-        if(filters == null) return true;
-        if(filters.size() == 0) return true;
-        for(ItemStack filter : filters){
-            if(filter.isSimilar(item)) return true;
-        }
-        return false;
-    }
-
-    public static List<ItemStack> getHopperFilters(Block block){
-        Collection<Entity> ent = block.getLocation().getWorld().getNearbyEntities(block.getLocation(),1.01,1.01,1.01);
-        List<ItemStack> filters = new ArrayList<>();
-        for(Entity frame : ent){
-            if(frame instanceof ItemFrame){
-                Block attachedBlock = frame.getLocation().getBlock().getRelative(((ItemFrame) frame).getAttachedFace());
-                if(block.equals(attachedBlock)){
-                    filters.add(((ItemFrame) frame).getItem());
-                }
-            }
-        }
-        return filters;
-    }
+//    public static List<ItemStack> hasFilter(Block block){
+//        List<ItemStack> filters = new ArrayList<>();
+//        addIfNotNull(filters,getFilter(block,1,0));
+//        addIfNotNull(filters,getFilter(block,-1,0));
+//        addIfNotNull(filters,getFilter(block,0,1));
+//        addIfNotNull(filters,getFilter(block,0,-1));
+//        return filters;
+//    }
+//
+//    private static ItemStack getFilter(Block block, int xOffset, int zOffset){
+//        Block frame = block.getRelative(xOffset, 0,zOffset);
+//        if(frame.getState() instanceof ItemFrame){
+//            return ((ItemFrame) frame.getState()).getItem();
+//        }
+//        return null;
+//    }
+//
+//    private static <T> void addIfNotNull(List<T> list, T element){
+//        if(element != null) list.add(element);
+//    }
 
     public static ItemStack getNamedItem(ItemStack item, String name){
         ItemMeta meta = item.getItemMeta();

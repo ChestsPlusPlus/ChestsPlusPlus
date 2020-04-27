@@ -1,6 +1,7 @@
 package com.jamesdpeters.minecraft.chests.runnables;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
+import com.jamesdpeters.minecraft.chests.filters.HopperFilter;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
 import org.bukkit.Location;
@@ -35,7 +36,7 @@ public class VirtualChestToHopper extends BukkitRunnable {
                     if(below.getBlock().isBlockIndirectlyPowered()|| below.getBlock().isBlockPowered()){
                         continue;
                     }
-                    Utils.moveToOtherInventory(storage.getInventory(), 1, hopper.getInventory(), Utils.getHopperFilters(below.getBlock()));
+                    Utils.moveToOtherInventory(storage.getInventory(), 1, hopper.getInventory(), HopperFilter.getHopperFilters(below.getBlock()));
                     storage.sort();
                 }
             }

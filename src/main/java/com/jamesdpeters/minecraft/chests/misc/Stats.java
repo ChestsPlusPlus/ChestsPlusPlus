@@ -1,9 +1,7 @@
 package com.jamesdpeters.minecraft.chests.misc;
 
+import com.jamesdpeters.minecraft.chests.serialize.Config;
 import org.bstats.bukkit.Metrics;
-import org.bukkit.Bukkit;
-
-import java.util.concurrent.Callable;
 
 public class Stats {
 

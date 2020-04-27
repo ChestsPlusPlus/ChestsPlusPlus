@@ -3,6 +3,7 @@ package com.jamesdpeters.minecraft.chests.listeners;
 import com.jamesdpeters.minecraft.chests.containers.ChestLinkInfo;
 import com.jamesdpeters.minecraft.chests.misc.*;
 import com.jamesdpeters.minecraft.chests.runnables.ChestLinkVerifier;
+import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
 import org.bukkit.ChatColor;
 import org.bukkit.block.Block;

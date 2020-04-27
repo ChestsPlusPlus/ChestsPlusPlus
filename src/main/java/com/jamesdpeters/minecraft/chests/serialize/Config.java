@@ -1,6 +1,9 @@
-package com.jamesdpeters.minecraft.chests.misc;
+package com.jamesdpeters.minecraft.chests.serialize;
 
+import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.containers.ChestLinkInfo;
+import com.jamesdpeters.minecraft.chests.misc.Messages;
+import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
 import com.jamesdpeters.minecraft.chests.serialize.LinkedChest;
 import org.bukkit.Bukkit;
@@ -12,6 +15,8 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitScheduler;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,26 +27,33 @@ import java.util.stream.Collectors;
 public class Config {
 
     private static LinkedChest store;
+    private static FileConfiguration config;
 
     public Config(){
         try {
-            FileConfiguration configuration = YamlConfiguration.loadConfiguration(new File("chests.yml"));
-            store = (LinkedChest) configuration.get("chests++", new HashMap<String, HashMap<String, List<Location>>>());
+            config = YamlConfiguration.loadConfiguration(new File("chests.yml"));
+            store = (LinkedChest) config.get("chests++", new HashMap<String, HashMap<String, List<Location>>>());
         } catch (Exception e){
             store = new LinkedChest();
             save();
         }
     }
 
-    public static void save(){
-        FileConfiguration config = new YamlConfiguration();
-
-        config.set("chests++", store);
-        try {
-            config.save("chests.yml");
-        } catch (IOException e) {
-            e.printStackTrace();
+    private static BukkitRunnable saveRunnable = new BukkitRunnable(){
+        @Override
+        public void run() {
+            if(config == null) config = new YamlConfiguration();
+            config.set("chests++", store);
+            try{
+                config.save("chests.yml");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
+    };
+
+    public static void save(){
+        saveRunnable.runTaskAsynchronously(ChestsPlusPlus.PLUGIN);
     }
 
     public static List<InventoryStorage> getInventoryStorageMemberOf(Player player){

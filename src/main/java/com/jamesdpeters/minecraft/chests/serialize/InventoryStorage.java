@@ -3,7 +3,6 @@ package com.jamesdpeters.minecraft.chests.serialize;
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.interfaces.VirtualInventoryHolder;
 import com.jamesdpeters.minecraft.chests.inventories.ChestLinkMenu;
-import com.jamesdpeters.minecraft.chests.misc.Config;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.runnables.VirtualChestToHopper;
@@ -150,10 +149,10 @@ public class InventoryStorage implements ConfigurationSerializable {
     }
 
     public ItemStack getIventoryIcon(Player player){
-        Material mostCommon = InventorySorter.getMostCommonItem(inventory);
+        ItemStack mostCommon = InventorySorter.getMostCommonItem(inventory);
         ItemStack toReturn;
         if(mostCommon == null) toReturn = new ItemStack(Material.CHEST);
-        else toReturn = new ItemStack(mostCommon);
+        else toReturn = mostCommon.clone();
 
         ItemMeta meta = toReturn.getItemMeta();
         if(meta != null) {

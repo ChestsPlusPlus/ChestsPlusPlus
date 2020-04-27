@@ -1,23 +1,23 @@
 package com.jamesdpeters.minecraft.chests.listeners;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
-import com.jamesdpeters.minecraft.chests.misc.Config;
+import com.jamesdpeters.minecraft.chests.filters.HopperFilter;
+import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
-import org.bukkit.Material;
+import org.bukkit.ChatColor;
+import org.bukkit.Rotation;
 import org.bukkit.block.Block;
 import org.bukkit.block.Hopper;
-import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryPickupItemEvent;
-import org.bukkit.inventory.ItemStack;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.scheduler.BukkitRunnable;
-
-import java.util.Collection;
 
 public class HopperListener implements Listener {
 
@@ -28,7 +28,7 @@ public class HopperListener implements Listener {
             if(event.getDestination().getLocation() != null){
                 if(event.getDestination().getLocation().getBlock().isBlockPowered()) return;
             }
-            event.setCancelled(!isItemInFilter(event.getDestination().getLocation().getBlock(),event.getItem()));
+            event.setCancelled(!HopperFilter.isInFilter(event.getDestination().getLocation().getBlock(),event.getItem()));
         }
     }
 
@@ -56,27 +56,50 @@ public class HopperListener implements Listener {
     @EventHandler
     public void onHopperPickup(InventoryPickupItemEvent event){
         if(event.getInventory().getHolder() instanceof Hopper){
-            event.setCancelled(!isItemInFilter(event.getInventory().getLocation().getBlock(),event.getItem().getItemStack()));
+            event.setCancelled(!HopperFilter.isInFilter(event.getInventory().getLocation().getBlock(), event.getItem().getItemStack()));
         }
     }
 
-    public static boolean isItemInFilter(Block block, ItemStack item){
-        Collection<Entity> ent = block.getLocation().getWorld().getNearbyEntities(block.getLocation(),1.01,1.01,1.01);
-        boolean hasFilter = false;
-        for(Entity frame : ent){
-            if(frame instanceof ItemFrame){
-                Block attachedBlock = frame.getLocation().getBlock().getRelative(((ItemFrame) frame).getAttachedFace());
-                if(block.equals(attachedBlock)){
-                    if(((ItemFrame) frame).getItem().getType() != Material.AIR) hasFilter = true;
-                    if(item.isSimilar(((ItemFrame) frame).getItem())){
-                        return true;
-                    }
-                }
+    @EventHandler
+    public void itemFrameInteract(PlayerInteractEntityEvent event){
+        if(event.getRightClicked().getType().equals(EntityType.ITEM_FRAME)){
+            ItemFrame itemFrame = (ItemFrame) event.getRightClicked();
+            Block attachedBlock = itemFrame.getLocation().getBlock().getRelative(((ItemFrame) itemFrame).getAttachedFace());
+            if(!(attachedBlock.getState() instanceof Hopper)) return;
+            Rotation rotation = itemFrame.getRotation().rotateClockwise();
+            if(rotation.equals(Rotation.FLIPPED)){
+                event.getPlayer().sendMessage(ChatColor.AQUA+"ItemFrame now filters all types of this item! e.g Enchanted Books.");
+            } else if(rotation.equals(Rotation.FLIPPED_45)) {
+                event.getPlayer().sendMessage(ChatColor.GREEN+"ItemFrame is in default filtering mode.");
             }
         }
-        if(!hasFilter) return true;
-        return false;
     }
+
+//    public static boolean isItemInFilter(Block block, ItemStack item){
+//        Bukkit.broadcastMessage("Cheking item: "+item.getType().name());
+//        Collection<Entity> ent = block.getLocation().getWorld().getNearbyEntities(block.getLocation(),1.01,1.01,1.01);
+//        boolean hasFilter = false;
+//        for(Entity entity : ent){
+//            if(entity instanceof ItemFrame){
+//                ItemFrame frame = (ItemFrame) entity;
+//                Block attachedBlock = frame.getLocation().getBlock().getRelative(frame.getAttachedFace());
+//                if(block.equals(attachedBlock)){
+//                    ItemStack itemStack = frame.getItem();
+//                    Bukkit.broadcastMessage("Item Filter!");
+//                    if(itemStack.getType() != Material.AIR) hasFilter = true;
+//                    if(item.isSimilar(itemStack)){
+//                        return true;
+//                    }
+//                    Rotation rotation = frame.getRotation();
+//                    Bukkit.broadcastMessage("Frame rotation: "+rotation.toString());
+//                    if(rotation.equals(Rotation.FLIPPED)){
+//                        if(item.getType().equals(itemStack.getType())) return true;
+//                    }
+//                }
+//            }
+//        }
+//        return !hasFilter;
+//    }
 
 
 

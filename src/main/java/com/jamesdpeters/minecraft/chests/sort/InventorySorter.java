@@ -1,12 +1,14 @@
 package com.jamesdpeters.minecraft.chests.sort;
 
-import org.bukkit.Material;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.*;
-
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 public class InventorySorter {
 
@@ -38,14 +40,19 @@ public class InventorySorter {
 
     private static void sortByAmount(Inventory inventory, boolean descending){
 
-        HashMap<Material,Integer> itemAmounts = getItemAmounts(inventory.getContents());
+        HashMap<ItemStack,Integer> itemAmounts = getItemAmounts(inventory.getContents());
         List<ItemStack> condensed = condenseInventory(inventory.getContents());
 
         condensed.sort((item1, item2) -> {
             if (item1 == null) return 1;
             if (item2 == null) return -1;
 
-            int itemOrder = itemAmounts.get(item1.getType()).compareTo(itemAmounts.get(item2.getType()));
+            Optional<ItemStack> matchItem1 = itemAmounts.keySet().stream().filter(is -> is.isSimilar(item1)).findFirst();
+            Optional<ItemStack> matchItem2 = itemAmounts.keySet().stream().filter(is -> is.isSimilar(item2)).findFirst();
+            if(!matchItem1.isPresent()) return 1;
+            if(!matchItem2.isPresent()) return -1;
+
+            int itemOrder = itemAmounts.get(matchItem1.get()).compareTo(itemAmounts.get(matchItem2.get()));
             if(descending) itemOrder *= -1;
             return itemOrder;
         });
@@ -53,45 +60,53 @@ public class InventorySorter {
         inventory.setContents(itemStacks);
     }
 
-    private static HashMap<Material,Integer> getItemAmounts(ItemStack[] itemStacks){
-        HashMap<Material,Integer> itemAmounts = new HashMap<>();
+    private static HashMap<ItemStack,Integer> getItemAmounts(ItemStack[] itemStacks){
+        HashMap<ItemStack,Integer> itemAmounts = new HashMap<>();
         for(ItemStack itemStack : itemStacks){
             if(itemStack == null) continue;
             int amount;
-            if(!itemAmounts.containsKey(itemStack.getType())){
+            Optional<ItemStack> match = itemAmounts.keySet().stream().filter(is -> is.isSimilar(itemStack)).findFirst();
+            if(!match.isPresent()){
                 amount = itemStack.getAmount();
+                itemAmounts.put(itemStack,amount);
             } else {
-                amount = itemAmounts.get(itemStack.getType()) + itemStack.getAmount();
+                amount = itemAmounts.get(match.get()) + itemStack.getAmount();
+                itemAmounts.put(match.get(), amount);
             }
-            itemAmounts.put(itemStack.getType(),amount);
         }
         return itemAmounts;
     }
 
     private static List<ItemStack> condenseInventory(ItemStack[] itemStacks){
-        HashMap<Material,Integer> itemAmounts = getItemAmounts(itemStacks);
+        HashMap<ItemStack,Integer> itemAmounts = getItemAmounts(itemStacks);
         return condenseInventory(itemAmounts);
     }
 
-    private static List<ItemStack> condenseInventory(HashMap<Material,Integer> itemAmounts){
+    private static List<ItemStack> condenseInventory(HashMap<ItemStack,Integer> itemAmounts){
         List<ItemStack> condensedItems = new ArrayList<>();
-        itemAmounts.forEach((material, amount) -> {
-            int maxStack = material.getMaxStackSize();
+        itemAmounts.forEach((itemStack, amount) -> {
+            int maxStack = itemStack.getMaxStackSize();
             int amountOfMaxStacks = amount/maxStack;
             int remainder = amount % maxStack;
 
             for(int i=0; i<amountOfMaxStacks; i++){
-                condensedItems.add(new ItemStack(material,maxStack));
+                condensedItems.add(cloneItem(itemStack,maxStack));
             }
-            if(remainder != 0) condensedItems.add(new ItemStack(material,remainder));
+            if(remainder != 0) condensedItems.add(cloneItem(itemStack,remainder));
         });
         return condensedItems;
     }
 
-    public static Material getMostCommonItem(Inventory inventory){
+    public static ItemStack getMostCommonItem(Inventory inventory){
         return getItemAmounts(inventory.getContents()).entrySet().stream()
                 .max(Comparator.comparing(Map.Entry::getValue))
                 .map(Map.Entry::getKey)
                 .orElse(null);
+    }
+
+    private static ItemStack cloneItem(ItemStack itemStack, int newAmount){
+        ItemStack item = itemStack.clone();
+        item.setAmount(newAmount);
+        return item;
     }
 }
