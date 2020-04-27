@@ -51,6 +51,7 @@ public class ChestsPlusPlus extends JavaPlugin {
         ConfigurationSerialization.registerClass(InventoryStorage.class, "InventoryStorage");
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Override
     public void onEnable() {
         int pluginId = 7166;
@@ -70,7 +71,10 @@ public class ChestsPlusPlus extends JavaPlugin {
         INVENTORY_MANAGER = new InventoryManager(this);
         INVENTORY_MANAGER.init();
 
-        if(Settings.isUpdateCheckEnabled()) {
+        boolean isDev = BuildConstants.VERSION.contains("DEV");
+        if(isDev) getLogger().warning("You are currently running a Dev build - update checker disabled! Build: "+BuildConstants.VERSION);
+
+        if(Settings.isUpdateCheckEnabled() && !isDev) {
             String SPIGOT_URL = "https://www.spigotmc.org/resources/chests-chest-linking-hopper-filtering-remote-chests-menus.71355/";
             UpdateCheck updateChecker = UpdateCheck
                     .of(this)
