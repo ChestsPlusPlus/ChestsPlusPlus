@@ -10,5 +10,10 @@ public class Stats {
             int chestlinks = Config.getTotalChestLinks();
             return chestlinks+"";
         }));
+
+        metrics.addCustomChart(new Metrics.SimplePie("update_checker_setting", () -> {
+            if(Settings.isUpdateCheckEnabled()) return "enabled";
+            else return "disabled";
+        }));
     }
 }

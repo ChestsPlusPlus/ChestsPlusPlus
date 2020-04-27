@@ -1,11 +1,8 @@
 package com.jamesdpeters.minecraft.chests.serialize;
 
-import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.containers.ChestLinkInfo;
 import com.jamesdpeters.minecraft.chests.misc.Messages;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
-import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
-import com.jamesdpeters.minecraft.chests.serialize.LinkedChest;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
@@ -15,8 +12,6 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scheduler.BukkitScheduler;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,21 +34,14 @@ public class Config {
         }
     }
 
-    private static BukkitRunnable saveRunnable = new BukkitRunnable(){
-        @Override
-        public void run() {
-            if(config == null) config = new YamlConfiguration();
-            config.set("chests++", store);
-            try{
-                config.save("chests.yml");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    };
-
     public static void save(){
-        saveRunnable.runTaskAsynchronously(ChestsPlusPlus.PLUGIN);
+        if(config == null) config = new YamlConfiguration();
+        config.set("chests++", store);
+        try{
+            config.save("chests.yml");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public static List<InventoryStorage> getInventoryStorageMemberOf(Player player){
@@ -127,7 +115,7 @@ public class Config {
             inventoryStorage.getLocations().add(chestLocation);
         }
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP,1.0f,1f);
-        save();
+        //saveASync();
     }
 
     public static InventoryStorage removeChest(InventoryStorage storage, Location location){
@@ -137,7 +125,7 @@ public class Config {
                 storage.dropInventory(location);
                 getInventoryStorageMap(storage.getOwner().getUniqueId()).remove(storage.getIdentifier());
             }
-            save();
+            //saveASync();
             return storage;
         }
         return null;
@@ -159,7 +147,7 @@ public class Config {
             Messages.GROUP_DOESNT_EXIST(player,group);
         }
 
-        save();
+        //saveASync();
     }
 
     public static InventoryStorage removeChest(OfflinePlayer owner, String identifier, Location chestLocation){
@@ -169,13 +157,6 @@ public class Config {
     public static InventoryStorage removeChest(Location chestLocation){
         InventoryStorage storage = getInventoryStorage(chestLocation);
         return removeChest(storage,chestLocation);
-    }
-
-    public static boolean setChests(Player player, String group, InventoryStorage storage){
-        HashMap<String, InventoryStorage> groups = getInventoryStorageMap(player.getUniqueId());
-        groups.put(group,storage);
-        save();
-        return true;
     }
 
     public static int getTotalChestLinks(){
@@ -193,10 +174,7 @@ public class Config {
             String[] args = playerChestID.split(":");
             String playerName = args[0];
             String chestlinkID = args[1];
-            Optional<InventoryStorage> invStorage = getInventoryStorageMemberOf(member).stream().filter(storage -> {
-                if (storage.getOwner().getName().equals(playerName) && storage.getIdentifier().equals(chestlinkID)) return true;
-                return false;
-            }).findFirst();
+            Optional<InventoryStorage> invStorage = getInventoryStorageMemberOf(member).stream().filter(storage -> storage.getOwner().getName().equals(playerName) && storage.getIdentifier().equals(chestlinkID)).findFirst();
             if(invStorage.isPresent()) return invStorage.get();
         }
         return null;
@@ -224,7 +202,7 @@ public class Config {
         storage.rename(newIdentifier);
         map.remove(oldIdentifier);
         map.put(newIdentifier,storage);
-        save();
+        //saveASync();
         return true;
     }
 

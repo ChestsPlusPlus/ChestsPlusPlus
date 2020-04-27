@@ -10,7 +10,6 @@ import java.util.UUID;
 public class ChestLinkInfo {
 
     private String group;
-    private UUID playerUUID;
     private OfflinePlayer player;
     private InventoryStorage storage;
 
@@ -22,15 +21,10 @@ public class ChestLinkInfo {
         this.group = group;
         this.storage = Config.getInventoryStorage(playerUUID,group);
         this.player = Bukkit.getOfflinePlayer(playerUUID);
-        this.playerUUID = playerUUID;
     }
 
     public String getGroup() {
         return group;
-    }
-
-    public UUID getPlayerUUID() {
-        return playerUUID;
     }
 
     public OfflinePlayer getPlayer() {

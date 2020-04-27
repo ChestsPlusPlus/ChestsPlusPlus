@@ -1,6 +1,5 @@
 package com.jamesdpeters.minecraft.chests.serialize;
 
-import org.bukkit.Location;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.SerializableAs;
 

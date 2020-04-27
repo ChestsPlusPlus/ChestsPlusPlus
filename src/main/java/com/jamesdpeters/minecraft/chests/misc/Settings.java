@@ -26,7 +26,7 @@ public class Settings {
     }
 
     private static void save(){
-        cf.plugin.saveConfig();;
+        cf.plugin.saveConfig();
     }
 
     public static void reloadConfig(){

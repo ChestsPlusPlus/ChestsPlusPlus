@@ -8,6 +8,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
 import org.bukkit.block.DoubleChest;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.scheduler.BukkitRunnable;
 
 public class ChestLinkVerifier extends BukkitRunnable {
@@ -34,10 +35,12 @@ public class ChestLinkVerifier extends BukkitRunnable {
 
         if(chest.getInventory().getHolder() instanceof DoubleChest) {
             DoubleChest doubleChest = (DoubleChest) chest.getInventory().getHolder();
-            if(isChestLinked(doubleChest)) {
-                convertToSingleChest(doubleChest.getRightSide().getInventory());
-                convertToSingleChest(doubleChest.getLeftSide().getInventory());
-                convertToSingleChest(doubleChest.getRightSide().getInventory());
+            InventoryHolder right = doubleChest.getRightSide();
+            InventoryHolder left = doubleChest.getLeftSide();
+            if(isChestLinked(doubleChest) && left != null && right != null) {
+                convertToSingleChest(right.getInventory());
+                convertToSingleChest(left.getInventory());
+                convertToSingleChest(right.getInventory());
             }
         }
     }
@@ -58,9 +61,6 @@ public class ChestLinkVerifier extends BukkitRunnable {
         InventoryStorage leftStorage = Config.getInventoryStorage(chestSide1);
         InventoryStorage rightStorage = Config.getInventoryStorage(chestSide2);
 
-        if((leftStorage != null) || (rightStorage != null)){
-            return true;
-        }
-        return false;
+        return (leftStorage != null) || (rightStorage != null);
     }
 }

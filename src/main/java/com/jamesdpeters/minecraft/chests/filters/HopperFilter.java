@@ -1,6 +1,7 @@
 package com.jamesdpeters.minecraft.chests.filters;
 
 import org.bukkit.Rotation;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemFrame;
@@ -22,7 +23,7 @@ public class HopperFilter {
     }
 
     public static List<Filter> getHopperFilters(Block block){
-        Collection<Entity> ent = block.getLocation().getWorld().getNearbyEntities(block.getLocation(),1.01,1.01,1.01);
+        Collection<Entity> ent = block.getWorld().getNearbyEntities(block.getLocation(),1.01,1.01,1.01);
         List<Filter> filters = new ArrayList<>(ent.size());
         for(Entity entity : ent){
             if(entity instanceof ItemFrame){

@@ -21,7 +21,6 @@ public class InventoryListener implements Listener {
     public void onInventoryPlayerUpdate(InventoryClickEvent event){
         if(event.getInventory().getHolder() instanceof VirtualInventoryHolder){
             inventoryUpdate(event);
-            Config.save();
         }
     }
 
@@ -54,7 +53,6 @@ public class InventoryListener implements Listener {
                 if (event.getInventory().getLocation() == null) {
                     Utils.closeInventorySound((Player) event.getPlayer(), event.getInventory());
                 }
-                Config.save();
             }
         } catch (NullPointerException ignore){} //Essentials does something weird with enderchests - shit fix but works :)
     }

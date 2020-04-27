@@ -69,9 +69,10 @@ public class RemoteChestCommand extends ServerCommand  {
             switch (OPTIONS.valueOf(args[0].toUpperCase())){
                 case HELP:
                     for(OPTIONS option : OPTIONS.values()){
-                        if(!option.equals(OPTIONS.HELP));
-                        player.sendMessage(ChatColor.RED+option.commandHelp);
-                        player.sendMessage(ChatColor.WHITE+option.description);
+                        if(!option.equals(OPTIONS.HELP)) {
+                            player.sendMessage(ChatColor.RED + option.commandHelp);
+                            player.sendMessage(ChatColor.WHITE + option.description);
+                        }
                     }
                     return true;
                 case ADD:
@@ -188,8 +189,6 @@ public class RemoteChestCommand extends ServerCommand  {
                                 if(storage != null){
                                     Messages.LIST_MEMBERS(player,storage);
                                     return true;
-                                } else {
-                                    // No chest.
                                 }
                             }
                         }

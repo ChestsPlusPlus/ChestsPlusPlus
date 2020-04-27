@@ -73,7 +73,7 @@ public class ChestLinkListener implements Listener {
                 //If block sign is placed on is a chest we can remove it.
                 if(chest.getState() instanceof Chest) {
                     ChestLinkInfo info = Utils.getChestLinkInfo(sign,sign.getLines());
-                    if (info != null) { ;
+                    if (info != null) {
                         Config.removeChest(info.getPlayer(), info.getGroup(), chest.getLocation());
                         ((Chest) chest.getState()).getInventory().clear();
                         Messages.CHEST_REMOVED(event.getPlayer(),info.getGroup(),info.getPlayer().getName());

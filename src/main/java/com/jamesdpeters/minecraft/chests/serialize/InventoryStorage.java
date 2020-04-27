@@ -43,7 +43,7 @@ public class InventoryStorage implements ConfigurationSerializable {
     OfflinePlayer player;
     UUID playerUUID;
     boolean isPublic;
-    SortMethod sortMethod = SortMethod.OFF;
+    SortMethod sortMethod;
 
     @Override
     public Map<String, Object> serialize() {
@@ -74,8 +74,10 @@ public class InventoryStorage implements ConfigurationSerializable {
         player = Bukkit.getOfflinePlayer(playerUUID);
 
         if(map.containsKey("isPublic")) isPublic = (boolean) map.get("isPublic");
-        if(map.containsKey("sortMethod")) sortMethod = Enum.valueOf(SortMethod.class, (String) map.get("sortMethod"));
+        else isPublic = false;
 
+        if(map.containsKey("sortMethod")) sortMethod = Enum.valueOf(SortMethod.class, (String) map.get("sortMethod"));
+        else sortMethod = SortMethod.OFF;
 
         if(map.get("members") != null){
             members = (ArrayList<String>) map.get("members");
@@ -203,7 +205,6 @@ public class InventoryStorage implements ConfigurationSerializable {
             if(bukkitMembers == null) bukkitMembers = new ArrayList<>();
             members.add(player.getUniqueId().toString());
             bukkitMembers.add(player);
-            Config.save();
             return true;
         }
         return false;
@@ -214,7 +215,6 @@ public class InventoryStorage implements ConfigurationSerializable {
             if(bukkitMembers != null) bukkitMembers.remove(player);
             if(members != null){
                 members.remove(player.getUniqueId().toString());
-                Config.save();
                 return true;
             }
         }

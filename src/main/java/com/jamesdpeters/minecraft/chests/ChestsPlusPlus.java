@@ -4,6 +4,7 @@ import com.jamesdpeters.minecraft.chests.commands.RemoteChestCommand;
 import com.jamesdpeters.minecraft.chests.listeners.ChestLinkListener;
 import com.jamesdpeters.minecraft.chests.listeners.HopperListener;
 import com.jamesdpeters.minecraft.chests.listeners.InventoryListener;
+import com.jamesdpeters.minecraft.chests.listeners.WorldListener;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Settings;
@@ -65,6 +66,7 @@ public class ChestsPlusPlus extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new ChestLinkListener(),this);
         getServer().getPluginManager().registerEvents(new InventoryListener(),this);
         getServer().getPluginManager().registerEvents(new HopperListener(),this);
+        getServer().getPluginManager().registerEvents(new WorldListener(),this);
 
         new Config();
 

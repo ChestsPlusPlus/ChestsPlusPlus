@@ -64,7 +64,7 @@ public class HopperListener implements Listener {
     public void itemFrameInteract(PlayerInteractEntityEvent event){
         if(event.getRightClicked().getType().equals(EntityType.ITEM_FRAME)){
             ItemFrame itemFrame = (ItemFrame) event.getRightClicked();
-            Block attachedBlock = itemFrame.getLocation().getBlock().getRelative(((ItemFrame) itemFrame).getAttachedFace());
+            Block attachedBlock = itemFrame.getLocation().getBlock().getRelative(itemFrame.getAttachedFace());
             if(!(attachedBlock.getState() instanceof Hopper)) return;
             Rotation rotation = itemFrame.getRotation().rotateClockwise();
             if(rotation.equals(Rotation.FLIPPED)){
@@ -74,33 +74,4 @@ public class HopperListener implements Listener {
             }
         }
     }
-
-//    public static boolean isItemInFilter(Block block, ItemStack item){
-//        Bukkit.broadcastMessage("Cheking item: "+item.getType().name());
-//        Collection<Entity> ent = block.getLocation().getWorld().getNearbyEntities(block.getLocation(),1.01,1.01,1.01);
-//        boolean hasFilter = false;
-//        for(Entity entity : ent){
-//            if(entity instanceof ItemFrame){
-//                ItemFrame frame = (ItemFrame) entity;
-//                Block attachedBlock = frame.getLocation().getBlock().getRelative(frame.getAttachedFace());
-//                if(block.equals(attachedBlock)){
-//                    ItemStack itemStack = frame.getItem();
-//                    Bukkit.broadcastMessage("Item Filter!");
-//                    if(itemStack.getType() != Material.AIR) hasFilter = true;
-//                    if(item.isSimilar(itemStack)){
-//                        return true;
-//                    }
-//                    Rotation rotation = frame.getRotation();
-//                    Bukkit.broadcastMessage("Frame rotation: "+rotation.toString());
-//                    if(rotation.equals(Rotation.FLIPPED)){
-//                        if(item.getType().equals(itemStack.getType())) return true;
-//                    }
-//                }
-//            }
-//        }
-//        return !hasFilter;
-//    }
-
-
-
 }

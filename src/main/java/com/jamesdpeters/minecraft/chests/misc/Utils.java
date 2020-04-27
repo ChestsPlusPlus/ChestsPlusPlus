@@ -84,10 +84,6 @@ public class Utils {
         return false;
     }
 
-    public static String locationPrettyPrint(Location location){
-        return "["+location.getX()+","+location.getY()+","+location.getZ()+"] in "+location.getWorld().getName();
-    }
-
     public static void openInventory(Player player, Inventory inventory){
         if(inventory.getLocation() != null) player.getWorld().playSound(inventory.getLocation(), Sound.BLOCK_CHEST_OPEN,0.5f,1f);
         else player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN,0.5f,1f);
@@ -248,18 +244,6 @@ public class Utils {
     public static String prettyPrintPlayers(ChatColor highlight, List<OfflinePlayer> players){
         String playerString = players.stream().map(OfflinePlayer::getName).collect(Collectors.joining(","));
         return highlight+"["+ChatColor.WHITE+playerString+highlight+"]";
-//
-//        StringBuilder str = new StringBuilder();
-//        str.append(players.size());
-//        if(players.size() > 0) {
-//            str.append(" - " + highlight + "[");
-//            for (OfflinePlayer player : players) {
-//                str.append(ChatColor.WHITE + ChatColor.stripColor(player.getName())).append(", ");
-//            }
-//            str.delete(str.length() - 2, str.length());
-//            str.append(highlight + "]");
-//        }
-//        return str.toString();
     }
 
     public static List<String> getInventoryStorageList(Player player){
@@ -272,9 +256,4 @@ public class Utils {
         playerList.addAll(memberList);
         return playerList;
     }
-
-    public static boolean validateChestID(String id){
-        return !id.contains(":");
-    }
-
 }
