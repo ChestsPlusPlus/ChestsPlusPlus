@@ -8,6 +8,9 @@ public class VirtualInventoryHolder implements InventoryHolder {
 
     InventoryStorage storage;
 
+    private Runnable openPreviousInventory;
+    private boolean isPrevInvRunning = false;
+
     public VirtualInventoryHolder(InventoryStorage storage){
         this.storage = storage;
     }
@@ -19,5 +22,27 @@ public class VirtualInventoryHolder implements InventoryHolder {
 
     public InventoryStorage getStorage(){
         return storage;
+    }
+
+    public void setPreviousInventory(Runnable runnable){
+        openPreviousInventory = runnable;
+        isPrevInvRunning = false;
+    }
+
+    /**
+     * @return true if previous inventory existed.
+     */
+    public boolean openPreviousInventory(){
+        if(isPrevInvRunning){
+            isPrevInvRunning = false;
+            return false;
+        }
+        if(openPreviousInventory != null){
+            isPrevInvRunning = true;
+            openPreviousInventory.run();
+            openPreviousInventory = null;
+            return true;
+        }
+        return false;
     }
 }

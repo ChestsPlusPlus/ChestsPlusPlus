@@ -2,12 +2,10 @@ package com.jamesdpeters.minecraft.chests.sort;
 
 import org.bukkit.Material;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-
+import java.util.*;
 
 
 public class InventorySorter {
@@ -88,5 +86,12 @@ public class InventorySorter {
             if(remainder != 0) condensedItems.add(new ItemStack(material,remainder));
         });
         return condensedItems;
+    }
+
+    public static Material getMostCommonItem(Inventory inventory){
+        return getItemAmounts(inventory.getContents()).entrySet().stream()
+                .max(Comparator.comparing(Map.Entry::getValue))
+                .map(Map.Entry::getKey)
+                .orElse(null);
     }
 }

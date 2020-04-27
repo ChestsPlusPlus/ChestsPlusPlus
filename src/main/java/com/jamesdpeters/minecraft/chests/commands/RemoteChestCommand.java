@@ -142,11 +142,12 @@ public class RemoteChestCommand extends ServerCommand  {
                     }
                 case SORT:
                     if(args.length > 1) {
-                        if (sender.hasPermission(Permissions.REMOVE)) {
+                        if (sender.hasPermission(Permissions.SORT)) {
                             InventoryStorage storage = Config.getInventoryStorage(player.getUniqueId(),args[1]);
                             if(storage != null) {
                                 storage.setSortMethod(Enum.valueOf(SortMethod.class, args[2]));
                                 storage.sort();
+                                Messages.SORT(player,storage);
                             }
                             return true;
                         } else {
@@ -219,7 +220,10 @@ public class RemoteChestCommand extends ServerCommand  {
                     if(args.length > 2){
                         String group = args[1];
                         String newIdentifier = args[2];
-                        Config.renameInventoryStorage(player,group,newIdentifier);
+                        if(!Config.renameInventoryStorage(player,group,newIdentifier)){
+                            player.sendMessage(ChatColor.RED + OPTIONS.RENAME.commandHelp);
+                            player.sendMessage(ChatColor.RED + OPTIONS.RENAME.description);
+                        }
                         return true;
                     }
                 }

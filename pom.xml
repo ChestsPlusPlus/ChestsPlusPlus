@@ -57,6 +57,12 @@
             <version>3.4</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.spigotmc</groupId>
+            <artifactId>plugin-annotations</artifactId>
+            <version>1.2.2-SNAPSHOT</version>
+        </dependency>
+
 <!--        <dependency>-->
 <!--            <groupId>fr.minuskube.inv</groupId>-->
 <!--            <artifactId>smart-invs</artifactId>-->

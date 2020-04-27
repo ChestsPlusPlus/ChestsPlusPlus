@@ -1,15 +1,20 @@
 package com.jamesdpeters.minecraft.chests.serialize;
 
-
+import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
+import com.jamesdpeters.minecraft.chests.interfaces.VirtualInventoryHolder;
+import com.jamesdpeters.minecraft.chests.inventories.ChestLinkMenu;
 import com.jamesdpeters.minecraft.chests.misc.Config;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
-import com.jamesdpeters.minecraft.chests.interfaces.VirtualInventoryHolder;
 import com.jamesdpeters.minecraft.chests.runnables.VirtualChestToHopper;
 import com.jamesdpeters.minecraft.chests.sort.InventorySorter;
 import com.jamesdpeters.minecraft.chests.sort.SortMethod;
 import fr.minuskube.inv.ClickableItem;
-import org.bukkit.*;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Chest;
@@ -17,11 +22,16 @@ import org.bukkit.block.Sign;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.material.Directional;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 public class InventoryStorage implements ConfigurationSerializable {
 
@@ -140,13 +150,10 @@ public class InventoryStorage implements ConfigurationSerializable {
     }
 
     public ItemStack getIventoryIcon(Player player){
-        ItemStack toReturn = null;
-        for(ItemStack item : inventory.getContents()){
-            if(item != null){
-                toReturn = item.clone();
-            }
-        }
-        if(toReturn == null) toReturn = new ItemStack(Material.CHEST);
+        Material mostCommon = InventorySorter.getMostCommonItem(inventory);
+        ItemStack toReturn;
+        if(mostCommon == null) toReturn = new ItemStack(Material.CHEST);
+        else toReturn = new ItemStack(mostCommon);
 
         ItemMeta meta = toReturn.getItemMeta();
         if(meta != null) {
@@ -169,6 +176,12 @@ public class InventoryStorage implements ConfigurationSerializable {
 
     public ClickableItem getClickableItem(Player player) {
         return ClickableItem.from(getIventoryIcon(player), event -> {
+            InventoryHolder inventoryHolder = inventory.getHolder();
+            if(inventoryHolder instanceof VirtualInventoryHolder){
+                ((VirtualInventoryHolder) inventoryHolder).setPreviousInventory(() -> {
+                    Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN, () -> ChestLinkMenu.getMenu(player).open(player), 1);
+                });
+            }
             Utils.openInventory(player,getInventory());
         });
     }
@@ -251,6 +264,10 @@ public class InventoryStorage implements ConfigurationSerializable {
 
     public void setSortMethod(SortMethod sortMethod){
         this.sortMethod = sortMethod;
+    }
+
+    public SortMethod getSortMethod(){
+        return sortMethod;
     }
 
     public void sort(){

@@ -3,3 +3,4 @@ Server/
 Server_1_14_4/
 target/
 *.log
+.idea/

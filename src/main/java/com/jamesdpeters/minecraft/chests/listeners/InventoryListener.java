@@ -13,6 +13,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.*;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.scheduler.BukkitScheduler;
 
 public class InventoryListener implements Listener {
@@ -47,11 +48,14 @@ public class InventoryListener implements Listener {
     @EventHandler
     public void onInventoryClose(InventoryCloseEvent event){
         try {
-            if (event.getInventory().getHolder() instanceof VirtualInventoryHolder) {
-                Config.save();
+            InventoryHolder holder = event.getInventory().getHolder();
+            if (holder instanceof VirtualInventoryHolder) {
+                VirtualInventoryHolder vHolder = (VirtualInventoryHolder) holder;
+                vHolder.openPreviousInventory();
                 if (event.getInventory().getLocation() == null) {
                     Utils.closeInventorySound((Player) event.getPlayer(), event.getInventory());
                 }
+                Config.save();
             }
         } catch (NullPointerException ignore){} //Essentials does something weird with enderchests - shit fix but works :)
     }

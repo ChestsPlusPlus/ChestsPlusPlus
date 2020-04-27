@@ -95,4 +95,16 @@ public class Messages {
         target.sendMessage(ChatColor.RED+"Invalid ChestLink ID! Must not contain a colon ':' unless you are referencing another players group that you are a member off");
         target.sendMessage(ChatColor.RED+"/chestlink add <owner>:<group>");
     }
+
+    public static void SORT(Player target, InventoryStorage storage){
+        target.sendMessage(ChatColor.GREEN+"Sort method for "+ChatColor.WHITE+storage.getIdentifier()+ChatColor.GREEN+" has been set to "+ChatColor.WHITE+storage.getSortMethod().toString());
+    }
+
+    public static void CANNOT_RENAME_ALREADY_EXISTS(Player target, String newidentifier){
+        target.sendMessage(ChatColor.RED+"Error renaming chest! "+ChatColor.WHITE+newidentifier+ChatColor.RED+" already exists!");
+    }
+
+    public static void CANNOT_RENAME_GROUP_DOESNT_EXIST(Player target, String oldidentifier){
+        target.sendMessage(ChatColor.RED+"Error renaming chest! "+ChatColor.WHITE+oldidentifier+ChatColor.RED+" doesn't exist!");
+    }
 }

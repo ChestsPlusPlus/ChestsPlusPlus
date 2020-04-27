@@ -198,13 +198,22 @@ public class Config {
         return null;
     }
 
-    public static void renameInventoryStorage(Player player, String oldIdentifier, String newIdentifier){
+    public static boolean renameInventoryStorage(Player player, String oldIdentifier, String newIdentifier){
         HashMap<String,InventoryStorage> map = getInventoryStorageMap(player.getUniqueId());
+        if(!map.containsKey(oldIdentifier)){
+            Messages.CANNOT_RENAME_GROUP_DOESNT_EXIST(player,oldIdentifier);
+            return false;
+        }
+        if(map.containsKey(newIdentifier)){
+            Messages.CANNOT_RENAME_ALREADY_EXISTS(player,newIdentifier);
+            return false;
+        }
         InventoryStorage storage = map.get(oldIdentifier);
         storage.rename(newIdentifier);
         map.remove(oldIdentifier);
         map.put(newIdentifier,storage);
         save();
+        return true;
     }
 
 }
