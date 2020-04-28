@@ -3,6 +3,7 @@ package com.jamesdpeters.minecraft.chests.misc;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
 import org.bukkit.ChatColor;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
 public class Messages {
@@ -103,5 +104,9 @@ public class Messages {
 
     public static void CANNOT_RENAME_GROUP_DOESNT_EXIST(Player target, String oldidentifier){
         target.sendMessage(ChatColor.RED+"Error renaming chest! "+ChatColor.WHITE+oldidentifier+ChatColor.RED+" doesn't exist!");
+    }
+
+    public static void OWNER_HAS_TOO_MANY_CHESTS(Player target, OfflinePlayer owner){
+        target.sendMessage(ChatColor.RED+"Owner: "+ChatColor.WHITE+owner.getName()+ChatColor.RED+" has reached the limit of groups allowed!");
     }
 }

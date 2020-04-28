@@ -34,7 +34,10 @@ public class ChestLinkListener implements Listener {
                                     if (info != null) {
                                         if(event.getPlayer().hasPermission(Permissions.ADD)) {
                                             if (Utils.isValidSignPosition(event.getBlockAgainst().getLocation())) {
-                                                Config.addChest(event.getPlayer(), info.getGroup(), event.getBlockAgainst().getLocation(),info.getPlayer());
+                                                if(!Config.addChest(event.getPlayer(), info.getGroup(), event.getBlockAgainst().getLocation(),info.getPlayer())){
+                                                    sign.getBlock().breakNaturally();
+                                                    return;
+                                                }
                                                 Messages.CHEST_ADDED(event.getPlayer(), info.getGroup(), info.getPlayer().getName());
                                                 setLine(sign, signChangeEvent, 0, ChatColor.RED + ChatColor.stripColor(signChangeEvent.getLine(0)));
                                                 setLine(sign, signChangeEvent, 1, ChatColor.GREEN + ChatColor.stripColor(signChangeEvent.getLine(1)));

@@ -2,6 +2,7 @@ package com.jamesdpeters.minecraft.chests.serialize;
 
 import com.jamesdpeters.minecraft.chests.containers.ChestLinkInfo;
 import com.jamesdpeters.minecraft.chests.misc.Messages;
+import com.jamesdpeters.minecraft.chests.misc.Settings;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -83,12 +84,16 @@ public class Config {
         return null;
     }
 
-    public static void addChest(Player player, String identifier, Location chestLocation, OfflinePlayer owner){
+    public static boolean addChest(Player player, String identifier, Location chestLocation, OfflinePlayer owner){
         //List of groups this player has.
         HashMap<String, InventoryStorage> map = getInventoryStorageMap(owner.getUniqueId());
 
         //Get Inventory Storage for the given group or create it if it doesnt exist.
         if(!map.containsKey(identifier)){
+            if(isAtLimit(owner)){
+                Messages.OWNER_HAS_TOO_MANY_CHESTS(player,owner);
+                return false;
+            }
             InventoryStorage storage = new InventoryStorage(owner,identifier,chestLocation);
             map.put(identifier, storage);
         }
@@ -115,6 +120,7 @@ public class Config {
             inventoryStorage.getLocations().add(chestLocation);
         }
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP,1.0f,1f);
+        return true;
         //saveASync();
     }
 
@@ -206,4 +212,10 @@ public class Config {
         return true;
     }
 
+    public static boolean isAtLimit(OfflinePlayer player){
+        if(Settings.isLimitChests()){
+            return getInventoryStorageMap(player.getUniqueId()).size() >= Settings.getLimitChestsAmount();
+        }
+        return false;
+    }
 }
