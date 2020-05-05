@@ -5,7 +5,10 @@ import com.jamesdpeters.minecraft.chests.filters.HopperFilter;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
+import com.jamesdpeters.minecraft.chests.serialize.SpigotConfig;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.Rotation;
 import org.bukkit.block.Block;
 import org.bukkit.block.Hopper;
@@ -36,14 +39,16 @@ public class HopperListener implements Listener {
     public void fromHopper(InventoryMoveItemEvent event){
         //FROM HOPPER
         if (event.getInitiator().getHolder() instanceof Hopper) {
-            InventoryStorage storage = Config.getInventoryStorage(event.getDestination().getLocation());
+            Location location = event.getDestination().getLocation();
+            InventoryStorage storage = Config.getInventoryStorage(location);
             if (storage != null) {
                 if(!event.isCancelled()) {
                     event.setCancelled(true);
                     new BukkitRunnable() {
                         @Override
                         public void run() {
-                            Utils.moveToOtherInventory(event.getSource(), 1, storage.getInventory());
+                            int hopperAmount = SpigotConfig.getWorldSettings(location.getWorld().getName()).getHopperAmount();
+                            Utils.moveToOtherInventory(event.getSource(), hopperAmount, storage.getInventory());
                             event.getDestination().getHolder().getInventory().clear();
                             storage.sort();
                         }

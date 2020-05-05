@@ -4,6 +4,7 @@ import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.filters.HopperFilter;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
+import com.jamesdpeters.minecraft.chests.serialize.SpigotConfig;
 import org.bukkit.Location;
 import org.bukkit.block.Hopper;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -36,7 +37,8 @@ public class VirtualChestToHopper extends BukkitRunnable {
                     if(below.getBlock().isBlockIndirectlyPowered()|| below.getBlock().isBlockPowered()){
                         continue;
                     }
-                    Utils.moveToOtherInventory(storage.getInventory(), 1, hopper.getInventory(), HopperFilter.getHopperFilters(below.getBlock()));
+                    int hopperAmount = SpigotConfig.getWorldSettings(location.getWorld().getName()).getHopperAmount();
+                    Utils.moveToOtherInventory(storage.getInventory(), hopperAmount , hopper.getInventory(), HopperFilter.getHopperFilters(below.getBlock()));
                     storage.sort();
                 }
             }
