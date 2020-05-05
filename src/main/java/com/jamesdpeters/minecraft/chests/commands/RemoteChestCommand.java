@@ -1,5 +1,6 @@
 package com.jamesdpeters.minecraft.chests.commands;
 
+import com.jamesdpeters.minecraft.chests.crafting.Crafting;
 import com.jamesdpeters.minecraft.chests.inventories.ChestLinkMenu;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.misc.Messages;
@@ -30,7 +31,8 @@ public class RemoteChestCommand extends ServerCommand  {
         REMOVE("/chestlink remove <Group>", "Delete a ChestLink and drop its inventory at your feet!"),
         RENAME("/chestlink rename <group> <new-name>","Rename a ChestLink."),
         SETPUBLIC("/chestlink setpublic <group> <true/false>", "Set a ChestLink to be accessible by anyone."),
-        SORT("/chestlink sort <group> <sort-method>","Set the sorting option for the given ChestLink.");
+        SORT("/chestlink sort <group> <sort-method>","Set the sorting option for the given ChestLink."),
+        CRAFT("craft","craft");
 
 
         String description, commandHelp;
@@ -224,6 +226,9 @@ public class RemoteChestCommand extends ServerCommand  {
                         }
                         return true;
                     }
+                }
+                case CRAFT: {
+                    Crafting.craft(player);
                 }
             }
         }

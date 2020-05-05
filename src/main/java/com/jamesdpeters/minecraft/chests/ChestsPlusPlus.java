@@ -78,6 +78,8 @@ public class ChestsPlusPlus extends JavaPlugin {
         INVENTORY_MANAGER = new InventoryManager(this);
         INVENTORY_MANAGER.init();
 
+        Crafting.load();
+
         boolean isDev = BuildConstants.VERSION.contains("DEV");
         if(isDev) getLogger().warning("You are currently running a Dev build - update checker disabled! Build: "+BuildConstants.VERSION);
 
