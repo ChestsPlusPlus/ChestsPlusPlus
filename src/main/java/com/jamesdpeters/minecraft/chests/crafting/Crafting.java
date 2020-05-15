@@ -4,18 +4,17 @@ import com.jamesdpeters.minecraft.chests.interfaces.VirtualCraftingHolder;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
-import org.bukkit.event.inventory.InventoryType;
-import org.bukkit.inventory.CraftingInventory;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.RecipeChoice;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.ShapelessRecipe;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -40,9 +39,9 @@ public class Crafting {
         for(ShapelessRecipe shapelessRecipe : shapelessRecipes) {
             if (matchesShapeless(shapelessRecipe.getChoiceList(), craftingTable)) return shapelessRecipe.getResult();
         }
-//        for(ShapedRecipe shapedRecipe : shapedRecipes) {
-//            if (matchesShaped(shapedRecipe, craftingTable)) return shapedRecipe.getResult();
-//        }
+        for(ShapedRecipe shapedRecipe : shapedRecipes) {
+            if (matchesShaped(shapedRecipe, craftingTable)) return shapedRecipe.getResult();
+        }
         return null;
     }
 
@@ -68,43 +67,15 @@ public class Crafting {
     }
 
     private static boolean matchesShaped(ShapedRecipe shape, List<ItemStack> items) {
-        String[] map = shape.getShape();
-        Map<Character, RecipeChoice> choices = shape.getChoiceMap();
-        for (Map.Entry<Character, RecipeChoice> entry : choices.entrySet()) {
-            if (entry.getValue() == null)
-                continue;
+        //validateItemList(items);
+        if(shape.getResult().getType().equals(Material.WHITE_WOOL)){
+            Bukkit.broadcastMessage(items.toString());
+            Bukkit.broadcastMessage(Arrays.toString(shape.getShape()));
+            Bukkit.broadcastMessage(shape.getChoiceMap().toString());
         }
-        int index = 0;
-
-        boolean test = true;
-
-        for (String s : map) {
-            if (!test)
-                break;
-            for (Character c : s.toCharArray()) {
-                RecipeChoice currentChoice = choices.get(c);
-                if (currentChoice == null) {
-                    if (index < items.size() && items.get(index) != null
-                            && items.get(index).getType() != Material.AIR) {
-                        test = false;
-                        break;
-                    }
-                    index++;
-                    continue;
-                }
-                if (index >= items.size()) {
-                    test = false;
-                    break;
-                }
-                if (!currentChoice.test(items.get(index))) {
-                    test = false;
-                    break;
-                }
-                index++;
-            }
-        }
-
-        return test;
+        UserShapedRecipe userShapedRecipe = getUserShapedRecipe(items);
+        if(userShapedRecipe == null) return false;
+        return userShapedRecipe.matchesRecipe(shape);
     }
 
     public static void updateCrafting(Inventory inventory){
@@ -117,5 +88,99 @@ public class Crafting {
     public static void craft(Player player){
         Inventory craft = new VirtualCraftingHolder().getInventory();
         player.openInventory(craft);
+    }
+
+    private static void validateItemList(List<ItemStack> itemStacks){
+        if(itemStacks.size() >=9) {
+            int rowsToRemove = 0;
+            int colsToRemove = 0;
+
+            for (int row = 0; row < 3; row++) {
+                boolean removeRow = true;
+                for (int col = 0; col < 3; col++) {
+                    if (itemStacks.get((row * 3) + col) != null) {
+                        removeRow = false;
+                        break;
+                    }
+                }
+                if (removeRow) rowsToRemove++;
+            }
+
+            for (int col = 0; col < 3; col++) {
+                boolean removeCol = true;
+                for (int row = 0; row < 3; row++) {
+                    if (itemStacks.get((row * 3) + col) != null) {
+                        removeCol = false;
+                        break;
+                    }
+                }
+                if (removeCol) colsToRemove++;
+            }
+
+
+            Bukkit.broadcastMessage("Rows to remove: "+rowsToRemove+" Cols: "+colsToRemove);
+
+            int index = 1;
+            Iterator<ItemStack> iter = itemStacks.iterator();
+            while (iter.hasNext()) {
+                iter.next();
+                int row = (index) / 3;
+                int column = (index % 3) - 1;
+                Bukkit.broadcastMessage("row: "+row+" col: "+column);
+                if ((row < rowsToRemove) || (column < colsToRemove)) iter.remove();
+                index++;
+            }
+
+            Bukkit.broadcastMessage("Items: "+itemStacks.toString());
+
+            //itemStacks.replaceAll(itemStack -> itemStack == null ? new ItemStack(Material.AIR) : itemStack);
+        }
+    }
+
+    private static UserShapedRecipe getUserShapedRecipe(List<ItemStack> itemStacks){
+        if(itemStacks.size() < 9) return null;
+        Character[] chars = new Character[]{'a','b','c','d','e','f','g','h','i'};
+        int rowsToRemove = 0;
+        int colsToRemove = 0;
+
+        for (int row = 0; row < 3; row++) {
+            boolean removeRow = true;
+            for (int col = 0; col < 3; col++) {
+                if (itemStacks.get((row * 3) + col) != null) {
+                    removeRow = false;
+                    break;
+                }
+            }
+            if (removeRow) rowsToRemove++;
+        }
+
+        for (int col = 0; col < 3; col++) {
+            boolean removeCol = true;
+            for (int row = 0; row < 3; row++) {
+                if (itemStacks.get((row * 3) + col) != null) {
+                    removeCol = false;
+                    break;
+                }
+            }
+            if (removeCol) colsToRemove++;
+        }
+
+        int index = 0;
+        String[] shape = new String[3-rowsToRemove];
+        Map<Character,ItemStack> itemMap = new HashMap<>();
+        for(int row=rowsToRemove; row < 3; row++){
+            StringBuilder shapeRow = new StringBuilder();
+            for(int col=colsToRemove; col < 3; col++){
+                shapeRow.append(chars[index]);
+                itemMap.put(chars[index],itemStacks.get((row*3)+col));
+            }
+            shape[row-rowsToRemove] = shapeRow.toString();
+        }
+
+        UserShapedRecipe recipe = new UserShapedRecipe();
+        recipe.setIngredientMap(itemMap);
+        recipe.setShape(shape);
+
+        return recipe;
     }
 }

@@ -19,6 +19,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.CraftingInventory;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.inventory.ItemStack;
 
 public class InventoryListener implements Listener {
 
@@ -80,37 +81,63 @@ public class InventoryListener implements Listener {
     public void inventoryDragEvent(InventoryDragEvent event){
         Inventory inventory = event.getInventory();
         if(inventory.getHolder() instanceof VirtualCraftingHolder){
-            event.setCancelled(true);
+            Player p = (Player) event.getWhoClicked();
+            Bukkit.broadcastMessage(event.getRawSlots().toString());
+            for(int slot : event.getRawSlots()) {
+                if(slot >= p.getOpenInventory().getTopInventory().getSize())
+                    continue;
+
+                Bukkit.broadcastMessage("Drag! "+slot+" cursor: "+event.getOldCursor());
+                setCraftingItem(event.getInventory(),slot,event.getOldCursor());
+                event.setCancelled(true);
+            }
         }
     }
 
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onCraftingPlayerUpdate(InventoryClickEvent event){
-        Inventory inventory = event.getClickedInventory();
-        if(inventory != null && event.getInventory().getHolder() instanceof VirtualCraftingHolder){
-            if(event.getClick() == ClickType.DOUBLE_CLICK){
-                if(event.getClickedInventory() == event.getView().getBottomInventory()){
-                    event.getInventory().setItem(event.getSlot(),event.getCurrentItem());
-                    event.setCurrentItem(null);
-                }
+        Player player = (Player) event.getWhoClicked();
+
+        if(event.getView().getTopInventory().getHolder() instanceof VirtualCraftingHolder){
+            Bukkit.broadcastMessage("Click: "+event.getAction());
+
+            if(event.getAction() == InventoryAction.COLLECT_TO_CURSOR ||
+                    event.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY ||
+                    event.getAction() == InventoryAction.NOTHING) {
+                Bukkit.broadcastMessage("Cancelled!");
                 event.setCancelled(true);
+                player.updateInventory();
+                return;
             }
-            if(event.getClickedInventory() == event.getView().getTopInventory()){
+
+            if(event.getClickedInventory() == player.getOpenInventory().getTopInventory()){
+                Bukkit.broadcastMessage("Clicked: "+event.getSlot());
+                if(event.getSlot() == 0) event.setCancelled(true);
                 if(event.getSlot() >= 1 && event.getSlot() <= 9){
-                    Bukkit.broadcastMessage("Click: "+event.getSlot());
-                    event.getClickedInventory().setItem(event.getSlot(),event.getCurrentItem());
+                    setCraftingItem(event.getInventory(),event.getSlot(),event.getCursor());
+                    event.setCancelled(true);
+                    craftingUpdate(event);
                 }
-                event.setCancelled(true);
-                craftingUpdate(event);
             }
         }
+    }
+
+    private void setCraftingItem(Inventory inventory, int slot, ItemStack cursor){
+        ItemStack clone = null;
+        if(cursor != null){
+            clone = cursor.clone();
+            clone.setAmount(1);
+        }
+        inventory.setItem(slot,clone);
     }
 
     private void craftingUpdate(InventoryInteractEvent event){
         InventoryHolder holder = event.getInventory().getHolder();
         if(holder instanceof VirtualCraftingHolder){
-            Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN, () -> Crafting.updateCrafting(holder.getInventory()),1);
+            Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN, () -> {
+                Crafting.updateCrafting(holder.getInventory());
+            },1);
         }
     }
 
