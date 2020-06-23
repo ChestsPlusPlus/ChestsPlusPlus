@@ -6,12 +6,15 @@ import com.jamesdpeters.minecraft.chests.listeners.ChestLinkListener;
 import com.jamesdpeters.minecraft.chests.listeners.HopperListener;
 import com.jamesdpeters.minecraft.chests.listeners.InventoryListener;
 import com.jamesdpeters.minecraft.chests.listeners.WorldListener;
+import com.jamesdpeters.minecraft.chests.serialize.AutoCraftingStorage;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Settings;
 import com.jamesdpeters.minecraft.chests.misc.Stats;
 import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
 import com.jamesdpeters.minecraft.chests.serialize.LinkedChest;
+import com.jamesdpeters.minecraft.chests.serialize.MaterialSerializer;
+import com.jamesdpeters.minecraft.chests.serialize.RecipeSerializable;
 import com.jamesdpeters.minecraft.chests.serialize.SpigotConfig;
 import com.jamesdpeters.minecraft.chests.versionchecker.UpdateCheck;
 import com.jamesdpeters.minecraft.chests.maventemplates.BuildConstants;
@@ -20,6 +23,7 @@ import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.permissions.PermissionDefault;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -45,6 +49,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 @Permission(name = Permissions.OPEN_ANY, desc = "Gives permission to open all chests, for admin use.", defaultValue = PermissionDefault.FALSE)
 @Permission(name = Permissions.MEMBER, desc = "Gives permission to add/remove a member to/from their chestlink.", defaultValue = PermissionDefault.TRUE)
 @Permission(name = Permissions.SORT, desc = "Set the sorting option for the given ChestLink.", defaultValue = PermissionDefault.TRUE)
+@Permission(name = Permissions.AUTOCRAFT, desc = "Gives permission to add AutoCrafting stations.", defaultValue = PermissionDefault.TRUE)
 public class ChestsPlusPlus extends JavaPlugin {
 
     public static JavaPlugin PLUGIN;
@@ -54,6 +59,9 @@ public class ChestsPlusPlus extends JavaPlugin {
     static {
         ConfigurationSerialization.registerClass(LinkedChest.class, "LinkedChest");
         ConfigurationSerialization.registerClass(InventoryStorage.class, "InventoryStorage");
+        ConfigurationSerialization.registerClass(MaterialSerializer.class, "Material");
+        ConfigurationSerialization.registerClass(AutoCraftingStorage.class, "AutoCraftingStorage");
+        ConfigurationSerialization.registerClass(RecipeSerializable.class, "Recipe");
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -64,6 +72,7 @@ public class ChestsPlusPlus extends JavaPlugin {
         Stats.addCharts(metrics);
 
         Settings.initConfig(this);
+        Crafting.load();
 
         PLUGIN = this;
         new RemoteChestCommand().register(this);
@@ -77,8 +86,6 @@ public class ChestsPlusPlus extends JavaPlugin {
 
         INVENTORY_MANAGER = new InventoryManager(this);
         INVENTORY_MANAGER.init();
-
-        Crafting.load();
 
         boolean isDev = BuildConstants.VERSION.contains("DEV");
         if(isDev) getLogger().warning("You are currently running a Dev build - update checker disabled! Build: "+BuildConstants.VERSION);

@@ -109,4 +109,8 @@ public class Messages {
     public static void OWNER_HAS_TOO_MANY_CHESTS(Player target, OfflinePlayer owner){
         target.sendMessage(ChatColor.RED+"Owner: "+ChatColor.WHITE+owner.getName()+ChatColor.RED+" has reached the limit of groups allowed!");
     }
+
+    public static void ALREADY_PART_OF_GROUP(Player target, String type){
+        target.sendMessage(ChatColor.RED+""+ChatColor.BOLD+TAG+" This "+type+" is already apart of a group!");
+    }
 }

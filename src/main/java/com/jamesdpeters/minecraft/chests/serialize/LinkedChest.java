@@ -9,28 +9,31 @@ import java.util.*;
 public class LinkedChest implements ConfigurationSerializable {
 
     public HashMap<String, HashMap<String, InventoryStorage>> chests;
+    public HashMap<String, HashMap<String, AutoCraftingStorage>> autocraftingtables;
 
     @Override
     public Map<String, Object> serialize() {
         LinkedHashMap<String, Object> hashMap = new LinkedHashMap<>();
         hashMap.put("chests",chests);
+        hashMap.put("autocraftingtables",autocraftingtables);
         return hashMap;
     }
 
     @SuppressWarnings("unchecked")
     public LinkedChest(Map<String, Object> map){
         chests = (HashMap<String, HashMap<String, InventoryStorage>>) map.get("chests");
+        autocraftingtables = (HashMap<String, HashMap<String, AutoCraftingStorage>>) map.get("autocraftingtables");
         validate();
     }
 
     private void validate(){
-        chests.forEach((s, invMap) -> {
-            invMap.values().removeIf(Objects::isNull);
-        });
+        if(chests != null) chests.forEach((s, invMap) -> invMap.values().removeIf(Objects::isNull));
+        if(autocraftingtables != null) autocraftingtables.forEach((s, craftMap) -> craftMap.values().removeIf(Objects::isNull));
     }
 
     public LinkedChest(){
         chests = new HashMap<>();
+        autocraftingtables = new HashMap<>();
     }
 
 }

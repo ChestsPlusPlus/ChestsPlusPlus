@@ -1,8 +1,8 @@
 package com.jamesdpeters.minecraft.chests.listeners;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
-import com.jamesdpeters.minecraft.chests.crafting.Crafting;
 import com.jamesdpeters.minecraft.chests.interfaces.VirtualCraftingHolder;
+import com.jamesdpeters.minecraft.chests.serialize.AutoCraftingStorage;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.misc.Messages;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
@@ -15,8 +15,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.*;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.inventory.CraftingInventory;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
@@ -41,6 +39,17 @@ public class InventoryListener implements Listener {
                         } else {
                             Messages.NO_PERMISSION((Player) event.getPlayer());
                         }
+                    } else {
+                        //If no Inventory Storage here check for AutoCraft
+                        AutoCraftingStorage craftingStorage = Config.getAutoCraftStorage(event.getInventory().getLocation());
+
+                        if(craftingStorage != null){
+                            event.setCancelled(true);
+                            if(event.getPlayer().hasPermission(Permissions.AUTOCRAFT) && craftingStorage.hasPermission((Player) event.getPlayer())) {
+                                Utils.openInventory((Player) event.getPlayer(), craftingStorage.getInventory());
+                                craftingStorage.getVirtualCraftingHolder().startAnimation();
+                            }
+                        }
                     }
                 }
             }
@@ -57,6 +66,9 @@ public class InventoryListener implements Listener {
                 if (event.getInventory().getLocation() == null) {
                     Utils.closeInventorySound((Player) event.getPlayer(), event.getInventory());
                 }
+            }
+            if(holder instanceof VirtualCraftingHolder){
+                ((VirtualCraftingHolder) holder).stopAnimation();
             }
         } catch (NullPointerException ignore){} //Essentials does something weird with enderchests - shit fix but works :)
     }
@@ -82,37 +94,36 @@ public class InventoryListener implements Listener {
         Inventory inventory = event.getInventory();
         if(inventory.getHolder() instanceof VirtualCraftingHolder){
             Player p = (Player) event.getWhoClicked();
-            Bukkit.broadcastMessage(event.getRawSlots().toString());
+//            Bukkit.broadcastMessage(event.getRawSlots().toString());
             for(int slot : event.getRawSlots()) {
                 if(slot >= p.getOpenInventory().getTopInventory().getSize())
                     continue;
 
-                Bukkit.broadcastMessage("Drag! "+slot+" cursor: "+event.getOldCursor());
+//                Bukkit.broadcastMessage("Drag! "+slot+" cursor: "+event.getOldCursor());
                 setCraftingItem(event.getInventory(),slot,event.getOldCursor());
                 event.setCancelled(true);
             }
         }
     }
 
-
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onCraftingPlayerUpdate(InventoryClickEvent event){
         Player player = (Player) event.getWhoClicked();
 
         if(event.getView().getTopInventory().getHolder() instanceof VirtualCraftingHolder){
-            Bukkit.broadcastMessage("Click: "+event.getAction());
+//            Bukkit.broadcastMessage("Click: "+event.getAction());
 
             if(event.getAction() == InventoryAction.COLLECT_TO_CURSOR ||
                     event.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY ||
                     event.getAction() == InventoryAction.NOTHING) {
-                Bukkit.broadcastMessage("Cancelled!");
+//                Bukkit.broadcastMessage("Cancelled!");
                 event.setCancelled(true);
                 player.updateInventory();
                 return;
             }
 
             if(event.getClickedInventory() == player.getOpenInventory().getTopInventory()){
-                Bukkit.broadcastMessage("Clicked: "+event.getSlot());
+//                Bukkit.broadcastMessage("Clicked: "+event.getSlot());
                 if(event.getSlot() == 0) event.setCancelled(true);
                 if(event.getSlot() >= 1 && event.getSlot() <= 9){
                     setCraftingItem(event.getInventory(),event.getSlot(),event.getCursor());
@@ -135,9 +146,8 @@ public class InventoryListener implements Listener {
     private void craftingUpdate(InventoryInteractEvent event){
         InventoryHolder holder = event.getInventory().getHolder();
         if(holder instanceof VirtualCraftingHolder){
-            Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN, () -> {
-                Crafting.updateCrafting(holder.getInventory());
-            },1);
+            Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN, (((VirtualCraftingHolder) holder).setUpdatingRecipe(true))::updateCrafting,1);
+            Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN, (((VirtualCraftingHolder) holder))::forceUpdateInventory,1);
         }
     }
 

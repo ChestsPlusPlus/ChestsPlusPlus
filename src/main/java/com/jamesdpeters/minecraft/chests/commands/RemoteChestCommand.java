@@ -32,8 +32,7 @@ public class RemoteChestCommand extends ServerCommand  {
         RENAME("/chestlink rename <group> <new-name>","Rename a ChestLink."),
         SETPUBLIC("/chestlink setpublic <group> <true/false>", "Set a ChestLink to be accessible by anyone."),
         SORT("/chestlink sort <group> <sort-method>","Set the sorting option for the given ChestLink."),
-        CRAFT("craft","craft");
-
+        AUTOCRAFT("autocraft","craft");
 
         String description, commandHelp;
         static List<String> valuesList;
@@ -81,10 +80,6 @@ public class RemoteChestCommand extends ServerCommand  {
                     if(args.length > 1){
                         if(sender.hasPermission(Permissions.ADD)) {
                             Block targetBlock = player.getTargetBlockExact(5);
-//                            if(!Utils.validateChestID(args[1])){
-//                                Messages.INVALID_CHESTID(player);
-//                                return true;
-//                            }
                             if (targetBlock != null) Utils.createChestLink(player, targetBlock, args[1]);
                             else Messages.MUST_LOOK_AT_CHEST(player);
                             return true;
@@ -227,8 +222,16 @@ public class RemoteChestCommand extends ServerCommand  {
                         return true;
                     }
                 }
-                case CRAFT: {
-                    Crafting.craft(player);
+                case AUTOCRAFT: {
+                    if(args.length > 2){
+                        if(args[1].equals("add")){
+                            Block targetBlock = player.getTargetBlockExact(5);
+                            if (targetBlock != null) Utils.createAutoCraftChest(player, targetBlock, args[2]);
+                            else Messages.MUST_LOOK_AT_CHEST(player);
+                            return true;
+                        }
+                    }
+//                    Crafting.craft(player);
                 }
             }
         }
@@ -255,6 +258,7 @@ public class RemoteChestCommand extends ServerCommand  {
                         case RENAME:
                             return Utils.getInventoryStorageList(player);
                         case MEMBER:
+                        case AUTOCRAFT:
                             return Arrays.asList("add","remove","list");
                     }
                 } catch (IllegalArgumentException ignored) { }
@@ -266,6 +270,8 @@ public class RemoteChestCommand extends ServerCommand  {
                             return Utils.getInventoryStorageList(player);
                         case SORT:
                             return SortMethod.valuesList;
+                        case AUTOCRAFT:
+                            return Utils.getAutoCraftStorageList(player);
                     }
                 } catch (IllegalArgumentException ignored) { }
             }
