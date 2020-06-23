@@ -51,6 +51,7 @@ public class ChestLinkMenu implements InventoryProvider {
     @Override
     public void init(Player player, InventoryContents contents) {
         Pagination pagination = contents.pagination();
+
         List<ClickableItem> itemList = new ArrayList<>();
         for(InventoryStorage storage : storages){
             ClickableItem item = storage.getClickableItem(player);
@@ -63,7 +64,7 @@ public class ChestLinkMenu implements InventoryProvider {
         }
 
         pagination.setItems(itemList.toArray(new ClickableItem[0]));
-        pagination.setItemsPerPage(54);
+        pagination.setItemsPerPage(28);
 
         contents.fillBorders(ClickableItem.empty(Utils.getNamedItem(new ItemStack(Material.GRAY_STAINED_GLASS_PANE)," ")));
         for(ClickableItem item : pagination.getPageItems()){
