@@ -142,4 +142,31 @@ public class AutoCraftingStorage implements ConfigurationSerializable  {
         virtualCraftingHolder.setUpdatingRecipe(false);
         virtualCraftingHolder.updateGUI();
     }
+
+    public boolean addMember(Player player){
+        if(player != null){
+            if(members == null) members = new ArrayList<>();
+            if(bukkitMembers == null) bukkitMembers = new ArrayList<>();
+            members.add(player.getUniqueId().toString());
+            bukkitMembers.add(player);
+            return true;
+        }
+        return false;
+    }
+
+    public boolean removeMember(Player player){
+        if(player != null){
+            if(bukkitMembers != null) bukkitMembers.remove(player);
+            if(members != null){
+                members.remove(player.getUniqueId().toString());
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public List<OfflinePlayer> getMembers(){
+        return bukkitMembers;
+    }
+
 }

@@ -2,6 +2,7 @@ package com.jamesdpeters.minecraft.chests.commands;
 
 import com.jamesdpeters.minecraft.chests.crafting.Crafting;
 import com.jamesdpeters.minecraft.chests.inventories.ChestLinkMenu;
+import com.jamesdpeters.minecraft.chests.serialize.AutoCraftingStorage;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.misc.Messages;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
@@ -195,6 +196,7 @@ public class RemoteChestCommand extends ServerCommand  {
                             else Messages.MUST_LOOK_AT_CHEST(player);
                             return true;
                         }
+
                     }
 //                    Crafting.craft(player);
                 }
@@ -280,6 +282,48 @@ public class RemoteChestCommand extends ServerCommand  {
             if(sender.hasPermission(Permissions.MEMBER)){
                 if(args[1].equals("list")) {
                     InventoryStorage storage = Config.getInventoryStorage(player.getUniqueId(), args[2]);
+                    if(storage != null){
+                        Messages.LIST_MEMBERS(player,storage);
+                        return true;
+                    }
+                }
+            }
+        } else {
+            player.sendMessage(ChatColor.RED+OPTIONS.MEMBER.commandHelp);
+            player.sendMessage(ChatColor.RED+OPTIONS.MEMBER.description);
+            return true;
+        }
+        return false;
+    }
+
+    private static boolean memberAutoCraftCommand(String[] args, CommandSender sender){
+        Player player = (Player) sender;
+        if(args.length > 4){
+            if(sender.hasPermission(Permissions.MEMBER)){
+                if(args[2].equals("add")) {
+                    Player toAdd = Bukkit.getPlayer(args[4]);
+                    AutoCraftingStorage storage = Config.getAutoCraftStorage(player.getUniqueId(), args[3]);
+                    if (storage != null && storage.addMember(toAdd))
+                        Messages.ADDED_MEMBER(player, storage, args[4]);
+                    else Messages.UNABLE_TO_ADD_MEMBER(player, args[4]);
+                } else if(args[2].equals("remove")){
+                    Player toAdd = Bukkit.getPlayer(args[4]);
+                    AutoCraftingStorage storage = Config.getAutoCraftStorage(player.getUniqueId(), args[3]);
+                    if(storage != null && storage.removeMember(toAdd))
+                        Messages.REMOVE_MEMBER(player, storage, args[4]);
+                    else Messages.UNABLE_TO_REMOVE_MEMBER(player,args[4]);
+                } else {
+                    player.sendMessage(ChatColor.RED+OPTIONS.MEMBER.commandHelp);
+                    player.sendMessage(ChatColor.RED+OPTIONS.MEMBER.description);
+                }
+            } else {
+                Messages.NO_PERMISSION(player);
+            }
+            return true;
+        } else if(args.length > 3){
+            if(sender.hasPermission(Permissions.MEMBER)){
+                if(args[2].equals("list")) {
+                    AutoCraftingStorage storage = Config.getAutoCraftStorage(player.getUniqueId(), args[3]);
                     if(storage != null){
                         Messages.LIST_MEMBERS(player,storage);
                         return true;

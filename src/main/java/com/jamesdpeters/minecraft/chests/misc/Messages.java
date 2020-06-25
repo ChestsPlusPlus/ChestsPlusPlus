@@ -1,5 +1,6 @@
 package com.jamesdpeters.minecraft.chests.misc;
 
+import com.jamesdpeters.minecraft.chests.serialize.AutoCraftingStorage;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
 import org.bukkit.ChatColor;
@@ -47,12 +48,22 @@ public class Messages {
         target.sendMessage(ChatColor.GREEN+""+ChatColor.BOLD+TAG+" Current Members: "+Utils.prettyPrintPlayers(ChatColor.GREEN,storage.getMembers()));
     }
 
+    public static void ADDED_MEMBER(Player target, AutoCraftingStorage storage, String added){
+        target.sendMessage(ChatColor.GREEN+""+ChatColor.BOLD+TAG+" Succesfully added "+ChatColor.WHITE+added+ChatColor.GREEN+" to AutoCraft group "+ChatColor.WHITE+storage.getIdentifier());
+        target.sendMessage(ChatColor.GREEN+""+ChatColor.BOLD+TAG+" Current Members: "+Utils.prettyPrintPlayers(ChatColor.GREEN,storage.getMembers()));
+    }
+
     public static void UNABLE_TO_ADD_MEMBER(Player target, String toAdd){
         target.sendMessage(ChatColor.RED+""+ChatColor.BOLD+TAG+" Unable to add player "+toAdd+" to ChestLink!");
     }
 
     public static void REMOVE_MEMBER(Player target, InventoryStorage storage, String removed){
         target.sendMessage(ChatColor.RED+""+ChatColor.BOLD+TAG+" Succesfully removed "+ChatColor.WHITE+removed+ChatColor.RED+" from group "+ChatColor.WHITE+storage.getIdentifier());
+        target.sendMessage(ChatColor.RED+""+ChatColor.BOLD+TAG+" Current Members: "+Utils.prettyPrintPlayers(ChatColor.RED,storage.getMembers()));
+    }
+
+    public static void REMOVE_MEMBER(Player target, AutoCraftingStorage storage, String removed){
+        target.sendMessage(ChatColor.RED+""+ChatColor.BOLD+TAG+" Succesfully removed "+ChatColor.WHITE+removed+ChatColor.RED+" from AutoCraft group "+ChatColor.WHITE+storage.getIdentifier());
         target.sendMessage(ChatColor.RED+""+ChatColor.BOLD+TAG+" Current Members: "+Utils.prettyPrintPlayers(ChatColor.RED,storage.getMembers()));
     }
 
@@ -71,6 +82,14 @@ public class Messages {
     public static void LIST_MEMBERS(Player target, InventoryStorage storage){
         if(storage.getMembers() != null){
             target.sendMessage(ChatColor.GREEN+"Members of group "+ChatColor.WHITE+storage.getIdentifier()+": "+Utils.prettyPrintPlayers(ChatColor.GREEN,storage.getMembers()));
+        } else {
+            target.sendMessage(ChatColor.YELLOW+"There are no additional members in the group: "+ChatColor.WHITE+storage.getIdentifier());
+        }
+    }
+
+    public static void LIST_MEMBERS(Player target, AutoCraftingStorage storage){
+        if(storage.getMembers() != null){
+            target.sendMessage(ChatColor.GREEN+"Members of AutoCraft group "+ChatColor.WHITE+storage.getIdentifier()+": "+Utils.prettyPrintPlayers(ChatColor.GREEN,storage.getMembers()));
         } else {
             target.sendMessage(ChatColor.YELLOW+"There are no additional members in the group: "+ChatColor.WHITE+storage.getIdentifier());
         }
