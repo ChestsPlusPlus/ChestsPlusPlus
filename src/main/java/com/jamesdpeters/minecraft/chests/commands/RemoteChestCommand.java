@@ -10,6 +10,7 @@ import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
 import com.jamesdpeters.minecraft.chests.sort.SortMethod;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -157,43 +158,7 @@ public class RemoteChestCommand extends ServerCommand  {
                         return true;
                     }
                 case MEMBER:
-                    if(args.length > 3){
-                        if(sender.hasPermission(Permissions.MEMBER)){
-                            if(args[1].equals("add")) {
-                                Player toAdd = Bukkit.getPlayer(args[3]);
-                                InventoryStorage storage = Config.getInventoryStorage(player.getUniqueId(), args[2]);
-                                if (storage != null && storage.addMember(toAdd))
-                                    Messages.ADDED_MEMBER(player, storage, args[3]);
-                                else Messages.UNABLE_TO_ADD_MEMBER(player, args[3]);
-                            } else if(args[1].equals("remove")){
-                                Player toAdd = Bukkit.getPlayer(args[3]);
-                                InventoryStorage storage = Config.getInventoryStorage(player.getUniqueId(),args[2]);
-                                if(storage != null && storage.removeMember(toAdd))
-                                    Messages.REMOVE_MEMBER(player, storage, args[3]);
-                                else Messages.UNABLE_TO_REMOVE_MEMBER(player,args[3]);
-                            } else {
-                                player.sendMessage(ChatColor.RED+OPTIONS.MEMBER.commandHelp);
-                                player.sendMessage(ChatColor.RED+OPTIONS.MEMBER.description);
-                            }
-                        } else {
-                            Messages.NO_PERMISSION(player);
-                        }
-                        return true;
-                    } else if(args.length > 2){
-                        if(sender.hasPermission(Permissions.MEMBER)){
-                            if(args[1].equals("list")) {
-                                InventoryStorage storage = Config.getInventoryStorage(player.getUniqueId(), args[2]);
-                                if(storage != null){
-                                    Messages.LIST_MEMBERS(player,storage);
-                                    return true;
-                                }
-                            }
-                        }
-                    } else {
-                        player.sendMessage(ChatColor.RED+OPTIONS.MEMBER.commandHelp);
-                        player.sendMessage(ChatColor.RED+OPTIONS.MEMBER.description);
-                        return true;
-                    }
+                   memberCommand(args, sender);
                 case SETPUBLIC: {
                     if (args.length > 2) {
                         InventoryStorage storage = Config.getInventoryStorage(player.getUniqueId(), args[1]);
@@ -285,5 +250,47 @@ public class RemoteChestCommand extends ServerCommand  {
             }
         }
         return null;
+    }
+
+    private static boolean memberCommand(String[] args, CommandSender sender){
+        Player player = (Player) sender;
+        if(args.length > 3){
+            if(sender.hasPermission(Permissions.MEMBER)){
+                if(args[1].equals("add")) {
+                    Player toAdd = Bukkit.getPlayer(args[3]);
+                    InventoryStorage storage = Config.getInventoryStorage(player.getUniqueId(), args[2]);
+                    if (storage != null && storage.addMember(toAdd))
+                        Messages.ADDED_MEMBER(player, storage, args[3]);
+                    else Messages.UNABLE_TO_ADD_MEMBER(player, args[3]);
+                } else if(args[1].equals("remove")){
+                    Player toAdd = Bukkit.getPlayer(args[3]);
+                    InventoryStorage storage = Config.getInventoryStorage(player.getUniqueId(),args[2]);
+                    if(storage != null && storage.removeMember(toAdd))
+                        Messages.REMOVE_MEMBER(player, storage, args[3]);
+                    else Messages.UNABLE_TO_REMOVE_MEMBER(player,args[3]);
+                } else {
+                    player.sendMessage(ChatColor.RED+OPTIONS.MEMBER.commandHelp);
+                    player.sendMessage(ChatColor.RED+OPTIONS.MEMBER.description);
+                }
+            } else {
+                Messages.NO_PERMISSION(player);
+            }
+            return true;
+        } else if(args.length > 2){
+            if(sender.hasPermission(Permissions.MEMBER)){
+                if(args[1].equals("list")) {
+                    InventoryStorage storage = Config.getInventoryStorage(player.getUniqueId(), args[2]);
+                    if(storage != null){
+                        Messages.LIST_MEMBERS(player,storage);
+                        return true;
+                    }
+                }
+            }
+        } else {
+            player.sendMessage(ChatColor.RED+OPTIONS.MEMBER.commandHelp);
+            player.sendMessage(ChatColor.RED+OPTIONS.MEMBER.description);
+            return true;
+        }
+        return false;
     }
 }
