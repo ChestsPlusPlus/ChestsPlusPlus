@@ -1,0 +1,14 @@
+  language: java
+
+  before_deploy:
+    - "mvn -DskipTests package"
+    - export FOO=$(ls target/ChestsPlusPlus-*.jar)
+
+  deploy:
+    provider: releases
+    api_key:
+      secure: sVJp3oF+Oxdh955R50Q0i2qSxpXkeWe7KTABGr1Aznhh7PvtMSlNixb/BIEadT0gqMO3spLyrXmO09BL/vltueUq6bf5l+D/kmO1zO5CmmJWCzFxASCYizqvtlokynKwBLYzk0TKZzMFlHA+obd+3NUV/VuFw5tda1BqUBav4TI6/5ASDJV5AZIBjGb+33sA2PMMqZ2TNzZmjwVnUC1K7itXeSbNYn0n8/PiNUmLrW1xibdRp/lFgoSvtZYocvapst40rZ6kmG3QgqziE6NeWlloA0YC0yPiIx4tanhGn9HRjVaPwIV11vV65x8Z8swSrPQ1w7K4j/+dsAi9orFWU5NIGh5Ya6kmTv14Py5wepH+ZQwOiAxkk6IXhrRc9UwKK2jKImCaiYpZJIavbrR8ivLETwNGUFEGgpBgcCXJhPoWPgDFJyvzeuUpGfqPfrYJfOBdcT68gMPI1j/CGWvCno8hV89ShZfC3hAmkHbdwb4NgaNwXX5s4WhPNhhpxpAmvOudBF54iQTt2JedbjFTJPw7S9sU+Y95zzbcAGBhMVEInhSiK3jaof6fcrz6OlAQBfngyhurAuospDR1GEkuvXzYbaiOrQEUjPy6JMnTH0apu2IhNiwAyj8PUwVHcwi6i54WvalfMyj6kKnBX/9WB21Lu5Ad2zCg3b+vGxG/aWY=
+    file: "${FOO}"
+    skip_cleanup: true
+    on:
+      tags: true
