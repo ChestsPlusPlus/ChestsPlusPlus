@@ -7,7 +7,7 @@
   deploy:
     provider: releases
     github-token: $GITHUB_TOKEN
-      file: "${FOO}"
+    file: "${FOO}"
     skip_cleanup: true
     on:
       tags: true
