@@ -45,7 +45,7 @@ public class InventoryListener implements Listener {
 
                         if(craftingStorage != null){
                             event.setCancelled(true);
-                            if(event.getPlayer().hasPermission(Permissions.AUTOCRAFT) && craftingStorage.hasPermission((Player) event.getPlayer())) {
+                            if(event.getPlayer().hasPermission(Permissions.AUTOCRAFT_OPEN) && craftingStorage.hasPermission((Player) event.getPlayer())) {
                                 Utils.openInventory((Player) event.getPlayer(), craftingStorage.getInventory());
                                 craftingStorage.getVirtualCraftingHolder().startAnimation();
                             }

@@ -9,5 +9,7 @@ public class Permissions {
     public static final String OPEN_ANY = "chestlink.openall";
     public static final String MEMBER = "chestlink.member";
     public static final String SORT = "chestlink.sort";
-    public static final String AUTOCRAFT = "chestlink.autocraft";
+    public static final String AUTOCRAFT_OPEN = "chestlink.autocraft.open";
+    public static final String AUTOCRAFT_ADD = "chestlink.autocraft.add";
+    public static final String AUTOCRAFT_REMOVE = "chestlink.autocraft.remove";
 }

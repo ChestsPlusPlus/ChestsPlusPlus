@@ -16,6 +16,7 @@ import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.permissions.Permission;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -189,16 +190,37 @@ public class RemoteChestCommand extends ServerCommand  {
                     }
                 }
                 case AUTOCRAFT: {
-                    if(args.length > 2){
-                        if(args[1].equals("add")){
-                            Block targetBlock = player.getTargetBlockExact(5);
-                            if (targetBlock != null) Utils.createAutoCraftChest(player, targetBlock, args[2]);
-                            else Messages.MUST_LOOK_AT_CHEST(player);
+                    if(args.length > 2) {
+                        if (args[1].equals("add")) {
+                            if (player.hasPermission(Permissions.AUTOCRAFT_ADD)) {
+                                Block targetBlock = player.getTargetBlockExact(5);
+                                if (targetBlock != null) Utils.createAutoCraftChest(player, targetBlock, args[2]);
+                                else Messages.MUST_LOOK_AT_CHEST(player);
+                            } else {
+                                Messages.NO_PERMISSION(player);
+                            }
                             return true;
                         }
 
+                        if (args[1].equals("remove")) {
+                            if (sender.hasPermission(Permissions.AUTOCRAFT_REMOVE)) {
+                                Config.removeAutoCraft(player, args[2]);
+                                return true;
+                            } else {
+                                Messages.NO_PERMISSION(player);
+                                return true;
+                            }
+                        }
                     }
-//                    Crafting.craft(player);
+                    if(args.length > 1){
+                        if(args[1].equals("list")){
+                            Messages.LIST_AUTOCRAFT(player);
+                            return true;
+                        }
+                    }
+
+                    memberAutoCraftCommand(args,sender);
+                    return true;
                 }
             }
         }

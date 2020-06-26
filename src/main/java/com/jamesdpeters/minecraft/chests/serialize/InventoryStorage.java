@@ -203,7 +203,9 @@ public class InventoryStorage implements ConfigurationSerializable {
         if(player != null){
             if(members == null) members = new ArrayList<>();
             if(bukkitMembers == null) bukkitMembers = new ArrayList<>();
-            members.add(player.getUniqueId().toString());
+            String uuid = player.getUniqueId().toString();
+            if(members.contains(uuid)) return false;
+            members.add(uuid);
             bukkitMembers.add(player);
             return true;
         }

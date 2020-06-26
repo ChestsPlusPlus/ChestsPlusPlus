@@ -44,6 +44,7 @@ public class ChestLinkListener implements Listener {
                                                     done();
                                                     return;
                                                 }
+                                                Messages.CHEST_ADDED(event.getPlayer(), signChangeEvent.getLine(1), chestLinkInfo.getPlayer().getName());
                                                 signChange(sign,signChangeEvent,chestLinkInfo.getPlayer(),event.getPlayer());
                                             } else {
                                                 Messages.SIGN_FRONT_OF_CHEST(event.getPlayer());
@@ -63,6 +64,7 @@ public class ChestLinkListener implements Listener {
                                                     done();
                                                     return;
                                                 }
+                                                Messages.AUTOCRAFT_ADDED(event.getPlayer(), signChangeEvent.getLine(1), autoCraftInfo.getPlayer().getName());
                                                 signChange(sign,signChangeEvent,autoCraftInfo.getPlayer(),event.getPlayer());
                                             } else {
                                                 Messages.SIGN_FRONT_OF_CHEST(event.getPlayer());
@@ -80,7 +82,6 @@ public class ChestLinkListener implements Listener {
     }
 
     private void signChange(Sign sign, SignChangeEvent signChangeEvent, OfflinePlayer addedPlayer, Player player){
-        Messages.CHEST_ADDED(player, signChangeEvent.getLine(1), addedPlayer.getName());
         setLine(sign, signChangeEvent, 0, ChatColor.RED + ChatColor.stripColor(signChangeEvent.getLine(0)));
         setLine(sign, signChangeEvent, 1, ChatColor.GREEN + ChatColor.stripColor(signChangeEvent.getLine(1)));
         setLine(sign, signChangeEvent, 2, ChatColor.BOLD + ChatColor.stripColor(addedPlayer.getName()));
@@ -113,7 +114,7 @@ public class ChestLinkListener implements Listener {
                     AutoCraftInfo info = Utils.getAutoCraftInfo(sign,sign.getLines());
                     if (info != null) {
                         Config.removeAutoCraft(info.getPlayer(), info.getGroup(), block.getLocation());
-                        Messages.CHEST_REMOVED(event.getPlayer(),info.getGroup(),info.getPlayer().getName());
+                        Messages.AUTOCRAFT_REMOVED(event.getPlayer(),info.getGroup(),info.getPlayer().getName());
                     }
                 }
             }
@@ -139,7 +140,7 @@ public class ChestLinkListener implements Listener {
         if(event.getBlock().getType() == Material.CRAFTING_TABLE){
             AutoCraftingStorage storage = Config.removeAutoCraft(event.getBlock().getLocation());
             if(storage != null){
-                Messages.CHEST_REMOVED(event.getPlayer(),storage.getIdentifier(),storage.getOwner().getName());
+                Messages.AUTOCRAFT_REMOVED(event.getPlayer(),storage.getIdentifier(),storage.getOwner().getName());
             }
         }
     }

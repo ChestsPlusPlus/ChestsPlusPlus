@@ -39,7 +39,9 @@ import org.bukkit.plugin.java.annotation.plugin.author.Author;
 @Permission(name = Permissions.OPEN_ANY, desc = "Gives permission to open all chests, for admin use.", defaultValue = PermissionDefault.FALSE)
 @Permission(name = Permissions.MEMBER, desc = "Gives permission to add/remove a member to/from their chestlink.", defaultValue = PermissionDefault.TRUE)
 @Permission(name = Permissions.SORT, desc = "Set the sorting option for the given ChestLink.", defaultValue = PermissionDefault.TRUE)
-@Permission(name = Permissions.AUTOCRAFT, desc = "Gives permission to add AutoCrafting stations.", defaultValue = PermissionDefault.TRUE)
+@Permission(name = Permissions.AUTOCRAFT_OPEN, desc = "Gives permission to open AutoCrafting stations.", defaultValue = PermissionDefault.TRUE)
+@Permission(name = Permissions.AUTOCRAFT_ADD, desc = "Gives permission to add AutoCrafting stations.", defaultValue = PermissionDefault.TRUE)
+@Permission(name = Permissions.AUTOCRAFT_REMOVE, desc = "Gives permission to remove AutoCrafting stations.", defaultValue = PermissionDefault.TRUE)
 public class ChestsPlusPlus extends JavaPlugin {
 
     public static JavaPlugin PLUGIN;

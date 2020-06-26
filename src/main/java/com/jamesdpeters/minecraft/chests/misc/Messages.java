@@ -19,6 +19,14 @@ public class Messages {
         target.sendMessage(ChatColor.GREEN+TAG+" Succesfully added a chest to group: "+ChatColor.WHITE+group+ChatColor.RED+" for "+ChatColor.WHITE+player);
     }
 
+    public static void AUTOCRAFT_REMOVED(Player target, String group, String player){
+        target.sendMessage(ChatColor.RED+TAG+" Succesfully removed an AutoCraft station from group: "+ChatColor.WHITE+group+ChatColor.RED+" for "+ChatColor.WHITE+player);
+    }
+
+    public static void AUTOCRAFT_ADDED(Player target, String group, String player){
+        target.sendMessage(ChatColor.GREEN+TAG+" Succesfully added an AutoCraft station to group: "+ChatColor.WHITE+group+ChatColor.RED+" for "+ChatColor.WHITE+player);
+    }
+
     public static void CHEST_HAD_OVERFLOW(Player target){
         target.sendMessage(ChatColor.GOLD+TAG+" Chest item's wouldn't all fit into ChestLink!");
     }
@@ -104,6 +112,15 @@ public class Messages {
         for(InventoryStorage storage : Config.getInventoryStorageMap(target.getUniqueId()).values()){
             if(storage != null){
                 target.sendMessage(ChatColor.GREEN+storage.getIdentifier()+ChatColor.WHITE+" - "+storage.getTotalItems()+" items");
+            }
+        }
+    }
+
+    public static void LIST_AUTOCRAFT(Player target){
+        target.sendMessage(ChatColor.GREEN+""+ChatColor.BOLD+"List of your AutoCraft Stations:");
+        for(AutoCraftingStorage storage : Config.getAutoCraftTableMap(target.getUniqueId()).values()){
+            if(storage != null){
+                target.sendMessage(ChatColor.GREEN+storage.getIdentifier()+ChatColor.WHITE);
             }
         }
     }
