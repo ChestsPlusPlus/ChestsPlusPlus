@@ -1,4 +1,4 @@
-# ChestsPlusPlus
+# ChestsPlusPlus [![Build Status](https://travis-ci.org/JamesPeters98/ChestsPlusPlus.svg?branch=master)](https://travis-ci.org/JamesPeters98/ChestsPlusPlus)
 
 Minecraft Spigot mod that enhances chests and hoppers, with ChestLinks and Hopper filters!
 
