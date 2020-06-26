@@ -1,7 +1,7 @@
 language: java
 before_deploy:
 - mvn -DskipTests package
-- export FOO=$(ls target/ChestsPlusPlus-*.jar)
+- export FOO=$(ls Server/plugins//ChestsPlusPlus-*.jar)
 deploy:
   provider: releases
   skip_cleanup: true
