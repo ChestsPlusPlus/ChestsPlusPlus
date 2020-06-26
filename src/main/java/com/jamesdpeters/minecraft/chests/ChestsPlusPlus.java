@@ -10,7 +10,13 @@ import com.jamesdpeters.minecraft.chests.maventemplates.BuildConstants;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Settings;
 import com.jamesdpeters.minecraft.chests.misc.Stats;
-import com.jamesdpeters.minecraft.chests.serialize.*;
+import com.jamesdpeters.minecraft.chests.serialize.AutoCraftingStorage;
+import com.jamesdpeters.minecraft.chests.serialize.Config;
+import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
+import com.jamesdpeters.minecraft.chests.serialize.LinkedChest;
+import com.jamesdpeters.minecraft.chests.serialize.MaterialSerializer;
+import com.jamesdpeters.minecraft.chests.serialize.RecipeSerializable;
+import com.jamesdpeters.minecraft.chests.serialize.SpigotConfig;
 import com.jamesdpeters.minecraft.chests.versionchecker.UpdateCheck;
 import fr.minuskube.inv.InventoryManager;
 import org.bstats.bukkit.Metrics;
@@ -80,9 +86,11 @@ public class ChestsPlusPlus extends JavaPlugin {
         INVENTORY_MANAGER.init();
 
         boolean isDev = BuildConstants.VERSION.contains("DEV");
+        boolean isBeta = BuildConstants.VERSION.contains("BETA");
         if(isDev) getLogger().warning("You are currently running a Dev build - update checker disabled! Build: "+BuildConstants.VERSION);
+        if(isBeta) getLogger().warning("You are currently running a Beta build - update checker disabled! Build: "+BuildConstants.VERSION);
 
-        if(Settings.isUpdateCheckEnabled() && !isDev) {
+        if(Settings.isUpdateCheckEnabled() && !isDev && !isBeta) {
             String SPIGOT_URL = "https://www.spigotmc.org/resources/chests-chest-linking-hopper-filtering-remote-chests-menus.71355/";
             UpdateCheck updateChecker = UpdateCheck
                     .of(this)

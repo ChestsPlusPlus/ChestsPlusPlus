@@ -3,16 +3,16 @@ package com.jamesdpeters.minecraft.chests.versionchecker;
 import com.google.common.base.Preconditions;
 import com.google.common.io.Resources;
 import com.google.common.net.HttpHeaders;
-import org.bukkit.Bukkit;
-import org.bukkit.plugin.java.JavaPlugin;
-
-import javax.net.ssl.HttpsURLConnection;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.Objects;
 import java.util.function.BiConsumer;
+import javax.net.ssl.HttpsURLConnection;
+import org.bukkit.Bukkit;
+import org.bukkit.plugin.java.JavaPlugin;
+
 
 public class UpdateCheck {
 
