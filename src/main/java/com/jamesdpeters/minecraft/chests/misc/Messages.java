@@ -47,6 +47,10 @@ public class Messages {
         target.sendMessage(ChatColor.GOLD+""+ChatColor.BOLD+TAG+" You must place the sign on the front of the chest!");
     }
 
+    public static void INVALID_AUTOCRAFT_SIGN(Player target){
+        target.sendMessage(ChatColor.GOLD+""+ChatColor.BOLD+TAG+" An AutoCraft sign can only be placed on a Crafting Table and must not have a sign already placed on it!");
+    }
+
     public static void NO_SPACE_FOR_SIGN(Player target){
         target.sendMessage(ChatColor.RED+""+ChatColor.BOLD+TAG+" There is no space to place a sign on the front of the chest there!");
     }
@@ -105,6 +109,10 @@ public class Messages {
 
     public static void SET_PUBLIC(Player target, InventoryStorage storage){
         target.sendMessage(ChatColor.GREEN+"Publicity for ChestLink "+storage.getIdentifier()+" is set to: "+ChatColor.WHITE+storage.isPublic());
+    }
+
+    public static void SET_PUBLIC(Player target, AutoCraftingStorage storage){
+        target.sendMessage(ChatColor.GREEN+"Publicity for AutoCraft station "+storage.getIdentifier()+" is set to: "+ChatColor.WHITE+storage.isPublic());
     }
 
     public static void LIST_CHESTLINKS(Player target){
