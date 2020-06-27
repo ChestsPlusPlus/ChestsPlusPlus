@@ -6,7 +6,7 @@
 
     <groupId>com.jamesdpeters.chests</groupId>
     <artifactId>ChestsPlusPlus</artifactId>
-    <version>1.5-BETA-2</version>
+    <version>1.5-BETA-3</version>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
@@ -130,7 +130,7 @@
                         <!--Tell the shade plugin which of it's goals to attempt to run during this phase-->
                         <configuration>
                             <!--Tell the shade plugin where to put our jar file-->
-                            <outputFile>${project.basedir}/Server/plugins/${project.artifactId}-${version}.jar</outputFile>
+                            <outputFile>${project.basedir}/Server/plugins/${project.artifactId}-${project.version}.jar</outputFile>
 <!--                            <minimizeJar>true</minimizeJar>-->
                         </configuration>
                     </execution>
