@@ -7,8 +7,10 @@ import com.jamesdpeters.minecraft.chests.serialize.AutoCraftingStorage;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
 import org.bukkit.Bukkit;
+import org.bukkit.EntityEffect;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Chest;
@@ -124,9 +126,16 @@ public class VirtualCraftingHolder implements InventoryHolder {
         resetChoices();
         if(recipe != null){
             setCrafting(recipe);
+            playSound(Sound.BLOCK_NOTE_BLOCK_CHIME,0.5f,1f);
         }
         isUpdatingRecipe = false;
         updateGUI();
+    }
+
+    private void playSound(Sound sound, float volume, float pitch){
+        storage.getInventory().getViewers().forEach(humanEntity -> {
+            humanEntity.getWorld().playSound(humanEntity.getLocation(), sound, volume, pitch);
+        });
     }
 
     public VirtualCraftingHolder setUpdatingRecipe(boolean updatingRecipe) {
@@ -216,24 +225,31 @@ public class VirtualCraftingHolder implements InventoryHolder {
                 if(!block.isBlockPowered()) continue;
             }
 
-            craftItem(blockAbove,output);
-            craftItemIfHopperSource(block.getRelative(BlockFace.NORTH),output);
-            craftItemIfHopperSource(block.getRelative(BlockFace.EAST),output);
-            craftItemIfHopperSource(block.getRelative(BlockFace.SOUTH),output);
-            craftItemIfHopperSource(block.getRelative(BlockFace.WEST),output);
+            boolean didCraft = false;
+            if(craftItem(blockAbove,output)) didCraft = true;
+            if(craftItemIfHopperSource(block.getRelative(BlockFace.NORTH),output)) didCraft = true;
+            if(craftItemIfHopperSource(block.getRelative(BlockFace.EAST),output)) didCraft = true;
+            if(craftItemIfHopperSource(block.getRelative(BlockFace.SOUTH),output)) didCraft = true;
+            if(craftItemIfHopperSource(block.getRelative(BlockFace.WEST),output)) didCraft = true;
+
+            //Play sound if crafting occured.
+            if(didCraft) if(location.getWorld() != null) {
+                location.getWorld().playSound(location, Sound.BLOCK_DISPENSER_DISPENSE, 0.25f, 1f);
+            }
         }
     }
 
-    private void craftItemIfHopperSource(Block sourceBlock, Inventory output){
+    private boolean craftItemIfHopperSource(Block sourceBlock, Inventory output){
         if(sourceBlock.getState() instanceof Hopper){
-            craftItem(sourceBlock, output);
+            return craftItem(sourceBlock, output);
         }
+        return false;
     }
 
-    private void craftItem(Block sourceBlock, Inventory output){
+    private boolean craftItem(Block sourceBlock, Inventory output){
         Inventory source = getInventory(sourceBlock);
-        if(source == null) return;
-        craftItem(source, output);
+        if(source == null) return false;
+        return craftItem(source, output);
     }
 
     private Inventory getInventory(Block block){
@@ -254,7 +270,7 @@ public class VirtualCraftingHolder implements InventoryHolder {
         return inventory;
     }
 
-    private void craftItem(Inventory inputInventory, Inventory output){
+    private boolean craftItem(Inventory inputInventory, Inventory output){
         boolean sameInv = inputInventory.equals(output);
 
         Inventory tempInv = Utils.copyInventory(inputInventory);
@@ -265,14 +281,16 @@ public class VirtualCraftingHolder implements InventoryHolder {
                 int index = tempInv.first(choice.getType());
                 if(index != -1){
                     ItemStack item = tempInv.getItem(index);
-                    item.setAmount(item.getAmount()-1);
-                    tempInv.setItem(index, item);
-                    foundMatch = true;
-                    break;
+                    if(item != null) {
+                        item.setAmount(item.getAmount() - 1);
+                        tempInv.setItem(index, item);
+                        foundMatch = true;
+                        break;
+                    }
                 }
             }
             //If no match
-            if(!foundMatch) return;
+            if(!foundMatch) return false;
         }
 
         //If we reach here there are enough materials so check for space in the Hopper and update inventory.
@@ -284,7 +302,9 @@ public class VirtualCraftingHolder implements InventoryHolder {
         if(map.isEmpty()){
             moveTempInv(tempInv,inputInventory);
             if(!sameInv) moveTempInv(tempOutput, output);
+            return true;
         }
+        return false;
     }
 
     private void moveTempInv(Inventory tempInv, Inventory realInv){
