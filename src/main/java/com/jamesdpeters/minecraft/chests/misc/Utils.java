@@ -17,6 +17,7 @@ import org.bukkit.block.data.type.WallSign;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.SignChangeEvent;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -371,6 +372,17 @@ public class Utils {
             return (info == null);
         }
         return false;
+    }
+
+    public static Inventory copyInventory(Inventory inventory){
+        Inventory tempInv;
+        if(inventory.getType() != InventoryType.CHEST) {
+            tempInv = Bukkit.createInventory(null, inventory.getType());
+        } else {
+            tempInv = Bukkit.createInventory(null, inventory.getSize());
+        }
+        tempInv.setContents(inventory.getContents());
+        return tempInv;
     }
 
 }

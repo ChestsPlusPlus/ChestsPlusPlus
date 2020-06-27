@@ -2,6 +2,7 @@ package com.jamesdpeters.minecraft.chests.interfaces;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.crafting.Crafting;
+import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.serialize.AutoCraftingStorage;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
@@ -203,33 +204,60 @@ public class VirtualCraftingHolder implements InventoryHolder {
             Block blockBelow = block.getRelative(BlockFace.DOWN);
             Block blockAbove = block.getRelative(BlockFace.UP);
 
-            Hopper hopper;
+            Inventory output;
+
             if(blockBelow.getState() instanceof Hopper){
-                hopper = (Hopper) blockBelow.getState();
+                Hopper hopper = (Hopper) blockBelow.getState();
+                output = hopper.getInventory();
             } else {
-                continue;
+                output = getInventory(blockBelow);
+                if(output == null) continue;
+                //If crafting table is powered output into container is possible.
+                if(!block.isBlockPowered()) continue;
             }
 
-            Inventory inventory;
-            if(blockAbove.getState() instanceof Container){
-                InventoryStorage storage = Config.getInventoryStorage(blockAbove.getLocation());
-                //Check if a ChestLink exists above the CraftingTable and if the owner of the CraftingTable has permission to access that Chest.
-                if(storage != null && storage.hasPermission(this.storage.getOwner())){
-                    inventory = storage.getInventory();
-                } else {
-                    inventory = ((Container) blockAbove.getState()).getInventory();
-                }
-            } else {
-                continue;
-            }
-            craftItem(inventory, hopper);
+            craftItem(blockAbove,output);
+            craftItemIfHopperSource(block.getRelative(BlockFace.NORTH),output);
+            craftItemIfHopperSource(block.getRelative(BlockFace.EAST),output);
+            craftItemIfHopperSource(block.getRelative(BlockFace.SOUTH),output);
+            craftItemIfHopperSource(block.getRelative(BlockFace.WEST),output);
         }
     }
 
-    private void craftItem(Inventory inventory, Hopper hopper){
-        int invSize = Math.max(inventory.getSize(), 9);
-        Inventory tempInv = Bukkit.createInventory(null, invSize);
-        tempInv.setContents(inventory.getContents());
+    private void craftItemIfHopperSource(Block sourceBlock, Inventory output){
+        if(sourceBlock.getState() instanceof Hopper){
+            craftItem(sourceBlock, output);
+        }
+    }
+
+    private void craftItem(Block sourceBlock, Inventory output){
+        Inventory source = getInventory(sourceBlock);
+        if(source == null) return;
+        craftItem(source, output);
+    }
+
+    private Inventory getInventory(Block block){
+        Inventory inventory = null;
+        if(block.getState() instanceof Container){
+            InventoryStorage storage = Config.getInventoryStorage(block.getLocation());
+            //Check if a ChestLink exists above the CraftingTable and if the owner of the CraftingTable has permission to access that Chest.
+            if(storage != null){
+                if(storage.hasPermission(this.storage.getOwner())) {
+                    inventory = storage.getInventory();
+                } else {
+                    return null;
+                }
+            } else {
+                inventory = ((Container) block.getState()).getInventory();
+            }
+        }
+        return inventory;
+    }
+
+    private void craftItem(Inventory inputInventory, Inventory output){
+        boolean sameInv = inputInventory.equals(output);
+
+        Inventory tempInv = Utils.copyInventory(inputInventory);
         for(ItemStack[] choices : recipeChoices){
             if(choices == null) continue;
             boolean foundMatch = false;
@@ -248,12 +276,21 @@ public class VirtualCraftingHolder implements InventoryHolder {
         }
 
         //If we reach here there are enough materials so check for space in the Hopper and update inventory.
-        HashMap map = hopper.getInventory().addItem(result.clone());
-        ItemStack[] contents = new ItemStack[inventory.getSize()];
-        System.arraycopy(tempInv.getContents(), 0, contents,0,inventory.getSize());
+        //Check if output and input are the same inventory to avoid duplication.
+        Inventory tempOutput = sameInv ? tempInv : Utils.copyInventory(output);
+        HashMap map = tempOutput.addItem(result.clone());
+
+        //If result fits into output copy over the temporary inventories.
         if(map.isEmpty()){
-            inventory.setContents(contents);
+            moveTempInv(tempInv,inputInventory);
+            if(!sameInv) moveTempInv(tempOutput, output);
         }
+    }
+
+    private void moveTempInv(Inventory tempInv, Inventory realInv){
+        ItemStack[] contents = new ItemStack[realInv.getSize()];
+        System.arraycopy(tempInv.getContents(), 0, contents,0,realInv.getSize());
+        realInv.setContents(contents);
     }
 
     public void forceUpdateInventory(){
