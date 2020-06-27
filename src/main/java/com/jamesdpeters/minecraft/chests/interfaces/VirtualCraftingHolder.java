@@ -51,7 +51,7 @@ public class VirtualCraftingHolder implements InventoryHolder {
 
     public VirtualCraftingHolder(AutoCraftingStorage storage) {
         this.storage = storage;
-        inventory = Bukkit.createInventory(this, InventoryType.WORKBENCH);
+        inventory = Bukkit.createInventory(this, InventoryType.WORKBENCH, storage.getIdentifier());
     }
 
     @Override
@@ -213,10 +213,11 @@ public class VirtualCraftingHolder implements InventoryHolder {
             Inventory inventory;
             if(blockAbove.getState() instanceof Container){
                 InventoryStorage storage = Config.getInventoryStorage(blockAbove.getLocation());
-                if(storage == null){
-                    inventory = ((Container) blockAbove.getState()).getInventory();
-                } else {
+                //Check if a ChestLink exists above the CraftingTable and if the owner of the CraftingTable has permission to access that Chest.
+                if(storage != null && storage.hasPermission(this.storage.getOwner())){
                     inventory = storage.getInventory();
+                } else {
+                    inventory = ((Container) blockAbove.getState()).getInventory();
                 }
             } else {
                 continue;

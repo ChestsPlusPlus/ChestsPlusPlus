@@ -220,6 +220,24 @@ public class Config {
         return true;
     }
 
+    public static boolean renameAutoCraftStorage(Player player, String oldIdentifier, String newIdentifier) {
+        HashMap<String, AutoCraftingStorage> map = getAutoCraftTableMap(player.getUniqueId());
+        if (!map.containsKey(oldIdentifier)) {
+            Messages.CANNOT_RENAME_GROUP_DOESNT_EXIST(player, oldIdentifier);
+            return false;
+        }
+        if (map.containsKey(newIdentifier)) {
+            Messages.CANNOT_RENAME_ALREADY_EXISTS(player, newIdentifier);
+            return false;
+        }
+        AutoCraftingStorage storage = map.get(oldIdentifier);
+        storage.rename(newIdentifier);
+        map.remove(oldIdentifier);
+        map.put(newIdentifier, storage);
+        //saveASync();
+        return true;
+    }
+
     public static boolean isAtLimit(OfflinePlayer player) {
         if (Settings.isLimitChests()) {
             return getInventoryStorageMap(player.getUniqueId()).size() >= Settings.getLimitChestsAmount();
@@ -318,6 +336,26 @@ public class Config {
             }
         }
         return null;
+    }
+
+    public static AutoCraftingStorage getAutoCraftStorage(Player member, String playerAutoCraftID) {
+        if (playerAutoCraftID.contains(":")) {
+            String[] args = playerAutoCraftID.split(":");
+            String playerName = args[0];
+            String chestlinkID = args[1];
+            Optional<AutoCraftingStorage> invStorage = getAutoCraftStorageMemberOf(member).stream().filter(storage -> storage.getOwner().getName().equals(playerName) && storage.getIdentifier().equals(chestlinkID)).findFirst();
+            if (invStorage.isPresent()) return invStorage.get();
+        }
+        return null;
+    }
+
+    public static List<AutoCraftingStorage> getAutoCraftStorageMemberOf(Player player) {
+        return store.autocraftingtables.entrySet().stream().flatMap(map -> map.getValue().values().stream().filter(storage -> {
+            if (storage.isPublic()) return false;
+            if (storage.getOwner().getUniqueId().equals(player.getUniqueId())) return false;
+            if (storage.getMembers() == null) return false;
+            return storage.getMembers().stream().anyMatch(p -> p.getUniqueId().equals(player.getUniqueId()));
+        })).collect(Collectors.toList());
     }
 
 }

@@ -3,14 +3,21 @@ package com.jamesdpeters.minecraft.chests.serialize;
 import com.jamesdpeters.minecraft.chests.crafting.Crafting;
 import com.jamesdpeters.minecraft.chests.interfaces.VirtualCraftingHolder;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
+import com.jamesdpeters.minecraft.chests.misc.Utils;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.Sign;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.ShapelessRecipe;
@@ -122,6 +129,15 @@ public class AutoCraftingStorage implements ConfigurationSerializable  {
         return virtualCraftingHolder;
     }
 
+    public boolean isPublic() {
+        return isPublic;
+    }
+
+    public AutoCraftingStorage setPublic(boolean aPublic) {
+        isPublic = aPublic;
+        return this;
+    }
+
     private void initInventory(){
         virtualCraftingHolder = new VirtualCraftingHolder(this);
         inventory = virtualCraftingHolder.getInventory();
@@ -169,6 +185,25 @@ public class AutoCraftingStorage implements ConfigurationSerializable  {
 
     public List<OfflinePlayer> getMembers(){
         return bukkitMembers;
+    }
+
+    public void rename(String newIdentifier){
+        this.identifier = newIdentifier;
+        initInventory();
+
+        locationsList.forEach(location -> {
+            Block block = location.getBlock();
+            if(block.getType() == Material.CRAFTING_TABLE) {
+                BlockFace signFace = Utils.getBlockFaceContaingSign(location);
+                //If signFace is null the location no longer contains a sign.
+                if(signFace != null) {
+                    Block signBlock = block.getRelative(signFace);
+                    Sign sign = (Sign) signBlock.getState();
+                    sign.setLine(1, ChatColor.GREEN + ChatColor.stripColor("[" + newIdentifier + "]"));
+                    sign.update();
+                }
+            }
+        });
     }
 
 }

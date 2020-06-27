@@ -247,6 +247,13 @@ public class Utils {
         return playerList;
     }
 
+    public static List<String> getAutoCraftStorageOpenableList(Player player){
+        List<String> playerList = getAutoCraftStorageList(player);
+        List<String> memberList = Config.getInventoryStorageMemberOf(player).stream().map(storage -> storage.getOwner().getName()+":"+storage.getIdentifier()).collect(Collectors.toList());
+        playerList.addAll(memberList);
+        return playerList;
+    }
+
     /*
     AUTO CRAFT UTILS
      */
@@ -315,6 +322,16 @@ public class Utils {
     }
 
     private static final BlockFace[] blockfaces = new BlockFace[]{BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST};
+
+    public static BlockFace getBlockFaceContaingSign(Location location){
+        Block block = location.getBlock();
+        for(BlockFace face : blockfaces){
+            AutoCraftInfo info = getAutoCraftInfoFromSign(block.getRelative(face));
+            if(info != null) return face;
+        }
+        return null;
+    }
+
     public static AutoCraftInfo getAutoCraftInfo(Location location){
         Block block = location.getBlock();
         for(BlockFace face : blockfaces){
@@ -334,13 +351,24 @@ public class Utils {
 
     public static AutoCraftInfo getAutoCraftInfo(Sign sign){ return getAutoCraftInfo(sign,sign.getLines());}
 
+    /**
+     * Checks if the block a sign is placed on is a Crafting Table and doesn't already belong to a group.
+     * @param signLocation location of the Sign being placed
+     * @return true if valid
+     */
     public static boolean isValidAutoCraftSignPosition(Location signLocation){
         Block block = signLocation.getBlock();
         if(block.getBlockData() instanceof Directional) {
             Directional sign = (Directional) block.getBlockData();
             BlockFace facing = sign.getFacing().getOppositeFace();
             Block craftingTable = block.getRelative(facing);
-            return (craftingTable.getType() == Material.CRAFTING_TABLE);
+
+            //Return if block isn't Crafting Table
+            if(craftingTable.getType() != Material.CRAFTING_TABLE) return false;
+
+            //Check if Crafting Table is already part of a group.
+            AutoCraftInfo info = getAutoCraftInfo(craftingTable.getLocation());
+            return (info == null);
         }
         return false;
     }

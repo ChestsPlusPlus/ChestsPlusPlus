@@ -188,8 +188,12 @@ public class InventoryStorage implements ConfigurationSerializable {
     }
 
     public boolean hasPermission(Player player){
-        if(isPublic) return true;
         if(player.hasPermission(Permissions.OPEN_ANY)) return true;
+        return hasPermission((OfflinePlayer) player);
+    }
+
+    public boolean hasPermission(OfflinePlayer player){
+        if(isPublic) return true;
         if(player.getUniqueId().equals(playerUUID)) return true;
         if(members != null) {
             for (String uuid : members) {

@@ -67,7 +67,7 @@ public class ChestLinkListener implements Listener {
                                                 Messages.AUTOCRAFT_ADDED(event.getPlayer(), signChangeEvent.getLine(1), autoCraftInfo.getPlayer().getName());
                                                 signChange(sign,signChangeEvent,autoCraftInfo.getPlayer(),event.getPlayer());
                                             } else {
-                                                Messages.SIGN_FRONT_OF_CHEST(event.getPlayer());
+                                                Messages.INVALID_AUTOCRAFT_SIGN(event.getPlayer());
                                             }
                                         }
                                     }
