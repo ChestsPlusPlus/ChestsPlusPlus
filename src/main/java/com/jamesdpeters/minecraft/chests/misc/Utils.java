@@ -286,7 +286,7 @@ public class Utils {
             if(facing != null) {
                 if(isSideFace(facing)) {
                     Block toReplace = block.getRelative(facing);
-                    AutoCraftInfo info = Utils.getAutoCraftInfo(toReplace.getLocation());
+                    AutoCraftInfo info = Utils.getAutoCraftInfo(block);
                     if(info != null){
                         Messages.ALREADY_PART_OF_GROUP(player,"Crafting Table");
                         return;
@@ -333,8 +333,7 @@ public class Utils {
         return null;
     }
 
-    public static AutoCraftInfo getAutoCraftInfo(Location location){
-        Block block = location.getBlock();
+    public static AutoCraftInfo getAutoCraftInfo(Block block){
         for(BlockFace face : blockfaces){
             AutoCraftInfo info = getAutoCraftInfoFromSign(block.getRelative(face));
             if(info != null) return info;
@@ -368,7 +367,7 @@ public class Utils {
             if(craftingTable.getType() != Material.CRAFTING_TABLE) return false;
 
             //Check if Crafting Table is already part of a group.
-            AutoCraftInfo info = getAutoCraftInfo(craftingTable.getLocation());
+            AutoCraftInfo info = getAutoCraftInfo(craftingTable);
             return (info == null);
         }
         return false;

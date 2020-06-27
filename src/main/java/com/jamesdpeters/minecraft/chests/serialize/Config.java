@@ -329,7 +329,7 @@ public class Config {
         if (location != null) {
             Block block = location.getBlock();
             if (block.getType() == Material.CRAFTING_TABLE) {
-                AutoCraftInfo info = Utils.getAutoCraftInfo(block.getLocation());
+                AutoCraftInfo info = Utils.getAutoCraftInfo(block);
                 if (info != null) {
                     return info.getStorage();
                 }
