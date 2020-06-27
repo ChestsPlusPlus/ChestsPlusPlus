@@ -101,7 +101,7 @@ public class ChestLinkCommand extends ServerCommand  {
                             } else {
                                 invs = Config.getInventoryStorage(player.getUniqueId(), args[1]);
                             }
-                            if(invs != null) Utils.openInventory(player, invs.getInventory());
+                            if(invs != null) Utils.openChestInventory(player, invs.getInventory());
                             return true;
                         } else {
                             Messages.NO_PERMISSION(player);

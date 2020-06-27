@@ -183,7 +183,7 @@ public class InventoryStorage implements ConfigurationSerializable {
                     Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN, () -> ChestLinkMenu.getMenu(player).open(player), 1);
                 });
             }
-            Utils.openInventory(player,getInventory());
+            Utils.openChestInventory(player,getInventory());
         });
     }
 

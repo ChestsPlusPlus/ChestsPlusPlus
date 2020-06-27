@@ -35,7 +35,7 @@ public class InventoryListener implements Listener {
                     if (storage != null) {
                         event.setCancelled(true);
                         if (event.getPlayer().hasPermission(Permissions.OPEN) && storage.hasPermission((Player) event.getPlayer())) {
-                            Utils.openInventory((Player) event.getPlayer(), storage.getInventory());
+                            Utils.openChestInventory((Player) event.getPlayer(), storage.getInventory());
                         } else {
                             Messages.NO_PERMISSION((Player) event.getPlayer());
                         }
@@ -46,7 +46,7 @@ public class InventoryListener implements Listener {
                         if(craftingStorage != null){
                             event.setCancelled(true);
                             if(event.getPlayer().hasPermission(Permissions.AUTOCRAFT_OPEN) && craftingStorage.hasPermission((Player) event.getPlayer())) {
-                                Utils.openInventory((Player) event.getPlayer(), craftingStorage.getInventory());
+                                event.getPlayer().openInventory(craftingStorage.getInventory());
                                 craftingStorage.getVirtualCraftingHolder().startAnimation();
                             }
                         }

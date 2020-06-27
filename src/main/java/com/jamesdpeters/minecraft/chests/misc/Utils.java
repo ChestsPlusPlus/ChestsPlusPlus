@@ -87,7 +87,7 @@ public class Utils {
         return false;
     }
 
-    public static void openInventory(Player player, Inventory inventory){
+    public static void openChestInventory(Player player, Inventory inventory){
         if(inventory.getLocation() != null) player.getWorld().playSound(inventory.getLocation(), Sound.BLOCK_CHEST_OPEN,0.5f,1f);
         else player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN,0.5f,1f);
         player.openInventory(inventory);

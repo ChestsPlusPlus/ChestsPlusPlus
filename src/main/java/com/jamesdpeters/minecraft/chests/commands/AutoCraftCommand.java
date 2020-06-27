@@ -96,7 +96,7 @@ public class AutoCraftCommand extends ServerCommand  {
                             } else {
                                 invs = Config.getAutoCraftStorage(player.getUniqueId(), args[1]);
                             }
-                            if(invs != null) Utils.openInventory(player, invs.getInventory());
+                            if(invs != null) player.openInventory(invs.getInventory());
                             return true;
                         } else {
                             Messages.NO_PERMISSION(player);
