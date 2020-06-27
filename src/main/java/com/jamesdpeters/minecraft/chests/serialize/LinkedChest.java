@@ -22,7 +22,9 @@ public class LinkedChest implements ConfigurationSerializable {
     @SuppressWarnings("unchecked")
     public LinkedChest(Map<String, Object> map){
         chests = (HashMap<String, HashMap<String, InventoryStorage>>) map.get("chests");
+        if(chests == null) chests = new HashMap<>();
         autocraftingtables = (HashMap<String, HashMap<String, AutoCraftingStorage>>) map.get("autocraftingtables");
+        if(autocraftingtables == null) autocraftingtables = new HashMap<>();
         validate();
     }
 
