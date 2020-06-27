@@ -110,6 +110,7 @@ public class AutoCraftCommand extends ServerCommand  {
                 case MENU:
                     if(sender.hasPermission(Permissions.MENU)) {
                         //TODO Add AutoCraft menu.
+                        player.sendMessage(ChatColor.GOLD+" Currently unimplemented in this BETA!");
                         //ChestLinkMenu.getMenu(player).open(player);
                         return true;
                     } else {
