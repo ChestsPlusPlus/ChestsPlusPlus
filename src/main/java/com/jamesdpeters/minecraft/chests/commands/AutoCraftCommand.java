@@ -76,7 +76,7 @@ public class AutoCraftCommand extends ServerCommand  {
                     if(args.length > 1){
                         if (player.hasPermission(Permissions.AUTOCRAFT_ADD)) {
                             Block targetBlock = player.getTargetBlockExact(5);
-                            if (targetBlock != null) Utils.createAutoCraftChest(player, targetBlock, args[2]);
+                            if (targetBlock != null) Utils.createAutoCraftChest(player, targetBlock, args[1]);
                             else Messages.MUST_LOOK_AT_CHEST(player);
                         } else {
                             Messages.NO_PERMISSION(player);
@@ -123,7 +123,7 @@ public class AutoCraftCommand extends ServerCommand  {
                 case REMOVE:
                     if(args.length > 1) {
                         if (sender.hasPermission(Permissions.AUTOCRAFT_REMOVE)) {
-                            Config.removeAutoCraft(player, args[2]);
+                            Config.removeAutoCraft(player, args[1]);
                             return true;
                         } else {
                             Messages.NO_PERMISSION(player);
