@@ -1,28 +1,25 @@
 package com.jamesdpeters.minecraft.chests.commands;
 
-import com.jamesdpeters.minecraft.chests.crafting.Crafting;
 import com.jamesdpeters.minecraft.chests.inventories.ChestLinkMenu;
-import com.jamesdpeters.minecraft.chests.serialize.AutoCraftingStorage;
-import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.misc.Messages;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
+import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
 import com.jamesdpeters.minecraft.chests.sort.SortMethod;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.permissions.Permission;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class RemoteChestCommand extends ServerCommand  {
+public class ChestLinkCommand extends ServerCommand  {
 
     private enum OPTIONS {
         ADD("/chestlink add <group>", "Create/add a chest to a ChestLink group"),
@@ -160,7 +157,7 @@ public class RemoteChestCommand extends ServerCommand  {
                         return true;
                     }
                 case MEMBER:
-                   memberCommand(args, sender);
+                   return memberCommand(args, sender);
                 case SETPUBLIC: {
                     if (args.length > 2) {
                         InventoryStorage storage = Config.getInventoryStorage(player.getUniqueId(), args[1]);
@@ -189,39 +186,6 @@ public class RemoteChestCommand extends ServerCommand  {
                         return true;
                     }
                 }
-                case AUTOCRAFT: {
-                    if(args.length > 2) {
-                        if (args[1].equals("add")) {
-                            if (player.hasPermission(Permissions.AUTOCRAFT_ADD)) {
-                                Block targetBlock = player.getTargetBlockExact(5);
-                                if (targetBlock != null) Utils.createAutoCraftChest(player, targetBlock, args[2]);
-                                else Messages.MUST_LOOK_AT_CHEST(player);
-                            } else {
-                                Messages.NO_PERMISSION(player);
-                            }
-                            return true;
-                        }
-
-                        if (args[1].equals("remove")) {
-                            if (sender.hasPermission(Permissions.AUTOCRAFT_REMOVE)) {
-                                Config.removeAutoCraft(player, args[2]);
-                                return true;
-                            } else {
-                                Messages.NO_PERMISSION(player);
-                                return true;
-                            }
-                        }
-                    }
-                    if(args.length > 1){
-                        if(args[1].equals("list")){
-                            Messages.LIST_AUTOCRAFT(player);
-                            return true;
-                        }
-                    }
-
-                    memberAutoCraftCommand(args,sender);
-                    return true;
-                }
             }
         }
 
@@ -247,7 +211,6 @@ public class RemoteChestCommand extends ServerCommand  {
                         case RENAME:
                             return Utils.getInventoryStorageList(player);
                         case MEMBER:
-                        case AUTOCRAFT:
                             return Arrays.asList("add","remove","list");
                     }
                 } catch (IllegalArgumentException ignored) { }
@@ -259,8 +222,6 @@ public class RemoteChestCommand extends ServerCommand  {
                             return Utils.getInventoryStorageList(player);
                         case SORT:
                             return SortMethod.valuesList;
-                        case AUTOCRAFT:
-                            return Utils.getAutoCraftStorageList(player);
                     }
                 } catch (IllegalArgumentException ignored) { }
             }
@@ -304,48 +265,6 @@ public class RemoteChestCommand extends ServerCommand  {
             if(sender.hasPermission(Permissions.MEMBER)){
                 if(args[1].equals("list")) {
                     InventoryStorage storage = Config.getInventoryStorage(player.getUniqueId(), args[2]);
-                    if(storage != null){
-                        Messages.LIST_MEMBERS(player,storage);
-                        return true;
-                    }
-                }
-            }
-        } else {
-            player.sendMessage(ChatColor.RED+OPTIONS.MEMBER.commandHelp);
-            player.sendMessage(ChatColor.RED+OPTIONS.MEMBER.description);
-            return true;
-        }
-        return false;
-    }
-
-    private static boolean memberAutoCraftCommand(String[] args, CommandSender sender){
-        Player player = (Player) sender;
-        if(args.length > 4){
-            if(sender.hasPermission(Permissions.MEMBER)){
-                if(args[2].equals("add")) {
-                    Player toAdd = Bukkit.getPlayer(args[4]);
-                    AutoCraftingStorage storage = Config.getAutoCraftStorage(player.getUniqueId(), args[3]);
-                    if (storage != null && storage.addMember(toAdd))
-                        Messages.ADDED_MEMBER(player, storage, args[4]);
-                    else Messages.UNABLE_TO_ADD_MEMBER(player, args[4]);
-                } else if(args[2].equals("remove")){
-                    Player toAdd = Bukkit.getPlayer(args[4]);
-                    AutoCraftingStorage storage = Config.getAutoCraftStorage(player.getUniqueId(), args[3]);
-                    if(storage != null && storage.removeMember(toAdd))
-                        Messages.REMOVE_MEMBER(player, storage, args[4]);
-                    else Messages.UNABLE_TO_REMOVE_MEMBER(player,args[4]);
-                } else {
-                    player.sendMessage(ChatColor.RED+OPTIONS.MEMBER.commandHelp);
-                    player.sendMessage(ChatColor.RED+OPTIONS.MEMBER.description);
-                }
-            } else {
-                Messages.NO_PERMISSION(player);
-            }
-            return true;
-        } else if(args.length > 3){
-            if(sender.hasPermission(Permissions.MEMBER)){
-                if(args[2].equals("list")) {
-                    AutoCraftingStorage storage = Config.getAutoCraftStorage(player.getUniqueId(), args[3]);
                     if(storage != null){
                         Messages.LIST_MEMBERS(player,storage);
                         return true;

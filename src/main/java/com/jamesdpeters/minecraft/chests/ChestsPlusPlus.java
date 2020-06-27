@@ -1,6 +1,7 @@
 package com.jamesdpeters.minecraft.chests;
 
-import com.jamesdpeters.minecraft.chests.commands.RemoteChestCommand;
+import com.jamesdpeters.minecraft.chests.commands.AutoCraftCommand;
+import com.jamesdpeters.minecraft.chests.commands.ChestLinkCommand;
 import com.jamesdpeters.minecraft.chests.crafting.Crafting;
 import com.jamesdpeters.minecraft.chests.listeners.ChestLinkListener;
 import com.jamesdpeters.minecraft.chests.listeners.HopperListener;
@@ -37,7 +38,9 @@ import org.bukkit.plugin.java.annotation.plugin.author.Author;
 @ApiVersion(ApiVersion.Target.v1_14)
 @Description(value = "Minecraft Spigot mod that enhances chests and hoppers, with ChestLinks and Hopper filters!")
 @Author(value = "jameslfc19")
-@Commands(@Command(name = "chestlink", desc = "Chests++ Commands.", aliases = {"cl"}, usage = "Use /chestlink help for more info."))
+@Commands({
+        @Command(name = "chestlink", desc = "Chests++ ChestLink Commands.", aliases = {"cl"}, usage = "Use /chestlink help for more info."),
+        @Command(name = "autocraft", desc = "Chests++ AutoCraft Commands.", aliases = {"ac"}, usage = "Use /autocraft help for more info.")})
 @Permission(name = Permissions.ADD, desc = "Gives permission to add ChestLinks!", defaultValue = PermissionDefault.TRUE)
 @Permission(name = Permissions.OPEN, desc = "Gives permission to open ChestLinks!", defaultValue = PermissionDefault.TRUE)
 @Permission(name = Permissions.MENU, desc = "Gives permission to open the ChestLink menu!", defaultValue = PermissionDefault.TRUE)
@@ -73,7 +76,8 @@ public class ChestsPlusPlus extends JavaPlugin {
         Crafting.load();
 
         PLUGIN = this;
-        new RemoteChestCommand().register(this);
+        new ChestLinkCommand().register(this);
+        new AutoCraftCommand().register(this);
         getServer().getPluginManager().registerEvents(new ChestLinkListener(),this);
         getServer().getPluginManager().registerEvents(new InventoryListener(),this);
         getServer().getPluginManager().registerEvents(new HopperListener(),this);
