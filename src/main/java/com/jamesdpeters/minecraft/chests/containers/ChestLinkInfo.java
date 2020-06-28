@@ -3,6 +3,7 @@ package com.jamesdpeters.minecraft.chests.containers;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 
 import java.util.UUID;
@@ -31,7 +32,13 @@ public class ChestLinkInfo {
         return player;
     }
 
-    public InventoryStorage getStorage() {
+    /**
+     * Get the InventoryStorage for this Sign and check if the given location is apart of the system if not
+     * add it.
+     * @return @{@link InventoryStorage}
+     */
+    public InventoryStorage getStorage(Location location) {
+        if(!storage.containsLocation(location)) storage.addLocation(location);
         return storage;
     }
 }

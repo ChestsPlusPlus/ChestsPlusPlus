@@ -2,8 +2,8 @@ package com.jamesdpeters.minecraft.chests.containers;
 
 import com.jamesdpeters.minecraft.chests.serialize.AutoCraftingStorage;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
-import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 
 import java.util.UUID;
@@ -32,7 +32,13 @@ public class AutoCraftInfo {
         return player;
     }
 
-    public AutoCraftingStorage getStorage() {
+    /**
+     * Get the AutoCraftingStorage for this Sign and check if the given location is apart of the system if not
+     * add it.
+     * @return @{@link AutoCraftingStorage}
+     */
+    public AutoCraftingStorage getStorage(Location location) {
+        if(!storage.getLocations().contains(location)) storage.getLocations().add(location);
         return storage;
     }
 }
