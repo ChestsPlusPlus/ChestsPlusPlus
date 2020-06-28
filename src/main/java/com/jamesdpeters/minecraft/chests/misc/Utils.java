@@ -335,8 +335,15 @@ public class Utils {
 
     public static AutoCraftInfo getAutoCraftInfo(Block block){
         for(BlockFace face : blockfaces){
-            AutoCraftInfo info = getAutoCraftInfoFromSign(block.getRelative(face));
-            if(info != null) return info;
+            Block relative = block.getRelative(face);
+            if(relative.getBlockData() instanceof Directional){
+                //Check if the sign is attached to the given block.
+                Directional directional = (Directional) relative.getBlockData();
+                if(directional.getFacing() != face) continue;
+                //If it is we can extract info from it.
+                AutoCraftInfo info = getAutoCraftInfoFromSign(block.getRelative(face));
+                if(info != null) return info;
+            }
         }
         return null;
     }
