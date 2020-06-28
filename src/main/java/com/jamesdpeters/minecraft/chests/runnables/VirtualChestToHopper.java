@@ -4,6 +4,7 @@ import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.filters.HopperFilter;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
+import com.jamesdpeters.minecraft.chests.serialize.LocationInfo;
 import com.jamesdpeters.minecraft.chests.serialize.SpigotConfig;
 import org.bukkit.Location;
 import org.bukkit.block.Hopper;
@@ -29,17 +30,19 @@ public class VirtualChestToHopper extends BukkitRunnable {
 
     @Override
     public void run() {
-        for(Location location : storage.getLocations()) {
+        for(LocationInfo location : storage.getLocations()) {
             if(location != null) {
-                Location below = location.clone().subtract(0, 1, 0);
-                if (below.getBlock().getState() instanceof Hopper) {
-                    Hopper hopper = (Hopper) below.getBlock().getState();
-                    if(below.getBlock().isBlockIndirectlyPowered()|| below.getBlock().isBlockPowered()){
-                        continue;
+                if (location.getLocation() != null) {
+                    Location below = location.getLocation().clone().subtract(0, 1, 0);
+                    if (below.getBlock().getState() instanceof Hopper) {
+                        Hopper hopper = (Hopper) below.getBlock().getState();
+                        if (below.getBlock().isBlockIndirectlyPowered() || below.getBlock().isBlockPowered()) {
+                            continue;
+                        }
+                        int hopperAmount = SpigotConfig.getWorldSettings(location.getLocation().getWorld().getName()).getHopperAmount();
+                        Utils.moveToOtherInventory(storage.getInventory(), hopperAmount, hopper.getInventory(), HopperFilter.getHopperFilters(below.getBlock()));
+                        storage.sort();
                     }
-                    int hopperAmount = SpigotConfig.getWorldSettings(location.getWorld().getName()).getHopperAmount();
-                    Utils.moveToOtherInventory(storage.getInventory(), hopperAmount , hopper.getInventory(), HopperFilter.getHopperFilters(below.getBlock()));
-                    storage.sort();
                 }
             }
         }

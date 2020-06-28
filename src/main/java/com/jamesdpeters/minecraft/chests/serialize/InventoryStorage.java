@@ -14,42 +14,54 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Chest;
 import org.bukkit.block.Sign;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.block.data.Directional;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
+import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.util.EulerAngle;
+import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 public class InventoryStorage implements ConfigurationSerializable {
 
-    Inventory inventory; //Old Inventory
-    ArrayList<Location> locationsList;
-    ArrayList<String> members; //Members UUID
-    List<OfflinePlayer> bukkitMembers;
-    String inventoryName = "Chest";
-    VirtualChestToHopper chestToHopper;
-    OfflinePlayer player;
-    UUID playerUUID;
-    boolean isPublic;
-    SortMethod sortMethod;
+    private Inventory inventory; //Old Inventory
+    //    ArrayList<Location> locationsList;
+    private ArrayList<String> members; //Members UUID
+    private List<OfflinePlayer> bukkitMembers;
+    private String inventoryName = "Chest";
+    private VirtualChestToHopper chestToHopper;
+    private OfflinePlayer player;
+    private UUID playerUUID;
+    private boolean isPublic;
+    private SortMethod sortMethod;
+
+    private List<LocationInfo> locationInfoList;
 
     @Override
     public Map<String, Object> serialize() {
         LinkedHashMap<String, Object> hashMap = new LinkedHashMap<>();
         hashMap.put("inventory",inventory.getContents());
-        hashMap.put("locations",locationsList);
+        hashMap.put("locationInfo",locationInfoList);
         hashMap.put("inventoryName",inventoryName);
         hashMap.put("playerUUID",playerUUID.toString());
         hashMap.put("members", members);
@@ -67,8 +79,14 @@ public class InventoryStorage implements ConfigurationSerializable {
         ItemStack[] itemStacks = ((ArrayList<ItemStack>) map.get("inventory")).toArray(new ItemStack[0]);
 
         inventory.setContents(itemStacks);
-        locationsList = (ArrayList<Location>) map.get("locations");
-        locationsList.removeAll(Collections.singletonList(null));
+        List<Location> locations = (ArrayList<Location>) map.get("locations");
+        if(locations != null) {
+            locations.removeAll(Collections.singletonList(null));
+            locationInfoList = LocationInfo.convert(locations);
+        } else {
+            locationInfoList = (List<LocationInfo>) map.get("locationInfo");
+            locationInfoList.removeAll(Collections.singletonList(null));
+        }
 
         playerUUID = UUID.fromString((String) map.get("playerUUID"));
         player = Bukkit.getOfflinePlayer(playerUUID);
@@ -96,7 +114,8 @@ public class InventoryStorage implements ConfigurationSerializable {
         this.playerUUID = player.getUniqueId();
         this.isPublic = false;
         this.sortMethod = SortMethod.OFF;
-        locationsList = new ArrayList<>(Collections.singleton(location));
+        LocationInfo locationInfo = new LocationInfo(location);
+        locationInfoList = new ArrayList<>(Collections.singleton(locationInfo));
 
         Block block = location.getBlock();
         if(block.getState() instanceof Chest){
@@ -112,6 +131,7 @@ public class InventoryStorage implements ConfigurationSerializable {
     private void init(){
         chestToHopper = new VirtualChestToHopper(this);
         chestToHopper.start();
+        Bukkit.getScheduler().scheduleSyncRepeatingTask(ChestsPlusPlus.PLUGIN, this::updatePlayers, 1, 5);
     }
 
     private Inventory initInventory(){
@@ -122,8 +142,36 @@ public class InventoryStorage implements ConfigurationSerializable {
         return inventory;
     }
 
-    public List<Location> getLocations() {
-        return locationsList;
+    /**
+     * @return List of locations
+     * *THIS MUST NOT BE OPERATED ON SINCE ARMOR STANDS DEPEND ON THE PROPER REMOVAL OF LOCATIONS.
+     */
+    public List<LocationInfo> getLocations() {
+        return locationInfoList;
+    }
+
+    public void addLocation(Location location){
+        locationInfoList.add(new LocationInfo(location));
+    }
+
+    public void removeLocation(Location location){
+        //Remove armor stands from the world.
+        locationInfoList.stream().filter(locationInfo -> locationInfo.getLocation().equals(location)).forEach(locationInfo -> {
+            ArmorStand blockStand = locationInfo.getBlockStand();
+            if(blockStand != null) blockStand.remove();
+            ArmorStand itemStand = locationInfo.getItemStand();
+            if(itemStand != null) itemStand.remove();
+        });
+        //Remove this location from storage.
+        locationInfoList.removeIf(locationInfo -> locationInfo.getLocation().equals(location));
+    }
+
+    public boolean containsLocation(Location location){
+        return locationInfoList.stream().anyMatch(locationInfo -> locationInfo.getLocation().equals(location));
+    }
+
+    public int getLocationsSize(){
+        return locationInfoList.size();
     }
 
     public void dropInventory(Location location){
@@ -147,7 +195,7 @@ public class InventoryStorage implements ConfigurationSerializable {
 
     @Override
     public String toString() {
-        return inventoryName+": "+locationsList.toString();
+        return inventoryName+": "+locationInfoList.toString();
     }
 
     public ItemStack getIventoryIcon(Player player){
@@ -232,8 +280,8 @@ public class InventoryStorage implements ConfigurationSerializable {
         ItemStack[] items = inventory.getContents();
         inventory = initInventory();
         inventory.setContents(items);
-        locationsList.forEach(location -> {
-            Block block = location.getBlock();
+        locationInfoList.forEach(location -> {
+            Block block = location.getLocation().getBlock();
             if(block.getBlockData() instanceof org.bukkit.block.data.type.Chest) {
                 org.bukkit.block.data.type.Chest chest = (org.bukkit.block.data.type.Chest) block.getBlockData();
                 BlockFace blockFace = chest.getFacing();
@@ -243,6 +291,107 @@ public class InventoryStorage implements ConfigurationSerializable {
                 sign.update();
             }
         });
+    }
+
+    private void updatePlayers(){
+        for (LocationInfo location : locationInfoList) {
+            World world = location.getLocation().getWorld();
+            Block block = location.getLocation().getBlock();
+            BlockData air = Material.AIR.createBlockData();
+            if(world != null) {
+                Collection<Entity> players = world.getNearbyEntities(location.getLocation(), 20, 20, 20, entity -> entity instanceof Player);
+                players.forEach(entity -> {
+                    if(entity instanceof Player){
+                        Player player = (Player) entity;
+                        if(block.getBlockData() instanceof Directional) {
+                            Directional chest = (Directional) block.getBlockData();
+                            BlockFace facing = chest.getFacing();
+                            Block sign = block.getRelative(facing);
+
+                            ItemStack mostCommon = InventorySorter.getMostCommonItem(inventory);
+
+                            if(mostCommon != null) {
+                                boolean isBlock = mostCommon.getType().isBlock();
+
+                                Location standLoc = getArmorStandLoc(sign,facing, mostCommon.getType().isBlock());
+
+                                //Make client think sign is invisible.
+                                player.sendBlockChange(sign.getLocation(), air);
+
+                                //Get currently stored armorStand if there isn't one spawn it.
+                                ArmorStand stand = isBlock ? location.getBlockStand() : location.getItemStand();
+                                if(stand == null || !stand.isValid()){
+                                    stand = createArmorStand(world,standLoc);
+                                    addArmorStand(isBlock, location, stand);
+                                }
+
+                                stand.setHelmet(mostCommon);
+
+                                //Set on fire to correct lighting.
+                                stand.setFireTicks(Integer.MAX_VALUE);
+
+                                //Set other armor stand helmet to null.
+                                setArmorStandHelmet(!isBlock, location, null);
+
+                            } else {
+                                sign.getState().update();
+                                setArmorStandHelmet(true,location,null);
+                                setArmorStandHelmet(false,location,null);
+                            }
+                        }
+                    }
+                });
+            }
+        }
+    }
+
+    private ArmorStand createArmorStand(World world, Location standLoc){
+        ArmorStand stand = world.spawn(standLoc, ArmorStand.class);
+        stand.setVisible(false);
+        stand.setGravity(false);
+        stand.setSilent(true);
+        stand.setInvulnerable(true);
+        stand.setMarker(true);
+        stand.setBasePlate(false);
+        stand.setSmall(true);
+        return stand;
+    }
+
+    private Location getArmorStandLoc(Block sign, BlockFace facing, boolean isBlock){
+//        int yawOffset = isBlock ? 180 : 0;
+        double directionFactor = isBlock ? 0.6 : 0.3;
+        double y = isBlock ? 0.1 : 0.45;
+        //Get centre of block location.
+        Location standLoc = sign.getLocation().add(0.5,-0.5,0.5);
+        Vector direction = facing.getDirection();
+        standLoc.setYaw(getYaw(direction.getX(),direction.getZ())+180);
+        return standLoc.subtract(directionFactor*direction.getX(),y, directionFactor*direction.getZ());
+    }
+
+    private void setArmorStandHelmet(boolean isBlock, LocationInfo location, ItemStack helmet){
+        ArmorStand stand = isBlock ? location.getBlockStand() : location.getItemStand();
+        if(stand != null) stand.setHelmet(helmet);
+    }
+
+    private void addArmorStand(boolean isBlock, LocationInfo location, ArmorStand stand){
+        if(isBlock) location.setBlockStand(stand);
+        else location.setItemStand(stand);
+    }
+
+    /**
+     * Get yaw based upon the direction of the x and y components of the Chest BlockFace
+     * Uses precalculated values for most orientations.
+     * @param x component
+     * @param y component
+     * @return yaw
+     */
+    private float getYaw(double x, double y){
+        if(x == 0 && y == -1) return 0;
+        if(x == 1 && y == 0) return 90;
+        if(x == 0 && y == 1) return 180;
+        if(x == -1 && y == 0) return 270;
+
+        return (float) (Math.asin(y/Math.sqrt(y*y+x*x))+90);
     }
 
     public List<OfflinePlayer> getMembers(){

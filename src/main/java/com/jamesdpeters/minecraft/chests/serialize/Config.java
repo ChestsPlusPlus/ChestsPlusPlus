@@ -84,7 +84,7 @@ public class Config {
                 Chest chest = (Chest) block.getState();
                 ChestLinkInfo info = Utils.getChestLinkInfo(chest.getLocation());
                 if (info != null) {
-                    return info.getStorage();
+                    return info.getStorage(location);
                 }
             }
         }
@@ -123,8 +123,8 @@ public class Config {
         chest.getInventory().clear();
 
         //If the location isn't already part of the system add it.
-        if (!inventoryStorage.getLocations().contains(chestLocation)) {
-            inventoryStorage.getLocations().add(chestLocation);
+        if (!inventoryStorage.containsLocation(chestLocation)) {
+            inventoryStorage.addLocation(chestLocation);
         }
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1f);
         saveASync();
@@ -134,8 +134,8 @@ public class Config {
 
     public static InventoryStorage removeChest(InventoryStorage storage, Location location) {
         if (storage != null) {
-            storage.getLocations().remove(location);
-            if (storage.getLocations().size() == 0) {
+            storage.removeLocation(location);
+            if (storage.getLocationsSize() == 0) {
                 storage.dropInventory(location);
                 getInventoryStorageMap(storage.getOwner().getUniqueId()).remove(storage.getIdentifier());
             }
@@ -150,7 +150,7 @@ public class Config {
         if (storage != null) {
             storage.getLocations().forEach(location -> {
                 if (location != null) {
-                    Block block = location.getBlock();
+                    Block block = location.getLocation().getBlock();
                     block.breakNaturally();
                 }
             });

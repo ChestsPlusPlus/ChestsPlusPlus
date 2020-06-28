@@ -15,6 +15,7 @@ import com.jamesdpeters.minecraft.chests.serialize.AutoCraftingStorage;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
 import com.jamesdpeters.minecraft.chests.serialize.LinkedChest;
+import com.jamesdpeters.minecraft.chests.serialize.LocationInfo;
 import com.jamesdpeters.minecraft.chests.serialize.MaterialSerializer;
 import com.jamesdpeters.minecraft.chests.serialize.RecipeSerializable;
 import com.jamesdpeters.minecraft.chests.serialize.SpigotConfig;
@@ -63,6 +64,7 @@ public class ChestsPlusPlus extends JavaPlugin {
         ConfigurationSerialization.registerClass(MaterialSerializer.class, "Material");
         ConfigurationSerialization.registerClass(AutoCraftingStorage.class, "AutoCraftingStorage");
         ConfigurationSerialization.registerClass(RecipeSerializable.class, "Recipe");
+        ConfigurationSerialization.registerClass(LocationInfo.class, "LocationInfo");
     }
 
     @SuppressWarnings("ConstantConditions")
