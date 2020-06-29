@@ -2,7 +2,7 @@ package com.jamesdpeters.minecraft.chests.runnables;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
-import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
+import com.jamesdpeters.minecraft.chests.storage.ChestLinkStorage;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
@@ -45,7 +45,11 @@ public class ChestLinkVerifier extends BukkitRunnable {
         }
     }
 
-    public void convertToSingleChest(Inventory inventory){
+    /**
+     * Converts the block associated with this inventory into a Single Chest.
+     * @param inventory
+     */
+    private void convertToSingleChest(Inventory inventory){
         if(inventory != null) {
             org.bukkit.block.data.type.Chest blockData = (org.bukkit.block.data.type.Chest) inventory.getLocation().getBlock().getBlockData();
             blockData.setType(org.bukkit.block.data.type.Chest.Type.SINGLE);
@@ -53,13 +57,18 @@ public class ChestLinkVerifier extends BukkitRunnable {
         }
     }
 
-    public boolean isChestLinked(DoubleChest chest){
+    /**
+     * Checks if either side of a @{@link DoubleChest} has been added to a ChestLink
+     * @param chest - the double chest being tested.
+     * @return true if either side has been added to a ChestLink.
+     */
+    private boolean isChestLinked(DoubleChest chest){
         Location chestSide1 = block.getLocation();
         Location diff = chest.getLocation().clone().subtract(chestSide1).multiply(2);
         Location chestSide2 = chestSide1.clone().add(diff);
 
-        InventoryStorage leftStorage = Config.getInventoryStorage(chestSide1);
-        InventoryStorage rightStorage = Config.getInventoryStorage(chestSide2);
+        ChestLinkStorage leftStorage = Config.getChestLink().getStorage(chestSide1);
+        ChestLinkStorage rightStorage = Config.getChestLink().getStorage(chestSide2);
 
         return (leftStorage != null) || (rightStorage != null);
     }

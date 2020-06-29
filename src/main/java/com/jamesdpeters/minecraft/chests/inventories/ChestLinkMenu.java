@@ -3,7 +3,7 @@ package com.jamesdpeters.minecraft.chests.inventories;
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
-import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
+import com.jamesdpeters.minecraft.chests.storage.ChestLinkStorage;
 import fr.minuskube.inv.ClickableItem;
 import fr.minuskube.inv.SmartInventory;
 import fr.minuskube.inv.content.InventoryContents;
@@ -22,11 +22,11 @@ public class ChestLinkMenu implements InventoryProvider {
 
     public static HashMap<Player, SmartInventory> menus;
 
-    private Collection<InventoryStorage> storages;
+    private Collection<ChestLinkStorage> storages;
     private SmartInventory menu;
 
     private ChestLinkMenu(Player player){
-        this.storages = Config.getInventoryStorageMap(player.getUniqueId()).values();
+        this.storages = Config.getChestLink().getStorageMap(player.getUniqueId()).values();
         menu = SmartInventory.builder()
                 .id("chestLinkMenu")
                 .title("Inventory Storage")
@@ -53,12 +53,12 @@ public class ChestLinkMenu implements InventoryProvider {
         Pagination pagination = contents.pagination();
 
         List<ClickableItem> itemList = new ArrayList<>();
-        for(InventoryStorage storage : storages){
+        for(ChestLinkStorage storage : storages){
             ClickableItem item = storage.getClickableItem(player);
             itemList.add(item);
         }
-        List<InventoryStorage> memberOfStorage = Config.getInventoryStorageMemberOf(player);
-        for(InventoryStorage storage : memberOfStorage){
+        List<ChestLinkStorage> memberOfStorage = Config.getChestLink().getStorageMemberOf(player);
+        for(ChestLinkStorage storage : memberOfStorage){
             ClickableItem item = storage.getClickableItem(player);
             itemList.add(item);
         }

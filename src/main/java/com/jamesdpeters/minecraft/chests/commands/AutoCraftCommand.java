@@ -3,7 +3,7 @@ package com.jamesdpeters.minecraft.chests.commands;
 import com.jamesdpeters.minecraft.chests.misc.Messages;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
-import com.jamesdpeters.minecraft.chests.serialize.AutoCraftingStorage;
+import com.jamesdpeters.minecraft.chests.storage.AutoCraftingStorage;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -76,7 +76,7 @@ public class AutoCraftCommand extends ServerCommand  {
                     if(args.length > 1){
                         if (player.hasPermission(Permissions.AUTOCRAFT_ADD)) {
                             Block targetBlock = player.getTargetBlockExact(5);
-                            if (targetBlock != null) Utils.createAutoCraftChest(player, targetBlock, args[1]);
+                            if (targetBlock != null) Config.getAutoCraft().createStorage(player, targetBlock, args[1]);
                             else Messages.MUST_LOOK_AT_CHEST(player);
                         } else {
                             Messages.NO_PERMISSION(player);
@@ -92,9 +92,9 @@ public class AutoCraftCommand extends ServerCommand  {
                         if(sender.hasPermission(Permissions.AUTOCRAFT_OPEN)) {
                             AutoCraftingStorage invs;
                             if(args[1].contains(":")){
-                                invs = Config.getAutoCraftStorage(player,args[1]);
+                                invs = Config.getAutoCraft().getStorage(player,args[1]);
                             } else {
-                                invs = Config.getAutoCraftStorage(player.getUniqueId(), args[1]);
+                                invs = Config.getAutoCraft().getStorage(player.getUniqueId(), args[1]);
                             }
                             if(invs != null) player.openInventory(invs.getInventory());
                             return true;
@@ -123,7 +123,7 @@ public class AutoCraftCommand extends ServerCommand  {
                 case REMOVE:
                     if(args.length > 1) {
                         if (sender.hasPermission(Permissions.AUTOCRAFT_REMOVE)) {
-                            Config.removeAutoCraft(player, args[1]);
+                            Config.getAutoCraft().removeStorage(player, args[1]);
                             return true;
                         } else {
                             Messages.NO_PERMISSION(player);
@@ -138,7 +138,7 @@ public class AutoCraftCommand extends ServerCommand  {
                    return memberCommand(args, sender);
                 case SETPUBLIC: {
                     if (args.length > 2) {
-                        AutoCraftingStorage storage = Config.getAutoCraftStorage(player.getUniqueId(), args[1]);
+                        AutoCraftingStorage storage = Config.getAutoCraft().getStorage(player.getUniqueId(), args[1]);
                         if (storage != null) {
                             boolean setPublic = Boolean.parseBoolean(args[2]);
                             storage.setPublic(setPublic);
@@ -157,7 +157,7 @@ public class AutoCraftCommand extends ServerCommand  {
                     if(args.length > 2){
                         String group = args[1];
                         String newIdentifier = args[2];
-                        if(!Config.renameAutoCraftStorage(player,group,newIdentifier)){
+                        if(!Config.getAutoCraft().renameStorage(player,group,newIdentifier)){
                             player.sendMessage(ChatColor.RED + OPTIONS.RENAME.commandHelp);
                             player.sendMessage(ChatColor.RED + OPTIONS.RENAME.description);
                         }
@@ -183,10 +183,10 @@ public class AutoCraftCommand extends ServerCommand  {
                     switch (OPTIONS.valueOf(args[0].toUpperCase())) {
                         case ADD:
                         case OPEN:
-                            return Utils.getAutoCraftStorageOpenableList(player);
+                            return Config.getAutoCraft().getOpenableStorageList(player);
                         case REMOVE:
                         case RENAME:
-                            return Utils.getAutoCraftStorageList(player);
+                            return Config.getAutoCraft().getStorageList(player);
                         case MEMBER:
                             return Arrays.asList("add","remove","list");
                     }
@@ -196,7 +196,7 @@ public class AutoCraftCommand extends ServerCommand  {
                 try {
                     switch (OPTIONS.valueOf(args[0].toUpperCase())) {
                         case MEMBER:
-                            return Utils.getAutoCraftStorageList(player);
+                            return Config.getAutoCraft().getStorageList(player);
                     }
                 } catch (IllegalArgumentException ignored) { }
             }
@@ -218,13 +218,13 @@ public class AutoCraftCommand extends ServerCommand  {
             if(sender.hasPermission(Permissions.MEMBER)){
                 if(args[1].equals("add")) {
                     Player toAdd = Bukkit.getPlayer(args[3]);
-                    AutoCraftingStorage storage = Config.getAutoCraftStorage(player.getUniqueId(), args[2]);
+                    AutoCraftingStorage storage = Config.getAutoCraft().getStorage(player.getUniqueId(), args[2]);
                     if (storage != null && storage.addMember(toAdd))
                         Messages.ADDED_MEMBER(player, storage, args[3]);
                     else Messages.UNABLE_TO_ADD_MEMBER(player, args[3]);
                 } else if(args[1].equals("remove")){
                     Player toAdd = Bukkit.getPlayer(args[3]);
-                    AutoCraftingStorage storage = Config.getAutoCraftStorage(player.getUniqueId(), args[2]);
+                    AutoCraftingStorage storage = Config.getAutoCraft().getStorage(player.getUniqueId(), args[2]);
                     if(storage != null && storage.removeMember(toAdd))
                         Messages.REMOVE_MEMBER(player, storage, args[3]);
                     else Messages.UNABLE_TO_REMOVE_MEMBER(player,args[3]);
@@ -239,7 +239,7 @@ public class AutoCraftCommand extends ServerCommand  {
         } else if(args.length > 2){
             if(sender.hasPermission(Permissions.MEMBER)){
                 if(args[1].equals("list")) {
-                    AutoCraftingStorage storage = Config.getAutoCraftStorage(player.getUniqueId(), args[2]);
+                    AutoCraftingStorage storage = Config.getAutoCraft().getStorage(player.getUniqueId(), args[2]);
                     if(storage != null){
                         Messages.LIST_MEMBERS(player,storage);
                         return true;

@@ -3,7 +3,7 @@ package com.jamesdpeters.minecraft.chests.runnables;
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.filters.HopperFilter;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
-import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
+import com.jamesdpeters.minecraft.chests.storage.ChestLinkStorage;
 import com.jamesdpeters.minecraft.chests.serialize.LocationInfo;
 import com.jamesdpeters.minecraft.chests.serialize.SpigotConfig;
 import org.bukkit.Location;
@@ -13,10 +13,10 @@ import org.bukkit.scheduler.BukkitTask;
 
 public class VirtualChestToHopper extends BukkitRunnable {
 
-    InventoryStorage storage;
+    ChestLinkStorage storage;
     BukkitTask task;
 
-    public VirtualChestToHopper(InventoryStorage storage){
+    public VirtualChestToHopper(ChestLinkStorage storage){
         this.storage = storage;
     }
 

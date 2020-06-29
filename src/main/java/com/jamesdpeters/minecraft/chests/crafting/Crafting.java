@@ -1,15 +1,8 @@
 package com.jamesdpeters.minecraft.chests.crafting;
 
-import com.jamesdpeters.minecraft.chests.interfaces.VirtualCraftingHolder;
-import com.jamesdpeters.minecraft.chests.serialize.AutoCraftingStorage;
-import com.jamesdpeters.minecraft.chests.serialize.Config;
-import com.jamesdpeters.minecraft.chests.serialize.RecipeSerializable;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
-import org.bukkit.OfflinePlayer;
-import org.bukkit.entity.Player;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.RecipeChoice;
@@ -17,8 +10,6 @@ import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.ShapelessRecipe;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;

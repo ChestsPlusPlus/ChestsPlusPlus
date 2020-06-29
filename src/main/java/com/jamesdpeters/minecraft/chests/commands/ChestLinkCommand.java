@@ -5,7 +5,7 @@ import com.jamesdpeters.minecraft.chests.misc.Messages;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
-import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
+import com.jamesdpeters.minecraft.chests.storage.ChestLinkStorage;
 import com.jamesdpeters.minecraft.chests.sort.SortMethod;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -80,7 +80,7 @@ public class ChestLinkCommand extends ServerCommand  {
                     if(args.length > 1){
                         if(sender.hasPermission(Permissions.ADD)) {
                             Block targetBlock = player.getTargetBlockExact(5);
-                            if (targetBlock != null) Utils.createChestLink(player, targetBlock, args[1]);
+                            if (targetBlock != null) Config.getChestLink().createStorage(player,targetBlock,args[1]);
                             else Messages.MUST_LOOK_AT_CHEST(player);
                             return true;
                         } else {
@@ -95,11 +95,11 @@ public class ChestLinkCommand extends ServerCommand  {
                 case OPEN:
                     if(args.length > 1){
                         if(sender.hasPermission(Permissions.OPEN)) {
-                            InventoryStorage invs;
+                            ChestLinkStorage invs;
                             if(args[1].contains(":")){
-                                invs = Config.getInventoryStorage(player,args[1]);
+                                invs = Config.getChestLink().getStorage(player,args[1]);
                             } else {
-                                invs = Config.getInventoryStorage(player.getUniqueId(), args[1]);
+                                invs = Config.getChestLink().getStorage(player.getUniqueId(), args[1]);
                             }
                             if(invs != null) Utils.openChestInventory(player, invs.getInventory());
                             return true;
@@ -126,7 +126,7 @@ public class ChestLinkCommand extends ServerCommand  {
                 case REMOVE:
                     if(args.length > 1) {
                         if (sender.hasPermission(Permissions.REMOVE)) {
-                            Config.removeChestLink(player, args[1]);
+                            Config.getChestLink().removeStorage(player, args[1]);
                             return true;
                         } else {
                             Messages.NO_PERMISSION(player);
@@ -140,7 +140,7 @@ public class ChestLinkCommand extends ServerCommand  {
                 case SORT:
                     if(args.length > 1) {
                         if (sender.hasPermission(Permissions.SORT)) {
-                            InventoryStorage storage = Config.getInventoryStorage(player.getUniqueId(),args[1]);
+                            ChestLinkStorage storage = Config.getChestLink().getStorage(player.getUniqueId(),args[1]);
                             if(storage != null) {
                                 storage.setSortMethod(Enum.valueOf(SortMethod.class, args[2]));
                                 storage.sort();
@@ -160,7 +160,7 @@ public class ChestLinkCommand extends ServerCommand  {
                    return memberCommand(args, sender);
                 case SETPUBLIC: {
                     if (args.length > 2) {
-                        InventoryStorage storage = Config.getInventoryStorage(player.getUniqueId(), args[1]);
+                        ChestLinkStorage storage = Config.getChestLink().getStorage(player.getUniqueId(), args[1]);
                         if (storage != null) {
                             boolean setpublic = Boolean.parseBoolean(args[2]);
                             storage.setPublic(setpublic);
@@ -179,7 +179,7 @@ public class ChestLinkCommand extends ServerCommand  {
                     if(args.length > 2){
                         String group = args[1];
                         String newIdentifier = args[2];
-                        if(!Config.renameInventoryStorage(player,group,newIdentifier)){
+                        if(!Config.getChestLink().renameStorage(player,group,newIdentifier)){
                             player.sendMessage(ChatColor.RED + OPTIONS.RENAME.commandHelp);
                             player.sendMessage(ChatColor.RED + OPTIONS.RENAME.description);
                         }
@@ -205,11 +205,11 @@ public class ChestLinkCommand extends ServerCommand  {
                     switch (OPTIONS.valueOf(args[0].toUpperCase())) {
                         case ADD:
                         case OPEN:
-                            return Utils.getInvetoryStorageOpenableList(player);
+                            return Config.getChestLink().getOpenableStorageList(player);
                         case REMOVE:
                         case SORT:
                         case RENAME:
-                            return Utils.getInventoryStorageList(player);
+                            return Config.getChestLink().getStorageList(player);
                         case MEMBER:
                             return Arrays.asList("add","remove","list");
                     }
@@ -219,7 +219,7 @@ public class ChestLinkCommand extends ServerCommand  {
                 try {
                     switch (OPTIONS.valueOf(args[0].toUpperCase())) {
                         case MEMBER:
-                            return Utils.getInventoryStorageList(player);
+                            return Config.getChestLink().getStorageList(player);
                         case SORT:
                             return SortMethod.valuesList;
                     }
@@ -243,13 +243,13 @@ public class ChestLinkCommand extends ServerCommand  {
             if(sender.hasPermission(Permissions.MEMBER)){
                 if(args[1].equals("add")) {
                     Player toAdd = Bukkit.getPlayer(args[3]);
-                    InventoryStorage storage = Config.getInventoryStorage(player.getUniqueId(), args[2]);
+                    ChestLinkStorage storage = Config.getChestLink().getStorage(player.getUniqueId(), args[2]);
                     if (storage != null && storage.addMember(toAdd))
                         Messages.ADDED_MEMBER(player, storage, args[3]);
                     else Messages.UNABLE_TO_ADD_MEMBER(player, args[3]);
                 } else if(args[1].equals("remove")){
                     Player toAdd = Bukkit.getPlayer(args[3]);
-                    InventoryStorage storage = Config.getInventoryStorage(player.getUniqueId(),args[2]);
+                    ChestLinkStorage storage = Config.getChestLink().getStorage(player.getUniqueId(),args[2]);
                     if(storage != null && storage.removeMember(toAdd))
                         Messages.REMOVE_MEMBER(player, storage, args[3]);
                     else Messages.UNABLE_TO_REMOVE_MEMBER(player,args[3]);
@@ -264,7 +264,7 @@ public class ChestLinkCommand extends ServerCommand  {
         } else if(args.length > 2){
             if(sender.hasPermission(Permissions.MEMBER)){
                 if(args[1].equals("list")) {
-                    InventoryStorage storage = Config.getInventoryStorage(player.getUniqueId(), args[2]);
+                    ChestLinkStorage storage = Config.getChestLink().getStorage(player.getUniqueId(), args[2]);
                     if(storage != null){
                         Messages.LIST_MEMBERS(player,storage);
                         return true;

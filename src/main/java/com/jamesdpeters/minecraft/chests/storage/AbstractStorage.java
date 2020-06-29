@@ -1,14 +1,9 @@
-package com.jamesdpeters.minecraft.chests.serialize;
+package com.jamesdpeters.minecraft.chests.storage;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
-import com.jamesdpeters.minecraft.chests.interfaces.VirtualInventoryHolder;
-import com.jamesdpeters.minecraft.chests.inventories.ChestLinkMenu;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
-import com.jamesdpeters.minecraft.chests.misc.Utils;
-import com.jamesdpeters.minecraft.chests.runnables.VirtualChestToHopper;
-import com.jamesdpeters.minecraft.chests.sort.InventorySorter;
-import com.jamesdpeters.minecraft.chests.sort.SortMethod;
-import fr.minuskube.inv.ClickableItem;
+import com.jamesdpeters.minecraft.chests.misc.Values;
+import com.jamesdpeters.minecraft.chests.serialize.LocationInfo;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -17,19 +12,15 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.block.Chest;
 import org.bukkit.block.Sign;
 import org.bukkit.block.data.BlockData;
-import org.bukkit.block.data.Directional;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.util.EulerAngle;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
@@ -39,46 +30,37 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
-public class InventoryStorage implements ConfigurationSerializable {
+public abstract class AbstractStorage implements ConfigurationSerializable {
 
-    private Inventory inventory; //Old Inventory
-    //    ArrayList<Location> locationsList;
-    private ArrayList<String> members; //Members UUID
+    private ArrayList<String> members;
     private List<OfflinePlayer> bukkitMembers;
-    private String inventoryName = "Chest";
-    private VirtualChestToHopper chestToHopper;
     private OfflinePlayer player;
-    private UUID playerUUID;
-    private boolean isPublic;
-    private SortMethod sortMethod;
-
+    protected UUID playerUUID;
+    boolean isPublic;
     private List<LocationInfo> locationInfoList;
+    private Inventory inventory;
+    private String inventoryName;
 
-    @Override
-    public Map<String, Object> serialize() {
-        LinkedHashMap<String, Object> hashMap = new LinkedHashMap<>();
-        hashMap.put("inventory",inventory.getContents());
-        hashMap.put("locationInfo",locationInfoList);
-        hashMap.put("inventoryName",inventoryName);
-        hashMap.put("playerUUID",playerUUID.toString());
-        hashMap.put("members", members);
-        hashMap.put("isPublic", isPublic);
-        hashMap.put("sortMethod", sortMethod.toString());
-        return hashMap;
+    private StorageType storageType;
+
+    public <T extends AbstractStorage> AbstractStorage(OfflinePlayer player, String identifier, Location location, StorageType<T> storageType){
+        this.player = player;
+        this.playerUUID = player.getUniqueId();
+        this.isPublic = false;
+        this.storageType = storageType;
+        setIdentifier(identifier);
+        LocationInfo locationInfo = new LocationInfo(location);
+        locationInfoList = new ArrayList<>(Collections.singleton(locationInfo));
+        inventory = initInventory();
+        init();
     }
 
     @SuppressWarnings("unchecked")
-    public InventoryStorage(Map<String, Object> map){
-        String tempName = (String) map.get("inventoryName");
-        if(tempName != null) inventoryName = tempName;
+    public AbstractStorage(Map<String, Object> map){
 
-        inventory = initInventory();
-        ItemStack[] itemStacks = ((ArrayList<ItemStack>) map.get("inventory")).toArray(new ItemStack[0]);
-
-        inventory.setContents(itemStacks);
+        //This reformats the previous method of location storage to the newer version.
         List<Location> locations = (ArrayList<Location>) map.get("locations");
         if(locations != null) {
             locations.removeAll(Collections.singletonList(null));
@@ -88,15 +70,15 @@ public class InventoryStorage implements ConfigurationSerializable {
             locationInfoList.removeAll(Collections.singletonList(null));
         }
 
+        //Read owners UUID and find the player for that ID.
         playerUUID = UUID.fromString((String) map.get("playerUUID"));
         player = Bukkit.getOfflinePlayer(playerUUID);
 
+        //Read publicity data
         if(map.containsKey("isPublic")) isPublic = (boolean) map.get("isPublic");
         else isPublic = false;
 
-        if(map.containsKey("sortMethod")) sortMethod = Enum.valueOf(SortMethod.class, (String) map.get("sortMethod"));
-        else sortMethod = SortMethod.OFF;
-
+        //Read members for this storage
         if(map.get("members") != null){
             members = (ArrayList<String>) map.get("members");
             bukkitMembers = new ArrayList<>();
@@ -105,42 +87,61 @@ public class InventoryStorage implements ConfigurationSerializable {
             }
         }
 
-        init();
-    }
-
-    public InventoryStorage(OfflinePlayer player, String group, Location location){
-        this.inventoryName = group;
-        this.player = player;
-        this.playerUUID = player.getUniqueId();
-        this.isPublic = false;
-        this.sortMethod = SortMethod.OFF;
-        LocationInfo locationInfo = new LocationInfo(location);
-        locationInfoList = new ArrayList<>(Collections.singleton(locationInfo));
-
-        Block block = location.getBlock();
-        if(block.getState() instanceof Chest){
-            Chest chest = (Chest) block.getState();
-            inventory = initInventory();
-            inventory.setContents(chest.getInventory().getContents());
-            chest.getInventory().clear();
+        inventory = initInventory();
+        if(storeInventory()) {
+            ItemStack[] itemStacks = ((ArrayList<ItemStack>) map.get("inventory")).toArray(new ItemStack[0]);
+            inventory.setContents(itemStacks);
         }
 
-        init();
+        //Pass map through
+        deserialize(map);
+    }
+
+    @Override
+    public Map<String, Object> serialize() {
+        HashMap<String, Object> map = new LinkedHashMap<>();
+        //Add custom parameters first
+        serialize(map);
+        //Now add default parameters
+        if(storeInventory()) map.put("inventory", inventory.getContents());
+        map.put("playerUUID", player.getUniqueId().toString());
+        map.put("locationInfo", locationInfoList);
+        map.put("members", members);
+        map.put("isPublic", isPublic);
+        return map;
     }
 
     private void init(){
-        chestToHopper = new VirtualChestToHopper(this);
-        chestToHopper.start();
-        Bukkit.getScheduler().scheduleSyncRepeatingTask(ChestsPlusPlus.PLUGIN, this::updatePlayers, 1, 5);
+        Bukkit.getScheduler().scheduleSyncRepeatingTask(ChestsPlusPlus.PLUGIN, this::updateClients, 1, 5);
     }
 
-    private Inventory initInventory(){
-        return Bukkit.createInventory(new VirtualInventoryHolder(this), 54,inventoryName);
-    }
+    /**
+     * @return true if this storage should store the inventory to disk.
+     */
+    abstract boolean storeInventory();
 
-    public Inventory getInventory() {
-        return inventory;
-    }
+    /**
+     * Add custom parameters here to be serialized.
+     * @param map - the map to be added to.
+     */
+    abstract void serialize(Map<String, Object> map);
+
+
+    /**
+     * Use this to deserialize custom parameters.
+     * @param map - the map to deserialize from.
+     */
+    abstract void deserialize(Map<String, Object> map);
+    abstract Inventory initInventory();
+    abstract void setIdentifier(String newIdentifier);
+    public abstract String getIdentifier();
+
+    /**
+     * This is called when a block is added to the storage system.
+     * @param block - the block that was added.
+     * @param player - the player who added the storage.
+     */
+    abstract void onStorageAdded(Block block, Player player);
 
     /**
      * @return List of locations
@@ -150,10 +151,18 @@ public class InventoryStorage implements ConfigurationSerializable {
         return locationInfoList;
     }
 
+    /**
+     * Adds a location to this storage.
+     * @param location - location to be added.
+     */
     public void addLocation(Location location){
         locationInfoList.add(new LocationInfo(location));
     }
 
+    /**
+     * Removes a location from this storage and removes any @{@link ArmorStand} associated with that location
+     * @param location - location to be removed.
+     */
     public void removeLocation(Location location){
         //Remove armor stands from the world.
         locationInfoList.stream().filter(locationInfo -> locationInfo.getLocation().equals(location)).forEach(locationInfo -> {
@@ -166,6 +175,10 @@ public class InventoryStorage implements ConfigurationSerializable {
         locationInfoList.removeIf(locationInfo -> locationInfo.getLocation().equals(location));
     }
 
+    /**
+     * @param location - location being checked
+     * @return true if this storage contains this location
+     */
     public boolean containsLocation(Location location){
         return locationInfoList.stream().anyMatch(locationInfo -> locationInfo.getLocation().equals(location));
     }
@@ -174,72 +187,62 @@ public class InventoryStorage implements ConfigurationSerializable {
         return locationInfoList.size();
     }
 
+    public void rename(String newName){
+        setIdentifier(newName);
+        if(storeInventory()){
+            ItemStack[] items = getInventory().getContents();
+            inventory = initInventory();
+            inventory.setContents(items);
+        } else {
+            inventory = initInventory();
+        }
+
+        getLocations().forEach(location -> {
+            Block block = location.getLocation().getBlock();
+            BlockFace face = storageType.getStorageFacing(block);
+            if(face != null) {
+                Block signBlock = block.getRelative(face);
+                if(signBlock.getState() instanceof Sign) {
+                    Sign sign = (Sign) signBlock.getState();
+                    sign.setLine(1, ChatColor.GREEN + ChatColor.stripColor("[" + newName+ "]"));
+                    sign.update();
+                }
+            }
+        });
+    }
+
+    /**
+     * Drops the contents of the storage at the provided location.
+     * @param location - location to drop.
+     */
     public void dropInventory(Location location){
-        for(ItemStack item : inventory.getContents()) {
+        for(ItemStack item : getInventory().getContents()) {
             if(location.getWorld() != null){
                 if(item != null) {
                     location.getWorld().dropItemNaturally(location, item);
-                    inventory.remove(item);
+                    getInventory().remove(item);
                 }
             }
         }
     }
 
-    public String getIdentifier() {
-        return inventoryName;
-    }
+    /* MEMBER METHODS */
 
-    public OfflinePlayer getOwner() {
-        return player;
-    }
-
-    @Override
-    public String toString() {
-        return inventoryName+": "+locationInfoList.toString();
-    }
-
-    public ItemStack getIventoryIcon(Player player){
-        ItemStack mostCommon = InventorySorter.getMostCommonItem(inventory);
-        ItemStack toReturn;
-        if(mostCommon == null) toReturn = new ItemStack(Material.CHEST);
-        else toReturn = mostCommon.clone();
-
-        ItemMeta meta = toReturn.getItemMeta();
-        if(meta != null) {
-            String dispName = ChatColor.GREEN + "" + getIdentifier() + ": " +ChatColor.WHITE+ ""+getTotalItems()+" items";
-            if(player.getUniqueId().equals(playerUUID)) meta.setDisplayName(dispName);
-            else meta.setDisplayName(getOwner().getName()+": "+dispName);
-
-            if(getMembers() != null) {
-                List<String> memberNames = new ArrayList<>();
-                if(isPublic) memberNames.add(ChatColor.WHITE+"Public Chest");
-                memberNames.add(ChatColor.BOLD+""+ChatColor.UNDERLINE+"Members:");
-                getMembers().forEach(player1 -> memberNames.add(ChatColor.stripColor(player1.getName())));
-                meta.setLore(memberNames);
-            }
-            toReturn.setItemMeta(meta);
-        }
-        toReturn.setAmount(1);
-        return toReturn;
-    }
-
-    public ClickableItem getClickableItem(Player player) {
-        return ClickableItem.from(getIventoryIcon(player), event -> {
-            InventoryHolder inventoryHolder = inventory.getHolder();
-            if(inventoryHolder instanceof VirtualInventoryHolder){
-                ((VirtualInventoryHolder) inventoryHolder).setPreviousInventory(() -> {
-                    Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN, () -> ChestLinkMenu.getMenu(player).open(player), 1);
-                });
-            }
-            Utils.openChestInventory(player,getInventory());
-        });
-    }
-
+    /**
+     * Checks if the given @{@link Player} has permission to access this storage
+     * @param player - the player being checked
+     * @return true if player has permission.
+     */
     public boolean hasPermission(Player player){
         if(player.hasPermission(Permissions.OPEN_ANY)) return true;
         return hasPermission((OfflinePlayer) player);
     }
 
+    /**
+     * Checks if the given @{@link OfflinePlayer} has permission to access this storage
+     * @param player - the player being checked
+     * @return true if player has permission.
+     */
     public boolean hasPermission(OfflinePlayer player){
         if(isPublic) return true;
         if(player.getUniqueId().equals(playerUUID)) return true;
@@ -251,6 +254,12 @@ public class InventoryStorage implements ConfigurationSerializable {
         return false;
     }
 
+    /**
+     * Add a @{@link Player} to this storage.
+     * This will return false if the player is null or the player was already present.
+     * @param player - the player being added.
+     * @return true if the player was added
+     */
     public boolean addMember(Player player){
         if(player != null){
             if(members == null) members = new ArrayList<>();
@@ -264,59 +273,63 @@ public class InventoryStorage implements ConfigurationSerializable {
         return false;
     }
 
+    /**
+     * Remove a @{@link Player} from this storage.
+     * @param player - player being removed.
+     * @return true if player was removed.
+     */
     public boolean removeMember(Player player){
         if(player != null){
             if(bukkitMembers != null) bukkitMembers.remove(player);
             if(members != null){
-                members.remove(player.getUniqueId().toString());
-                return true;
+                return members.remove(player.getUniqueId().toString());
             }
         }
         return false;
     }
 
-    public void rename(String newIdentifier){
-        this.inventoryName = newIdentifier;
-        ItemStack[] items = inventory.getContents();
-        inventory = initInventory();
-        inventory.setContents(items);
-        locationInfoList.forEach(location -> {
-            Block block = location.getLocation().getBlock();
-            if(block.getBlockData() instanceof org.bukkit.block.data.type.Chest) {
-                org.bukkit.block.data.type.Chest chest = (org.bukkit.block.data.type.Chest) block.getBlockData();
-                BlockFace blockFace = chest.getFacing();
-                Block signBlock = block.getRelative(blockFace);
-                Sign sign = (Sign) signBlock.getState();
-                sign.setLine(1,ChatColor.GREEN + ChatColor.stripColor("[" + newIdentifier + "]"));
-                sign.update();
-            }
-        });
-    }
+//    /**
+//     * @return the direction the storage at the given location is facing.
+//     */
+//    public abstract BlockFace getStorageFacing(Block block);
 
-    private void updatePlayers(){
+    /* ARMOR STAND METHODS */
+
+    /**
+     * @return the @{@link ItemStack} an @{@link ArmorStand} should be holding.
+     */
+    abstract ItemStack getArmorStandItem();
+
+    /**
+     * Updates nearby clients for all locations of this storage:
+     * - If getArmorStandItem() is non-null the block in-front of the storage is set to Air and an @{@link ArmorStand} is
+     *   spawned that displays the item.
+     */
+    private void updateClients(){
         for (LocationInfo location : locationInfoList) {
             World world = location.getLocation().getWorld();
             Block block = location.getLocation().getBlock();
             BlockData air = Material.AIR.createBlockData();
+
             if(world != null) {
                 Collection<Entity> players = world.getNearbyEntities(location.getLocation(), 20, 20, 20, entity -> entity instanceof Player);
                 players.forEach(entity -> {
                     if(entity instanceof Player){
                         Player player = (Player) entity;
-                        if(block.getBlockData() instanceof Directional) {
-                            Directional chest = (Directional) block.getBlockData();
-                            BlockFace facing = chest.getFacing();
-                            Block sign = block.getRelative(facing);
+                        BlockFace facing = storageType.getStorageFacing(block);
+                        if(facing != null) {
 
-                            ItemStack mostCommon = InventorySorter.getMostCommonItem(inventory);
+                            Block anchor = block.getRelative(facing);
 
-                            if(mostCommon != null) {
-                                boolean isBlock = mostCommon.getType().isBlock();
+                            ItemStack displayItem = getArmorStandItem();
 
-                                Location standLoc = getArmorStandLoc(sign,facing, mostCommon.getType().isBlock());
+                            if(displayItem != null) {
+                                boolean isBlock = displayItem.getType().isBlock();
+
+                                Location standLoc = getArmorStandLoc(anchor,facing, displayItem.getType().isBlock());
 
                                 //Make client think sign is invisible.
-                                player.sendBlockChange(sign.getLocation(), air);
+                                player.sendBlockChange(anchor.getLocation(), air);
 
                                 //Get currently stored armorStand if there isn't one spawn it.
                                 ArmorStand stand = isBlock ? location.getBlockStand() : location.getItemStand();
@@ -325,7 +338,7 @@ public class InventoryStorage implements ConfigurationSerializable {
                                     addArmorStand(isBlock, location, stand);
                                 }
 
-                                stand.setHelmet(mostCommon);
+                                stand.setHelmet(displayItem);
 
                                 //Set on fire to correct lighting.
                                 stand.setFireTicks(Integer.MAX_VALUE);
@@ -334,7 +347,7 @@ public class InventoryStorage implements ConfigurationSerializable {
                                 setArmorStandHelmet(!isBlock, location, null);
 
                             } else {
-                                sign.getState().update();
+                                anchor.getState().update();
                                 setArmorStandHelmet(true,location,null);
                                 setArmorStandHelmet(false,location,null);
                             }
@@ -345,6 +358,12 @@ public class InventoryStorage implements ConfigurationSerializable {
         }
     }
 
+    /**
+     * Creates an empty @{@link ArmorStand} with properties to make it invisible, invulnerable etc.
+     * @param world - the world to spawn in.
+     * @param standLoc - location to spawn the @{@link ArmorStand} at.
+     * @return instance of @{@link ArmorStand} that was spawned.
+     */
     private ArmorStand createArmorStand(World world, Location standLoc){
         ArmorStand stand = world.spawn(standLoc, ArmorStand.class);
         stand.setVisible(false);
@@ -354,15 +373,24 @@ public class InventoryStorage implements ConfigurationSerializable {
         stand.setMarker(true);
         stand.setBasePlate(false);
         stand.setSmall(true);
+
+        //Store value of 1 in armour stand to indicate it belongs to this plugin.
+        stand.getPersistentDataContainer().set(Values.PluginKey, PersistentDataType.INTEGER, 1);
         return stand;
     }
 
-    private Location getArmorStandLoc(Block sign, BlockFace facing, boolean isBlock){
-//        int yawOffset = isBlock ? 180 : 0;
+    /**
+     * Gets the location of an @{@link ArmorStand} based on the Block, BlockFace and if it's a Block/Item.
+     * @param anchor - anchor block to base @{@link ArmorStand} location from.
+     * @param facing - BlockFace the stand should be placed on.
+     * @param isBlock - true if the @{@link ItemStack} is a Block / false if an Item.
+     * @return the calculated location for the @{@link ArmorStand}
+     */
+    private Location getArmorStandLoc(Block anchor, BlockFace facing, boolean isBlock){
         double directionFactor = isBlock ? 0.6 : 0.3;
         double y = isBlock ? 0.1 : 0.45;
         //Get centre of block location.
-        Location standLoc = sign.getLocation().add(0.5,-0.5,0.5);
+        Location standLoc = anchor.getLocation().add(0.5,-0.5,0.5);
         Vector direction = facing.getDirection();
         standLoc.setYaw(getYaw(direction.getX(),direction.getZ())+180);
         return standLoc.subtract(directionFactor*direction.getX(),y, directionFactor*direction.getZ());
@@ -394,37 +422,33 @@ public class InventoryStorage implements ConfigurationSerializable {
         return (float) (Math.asin(y/Math.sqrt(y*y+x*x))+90);
     }
 
-    public List<OfflinePlayer> getMembers(){
+
+    /* GETTERS */
+
+    public List<OfflinePlayer> getMembers() {
         return bukkitMembers;
     }
 
-    public int getTotalItems(){
-        int total = 0;
-        if(inventory != null) {
-            for(ItemStack itemStack : inventory.getContents()){
-                if(itemStack != null) total += itemStack.getAmount();
-            }
-        }
-        return total;
-    }
-
-    public void setPublic(boolean value){
-        this.isPublic = value;
+    public OfflinePlayer getOwner() {
+        return player;
     }
 
     public boolean isPublic() {
         return isPublic;
     }
 
-    public void setSortMethod(SortMethod sortMethod){
-        this.sortMethod = sortMethod;
+    public Inventory getInventory() {
+        return inventory;
     }
 
-    public SortMethod getSortMethod(){
-        return sortMethod;
+    /* SETTERS */
+
+    public void setPublic(boolean aPublic) {
+        isPublic = aPublic;
     }
 
-    public void sort(){
-        InventorySorter.sort(inventory, sortMethod);
+    public AbstractStorage setInventory(Inventory inventory) {
+        this.inventory = inventory;
+        return this;
     }
 }

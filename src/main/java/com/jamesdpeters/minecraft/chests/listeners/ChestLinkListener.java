@@ -1,14 +1,13 @@
 package com.jamesdpeters.minecraft.chests.listeners;
 
-import com.jamesdpeters.minecraft.chests.containers.AutoCraftInfo;
-import com.jamesdpeters.minecraft.chests.containers.ChestLinkInfo;
+import com.jamesdpeters.minecraft.chests.storage.StorageInfo;
 import com.jamesdpeters.minecraft.chests.misc.*;
 import com.jamesdpeters.minecraft.chests.runnables.ChestLinkVerifier;
-import com.jamesdpeters.minecraft.chests.serialize.AutoCraftingStorage;
+import com.jamesdpeters.minecraft.chests.storage.AbstractStorage;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
-import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
+import com.jamesdpeters.minecraft.chests.storage.StorageType;
 import org.bukkit.ChatColor;
-import org.bukkit.Material;
+import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -29,54 +28,40 @@ public class ChestLinkListener implements Listener {
     @EventHandler
     public void playerInteract(BlockPlaceEvent event){
             if(event.getBlockPlaced().getState() instanceof Sign){
-                if(event.getBlockAgainst().getState() instanceof Chest || event.getBlockAgainst().getType() == Material.CRAFTING_TABLE ) {
+                if(Config.getStorageTypes().stream().anyMatch(storageType -> storageType.isValidBlockType(event.getBlockAgainst()))) {
                         new TempListener() {
                             @EventHandler
                             public void onSignChange(SignChangeEvent signChangeEvent) {
                                 if (event.getBlockPlaced().getLocation().equals(signChangeEvent.getBlock().getLocation())) {
                                     Sign sign = (Sign) signChangeEvent.getBlock().getState();
-                                    ChestLinkInfo chestLinkInfo = Utils.getChestLinkInfo(sign, signChangeEvent.getLines(),event.getPlayer().getUniqueId());
-                                    if (chestLinkInfo != null) {
-                                        if(event.getPlayer().hasPermission(Permissions.ADD)) {
-                                            if (Utils.isValidSignPosition(event.getBlockAgainst().getLocation())) {
-                                                if(!Config.addChest(event.getPlayer(), chestLinkInfo.getGroup(), event.getBlockAgainst().getLocation(),chestLinkInfo.getPlayer())){
-                                                    sign.getBlock().breakNaturally();
-                                                    done();
-                                                    return;
+
+                                    for (StorageType storageType : Config.getStorageTypes()) {
+                                        if(storageType.hasPermissionToAdd(event.getPlayer())) {
+                                                StorageInfo info = storageType.getStorageUtils().getStorageInfo(sign, signChangeEvent.getLines(), event.getPlayer().getUniqueId());
+                                                if (info != null) {
+                                                    Location signLocation = event.getBlockPlaced().getLocation();
+                                                    if (storageType.getStorageUtils().isValidSignPosition(signLocation)) {
+                                                        if(!storageType.add(event.getPlayer(), info.getGroup(), event.getBlockAgainst().getLocation(), event.getPlayer())){
+                                                            sign.getBlock().breakNaturally();
+                                                            done();
+                                                            return;
+                                                        }
+                                                        //TODO Reformat messages.
+                                                        Messages.CHEST_ADDED(event.getPlayer(), signChangeEvent.getLine(1), info.getPlayer().getName());
+                                                        signChange(sign,signChangeEvent,info.getPlayer(),event.getPlayer());
+                                                    } else {
+                                                        //TODO Reformat messages.
+                                                        Messages.SIGN_FRONT_OF_CHEST(event.getPlayer());
+                                                    }
                                                 }
-                                                Messages.CHEST_ADDED(event.getPlayer(), signChangeEvent.getLine(1), chestLinkInfo.getPlayer().getName());
-                                                signChange(sign,signChangeEvent,chestLinkInfo.getPlayer(),event.getPlayer());
-                                            } else {
-                                                Messages.SIGN_FRONT_OF_CHEST(event.getPlayer());
-                                            }
                                         } else {
                                             Messages.NO_PERMISSION(event.getPlayer());
-                                        }
-                                        done();
-                                        return;
-                                    }
-                                    AutoCraftInfo autoCraftInfo = Utils.getAutoCraftInfo(sign, signChangeEvent.getLines(),event.getPlayer().getUniqueId());
-                                    if (autoCraftInfo != null) {
-                                        if(event.getPlayer().hasPermission(Permissions.ADD)) {
-                                            if (Utils.isValidAutoCraftSignPosition(event.getBlockPlaced().getLocation())) {
-                                                if(!Config.addAutoCraft(event.getPlayer(), autoCraftInfo.getGroup(), event.getBlockAgainst().getLocation(),autoCraftInfo.getPlayer())){
-                                                    sign.getBlock().breakNaturally();
-                                                    done();
-                                                    return;
-                                                }
-                                                Messages.AUTOCRAFT_ADDED(event.getPlayer(), signChangeEvent.getLine(1), autoCraftInfo.getPlayer().getName());
-                                                signChange(sign,signChangeEvent,autoCraftInfo.getPlayer(),event.getPlayer());
-                                            } else {
-                                                Messages.INVALID_AUTOCRAFT_SIGN(event.getPlayer());
-                                            }
                                         }
                                     }
                                 }
                                 done();
                             }
                         };
-
-
                 }
             }
     }
@@ -99,24 +84,18 @@ public class ChestLinkListener implements Listener {
                 BlockFace chestFace = ((Directional) sign.getBlockData()).getFacing().getOppositeFace();
                 Block block = sign.getBlock().getRelative(chestFace);
 
-                //If block sign is placed on is a chest we can remove it.
-                if(block.getState() instanceof Chest) {
-                    ChestLinkInfo info = Utils.getChestLinkInfo(sign,sign.getLines());
-                    if (info != null) {
-                        Config.removeChest(info.getPlayer(), info.getGroup(), block.getLocation());
-                        ((Chest) block.getState()).getInventory().clear();
-                        Messages.CHEST_REMOVED(event.getPlayer(),info.getGroup(),info.getPlayer().getName());
+                Config.getStorageTypes().forEach(storageType -> {
+                    if(storageType.isValidBlockType(block)){
+                        StorageInfo info = storageType.getStorageUtils().getStorageInfo(sign,sign.getLines());
+                        if(info != null){
+                            storageType.removeBlock(info.getPlayer(), info.getGroup(), block.getLocation());
+                            storageType.onSignRemoval(block);
+                            //TODO Reformat messages.
+                            Messages.CHEST_REMOVED(event.getPlayer(),info.getGroup(),info.getPlayer().getName());
+                            Messages.AUTOCRAFT_REMOVED(event.getPlayer(),info.getGroup(),info.getPlayer().getName());
+                        }
                     }
-                }
-
-                //If block sign is placed on is a crafting table we can remove it.
-                if(block.getType() == Material.CRAFTING_TABLE) {
-                    AutoCraftInfo info = Utils.getAutoCraftInfo(sign,sign.getLines());
-                    if (info != null) {
-                        Config.removeAutoCraft(info.getPlayer(), info.getGroup(), block.getLocation());
-                        Messages.AUTOCRAFT_REMOVED(event.getPlayer(),info.getGroup(),info.getPlayer().getName());
-                    }
-                }
+                });
             }
         }
     }
@@ -131,16 +110,14 @@ public class ChestLinkListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onChestBreak(BlockBreakEvent event){
-        if(event.getBlock().getState() instanceof Chest){
-            InventoryStorage storage = Config.removeChest(event.getBlock().getLocation());
-            if(storage != null){
-                Messages.CHEST_REMOVED(event.getPlayer(),storage.getIdentifier(),storage.getOwner().getName());
-            }
-        }
-        if(event.getBlock().getType() == Material.CRAFTING_TABLE){
-            AutoCraftingStorage storage = Config.removeAutoCraft(event.getBlock().getLocation());
-            if(storage != null){
-                Messages.AUTOCRAFT_REMOVED(event.getPlayer(),storage.getIdentifier(),storage.getOwner().getName());
+        for (StorageType storageType : Config.getStorageTypes()) {
+            if(storageType.isValidBlockType(event.getBlock())) {
+                AbstractStorage storage = storageType.removeBlock(event.getBlock().getLocation());
+                if (storage != null) {
+                    //TODO Reformat messages
+                    Messages.CHEST_REMOVED(event.getPlayer(), storage.getIdentifier(), storage.getOwner().getName());
+                    Messages.AUTOCRAFT_REMOVED(event.getPlayer(), storage.getIdentifier(), storage.getOwner().getName());
+                }
             }
         }
     }

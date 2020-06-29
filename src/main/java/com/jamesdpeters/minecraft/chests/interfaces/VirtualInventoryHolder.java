@@ -1,17 +1,17 @@
 package com.jamesdpeters.minecraft.chests.interfaces;
 
-import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
+import com.jamesdpeters.minecraft.chests.storage.ChestLinkStorage;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 
 public class VirtualInventoryHolder implements InventoryHolder {
 
-    InventoryStorage storage;
+    ChestLinkStorage storage;
 
     private Runnable openPreviousInventory;
     private boolean isPrevInvRunning = false;
 
-    public VirtualInventoryHolder(InventoryStorage storage){
+    public VirtualInventoryHolder(ChestLinkStorage storage){
         this.storage = storage;
     }
 
@@ -20,7 +20,7 @@ public class VirtualInventoryHolder implements InventoryHolder {
         return storage.getInventory();
     }
 
-    public InventoryStorage getStorage(){
+    public ChestLinkStorage getStorage(){
         return storage;
     }
 

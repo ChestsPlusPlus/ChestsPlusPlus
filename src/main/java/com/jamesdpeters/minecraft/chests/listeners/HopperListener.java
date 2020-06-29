@@ -4,11 +4,10 @@ import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.filters.HopperFilter;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
-import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
+import com.jamesdpeters.minecraft.chests.storage.ChestLinkStorage;
 import com.jamesdpeters.minecraft.chests.serialize.SpigotConfig;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.Rotation;
 import org.bukkit.block.Block;
 import org.bukkit.block.Hopper;
@@ -40,7 +39,7 @@ public class HopperListener implements Listener {
         //FROM HOPPER
         if (event.getInitiator().getHolder() instanceof Hopper) {
             Location location = event.getDestination().getLocation();
-            InventoryStorage storage = Config.getInventoryStorage(location);
+            ChestLinkStorage storage = Config.getChestLink().getStorage(location);
             if (storage != null) {
                 if(!event.isCancelled()) {
                     event.setCancelled(true);

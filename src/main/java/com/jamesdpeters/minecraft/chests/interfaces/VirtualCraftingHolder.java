@@ -3,17 +3,15 @@ package com.jamesdpeters.minecraft.chests.interfaces;
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.crafting.Crafting;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
-import com.jamesdpeters.minecraft.chests.serialize.AutoCraftingStorage;
+import com.jamesdpeters.minecraft.chests.storage.AutoCraftingStorage;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
-import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
+import com.jamesdpeters.minecraft.chests.storage.ChestLinkStorage;
+import com.jamesdpeters.minecraft.chests.serialize.LocationInfo;
 import org.bukkit.Bukkit;
-import org.bukkit.EntityEffect;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.block.Chest;
 import org.bukkit.block.Container;
 import org.bukkit.block.Hopper;
 import org.bukkit.entity.Player;
@@ -208,8 +206,8 @@ public class VirtualCraftingHolder implements InventoryHolder {
      * And there is a hopper below.
      */
     public void craftItem(){
-        for(Location location : storage.getLocations()){
-            Block block = location.getBlock();
+        for(LocationInfo location : storage.getLocations()){
+            Block block = location.getLocation().getBlock();
             Block blockBelow = block.getRelative(BlockFace.DOWN);
             Block blockAbove = block.getRelative(BlockFace.UP);
 
@@ -233,8 +231,8 @@ public class VirtualCraftingHolder implements InventoryHolder {
             if(craftItemIfHopperSource(block.getRelative(BlockFace.WEST),output)) didCraft = true;
 
             //Play sound if crafting occured.
-            if(didCraft) if(location.getWorld() != null) {
-                location.getWorld().playSound(location, Sound.BLOCK_DISPENSER_DISPENSE, 0.25f, 1f);
+            if(didCraft) if(location.getLocation().getWorld() != null) {
+                location.getLocation().getWorld().playSound(location.getLocation(), Sound.BLOCK_DISPENSER_DISPENSE, 0.25f, 1f);
             }
         }
     }
@@ -255,7 +253,7 @@ public class VirtualCraftingHolder implements InventoryHolder {
     private Inventory getInventory(Block block){
         Inventory inventory = null;
         if(block.getState() instanceof Container){
-            InventoryStorage storage = Config.getInventoryStorage(block.getLocation());
+            ChestLinkStorage storage = Config.getChestLink().getStorage(block.getLocation());
             //Check if a ChestLink exists above the CraftingTable and if the owner of the CraftingTable has permission to access that Chest.
             if(storage != null){
                 if(storage.hasPermission(this.storage.getOwner())) {

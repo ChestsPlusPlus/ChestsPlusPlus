@@ -2,13 +2,13 @@ package com.jamesdpeters.minecraft.chests.listeners;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.interfaces.VirtualCraftingHolder;
-import com.jamesdpeters.minecraft.chests.serialize.AutoCraftingStorage;
+import com.jamesdpeters.minecraft.chests.storage.AutoCraftingStorage;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.misc.Messages;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.interfaces.VirtualInventoryHolder;
-import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
+import com.jamesdpeters.minecraft.chests.storage.ChestLinkStorage;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -31,7 +31,7 @@ public class InventoryListener implements Listener {
         try {
             if (event.getPlayer() instanceof Player) {
                 if (event.getInventory().getLocation() != null) {
-                    InventoryStorage storage = Config.getInventoryStorage(event.getInventory().getLocation());
+                    ChestLinkStorage storage = Config.getChestLink().getStorage(event.getInventory().getLocation());
                     if (storage != null) {
                         event.setCancelled(true);
                         if (event.getPlayer().hasPermission(Permissions.OPEN) && storage.hasPermission((Player) event.getPlayer())) {
@@ -41,7 +41,7 @@ public class InventoryListener implements Listener {
                         }
                     } else {
                         //If no Inventory Storage here check for AutoCraft
-                        AutoCraftingStorage craftingStorage = Config.getAutoCraftStorage(event.getInventory().getLocation());
+                        AutoCraftingStorage craftingStorage = Config.getAutoCraft().getStorage(event.getInventory().getLocation());
 
                         if(craftingStorage != null){
                             event.setCancelled(true);

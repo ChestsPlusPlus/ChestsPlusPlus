@@ -1,8 +1,8 @@
 package com.jamesdpeters.minecraft.chests.misc;
 
-import com.jamesdpeters.minecraft.chests.serialize.AutoCraftingStorage;
+import com.jamesdpeters.minecraft.chests.storage.AutoCraftingStorage;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
-import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
+import com.jamesdpeters.minecraft.chests.storage.ChestLinkStorage;
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -55,7 +55,7 @@ public class Messages {
         target.sendMessage(ChatColor.RED+""+ChatColor.BOLD+TAG+" There is no space to place a sign on the front of the chest there!");
     }
 
-    public static void ADDED_MEMBER(Player target, InventoryStorage storage, String added){
+    public static void ADDED_MEMBER(Player target, ChestLinkStorage storage, String added){
         target.sendMessage(ChatColor.GREEN+""+ChatColor.BOLD+TAG+" Succesfully added "+ChatColor.WHITE+added+ChatColor.GREEN+" to group "+ChatColor.WHITE+storage.getIdentifier());
         target.sendMessage(ChatColor.GREEN+""+ChatColor.BOLD+TAG+" Current Members: "+Utils.prettyPrintPlayers(ChatColor.GREEN,storage.getMembers()));
     }
@@ -69,7 +69,7 @@ public class Messages {
         target.sendMessage(ChatColor.RED+""+ChatColor.BOLD+TAG+" Unable to add player "+toAdd+" to ChestLink!");
     }
 
-    public static void REMOVE_MEMBER(Player target, InventoryStorage storage, String removed){
+    public static void REMOVE_MEMBER(Player target, ChestLinkStorage storage, String removed){
         target.sendMessage(ChatColor.RED+""+ChatColor.BOLD+TAG+" Succesfully removed "+ChatColor.WHITE+removed+ChatColor.RED+" from group "+ChatColor.WHITE+storage.getIdentifier());
         target.sendMessage(ChatColor.RED+""+ChatColor.BOLD+TAG+" Current Members: "+Utils.prettyPrintPlayers(ChatColor.RED,storage.getMembers()));
     }
@@ -91,7 +91,7 @@ public class Messages {
         target.sendMessage(ChatColor.RED+""+ChatColor.BOLD+TAG+" "+toRemove+" isn't a valid group to remove!");
     }
 
-    public static void LIST_MEMBERS(Player target, InventoryStorage storage){
+    public static void LIST_MEMBERS(Player target, ChestLinkStorage storage){
         if(storage.getMembers() != null){
             target.sendMessage(ChatColor.GREEN+"Members of group "+ChatColor.WHITE+storage.getIdentifier()+": "+Utils.prettyPrintPlayers(ChatColor.GREEN,storage.getMembers()));
         } else {
@@ -107,7 +107,7 @@ public class Messages {
         }
     }
 
-    public static void SET_PUBLIC(Player target, InventoryStorage storage){
+    public static void SET_PUBLIC(Player target, ChestLinkStorage storage){
         target.sendMessage(ChatColor.GREEN+"Publicity for ChestLink "+storage.getIdentifier()+" is set to: "+ChatColor.WHITE+storage.isPublic());
     }
 
@@ -117,7 +117,7 @@ public class Messages {
 
     public static void LIST_CHESTLINKS(Player target){
         target.sendMessage(ChatColor.GREEN+""+ChatColor.BOLD+"List of your ChestLinks:");
-        for(InventoryStorage storage : Config.getInventoryStorageMap(target.getUniqueId()).values()){
+        for(ChestLinkStorage storage : Config.getChestLink().getStorageMap(target.getUniqueId()).values()){
             if(storage != null){
                 target.sendMessage(ChatColor.GREEN+storage.getIdentifier()+ChatColor.WHITE+" - "+storage.getTotalItems()+" items");
             }
@@ -126,7 +126,7 @@ public class Messages {
 
     public static void LIST_AUTOCRAFT(Player target){
         target.sendMessage(ChatColor.GREEN+""+ChatColor.BOLD+"List of your AutoCraft Stations:");
-        for(AutoCraftingStorage storage : Config.getAutoCraftTableMap(target.getUniqueId()).values()){
+        for(AutoCraftingStorage storage : Config.getAutoCraft().getStorageMap(target.getUniqueId()).values()){
             if(storage != null){
                 target.sendMessage(ChatColor.GREEN+storage.getIdentifier()+ChatColor.WHITE);
             }
@@ -138,7 +138,7 @@ public class Messages {
         target.sendMessage(ChatColor.RED+"/chestlink add <owner>:<group>");
     }
 
-    public static void SORT(Player target, InventoryStorage storage){
+    public static void SORT(Player target, ChestLinkStorage storage){
         target.sendMessage(ChatColor.GREEN+"Sort method for "+ChatColor.WHITE+storage.getIdentifier()+ChatColor.GREEN+" has been set to "+ChatColor.WHITE+storage.getSortMethod().toString());
     }
 
