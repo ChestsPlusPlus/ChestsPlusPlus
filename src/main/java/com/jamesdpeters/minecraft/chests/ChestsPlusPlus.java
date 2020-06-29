@@ -11,9 +11,10 @@ import com.jamesdpeters.minecraft.chests.maventemplates.BuildConstants;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Settings;
 import com.jamesdpeters.minecraft.chests.misc.Stats;
-import com.jamesdpeters.minecraft.chests.serialize.AutoCraftingStorage;
+import com.jamesdpeters.minecraft.chests.misc.Utils;
+import com.jamesdpeters.minecraft.chests.storage.AutoCraftingStorage;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
-import com.jamesdpeters.minecraft.chests.serialize.InventoryStorage;
+import com.jamesdpeters.minecraft.chests.storage.ChestLinkStorage;
 import com.jamesdpeters.minecraft.chests.serialize.LinkedChest;
 import com.jamesdpeters.minecraft.chests.serialize.LocationInfo;
 import com.jamesdpeters.minecraft.chests.serialize.MaterialSerializer;
@@ -60,7 +61,7 @@ public class ChestsPlusPlus extends JavaPlugin {
 
     static {
         ConfigurationSerialization.registerClass(LinkedChest.class, "LinkedChest");
-        ConfigurationSerialization.registerClass(InventoryStorage.class, "InventoryStorage");
+        ConfigurationSerialization.registerClass(ChestLinkStorage.class, "InventoryStorage");
         ConfigurationSerialization.registerClass(MaterialSerializer.class, "Material");
         ConfigurationSerialization.registerClass(AutoCraftingStorage.class, "AutoCraftingStorage");
         ConfigurationSerialization.registerClass(RecipeSerializable.class, "Recipe");
@@ -78,6 +79,10 @@ public class ChestsPlusPlus extends JavaPlugin {
         Crafting.load();
 
         PLUGIN = this;
+
+        //Remove entities that could have been left behind from bad save files/crashes etc.
+        Utils.removeEntities();
+
         new ChestLinkCommand().register(this);
         new AutoCraftCommand().register(this);
         getServer().getPluginManager().registerEvents(new ChestLinkListener(),this);
