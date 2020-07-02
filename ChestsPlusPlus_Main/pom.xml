@@ -86,6 +86,20 @@
             <version>1.7</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.jamesdpeters.chests</groupId>
+            <artifactId>ChestsPlusPlus_1_16</artifactId>
+            <version>1.5-BETA-3</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.jamesdpeters.chests</groupId>
+            <artifactId>ChestsPlusPlus_1_15</artifactId>
+            <version>1.5-BETA-3</version>
+            <scope>compile</scope>
+        </dependency>
+
     </dependencies>
 
     <!--Tell maven how to prepare and build our jar file from our source and dependancies-->
@@ -158,11 +172,6 @@
                 <version>3.0.0-M1</version>
             </plugin>
 
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-site-plugin</artifactId>
-                <version>3.7.1</version>
-            </plugin>
         </plugins>
 
         <!--Tell maven to enable resource filtering so we can use macros like '${project.version}' inside of our plugin.yml-->
