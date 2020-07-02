@@ -2,13 +2,13 @@ package com.jamesdpeters.minecraft.chests.listeners;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.interfaces.VirtualCraftingHolder;
-import com.jamesdpeters.minecraft.chests.storage.AutoCraftingStorage;
+import com.jamesdpeters.minecraft.chests.storage.autocraft.AutoCraftingStorage;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.misc.Messages;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.interfaces.VirtualInventoryHolder;
-import com.jamesdpeters.minecraft.chests.storage.ChestLinkStorage;
+import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorage;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;

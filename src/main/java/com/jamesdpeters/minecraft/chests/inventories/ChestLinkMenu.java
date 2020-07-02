@@ -3,7 +3,7 @@ package com.jamesdpeters.minecraft.chests.inventories;
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
-import com.jamesdpeters.minecraft.chests.storage.ChestLinkStorage;
+import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorage;
 import fr.minuskube.inv.ClickableItem;
 import fr.minuskube.inv.SmartInventory;
 import fr.minuskube.inv.content.InventoryContents;

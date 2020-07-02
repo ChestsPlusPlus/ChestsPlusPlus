@@ -1,6 +1,6 @@
 package com.jamesdpeters.minecraft.chests.interfaces;
 
-import com.jamesdpeters.minecraft.chests.storage.ChestLinkStorage;
+import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorage;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 

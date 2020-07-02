@@ -4,7 +4,7 @@ import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.filters.HopperFilter;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
-import com.jamesdpeters.minecraft.chests.storage.ChestLinkStorage;
+import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorage;
 import com.jamesdpeters.minecraft.chests.serialize.SpigotConfig;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
