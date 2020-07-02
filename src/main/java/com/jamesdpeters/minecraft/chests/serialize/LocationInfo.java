@@ -23,26 +23,11 @@ public class LocationInfo implements ConfigurationSerializable {
     public Map<String, Object> serialize() {
         HashMap<String, Object> map = new HashMap<>();
         map.put("Location", location);
-        map.put("itemStand", itemStand != null ? itemStand.getUniqueId().toString() : "");
-        map.put("blockStand", blockStand != null ? blockStand.getUniqueId().toString() : "");
         return map;
     }
 
     public LocationInfo(Map<String, Object> map){
         location = (Location) map.get("Location");
-        try {
-            UUID itemStandUUID = UUID.fromString((String) map.get("itemStand"));
-            itemStand = (ArmorStand) Bukkit.getServer().getEntity(itemStandUUID);
-        } catch (IllegalArgumentException e){
-            itemStand = null;
-        }
-
-        try {
-            UUID blockStandUUID = UUID.fromString((String) map.get("blockStand"));
-            blockStand = (ArmorStand) Bukkit.getServer().getEntity(blockStandUUID);
-        } catch (IllegalArgumentException e){
-            itemStand = null;
-        }
     }
 
     public LocationInfo(Location location){
@@ -82,5 +67,4 @@ public class LocationInfo implements ConfigurationSerializable {
     public static Optional<LocationInfo> getLocationInfo(List<LocationInfo> locationInfos, Location location){
         return locationInfos.stream().filter(locationInfo -> locationInfo.getLocation().equals(location)).findFirst();
     }
-
 }
