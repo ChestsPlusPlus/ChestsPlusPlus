@@ -3,7 +3,7 @@ package com.jamesdpeters.minecraft.chests.commands;
 import com.jamesdpeters.minecraft.chests.misc.Messages;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
-import com.jamesdpeters.minecraft.chests.storage.AutoCraftingStorage;
+import com.jamesdpeters.minecraft.chests.storage.autocraft.AutoCraftingStorage;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -77,7 +77,7 @@ public class AutoCraftCommand extends ServerCommand  {
                         if (player.hasPermission(Permissions.AUTOCRAFT_ADD)) {
                             Block targetBlock = player.getTargetBlockExact(5);
                             if (targetBlock != null) Config.getAutoCraft().createStorage(player, targetBlock, args[1]);
-                            else Messages.MUST_LOOK_AT_CHEST(player);
+                            else Config.getAutoCraft().getMessages().mustLookAtBlock(player);
                         } else {
                             Messages.NO_PERMISSION(player);
                         }
@@ -118,7 +118,7 @@ public class AutoCraftCommand extends ServerCommand  {
                         return true;
                     }
                 case LIST:
-                    Messages.LIST_AUTOCRAFT(player);
+                    Config.getAutoCraft().getMessages().listStorageGroups(player);
                     return true;
                 case REMOVE:
                     if(args.length > 1) {
@@ -142,7 +142,7 @@ public class AutoCraftCommand extends ServerCommand  {
                         if (storage != null) {
                             boolean setPublic = Boolean.parseBoolean(args[2]);
                             storage.setPublic(setPublic);
-                            Messages.SET_PUBLIC(player, storage);
+                            storage.getStorageType().getMessages().setPublic(player, storage);
                             return true;
                         } else {
                             Bukkit.broadcastMessage("Storage null");
@@ -220,14 +220,14 @@ public class AutoCraftCommand extends ServerCommand  {
                     Player toAdd = Bukkit.getPlayer(args[3]);
                     AutoCraftingStorage storage = Config.getAutoCraft().getStorage(player.getUniqueId(), args[2]);
                     if (storage != null && storage.addMember(toAdd))
-                        Messages.ADDED_MEMBER(player, storage, args[3]);
-                    else Messages.UNABLE_TO_ADD_MEMBER(player, args[3]);
+                        storage.getStorageType().getMessages().addedMember(player, storage, args[3]);
+                    else Config.getAutoCraft().getMessages().unableToAddMember(player,args[3]);
                 } else if(args[1].equals("remove")){
                     Player toAdd = Bukkit.getPlayer(args[3]);
                     AutoCraftingStorage storage = Config.getAutoCraft().getStorage(player.getUniqueId(), args[2]);
                     if(storage != null && storage.removeMember(toAdd))
-                        Messages.REMOVE_MEMBER(player, storage, args[3]);
-                    else Messages.UNABLE_TO_REMOVE_MEMBER(player,args[3]);
+                        storage.getStorageType().getMessages().removedMember(player, storage, args[3]);
+                    else Config.getAutoCraft().getMessages().unableToRemoveMember(player, args[3]);
                 } else {
                     player.sendMessage(ChatColor.RED+ OPTIONS.MEMBER.commandHelp);
                     player.sendMessage(ChatColor.RED+ OPTIONS.MEMBER.description);
@@ -241,7 +241,7 @@ public class AutoCraftCommand extends ServerCommand  {
                 if(args[1].equals("list")) {
                     AutoCraftingStorage storage = Config.getAutoCraft().getStorage(player.getUniqueId(), args[2]);
                     if(storage != null){
-                        Messages.LIST_MEMBERS(player,storage);
+                        storage.getStorageType().getMessages().listMembers(player, storage);
                         return true;
                     }
                 }

@@ -5,7 +5,7 @@ import com.jamesdpeters.minecraft.chests.misc.Messages;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
-import com.jamesdpeters.minecraft.chests.storage.ChestLinkStorage;
+import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorage;
 import com.jamesdpeters.minecraft.chests.sort.SortMethod;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -81,7 +81,7 @@ public class ChestLinkCommand extends ServerCommand  {
                         if(sender.hasPermission(Permissions.ADD)) {
                             Block targetBlock = player.getTargetBlockExact(5);
                             if (targetBlock != null) Config.getChestLink().createStorage(player,targetBlock,args[1]);
-                            else Messages.MUST_LOOK_AT_CHEST(player);
+                            else Config.getChestLink().getMessages().mustLookAtBlock(player);
                             return true;
                         } else {
                             Messages.NO_PERMISSION(player);
@@ -121,7 +121,7 @@ public class ChestLinkCommand extends ServerCommand  {
                         return true;
                     }
                 case LIST:
-                    Messages.LIST_CHESTLINKS(player);
+                    Config.getChestLink().getMessages().listStorageGroups(player);
                     return true;
                 case REMOVE:
                     if(args.length > 1) {
@@ -164,7 +164,7 @@ public class ChestLinkCommand extends ServerCommand  {
                         if (storage != null) {
                             boolean setpublic = Boolean.parseBoolean(args[2]);
                             storage.setPublic(setpublic);
-                            Messages.SET_PUBLIC(player, storage);
+                            storage.getStorageType().getMessages().setPublic(player, storage);
                             return true;
                         } else {
                             Bukkit.broadcastMessage("Storage null");
@@ -245,14 +245,14 @@ public class ChestLinkCommand extends ServerCommand  {
                     Player toAdd = Bukkit.getPlayer(args[3]);
                     ChestLinkStorage storage = Config.getChestLink().getStorage(player.getUniqueId(), args[2]);
                     if (storage != null && storage.addMember(toAdd))
-                        Messages.ADDED_MEMBER(player, storage, args[3]);
-                    else Messages.UNABLE_TO_ADD_MEMBER(player, args[3]);
+                        storage.getStorageType().getMessages().addedMember(player, storage, args[3]);
+                    else Config.getChestLink().getMessages().unableToAddMember(player,args[3]);
                 } else if(args[1].equals("remove")){
                     Player toAdd = Bukkit.getPlayer(args[3]);
                     ChestLinkStorage storage = Config.getChestLink().getStorage(player.getUniqueId(),args[2]);
                     if(storage != null && storage.removeMember(toAdd))
-                        Messages.REMOVE_MEMBER(player, storage, args[3]);
-                    else Messages.UNABLE_TO_REMOVE_MEMBER(player,args[3]);
+                        storage.getStorageType().getMessages().removedMember(player, storage, args[3]);
+                    else Config.getChestLink().getMessages().unableToRemoveMember(player, args[3]);
                 } else {
                     player.sendMessage(ChatColor.RED+OPTIONS.MEMBER.commandHelp);
                     player.sendMessage(ChatColor.RED+OPTIONS.MEMBER.description);
@@ -266,7 +266,7 @@ public class ChestLinkCommand extends ServerCommand  {
                 if(args[1].equals("list")) {
                     ChestLinkStorage storage = Config.getChestLink().getStorage(player.getUniqueId(), args[2]);
                     if(storage != null){
-                        Messages.LIST_MEMBERS(player,storage);
+                        storage.getStorageType().getMessages().listMembers(player, storage);
                         return true;
                     }
                 }
