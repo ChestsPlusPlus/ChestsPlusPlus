@@ -2,6 +2,7 @@ package com.jamesdpeters.minecraft.chests.storage.abstracts;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
+import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.misc.Values;
 import com.jamesdpeters.minecraft.chests.serialize.LocationInfo;
 import org.bukkit.Bukkit;
@@ -327,9 +328,9 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
                             ItemStack displayItem = getArmorStandItem();
 
                             if(displayItem != null) {
-                                boolean isBlock = displayItem.getType().isBlock();
+                                boolean isBlock = Utils.isGraphicallyBlock(displayItem);
 
-                                Location standLoc = getArmorStandLoc(anchor,facing, displayItem.getType().isBlock());
+                                Location standLoc = getArmorStandLoc(anchor,facing, isBlock);
 
                                 //Make client think sign is invisible.
                                 player.sendBlockChange(anchor.getLocation(), air);
@@ -369,7 +370,7 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
      */
     private ArmorStand createArmorStand(World world, Location standLoc, boolean isBlock){
         ArmorStand stand = world.spawn(standLoc, ArmorStand.class);
-        stand.setVisible(true);
+        stand.setVisible(false);
         stand.setGravity(false);
         stand.setSilent(true);
         stand.setInvulnerable(true);
@@ -377,7 +378,7 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
         stand.setBasePlate(false);
         stand.setSmall(true);
         stand.setCanPickupItems(false);
-        EulerAngle angle = isBlock ? new EulerAngle( Math.toRadians( -15 ), Math.toRadians( -45 ), 0 ) : new EulerAngle(0,0,0);
+        EulerAngle angle = isBlock ? new EulerAngle( Math.toRadians( -15 ), Math.toRadians( -45 ), Math.toRadians(0) ) : new EulerAngle(Math.toRadians(90),0,Math.toRadians(180));
         stand.setRightArmPose(angle);
 
         //Store value of 1 in armour stand to indicate it belongs to this plugin.
@@ -393,13 +394,21 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
      * @return the calculated location for the @{@link ArmorStand}
      */
     private Location getArmorStandLoc(Block anchor, BlockFace facing, boolean isBlock){
-        double directionFactor = isBlock ? 0.6 : 0.3;
-        double y = isBlock ? 0.1 : 0.45;
+//        double directionFactor = isBlock ? 0.6 : 0.3;
+        double directionFactor = isBlock ? 0.65 : 0.275;
+        double perpendicularFactor = isBlock ? 0.025 : 0.125;
+//        double y = -0.4;
+        double y = isBlock ? -0.3 : 0.1;
         //Get centre of block location.
         Location standLoc = anchor.getLocation().add(0.5,-0.5,0.5);
         Vector direction = facing.getDirection();
-        standLoc.setYaw(getYaw(direction.getX(),direction.getZ())+180);
-        return standLoc.subtract(directionFactor*direction.getX(),y, directionFactor*direction.getZ());
+
+        double x = directionFactor*direction.getX() - perpendicularFactor*direction.getZ();
+        double z = directionFactor*direction.getZ() + perpendicularFactor*direction.getX();
+
+        float yaw = 180;
+        standLoc.setYaw(getYaw(direction.getX(),direction.getZ())+yaw);
+        return standLoc.subtract(x, y, z);
     }
 
     private void setArmorStandHelmet(boolean isBlock, LocationInfo location, ItemStack helmet){

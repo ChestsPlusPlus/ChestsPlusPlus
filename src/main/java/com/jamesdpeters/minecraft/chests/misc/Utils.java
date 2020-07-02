@@ -128,4 +128,47 @@ public class Utils {
         });
     }
 
+    /**
+     * Used to test if an item is graphically a block (e.g a sign is a block but is held like an item.)
+     * @param itemStack
+     * @return
+     */
+    public static boolean isGraphicallyBlock(ItemStack itemStack){
+        switch (itemStack.getType()){
+                //Signs
+            case ACACIA_SIGN:
+            case ACACIA_WALL_SIGN:
+            case BIRCH_SIGN:
+            case BIRCH_WALL_SIGN:
+            case DARK_OAK_SIGN:
+            case DARK_OAK_WALL_SIGN:
+            case JUNGLE_SIGN:
+            case JUNGLE_WALL_SIGN:
+            case OAK_SIGN:
+            case OAK_WALL_SIGN:
+            case SPRUCE_SIGN:
+            case SPRUCE_WALL_SIGN:
+                //Doors
+            case ACACIA_DOOR:
+            case BIRCH_DOOR:
+            case DARK_OAK_DOOR:
+            case JUNGLE_DOOR:
+            case OAK_DOOR:;
+            case SPRUCE_DOOR:
+            case IRON_DOOR:
+                //Saplings
+            case SPRUCE_SAPLING:
+            case ACACIA_SAPLING:
+            case BAMBOO_SAPLING:
+            case BIRCH_SAPLING:
+            case DARK_OAK_SAPLING:
+            case JUNGLE_SAPLING:
+            case OAK_SAPLING:
+
+                return false;
+        }
+        Bukkit.broadcastMessage("Type: "+itemStack.getType()+" isItem: "+itemStack.getType().isItem());
+        return itemStack.getType().isSolid();
+    }
+
 }
