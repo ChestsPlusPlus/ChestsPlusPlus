@@ -1,11 +1,15 @@
-package com.jamesdpeters.minecraft.chests.storage;
+package com.jamesdpeters.minecraft.chests.storage.autocraft;
 
 import com.jamesdpeters.minecraft.chests.misc.Messages;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.misc.Values;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
-import com.jamesdpeters.minecraft.chests.serialize.LinkedChest;
+import com.jamesdpeters.minecraft.chests.serialize.ConfigStorage;
+import com.jamesdpeters.minecraft.chests.storage.abstracts.StorageInfo;
+import com.jamesdpeters.minecraft.chests.storage.abstracts.StorageMessages;
+import com.jamesdpeters.minecraft.chests.storage.abstracts.StorageType;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
@@ -18,18 +22,18 @@ import java.util.HashMap;
 
 public class AutoCraftingStorageType extends StorageType<AutoCraftingStorage> {
 
-    public AutoCraftingStorageType(LinkedChest store) {
+    public AutoCraftingStorageType(ConfigStorage store) {
         super(store);
     }
 
     @Override
-    public HashMap<String, HashMap<String, AutoCraftingStorage>> getStorageMap(LinkedChest store) {
+    public HashMap<String, HashMap<String, AutoCraftingStorage>> getStorageMap(ConfigStorage store) {
         return store.autocraftingtables;
     }
 
     @Override
     public AutoCraftingStorage createNewStorageInstance(OfflinePlayer player, String inventoryName, Location location) {
-        return new AutoCraftingStorage(player, inventoryName, location, this);
+        return new AutoCraftingStorage(player, inventoryName, location);
     }
 
     @Override
@@ -82,5 +86,46 @@ public class AutoCraftingStorageType extends StorageType<AutoCraftingStorage> {
             }
         }
         return null;
+    }
+
+    @Override
+    public StorageMessages getMessages() {
+        return messages;
+    }
+
+    private static AutoCraftMessages messages = new AutoCraftMessages();
+
+    private static class AutoCraftMessages extends StorageMessages {
+
+        @Override
+        public String getStorageName() {
+            return "AutoCrafter";
+        }
+
+        @Override
+        public void invalidID(Player target) {
+            target.sendMessage(ChatColor.RED+"Invalid AutoCrafter ID! Must not contain a colon ':' unless you are referencing another players group that you are a member off");
+            target.sendMessage(ChatColor.RED+"/autocraft add <owner>:<group>");
+        }
+
+        @Override
+        public void listStorageGroups(Player target) {
+            target.sendMessage(ChatColor.GREEN+""+ChatColor.BOLD+"List of your AutoCraft Stations:");
+            for(AutoCraftingStorage storage : Config.getAutoCraft().getStorageMap(target.getUniqueId()).values()){
+                if(storage != null){
+                    target.sendMessage(ChatColor.GREEN+storage.getIdentifier()+ChatColor.WHITE);
+                }
+            }
+        }
+
+        @Override
+        public void mustLookAtBlock(Player player) {
+            player.sendMessage(ChatColor.RED+TAG+" You must be looking at the Crafting Table you want to AutoCraft with!");
+        }
+
+        @Override
+        public void invalidSignPlacement(Player player) {
+            player.sendMessage(ChatColor.GOLD+""+ChatColor.BOLD+TAG+" Invalid AutoCrafter - You must place a sign on any side of a Crafting Table, and it must not already by apart of a group!");
+        }
     }
 }

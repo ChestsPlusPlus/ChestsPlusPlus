@@ -1,4 +1,4 @@
-package com.jamesdpeters.minecraft.chests.storage;
+package com.jamesdpeters.minecraft.chests.storage.abstracts;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
@@ -21,6 +21,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.util.EulerAngle;
 import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
@@ -34,22 +35,19 @@ import java.util.UUID;
 
 public abstract class AbstractStorage implements ConfigurationSerializable {
 
+    //Serializables
     private ArrayList<String> members;
     private List<OfflinePlayer> bukkitMembers;
     private OfflinePlayer player;
-    protected UUID playerUUID;
-    boolean isPublic;
+    private UUID playerUUID;
+    private boolean isPublic;
     private List<LocationInfo> locationInfoList;
     private Inventory inventory;
-    private String inventoryName;
 
-    private StorageType storageType;
-
-    public <T extends AbstractStorage> AbstractStorage(OfflinePlayer player, String identifier, Location location, StorageType<T> storageType){
+    public AbstractStorage(OfflinePlayer player, String identifier, Location location){
         this.player = player;
         this.playerUUID = player.getUniqueId();
         this.isPublic = false;
-        this.storageType = storageType;
         setIdentifier(identifier);
         LocationInfo locationInfo = new LocationInfo(location);
         locationInfoList = new ArrayList<>(Collections.singleton(locationInfo));
@@ -57,8 +55,15 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
         init();
     }
 
+
+    /**
+     * This constructor MUST be in the subclass in order for deserialization to work!
+     * @param map
+     */
     @SuppressWarnings("unchecked")
     public AbstractStorage(Map<String, Object> map){
+        //Pass map through
+        deserialize(map);
 
         //This reformats the previous method of location storage to the newer version.
         List<Location> locations = (ArrayList<Location>) map.get("locations");
@@ -93,21 +98,20 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
             inventory.setContents(itemStacks);
         }
 
-        //Pass map through
-        deserialize(map);
+        init();
     }
 
     @Override
     public Map<String, Object> serialize() {
         HashMap<String, Object> map = new LinkedHashMap<>();
-        //Add custom parameters first
-        serialize(map);
-        //Now add default parameters
+        //Add default parameters
         if(storeInventory()) map.put("inventory", inventory.getContents());
-        map.put("playerUUID", player.getUniqueId().toString());
         map.put("locationInfo", locationInfoList);
+        map.put("playerUUID", player.getUniqueId().toString());
         map.put("members", members);
         map.put("isPublic", isPublic);
+        //Add custom parameters
+        serialize(map);
         return map;
     }
 
@@ -115,25 +119,27 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
         Bukkit.getScheduler().scheduleSyncRepeatingTask(ChestsPlusPlus.PLUGIN, this::updateClients, 1, 5);
     }
 
+    public abstract StorageType getStorageType();
+
     /**
      * @return true if this storage should store the inventory to disk.
      */
-    abstract boolean storeInventory();
+    public abstract boolean storeInventory();
 
     /**
      * Add custom parameters here to be serialized.
      * @param map - the map to be added to.
      */
-    abstract void serialize(Map<String, Object> map);
+    protected abstract void serialize(Map<String, Object> map);
 
 
     /**
      * Use this to deserialize custom parameters.
      * @param map - the map to deserialize from.
      */
-    abstract void deserialize(Map<String, Object> map);
-    abstract Inventory initInventory();
-    abstract void setIdentifier(String newIdentifier);
+    protected abstract void deserialize(Map<String, Object> map);
+    protected abstract Inventory initInventory();
+    protected abstract void setIdentifier(String newIdentifier);
     public abstract String getIdentifier();
 
     /**
@@ -141,7 +147,7 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
      * @param block - the block that was added.
      * @param player - the player who added the storage.
      */
-    abstract void onStorageAdded(Block block, Player player);
+    public abstract void onStorageAdded(Block block, Player player);
 
     /**
      * @return List of locations
@@ -199,7 +205,7 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
 
         getLocations().forEach(location -> {
             Block block = location.getLocation().getBlock();
-            BlockFace face = storageType.getStorageFacing(block);
+            BlockFace face = getStorageType().getStorageFacing(block);
             if(face != null) {
                 Block signBlock = block.getRelative(face);
                 if(signBlock.getState() instanceof Sign) {
@@ -288,17 +294,12 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
         return false;
     }
 
-//    /**
-//     * @return the direction the storage at the given location is facing.
-//     */
-//    public abstract BlockFace getStorageFacing(Block block);
-
     /* ARMOR STAND METHODS */
 
     /**
      * @return the @{@link ItemStack} an @{@link ArmorStand} should be holding.
      */
-    abstract ItemStack getArmorStandItem();
+    protected abstract ItemStack getArmorStandItem();
 
     /**
      * Updates nearby clients for all locations of this storage:
@@ -313,10 +314,12 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
 
             if(world != null) {
                 Collection<Entity> players = world.getNearbyEntities(location.getLocation(), 20, 20, 20, entity -> entity instanceof Player);
+
                 players.forEach(entity -> {
                     if(entity instanceof Player){
                         Player player = (Player) entity;
-                        BlockFace facing = storageType.getStorageFacing(block);
+                        BlockFace facing = getStorageType().getStorageFacing(block);
+
                         if(facing != null) {
 
                             Block anchor = block.getRelative(facing);
@@ -334,11 +337,11 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
                                 //Get currently stored armorStand if there isn't one spawn it.
                                 ArmorStand stand = isBlock ? location.getBlockStand() : location.getItemStand();
                                 if(stand == null || !stand.isValid()){
-                                    stand = createArmorStand(world,standLoc);
+                                    stand = createArmorStand(world,standLoc,isBlock);
                                     addArmorStand(isBlock, location, stand);
                                 }
 
-                                stand.setHelmet(displayItem);
+                                stand.setItemInHand(displayItem);
 
                                 //Set on fire to correct lighting.
                                 stand.setFireTicks(Integer.MAX_VALUE);
@@ -364,15 +367,18 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
      * @param standLoc - location to spawn the @{@link ArmorStand} at.
      * @return instance of @{@link ArmorStand} that was spawned.
      */
-    private ArmorStand createArmorStand(World world, Location standLoc){
+    private ArmorStand createArmorStand(World world, Location standLoc, boolean isBlock){
         ArmorStand stand = world.spawn(standLoc, ArmorStand.class);
-        stand.setVisible(false);
+        stand.setVisible(true);
         stand.setGravity(false);
         stand.setSilent(true);
         stand.setInvulnerable(true);
         stand.setMarker(true);
         stand.setBasePlate(false);
         stand.setSmall(true);
+        stand.setCanPickupItems(false);
+        EulerAngle angle = isBlock ? new EulerAngle( Math.toRadians( -15 ), Math.toRadians( -45 ), 0 ) : new EulerAngle(0,0,0);
+        stand.setRightArmPose(angle);
 
         //Store value of 1 in armour stand to indicate it belongs to this plugin.
         stand.getPersistentDataContainer().set(Values.PluginKey, PersistentDataType.INTEGER, 1);
@@ -398,7 +404,7 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
 
     private void setArmorStandHelmet(boolean isBlock, LocationInfo location, ItemStack helmet){
         ArmorStand stand = isBlock ? location.getBlockStand() : location.getItemStand();
-        if(stand != null) stand.setHelmet(helmet);
+        if(stand != null) stand.setItemInHand(helmet);
     }
 
     private void addArmorStand(boolean isBlock, LocationInfo location, ArmorStand stand){
@@ -439,6 +445,10 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
 
     public Inventory getInventory() {
         return inventory;
+    }
+
+    public UUID getPlayerUUID() {
+        return playerUUID;
     }
 
     /* SETTERS */

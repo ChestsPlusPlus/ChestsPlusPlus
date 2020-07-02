@@ -1,7 +1,11 @@
-package com.jamesdpeters.minecraft.chests.storage;
+package com.jamesdpeters.minecraft.chests.storage.autocraft;
 
 import com.jamesdpeters.minecraft.chests.interfaces.VirtualCraftingHolder;
+import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.serialize.RecipeSerializable;
+import com.jamesdpeters.minecraft.chests.storage.abstracts.AbstractStorage;
+import com.jamesdpeters.minecraft.chests.storage.abstracts.StorageType;
+import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorageType;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Block;
@@ -15,7 +19,6 @@ import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.ShapelessRecipe;
 
 import java.util.Map;
-import java.util.UUID;
 
 @SerializableAs("AutoCraftingStorage")
 public class AutoCraftingStorage extends AbstractStorage implements ConfigurationSerializable  {
@@ -24,28 +27,36 @@ public class AutoCraftingStorage extends AbstractStorage implements Configuratio
     private String identifier;
     private VirtualCraftingHolder virtualCraftingHolder;
 
-    @Override
-    void serialize(Map<String, Object> hashMap) {
-        hashMap.put("recipe",recipeSerializable);
-        hashMap.put("playerUUID",playerUUID.toString());
-        hashMap.put("identifier", identifier);
-        hashMap.put("isPublic", isPublic);
+    public AutoCraftingStorage(Map<String, Object> map){
+        super(map);
     }
 
     @Override
-    void deserialize(Map<String, Object> map) {
-        recipeSerializable = (RecipeSerializable) map.get("recipe");
-        playerUUID = UUID.fromString((String) map.get("playerUUID"));
-        identifier = (String) map.get("identifier");
+    public AutoCraftingStorageType getStorageType() {
+        return Config.getAutoCraft();
+    }
 
-        if(map.containsKey("isPublic")) isPublic = (boolean) map.get("isPublic");
-        else isPublic = false;
-
+    public AutoCraftingStorage(OfflinePlayer player, String identifier, Location location){
+        super(player, identifier, location);
+        this.identifier = identifier;
         initInventory();
     }
 
     @Override
-    ItemStack getArmorStandItem() {
+    protected void serialize(Map<String, Object> hashMap) {
+        hashMap.put("recipe",recipeSerializable);
+        hashMap.put("identifier", identifier);
+    }
+
+    @Override
+    protected void deserialize(Map<String, Object> map) {
+        recipeSerializable = (RecipeSerializable) map.get("recipe");
+        identifier = (String) map.get("identifier");
+        initInventory();
+    }
+
+    @Override
+    protected ItemStack getArmorStandItem() {
         if(recipeSerializable != null){
             if(recipeSerializable.getRecipe() != null){
                 return recipeSerializable.getRecipe().getResult();
@@ -56,16 +67,8 @@ public class AutoCraftingStorage extends AbstractStorage implements Configuratio
 
 
     @Override
-    boolean storeInventory() {
+    public boolean storeInventory() {
         return false;
-    }
-
-    public AutoCraftingStorage(OfflinePlayer player, String identifier, Location location, StorageType<AutoCraftingStorage> storageType){
-        super(player, identifier, location, storageType);
-        this.playerUUID = player.getUniqueId();
-        this.identifier = identifier;
-        this.isPublic = false;
-        initInventory();
     }
 
     public void setRecipe(Recipe recipe){
@@ -108,12 +111,12 @@ public class AutoCraftingStorage extends AbstractStorage implements Configuratio
     }
 
     @Override
-    void setIdentifier(String newIdentifier) {
+    protected void setIdentifier(String newIdentifier) {
         identifier = newIdentifier;
     }
 
     @Override
-    void onStorageAdded(Block block, Player player) {
+    public void onStorageAdded(Block block, Player player) {
         //Don't need to do anything with the Crafting table.
     }
 }

@@ -1,4 +1,4 @@
-package com.jamesdpeters.minecraft.chests.storage;
+package com.jamesdpeters.minecraft.chests.storage.abstracts;
 
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
@@ -6,7 +6,8 @@ import com.jamesdpeters.minecraft.chests.misc.Messages;
 import com.jamesdpeters.minecraft.chests.misc.Settings;
 import com.jamesdpeters.minecraft.chests.misc.Values;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
-import com.jamesdpeters.minecraft.chests.serialize.LinkedChest;
+import com.jamesdpeters.minecraft.chests.serialize.ConfigStorage;
+import com.jamesdpeters.minecraft.chests.storage.StorageUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -35,10 +36,10 @@ import java.util.stream.Collectors;
 
 public abstract class StorageType<T extends AbstractStorage> {
 
-    private LinkedChest store;
+    private ConfigStorage store;
     private StorageUtils<StorageInfo<T>, T> storageUtils;
 
-    StorageType(LinkedChest store){
+    protected StorageType(ConfigStorage store){
         this.store = store;
         storageUtils = new StorageUtils<>(this);
     }
@@ -47,7 +48,7 @@ public abstract class StorageType<T extends AbstractStorage> {
         return storageUtils;
     }
 
-    public abstract HashMap<String, HashMap<String, T>> getStorageMap(LinkedChest store);
+    public abstract HashMap<String, HashMap<String, T>> getStorageMap(ConfigStorage store);
 
     public abstract T createNewStorageInstance(OfflinePlayer player, String inventoryName, Location location);
 
@@ -79,6 +80,8 @@ public abstract class StorageType<T extends AbstractStorage> {
      * @return the direction the storage at the given location is facing.
      */
     public abstract BlockFace getStorageFacing(Block block);
+
+    public abstract StorageMessages getMessages();
 
     /*
     STORAGE MAP SECTION
@@ -210,10 +213,9 @@ public abstract class StorageType<T extends AbstractStorage> {
             });
             storage.dropInventory(player.getLocation());
             getStorageMap(player.getUniqueId()).remove(group);
-            //TODO Reformat Message.
-            Messages.REMOVED_GROUP(player, group);
+            getMessages().removedGroup(player,group);
         } else {
-            Messages.GROUP_DOESNT_EXIST(player, group);
+            getMessages().groupDoesntExist(player, group);
         }
         Config.saveASync();
     }
@@ -231,7 +233,6 @@ public abstract class StorageType<T extends AbstractStorage> {
     public boolean renameStorage(Player player, String oldIdentifier, String newIdentifier) {
         HashMap<String, T> map = getStorageMap(player.getUniqueId());
         if (!map.containsKey(oldIdentifier)) {
-            //TODO Reformat Message.
             Messages.CANNOT_RENAME_GROUP_DOESNT_EXIST(player, oldIdentifier);
             return false;
         }
@@ -249,7 +250,7 @@ public abstract class StorageType<T extends AbstractStorage> {
 
     /* HELPER UTILS */
 
-    static void placeSign(Block placedAgainst, Block toReplace, BlockFace facing, Player player, String identifier, String linkTag){
+    protected void placeSign(Block placedAgainst, Block toReplace, BlockFace facing, Player player, String identifier, String linkTag){
         Bukkit.broadcastMessage("Placing Sign!");
         if(toReplace.getType() == Material.AIR){
             BlockState replacedBlockState = toReplace.getState();
@@ -276,7 +277,7 @@ public abstract class StorageType<T extends AbstractStorage> {
                 if(ownerPlayer != null){
                     uuid = ownerPlayer.getUniqueId().toString();
                 } else {
-                    Messages.INVALID_CHESTID(player);
+                    getMessages().invalidID(player);
                     return;
                 }
             } else {
@@ -310,7 +311,7 @@ public abstract class StorageType<T extends AbstractStorage> {
             SignChangeEvent signChangeEvent = new SignChangeEvent(sign.getBlock(),player,lines);
             ChestsPlusPlus.PLUGIN.getServer().getPluginManager().callEvent(signChangeEvent);
         } else {
-            Messages.NO_SPACE_FOR_SIGN(player);
+            getMessages().invalidSignPlacement(player);
         }
     }
 

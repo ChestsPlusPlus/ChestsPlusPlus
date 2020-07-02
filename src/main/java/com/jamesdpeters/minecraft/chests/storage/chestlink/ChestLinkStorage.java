@@ -1,4 +1,4 @@
-package com.jamesdpeters.minecraft.chests.storage;
+package com.jamesdpeters.minecraft.chests.storage.chestlink;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.interfaces.VirtualInventoryHolder;
@@ -6,8 +6,11 @@ import com.jamesdpeters.minecraft.chests.inventories.ChestLinkMenu;
 import com.jamesdpeters.minecraft.chests.misc.Messages;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.runnables.VirtualChestToHopper;
+import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.sort.InventorySorter;
 import com.jamesdpeters.minecraft.chests.sort.SortMethod;
+import com.jamesdpeters.minecraft.chests.storage.abstracts.AbstractStorage;
+import com.jamesdpeters.minecraft.chests.storage.abstracts.StorageType;
 import fr.minuskube.inv.ClickableItem;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -17,6 +20,7 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
+import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
@@ -27,14 +31,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@SerializableAs("ChestLinkStorage")
 public class ChestLinkStorage extends AbstractStorage implements ConfigurationSerializable {
 
-    private String inventoryName = "Chest";
+    private String inventoryName;
     private VirtualChestToHopper chestToHopper;
     private SortMethod sortMethod;
 
-    public ChestLinkStorage(OfflinePlayer player, String group, Location location, StorageType<ChestLinkStorage> storageType){
-        super(player, group, location, storageType);
+    public ChestLinkStorage(Map<String, Object> map){
+        super(map);
+    }
+
+    public ChestLinkStorage(OfflinePlayer player, String group, Location location){
+        super(player, group, location);
         this.inventoryName = group;
         this.sortMethod = SortMethod.OFF;
 
@@ -44,18 +53,17 @@ public class ChestLinkStorage extends AbstractStorage implements ConfigurationSe
             getInventory().setContents(chest.getInventory().getContents());
             chest.getInventory().clear();
         }
-
         init();
     }
 
     @Override
-    void serialize(Map<String, Object> hashMap) {
+    protected void serialize(Map<String, Object> hashMap) {
         hashMap.put("inventoryName",inventoryName);
         hashMap.put("sortMethod", sortMethod.toString());
     }
 
     @Override
-    void deserialize(Map<String, Object> map) {
+    protected void deserialize(Map<String, Object> map) {
         String tempName = (String) map.get("inventoryName");
         if(tempName != null) inventoryName = tempName;
 
@@ -66,7 +74,7 @@ public class ChestLinkStorage extends AbstractStorage implements ConfigurationSe
     }
 
     @Override
-    ItemStack getArmorStandItem() {
+    protected ItemStack getArmorStandItem() {
         return InventorySorter.getMostCommonItem(getInventory());
     }
 
@@ -76,7 +84,12 @@ public class ChestLinkStorage extends AbstractStorage implements ConfigurationSe
     }
 
     @Override
-    boolean storeInventory() {
+    public ChestLinkStorageType getStorageType() {
+        return Config.getChestLink();
+    }
+
+    @Override
+    public boolean storeInventory() {
         return true;
     }
 
@@ -91,7 +104,7 @@ public class ChestLinkStorage extends AbstractStorage implements ConfigurationSe
     }
 
     @Override
-    void onStorageAdded(Block block, Player player) {
+    public void onStorageAdded(Block block, Player player) {
         //Migrates that chest into InventoryStorage and if full drops it at the chest location.
         if(block.getState() instanceof Chest) {
             Chest chest = (Chest) block.getState();
@@ -120,12 +133,12 @@ public class ChestLinkStorage extends AbstractStorage implements ConfigurationSe
         ItemMeta meta = toReturn.getItemMeta();
         if(meta != null) {
             String dispName = ChatColor.GREEN + "" + getIdentifier() + ": " +ChatColor.WHITE+ ""+getTotalItems()+" items";
-            if(player.getUniqueId().equals(playerUUID)) meta.setDisplayName(dispName);
+            if(player.getUniqueId().equals(getPlayerUUID())) meta.setDisplayName(dispName);
             else meta.setDisplayName(getOwner().getName()+": "+dispName);
 
             if(getMembers() != null) {
                 List<String> memberNames = new ArrayList<>();
-                if(isPublic) memberNames.add(ChatColor.WHITE+"Public Chest");
+                if(isPublic()) memberNames.add(ChatColor.WHITE+"Public Chest");
                 memberNames.add(ChatColor.BOLD+""+ChatColor.UNDERLINE+"Members:");
                 getMembers().forEach(player1 -> memberNames.add(ChatColor.stripColor(player1.getName())));
                 meta.setLore(memberNames);
