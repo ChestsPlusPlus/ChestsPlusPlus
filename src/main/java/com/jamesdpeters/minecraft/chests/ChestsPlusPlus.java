@@ -3,7 +3,7 @@ package com.jamesdpeters.minecraft.chests;
 import com.jamesdpeters.minecraft.chests.commands.AutoCraftCommand;
 import com.jamesdpeters.minecraft.chests.commands.ChestLinkCommand;
 import com.jamesdpeters.minecraft.chests.crafting.Crafting;
-import com.jamesdpeters.minecraft.chests.listeners.ChestLinkListener;
+import com.jamesdpeters.minecraft.chests.listeners.StorageListener;
 import com.jamesdpeters.minecraft.chests.listeners.HopperListener;
 import com.jamesdpeters.minecraft.chests.listeners.InventoryListener;
 import com.jamesdpeters.minecraft.chests.listeners.WorldListener;
@@ -12,10 +12,10 @@ import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Settings;
 import com.jamesdpeters.minecraft.chests.misc.Stats;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
-import com.jamesdpeters.minecraft.chests.storage.AutoCraftingStorage;
+import com.jamesdpeters.minecraft.chests.storage.autocraft.AutoCraftingStorage;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
-import com.jamesdpeters.minecraft.chests.storage.ChestLinkStorage;
-import com.jamesdpeters.minecraft.chests.serialize.LinkedChest;
+import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorage;
+import com.jamesdpeters.minecraft.chests.serialize.ConfigStorage;
 import com.jamesdpeters.minecraft.chests.serialize.LocationInfo;
 import com.jamesdpeters.minecraft.chests.serialize.MaterialSerializer;
 import com.jamesdpeters.minecraft.chests.serialize.RecipeSerializable;
@@ -60,12 +60,13 @@ public class ChestsPlusPlus extends JavaPlugin {
     private static boolean boot = false;
 
     static {
-        ConfigurationSerialization.registerClass(LinkedChest.class, "LinkedChest");
-        ConfigurationSerialization.registerClass(ChestLinkStorage.class, "InventoryStorage");
+        ConfigurationSerialization.registerClass(ConfigStorage.class, "ConfigStorage");
+        ConfigurationSerialization.registerClass(ChestLinkStorage.class, "ChestLinkStorage");
         ConfigurationSerialization.registerClass(MaterialSerializer.class, "Material");
         ConfigurationSerialization.registerClass(AutoCraftingStorage.class, "AutoCraftingStorage");
         ConfigurationSerialization.registerClass(RecipeSerializable.class, "Recipe");
         ConfigurationSerialization.registerClass(LocationInfo.class, "LocationInfo");
+
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -85,7 +86,7 @@ public class ChestsPlusPlus extends JavaPlugin {
 
         new ChestLinkCommand().register(this);
         new AutoCraftCommand().register(this);
-        getServer().getPluginManager().registerEvents(new ChestLinkListener(),this);
+        getServer().getPluginManager().registerEvents(new StorageListener(),this);
         getServer().getPluginManager().registerEvents(new InventoryListener(),this);
         getServer().getPluginManager().registerEvents(new HopperListener(),this);
         getServer().getPluginManager().registerEvents(new WorldListener(),this);

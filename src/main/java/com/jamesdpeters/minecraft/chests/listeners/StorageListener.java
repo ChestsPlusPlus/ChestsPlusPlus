@@ -1,11 +1,11 @@
 package com.jamesdpeters.minecraft.chests.listeners;
 
-import com.jamesdpeters.minecraft.chests.storage.StorageInfo;
+import com.jamesdpeters.minecraft.chests.storage.abstracts.StorageInfo;
 import com.jamesdpeters.minecraft.chests.misc.*;
 import com.jamesdpeters.minecraft.chests.runnables.ChestLinkVerifier;
-import com.jamesdpeters.minecraft.chests.storage.AbstractStorage;
+import com.jamesdpeters.minecraft.chests.storage.abstracts.AbstractStorage;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
-import com.jamesdpeters.minecraft.chests.storage.StorageType;
+import com.jamesdpeters.minecraft.chests.storage.abstracts.StorageType;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
@@ -23,7 +23,7 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.persistence.PersistentDataType;
 
-public class ChestLinkListener implements Listener {
+public class StorageListener implements Listener {
 
     @EventHandler
     public void playerInteract(BlockPlaceEvent event){
@@ -41,17 +41,15 @@ public class ChestLinkListener implements Listener {
                                                 if (info != null) {
                                                     Location signLocation = event.getBlockPlaced().getLocation();
                                                     if (storageType.getStorageUtils().isValidSignPosition(signLocation)) {
-                                                        if(!storageType.add(event.getPlayer(), info.getGroup(), event.getBlockAgainst().getLocation(), event.getPlayer())){
+                                                        if(!storageType.add(event.getPlayer(), info.getGroup(), event.getBlockAgainst().getLocation(), info.getPlayer())){
                                                             sign.getBlock().breakNaturally();
                                                             done();
                                                             return;
                                                         }
-                                                        //TODO Reformat messages.
-                                                        Messages.CHEST_ADDED(event.getPlayer(), signChangeEvent.getLine(1), info.getPlayer().getName());
+                                                        storageType.getMessages().storageAdded(event.getPlayer(), signChangeEvent.getLine(1), info.getPlayer().getName());
                                                         signChange(sign,signChangeEvent,info.getPlayer(),event.getPlayer());
                                                     } else {
-                                                        //TODO Reformat messages.
-                                                        Messages.SIGN_FRONT_OF_CHEST(event.getPlayer());
+                                                        storageType.getMessages().invalidSignPlacement(event.getPlayer());
                                                     }
                                                 }
                                         } else {
@@ -90,9 +88,7 @@ public class ChestLinkListener implements Listener {
                         if(info != null){
                             storageType.removeBlock(info.getPlayer(), info.getGroup(), block.getLocation());
                             storageType.onSignRemoval(block);
-                            //TODO Reformat messages.
-                            Messages.CHEST_REMOVED(event.getPlayer(),info.getGroup(),info.getPlayer().getName());
-                            Messages.AUTOCRAFT_REMOVED(event.getPlayer(),info.getGroup(),info.getPlayer().getName());
+                            storageType.getMessages().storageRemoved(event.getPlayer(), info.getGroup(), info.getPlayer().getName());
                         }
                     }
                 });
@@ -114,9 +110,7 @@ public class ChestLinkListener implements Listener {
             if(storageType.isValidBlockType(event.getBlock())) {
                 AbstractStorage storage = storageType.removeBlock(event.getBlock().getLocation());
                 if (storage != null) {
-                    //TODO Reformat messages
-                    Messages.CHEST_REMOVED(event.getPlayer(), storage.getIdentifier(), storage.getOwner().getName());
-                    Messages.AUTOCRAFT_REMOVED(event.getPlayer(), storage.getIdentifier(), storage.getOwner().getName());
+                    storageType.getMessages().storageRemoved(event.getPlayer(), storage.getIdentifier(), storage.getOwner().getName());
                 }
             }
         }
