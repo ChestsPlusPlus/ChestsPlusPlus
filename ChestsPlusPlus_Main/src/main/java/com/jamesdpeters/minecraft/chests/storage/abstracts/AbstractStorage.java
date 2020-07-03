@@ -1,6 +1,7 @@
 package com.jamesdpeters.minecraft.chests.storage.abstracts;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
+import com.jamesdpeters.minecraft.chests.api_interfaces.ApiSpecific;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.misc.Values;
@@ -328,7 +329,7 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
                             ItemStack displayItem = getArmorStandItem();
 
                             if(displayItem != null) {
-                                boolean isBlock = Utils.isGraphicallyBlock(displayItem);
+                                boolean isBlock = !ApiSpecific.getMaterialChecker().isGraphically2D(displayItem);
 
                                 Location standLoc = getArmorStandLoc(anchor,facing, isBlock);
 
