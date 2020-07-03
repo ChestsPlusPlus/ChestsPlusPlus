@@ -2,51 +2,62 @@ package com.jamesdpeters.minecraft.chests;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Tag;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public abstract class MaterialChecker {
 
-    public static List<Material> DEFAULT_ITEMS = Arrays.asList(
-            //Signs
-            Material.ACACIA_SIGN,
-            Material.ACACIA_WALL_SIGN,
-            Material.BIRCH_SIGN,
-            Material.BIRCH_WALL_SIGN,
-            Material.DARK_OAK_SIGN,
-            Material.DARK_OAK_WALL_SIGN,
-            Material.JUNGLE_SIGN,
-            Material.JUNGLE_WALL_SIGN,
-            Material.OAK_SIGN,
-            Material.OAK_WALL_SIGN,
-            Material.SPRUCE_SIGN,
-            Material.SPRUCE_WALL_SIGN,
-            //Doors
-            Material.ACACIA_DOOR,
-            Material.BIRCH_DOOR,
-            Material.DARK_OAK_DOOR,
-            Material.JUNGLE_DOOR,
-            Material.OAK_DOOR,
-            Material.SPRUCE_DOOR,
-            Material.IRON_DOOR,
-            //Saplings
-            Material.SPRUCE_SAPLING,
-            Material.ACACIA_SAPLING,
-            Material.BAMBOO_SAPLING,
-            Material.BIRCH_SAPLING,
-            Material.DARK_OAK_SAPLING,
-            Material.JUNGLE_SAPLING,
-            Material.OAK_SAPLING
-    );
+    static List<Material> version_1_14_Items;
+    static List<Material> version_1_14_Ignored_Items;
 
-    public static MaterialChecker DEFAULT = new MaterialChecker() {
-        List<Material> empty = new ArrayList<>();
+    static {
+        version_1_14_Items = new ArrayList<>();
+        version_1_14_Items.addAll(Tag.SIGNS.getValues());
+        version_1_14_Items.addAll(Tag.WALL_SIGNS.getValues());
+        version_1_14_Items.addAll(Tag.DOORS.getValues());
+        version_1_14_Items.addAll(Tag.SAPLINGS.getValues());
+        version_1_14_Items.addAll(Tag.SMALL_FLOWERS.getValues());
+        version_1_14_Items.addAll(Tag.RAILS.getValues());
+        version_1_14_Items.addAll(Tag.CORAL_PLANTS.getValues());
+        version_1_14_Items.addAll(Tag.BANNERS.getValues());
+        version_1_14_Items.addAll(getGlassPanes());
+        version_1_14_Items.add(Material.BROWN_MUSHROOM);
+        version_1_14_Items.add(Material.RED_MUSHROOM);
+        version_1_14_Items.add(Material.END_ROD);
+        version_1_14_Items.add(Material.COBWEB);
+        version_1_14_Items.add(Material.GRASS);
+        version_1_14_Items.add(Material.FERN);
+        version_1_14_Items.add(Material.DEAD_BUSH);
+        version_1_14_Items.add(Material.SEAGRASS);
+        version_1_14_Items.add(Material.SEA_PICKLE);
+        version_1_14_Items.add(Material.LADDER);
+        version_1_14_Items.add(Material.IRON_BARS);
+        version_1_14_Items.add(Material.VINE);
+        version_1_14_Items.add(Material.LILY_PAD);
+        version_1_14_Items.add(Material.SUNFLOWER);
+        version_1_14_Items.add(Material.LILAC);
+        version_1_14_Items.add(Material.ROSE_BUSH);
+        version_1_14_Items.add(Material.PEONY);
+        version_1_14_Items.add(Material.TALL_GRASS);
+        version_1_14_Items.add(Material.LARGE_FERN);
+
+        version_1_14_Ignored_Items = new ArrayList<>();
+        version_1_14_Ignored_Items.addAll(Tag.BEDS.getValues());
+    }
+
+    public static MaterialChecker Version_1_14 = new MaterialChecker() {
         @Override
         protected List<Material> graphically2DList() {
-            return empty;
+            return version_1_14_Items;
+        }
+
+        @Override
+        protected List<Material> ignoredMaterials() {
+            return version_1_14_Ignored_Items;
         }
     };
 
@@ -59,14 +70,41 @@ public abstract class MaterialChecker {
     protected abstract List<Material> graphically2DList();
 
     /**
+     * List of @{@link Material} that gets ignored (Beds are a pain).
+     * @return
+     */
+    protected abstract List<Material> ignoredMaterials();
+
+    /**
      * Used to test if an item is graphically 2D (e.g a sign is a block but is held like an item.)
      * @param itemStack
      * @return
      */
     public boolean isGraphically2D(ItemStack itemStack){
-        if(DEFAULT_ITEMS.contains(itemStack.getType())) return true;
         if (graphically2DList().contains(itemStack.getType())) return true;
-        return itemStack.getType().isBlock();
+        return !itemStack.getType().isBlock();
+    }
+
+    private static List<Material> getGlassPanes(){
+        List<Material> materials = new ArrayList<>();
+        materials.add(Material.GLASS_PANE);
+        materials.add(Material.BLACK_STAINED_GLASS_PANE);
+        materials.add(Material.BLUE_STAINED_GLASS_PANE);
+        materials.add(Material.BROWN_STAINED_GLASS_PANE);
+        materials.add(Material.CYAN_STAINED_GLASS_PANE);
+        materials.add(Material.GRAY_STAINED_GLASS_PANE);
+        materials.add(Material.GREEN_STAINED_GLASS_PANE);
+        materials.add(Material.LIME_STAINED_GLASS_PANE);
+        materials.add(Material.MAGENTA_STAINED_GLASS_PANE);
+        materials.add(Material.ORANGE_STAINED_GLASS_PANE);
+        materials.add(Material.PINK_STAINED_GLASS_PANE);
+        materials.add(Material.PURPLE_STAINED_GLASS_PANE);
+        materials.add(Material.RED_STAINED_GLASS_PANE);
+        materials.add(Material.WHITE_STAINED_GLASS_PANE);
+        materials.add(Material.YELLOW_STAINED_GLASS_PANE);
+        materials.add(Material.LIGHT_BLUE_STAINED_GLASS_PANE);
+        materials.add(Material.LIGHT_GRAY_STAINED_GLASS_PANE);
+        return materials;
     }
 
 }

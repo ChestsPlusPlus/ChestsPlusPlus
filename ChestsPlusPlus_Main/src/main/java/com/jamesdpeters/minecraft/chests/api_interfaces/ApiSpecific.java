@@ -6,6 +6,8 @@ import com.jamesdpeters.minecraft.chests.MaterialChecker_1_15;
 import com.jamesdpeters.minecraft.chests.MaterialChecker_1_16;
 import org.bukkit.Bukkit;
 
+import java.util.Arrays;
+
 public class ApiSpecific {
 
     private static MaterialChecker materialChecker;
@@ -25,12 +27,17 @@ public class ApiSpecific {
 
     private static Version getVersion(){
         String version = Bukkit.getBukkitVersion().split("-")[0];
-        switch (version){
+        System.out.println(version);
+        String[] versionRevisions = version.split("\\.");
+        System.out.println(Arrays.toString(versionRevisions));
+        String minorVersion = versionRevisions[1];
+
+        //Switch minor revision number e.g 1.xx
+        switch (minorVersion){
             //Assume default API is latest.
             default: return Version.API_1_16;
-            case "1.15": return Version.API_1_15;
-            case "1.14": return Version.API_1_14;
-
+            case "15": return Version.API_1_15;
+            case "14": return Version.API_1_14;
         }
     }
 
@@ -38,7 +45,7 @@ public class ApiSpecific {
         switch (version){
             case API_1_16: return new MaterialChecker_1_16();
             case API_1_15: return new MaterialChecker_1_15();
-            default: return MaterialChecker.DEFAULT;
+            default: return MaterialChecker.Version_1_14;
         }
     }
 
