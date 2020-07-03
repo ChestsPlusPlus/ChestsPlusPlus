@@ -1,6 +1,6 @@
 package com.jamesdpeters.minecraft.chests;
 
-import com.jamesdpeters.minecraft.chests.api_interfaces.MaterialChecker;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 
 import java.util.ArrayList;
@@ -11,9 +11,8 @@ public class MaterialChecker_1_15 extends MaterialChecker {
 
     private List<Material> materials;
 
-    MaterialChecker_1_15(){
+    public MaterialChecker_1_15(){
         materials = new ArrayList<>();
-        materials.addAll(DEFAULT_ITEMS);
         materials.addAll(Arrays.asList(
 //                Material.DIRT
         ));
@@ -23,4 +22,5 @@ public class MaterialChecker_1_15 extends MaterialChecker {
     protected List<Material> graphically2DList() {
         return materials;
     }
+
 }

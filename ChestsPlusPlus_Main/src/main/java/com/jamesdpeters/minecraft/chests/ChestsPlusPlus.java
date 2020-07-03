@@ -1,5 +1,6 @@
 package com.jamesdpeters.minecraft.chests;
 
+import com.jamesdpeters.minecraft.chests.api_interfaces.ApiSpecific;
 import com.jamesdpeters.minecraft.chests.commands.AutoCraftCommand;
 import com.jamesdpeters.minecraft.chests.commands.ChestLinkCommand;
 import com.jamesdpeters.minecraft.chests.crafting.Crafting;
@@ -47,7 +48,7 @@ import org.bukkit.plugin.java.annotation.plugin.author.Author;
 @Permission(name = Permissions.OPEN, desc = "Gives permission to open ChestLinks!", defaultValue = PermissionDefault.TRUE)
 @Permission(name = Permissions.MENU, desc = "Gives permission to open the ChestLink menu!", defaultValue = PermissionDefault.TRUE)
 @Permission(name = Permissions.REMOVE, desc = "Gives permission to remove a ChestLink!", defaultValue = PermissionDefault.TRUE)
-@Permission(name = Permissions.OPEN_ANY, desc = "Gives permission to open all chests, for admin use.", defaultValue = PermissionDefault.FALSE)
+@Permission(name = Permissions.OPEN_ANY, desc = "Gives permission to open all chests, for admin use.", defaultValue = PermissionDefault.OP)
 @Permission(name = Permissions.MEMBER, desc = "Gives permission to add/remove a member to/from their chestlink.", defaultValue = PermissionDefault.TRUE)
 @Permission(name = Permissions.SORT, desc = "Set the sorting option for the given ChestLink.", defaultValue = PermissionDefault.TRUE)
 @Permission(name = Permissions.AUTOCRAFT_OPEN, desc = "Gives permission to open AutoCrafting stations.", defaultValue = PermissionDefault.TRUE)
@@ -78,8 +79,11 @@ public class ChestsPlusPlus extends JavaPlugin {
 
         Settings.initConfig(this);
         Crafting.load();
-
         PLUGIN = this;
+
+        //API initialisation
+        API.register(this);
+        ApiSpecific.init();
 
         //Remove entities that could have been left behind from bad save files/crashes etc.
         Utils.removeEntities();

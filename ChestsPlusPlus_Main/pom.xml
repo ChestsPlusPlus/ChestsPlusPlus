@@ -4,8 +4,8 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.jamesdpeters.chests</groupId>
-    <artifactId>ChestsPlusPlus</artifactId>
+    <groupId>com.jamesdpeters.minecraft.chests</groupId>
+    <artifactId>ChestsPlusPlus-Master</artifactId>
     <version>1.5-BETA-3</version>
 
     <properties>
@@ -21,11 +21,6 @@
     </scm>
 
     <repositories>
-        <repository>
-            <id>spigotmc-repo</id>
-            <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
-        </repository>
-
         <repository>
             <id>ossrh</id>
             <url>https://oss.sonatype.org/content/groups/public/</url>
@@ -87,16 +82,26 @@
         </dependency>
 
         <dependency>
-            <groupId>com.jamesdpeters.chests</groupId>
+            <groupId>com.jamesdpeters.minecraft.chests</groupId>
             <artifactId>ChestsPlusPlus_1_16</artifactId>
-            <version>1.5-BETA-3</version>
+            <version>${version}</version>
+            <type>jar</type>
             <scope>compile</scope>
         </dependency>
 
         <dependency>
-            <groupId>com.jamesdpeters.chests</groupId>
+            <groupId>com.jamesdpeters.minecraft.chests</groupId>
             <artifactId>ChestsPlusPlus_1_15</artifactId>
-            <version>1.5-BETA-3</version>
+            <version>${version}</version>
+            <type>jar</type>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.jamesdpeters.minecraft.chests</groupId>
+            <artifactId>ChestsPlusPlus-API</artifactId>
+            <version>${version}</version>
+            <type>jar</type>
             <scope>compile</scope>
         </dependency>
 
@@ -116,6 +121,7 @@
                         <includes>
                             <include>fr.minuskube.inv*:*</include>
                             <include>org.bstats*:*</include>
+                            <include>com.jamesdpeters.minecraft.chests</include>
                         </includes>
                     </artifactSet>
                     <relocations>
@@ -144,7 +150,7 @@
                         <!--Tell the shade plugin which of it's goals to attempt to run during this phase-->
                         <configuration>
                             <!--Tell the shade plugin where to put our jar file-->
-                            <outputFile>${project.basedir}/Server/plugins/${project.artifactId}-${project.version}.jar</outputFile>
+                            <outputFile>../Server/plugins/ChestsPlusPlus-${project.version}.jar</outputFile>
 <!--                            <minimizeJar>true</minimizeJar>-->
                         </configuration>
                     </execution>

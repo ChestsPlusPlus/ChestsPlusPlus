@@ -1,16 +1,20 @@
 package com.jamesdpeters.minecraft.chests.api_interfaces;
 
+import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
+import com.jamesdpeters.minecraft.chests.MaterialChecker;
 import com.jamesdpeters.minecraft.chests.MaterialChecker_1_15;
 import com.jamesdpeters.minecraft.chests.MaterialChecker_1_16;
 import org.bukkit.Bukkit;
 
-public class APISpecific {
+public class ApiSpecific {
 
     private static MaterialChecker materialChecker;
     private static Version version;
 
-    static {
+    public static void init(){
         version = getVersion();
+        ChestsPlusPlus.PLUGIN.getLogger().info("Found API version: "+version);
+        materialChecker = getMaterialChecker(version);
     }
 
     enum Version {
@@ -30,11 +34,15 @@ public class APISpecific {
         }
     }
 
-    private MaterialChecker getMaterialChecker(Version version){
+    private static MaterialChecker getMaterialChecker(Version version){
         switch (version){
             case API_1_16: return new MaterialChecker_1_16();
             case API_1_15: return new MaterialChecker_1_15();
             default: return MaterialChecker.DEFAULT;
         }
+    }
+
+    public static MaterialChecker getMaterialChecker() {
+        return materialChecker;
     }
 }

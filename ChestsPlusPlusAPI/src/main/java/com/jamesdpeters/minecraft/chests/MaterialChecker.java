@@ -1,9 +1,10 @@
-package com.jamesdpeters.minecraft.chests.api_interfaces;
+package com.jamesdpeters.minecraft.chests;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -42,9 +43,10 @@ public abstract class MaterialChecker {
     );
 
     public static MaterialChecker DEFAULT = new MaterialChecker() {
+        List<Material> empty = new ArrayList<>();
         @Override
         protected List<Material> graphically2DList() {
-            return DEFAULT_ITEMS;
+            return empty;
         }
     };
 
@@ -57,12 +59,14 @@ public abstract class MaterialChecker {
     protected abstract List<Material> graphically2DList();
 
     /**
-     * Used to test if an item is graphically a block (e.g a sign is a block but is held like an item.)
+     * Used to test if an item is graphically 2D (e.g a sign is a block but is held like an item.)
      * @param itemStack
      * @return
      */
     public boolean isGraphically2D(ItemStack itemStack){
-        return graphically2DList().contains(itemStack.getType());
+        if(DEFAULT_ITEMS.contains(itemStack.getType())) return true;
+        if (graphically2DList().contains(itemStack.getType())) return true;
+        return itemStack.getType().isBlock();
     }
 
 }
