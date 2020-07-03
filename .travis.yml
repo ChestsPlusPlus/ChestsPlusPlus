@@ -1,9 +1,8 @@
 language: java
 
 script:
-- cd ChestsPlusPlus_Main
 - mvn -DskipTests package
-- export FOO=$(ls Server/plugins//ChestsPlusPlus-*.jar)
+- export FOO=$(ls /Server/plugins/ChestsPlusPlus-*.jar)
 
 deploy:
   provider: releases
