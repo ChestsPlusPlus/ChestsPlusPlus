@@ -17,7 +17,7 @@ import java.util.UUID;
 public class LocationInfo implements ConfigurationSerializable {
 
     private Location location;
-    private ArmorStand itemStand, blockStand;
+    private ArmorStand itemStand, blockStand, toolItemStand;
 
     @Override
     public Map<String, Object> serialize() {
@@ -46,6 +46,10 @@ public class LocationInfo implements ConfigurationSerializable {
         return itemStand;
     }
 
+    public ArmorStand getToolItemStand() {
+        return toolItemStand;
+    }
+
     public LocationInfo setBlockStand(ArmorStand blockStand) {
         this.blockStand = blockStand;
         return this;
@@ -53,6 +57,11 @@ public class LocationInfo implements ConfigurationSerializable {
 
     public LocationInfo setItemStand(ArmorStand itemStand) {
         this.itemStand = itemStand;
+        return this;
+    }
+
+    public LocationInfo setToolItemStand(ArmorStand toolItemStand) {
+        this.toolItemStand = toolItemStand;
         return this;
     }
 

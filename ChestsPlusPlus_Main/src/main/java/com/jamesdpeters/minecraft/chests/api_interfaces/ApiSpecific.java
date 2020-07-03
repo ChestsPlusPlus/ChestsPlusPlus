@@ -27,9 +27,7 @@ public class ApiSpecific {
 
     private static Version getVersion(){
         String version = Bukkit.getBukkitVersion().split("-")[0];
-        System.out.println(version);
         String[] versionRevisions = version.split("\\.");
-        System.out.println(Arrays.toString(versionRevisions));
         String minorVersion = versionRevisions[1];
 
         //Switch minor revision number e.g 1.xx

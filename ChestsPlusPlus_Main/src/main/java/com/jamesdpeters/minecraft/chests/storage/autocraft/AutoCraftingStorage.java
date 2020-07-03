@@ -84,6 +84,11 @@ public class AutoCraftingStorage extends AbstractStorage implements Configuratio
         return identifier;
     }
 
+    @Override
+    public double getBlockOffset() {
+        return -0.07;
+    }
+
     public VirtualCraftingHolder getVirtualCraftingHolder() {
         return virtualCraftingHolder;
     }

@@ -23,7 +23,6 @@ public abstract class MaterialChecker {
         version_1_14_Items.addAll(Tag.SMALL_FLOWERS.getValues());
         version_1_14_Items.addAll(Tag.RAILS.getValues());
         version_1_14_Items.addAll(Tag.CORAL_PLANTS.getValues());
-        version_1_14_Items.addAll(Tag.BANNERS.getValues());
         version_1_14_Items.addAll(getGlassPanes());
         version_1_14_Items.add(Material.BROWN_MUSHROOM);
         version_1_14_Items.add(Material.RED_MUSHROOM);
@@ -44,9 +43,33 @@ public abstract class MaterialChecker {
         version_1_14_Items.add(Material.PEONY);
         version_1_14_Items.add(Material.TALL_GRASS);
         version_1_14_Items.add(Material.LARGE_FERN);
+        version_1_14_Items.add(Material.BELL);
+        version_1_14_Items.add(Material.CAMPFIRE);
+        version_1_14_Items.add(Material.LANTERN);
+        version_1_14_Items.add(Material.TURTLE_EGG);
+        version_1_14_Items.add(Material.SUGAR_CANE);
+        version_1_14_Items.add(Material.KELP);
+        version_1_14_Items.add(Material.BAMBOO);
+        version_1_14_Items.add(Material.LEVER);
+        version_1_14_Items.add(Material.TRIPWIRE_HOOK);
+        version_1_14_Items.add(Material.REPEATER);
+        version_1_14_Items.add(Material.COMPARATOR);
+        version_1_14_Items.add(Material.CAULDRON);
+        version_1_14_Items.add(Material.BREWING_STAND);
+        version_1_14_Items.add(Material.HOPPER);
 
         version_1_14_Ignored_Items = new ArrayList<>();
         version_1_14_Ignored_Items.addAll(Tag.BEDS.getValues());
+        version_1_14_Ignored_Items.addAll(Tag.BANNERS.getValues());
+        version_1_14_Ignored_Items.add(Material.DRAGON_HEAD);
+        version_1_14_Ignored_Items.add(Material.PLAYER_HEAD);
+        version_1_14_Ignored_Items.add(Material.ZOMBIE_HEAD);
+        version_1_14_Ignored_Items.add(Material.SKELETON_SKULL);
+        version_1_14_Ignored_Items.add(Material.CREEPER_HEAD);
+        version_1_14_Ignored_Items.add(Material.SHIELD);
+        version_1_14_Ignored_Items.add(Material.CROSSBOW);
+        version_1_14_Ignored_Items.add(Material.TRIDENT);
+
     }
 
     public static MaterialChecker Version_1_14 = new MaterialChecker() {
@@ -64,6 +87,7 @@ public abstract class MaterialChecker {
     /**
      * API-Specific implementation for materials checks.
      * Should return a list of materials where the texture for this item is displayed as 2D rather than a 3D model.
+     * Should add the materials from the previous version (e.g 1.16 adds 1.15 which adds 1.14)
      * @return
      * List of Materials.
      */
@@ -83,6 +107,15 @@ public abstract class MaterialChecker {
     public boolean isGraphically2D(ItemStack itemStack){
         if (graphically2DList().contains(itemStack.getType())) return true;
         return !itemStack.getType().isBlock();
+    }
+
+    /**
+     * Whether this item should be ignored when displaying. (Beds don't look good so are ignored.)
+     * @param itemStack
+     * @return
+     */
+    public boolean isIgnored(ItemStack itemStack){
+        return ignoredMaterials().contains(itemStack.getType());
     }
 
     private static List<Material> getGlassPanes(){
@@ -105,6 +138,23 @@ public abstract class MaterialChecker {
         materials.add(Material.LIGHT_BLUE_STAINED_GLASS_PANE);
         materials.add(Material.LIGHT_GRAY_STAINED_GLASS_PANE);
         return materials;
+    }
+
+    /**
+     * This returns true if an item is held like a pickaxe/sword etc.
+     * @param itemStack
+     * @return
+     */
+    public boolean isTool(ItemStack itemStack){
+        String matType = itemStack.getType().toString();
+        if(matType.contains("AXE")) return true;
+        if(matType.contains("SWORD")) return true;
+        if(matType.contains("PICKAXE")) return true;
+        if(matType.contains("HOE")) return true;
+        if(matType.contains("SHOVEL")) return true;
+        if(itemStack.getType() == Material.FISHING_ROD) return true;
+        if(itemStack.getType() == Material.CARROT_ON_A_STICK) return true;
+        return false;
     }
 
 }

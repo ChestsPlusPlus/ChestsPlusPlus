@@ -1,10 +1,8 @@
 package com.jamesdpeters.minecraft.chests;
 
-import org.bukkit.Bukkit;
-import org.bukkit.Material;
 
+import org.bukkit.Material;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class MaterialChecker_1_15 extends MaterialChecker {

@@ -189,6 +189,11 @@ public class ChestLinkStorage extends AbstractStorage implements ConfigurationSe
     }
 
     @Override
+    public double getBlockOffset() {
+        return 0;
+    }
+
+    @Override
     public String toString() {
         return inventoryName+": "+getLocations().toString();
     }
