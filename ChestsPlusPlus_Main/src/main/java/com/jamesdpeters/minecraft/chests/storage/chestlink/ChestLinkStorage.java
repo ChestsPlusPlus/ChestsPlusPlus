@@ -4,13 +4,13 @@ import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.interfaces.VirtualInventoryHolder;
 import com.jamesdpeters.minecraft.chests.inventories.ChestLinkMenu;
 import com.jamesdpeters.minecraft.chests.misc.Messages;
+import com.jamesdpeters.minecraft.chests.misc.Settings;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.runnables.VirtualChestToHopper;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.sort.InventorySorter;
 import com.jamesdpeters.minecraft.chests.sort.SortMethod;
 import com.jamesdpeters.minecraft.chests.storage.abstracts.AbstractStorage;
-import com.jamesdpeters.minecraft.chests.storage.abstracts.StorageType;
 import fr.minuskube.inv.ClickableItem;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -35,7 +35,6 @@ import java.util.Map;
 public class ChestLinkStorage extends AbstractStorage implements ConfigurationSerializable {
 
     private String inventoryName;
-    private VirtualChestToHopper chestToHopper;
     private SortMethod sortMethod;
 
     public ChestLinkStorage(Map<String, Object> map){
@@ -79,7 +78,7 @@ public class ChestLinkStorage extends AbstractStorage implements ConfigurationSe
     }
 
     private void init(){
-        chestToHopper = new VirtualChestToHopper(this);
+        VirtualChestToHopper chestToHopper = new VirtualChestToHopper(this);
         chestToHopper.start();
     }
 
@@ -186,6 +185,11 @@ public class ChestLinkStorage extends AbstractStorage implements ConfigurationSe
     @Override
     public String getIdentifier() {
         return inventoryName;
+    }
+
+    @Override
+    public boolean shouldDisplayArmourStands() {
+        return Settings.isShouldDisplayChestLinkStand();
     }
 
     @Override

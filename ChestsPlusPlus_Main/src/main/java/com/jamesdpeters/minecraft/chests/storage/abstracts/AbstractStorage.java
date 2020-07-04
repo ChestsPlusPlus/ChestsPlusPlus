@@ -117,7 +117,7 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
     }
 
     private void init(){
-        Bukkit.getScheduler().scheduleSyncRepeatingTask(ChestsPlusPlus.PLUGIN, this::updateClients, 1, 5);
+        if(shouldDisplayArmourStands()) Bukkit.getScheduler().scheduleSyncRepeatingTask(ChestsPlusPlus.PLUGIN, this::updateClients, 1, 5);
     }
 
     public abstract StorageType getStorageType();
@@ -142,6 +142,7 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
     protected abstract Inventory initInventory();
     protected abstract void setIdentifier(String newIdentifier);
     public abstract String getIdentifier();
+    public abstract boolean shouldDisplayArmourStands();
 
     /**
      * This is the distance from a full block to the size of the storage block. (e.g Chest is smaller than a regular block.)

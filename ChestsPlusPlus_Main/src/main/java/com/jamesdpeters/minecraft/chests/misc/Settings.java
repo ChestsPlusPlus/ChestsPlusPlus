@@ -11,6 +11,8 @@ public class Settings {
     private static String LIMIT_CHESTS_NUMBER = "limit-chestlinks-amount";
     private static String SHOULD_ANIMATE_ALL_CHESTS = "should-animate-all-chests";
     private static String RUN_HOPPERS_UNLOADED_CHUNKS = "run-hoppers-unloaded-chunks";
+    private static String SHOULD_CHEST_ARMOUR_STAND = "display_chestlink_armour_stands";
+    private static String SHOULD_AUTOCRAFT_ARMOUR_STAND = "display_chestlink_armour_stands";
 
     private static Settings cf;
     private FileConfiguration configuration;
@@ -22,6 +24,8 @@ public class Settings {
     private static int limitChestsAmount;
     private static boolean shouldAnimateAllChests;
     private static boolean runHoppersInUnloadedChunks;
+    private static boolean shouldDisplayChestLinkStand;
+    private static boolean shouldDisplayAutoCraftStand;
 
     public static void initConfig(Plugin plugin){
         cf = new Settings();
@@ -35,6 +39,8 @@ public class Settings {
         cf.configuration.addDefault(LIMIT_CHESTS_NUMBER,0);
         cf.configuration.addDefault(SHOULD_ANIMATE_ALL_CHESTS,false);
         cf.configuration.addDefault(RUN_HOPPERS_UNLOADED_CHUNKS,false);
+        cf.configuration.addDefault(SHOULD_CHEST_ARMOUR_STAND,true);
+        cf.configuration.addDefault(SHOULD_AUTOCRAFT_ARMOUR_STAND,true);
 
         cf.configuration.options().copyDefaults(true);
         cf.plugin.saveConfig();
@@ -55,6 +61,8 @@ public class Settings {
         limitChestsAmount = cf.configuration.getInt(LIMIT_CHESTS_NUMBER);
         shouldAnimateAllChests = cf.configuration.getBoolean(SHOULD_ANIMATE_ALL_CHESTS);
         runHoppersInUnloadedChunks = cf.configuration.getBoolean(RUN_HOPPERS_UNLOADED_CHUNKS);
+        shouldDisplayChestLinkStand = cf.configuration.getBoolean(SHOULD_CHEST_ARMOUR_STAND);
+        shouldDisplayAutoCraftStand = cf.configuration.getBoolean(SHOULD_AUTOCRAFT_ARMOUR_STAND);
     }
 
     /**
@@ -71,5 +79,11 @@ public class Settings {
     }
     public static boolean isRunHoppersInUnloadedChunks() {
         return runHoppersInUnloadedChunks;
+    }
+    public static boolean isShouldDisplayChestLinkStand() {
+        return shouldDisplayChestLinkStand;
+    }
+    public static boolean isShouldDisplayAutoCraftStand() {
+        return shouldDisplayAutoCraftStand;
     }
 }

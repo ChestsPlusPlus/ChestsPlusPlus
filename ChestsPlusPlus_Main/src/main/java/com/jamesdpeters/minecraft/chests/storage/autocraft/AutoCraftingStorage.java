@@ -1,11 +1,10 @@
 package com.jamesdpeters.minecraft.chests.storage.autocraft;
 
 import com.jamesdpeters.minecraft.chests.interfaces.VirtualCraftingHolder;
+import com.jamesdpeters.minecraft.chests.misc.Settings;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.serialize.RecipeSerializable;
 import com.jamesdpeters.minecraft.chests.storage.abstracts.AbstractStorage;
-import com.jamesdpeters.minecraft.chests.storage.abstracts.StorageType;
-import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorageType;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Block;
@@ -82,6 +81,11 @@ public class AutoCraftingStorage extends AbstractStorage implements Configuratio
     @Override
     public String getIdentifier() {
         return identifier;
+    }
+
+    @Override
+    public boolean shouldDisplayArmourStands() {
+        return Settings.isShouldDisplayAutoCraftStand();
     }
 
     @Override
