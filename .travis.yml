@@ -15,6 +15,7 @@ script:
 cache:
   directories:
   - $HOME/.m2
+  - BuildTools
 
 deploy:
   provider: releases
