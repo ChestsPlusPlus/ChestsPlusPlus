@@ -1,7 +1,6 @@
 package com.jamesdpeters.minecraft.chests.filters;
 
 import org.bukkit.Rotation;
-import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemFrame;

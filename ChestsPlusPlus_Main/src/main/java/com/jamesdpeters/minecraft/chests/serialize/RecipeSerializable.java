@@ -1,7 +1,6 @@
 package com.jamesdpeters.minecraft.chests.serialize;
 
 import com.jamesdpeters.minecraft.chests.crafting.Crafting;
-import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.SerializableAs;

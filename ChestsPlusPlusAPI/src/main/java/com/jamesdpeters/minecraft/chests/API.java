@@ -1,6 +1,5 @@
 package com.jamesdpeters.minecraft.chests;
 
-import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 
 public class API {

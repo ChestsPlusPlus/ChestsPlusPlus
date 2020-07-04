@@ -1,6 +1,5 @@
 package com.jamesdpeters.minecraft.chests.storage.abstracts;
 
-import com.jamesdpeters.minecraft.chests.serialize.LocationInfo;
 import com.jamesdpeters.minecraft.chests.storage.autocraft.AutoCraftingStorage;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;

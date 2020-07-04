@@ -2,22 +2,13 @@ package com.jamesdpeters.minecraft.chests.commands;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.api_interfaces.ApiSpecific;
-import com.jamesdpeters.minecraft.chests.inventories.ChestLinkMenu;
 import com.jamesdpeters.minecraft.chests.maventemplates.BuildConstants;
-import com.jamesdpeters.minecraft.chests.misc.Messages;
-import com.jamesdpeters.minecraft.chests.misc.Permissions;
-import com.jamesdpeters.minecraft.chests.misc.Utils;
-import com.jamesdpeters.minecraft.chests.serialize.Config;
-import com.jamesdpeters.minecraft.chests.sort.SortMethod;
-import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorage;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -25,7 +16,8 @@ import java.util.stream.Stream;
 public class ChestsPlusPlusCommand extends ServerCommand  {
 
     private enum OPTIONS {
-        VERSION("/chestsplusplus version", "Display the current version of the plugin.");
+        VERSION("/chestsplusplus version", "Display the current version of the plugin."),
+        RELOAD("/chestsplusplus reload", "Reloads the plugin.");
 
         String description, commandHelp;
         static List<String> valuesList;
@@ -60,6 +52,11 @@ public class ChestsPlusPlusCommand extends ServerCommand  {
                     sender.sendMessage("Server Version: "+ Bukkit.getVersion());
                     sender.sendMessage("CraftBukkit Version: "+ Bukkit.getBukkitVersion());
                     sender.sendMessage("Detected API Version: "+ ApiSpecific.getApiVersion());
+                    return true;
+
+                case RELOAD:
+                    ChestsPlusPlus.PLUGIN.onDisable();
+                    ChestsPlusPlus.PLUGIN.onEnable();
                     return true;
 
                 default:

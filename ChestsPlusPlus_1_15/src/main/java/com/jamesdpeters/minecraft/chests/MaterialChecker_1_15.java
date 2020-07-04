@@ -2,7 +2,6 @@ package com.jamesdpeters.minecraft.chests;
 
 
 import org.bukkit.Material;
-import org.bukkit.craftbukkit.v1_15_R1.CraftWorld;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;

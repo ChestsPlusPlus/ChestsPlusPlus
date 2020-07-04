@@ -1,6 +1,5 @@
 package com.jamesdpeters.minecraft.chests.serialize;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.SerializableAs;
@@ -11,7 +10,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 @SerializableAs("LocationInfo")
 public class LocationInfo implements ConfigurationSerializable {

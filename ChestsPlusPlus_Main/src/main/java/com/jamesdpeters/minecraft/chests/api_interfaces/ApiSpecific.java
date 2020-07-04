@@ -10,9 +10,6 @@ import com.jamesdpeters.minecraft.chests.MaterialChecker_1_14;
 import com.jamesdpeters.minecraft.chests.MaterialChecker_1_15;
 import com.jamesdpeters.minecraft.chests.MaterialChecker_1_16;
 import org.bukkit.Bukkit;
-import org.bukkit.block.Chest;
-
-import java.util.Arrays;
 
 public class ApiSpecific {
 
@@ -30,7 +27,7 @@ public class ApiSpecific {
     enum Version {
         API_1_16,
         API_1_15,
-        API_1_14;
+        API_1_14
     }
 
     private static Version getVersion(){

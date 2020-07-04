@@ -5,7 +5,6 @@ import com.jamesdpeters.minecraft.chests.misc.Values;
 import com.jamesdpeters.minecraft.chests.runnables.ChestLinkVerifier;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.serialize.ConfigStorage;
-import com.jamesdpeters.minecraft.chests.storage.abstracts.AbstractStorage;
 import com.jamesdpeters.minecraft.chests.storage.abstracts.StorageMessages;
 import com.jamesdpeters.minecraft.chests.storage.abstracts.StorageType;
 import org.bukkit.ChatColor;
