@@ -37,7 +37,7 @@ public class StorageInfo<T extends AbstractStorage> {
                     boolean added = storageType.add(player, group, storageBlock.getLocation(), this.player);
                     if(added) {
                         this.storage = storageType.getStorage(playerUUID, group);
-                        storageType.getMessages().foundUnlinkedStorage(player,group);
+//                        storageType.getMessages().foundUnlinkedStorage(player,group);
                     }
                 }
             }
