@@ -74,18 +74,16 @@ public class UserShapedRecipe {
         return shape;
     }
 
-    public UserShapedRecipe setShape(String[] shape) {
+    public void setShape(String[] shape) {
         this.shape = shape;
-        return this;
     }
 
     public Map<Character, ItemStack> getIngredientMap() {
         return ingredientMap;
     }
 
-    public UserShapedRecipe setIngredientMap(Map<Character, ItemStack> ingredientMap) {
+    public void setIngredientMap(Map<Character, ItemStack> ingredientMap) {
         this.ingredientMap = ingredientMap;
-        return this;
     }
 
     public boolean matchesRecipe(ShapedRecipe recipe){

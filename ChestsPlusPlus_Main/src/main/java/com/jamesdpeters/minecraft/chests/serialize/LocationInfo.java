@@ -48,19 +48,16 @@ public class LocationInfo implements ConfigurationSerializable {
         return toolItemStand;
     }
 
-    public LocationInfo setBlockStand(ArmorStand blockStand) {
+    public void setBlockStand(ArmorStand blockStand) {
         this.blockStand = blockStand;
-        return this;
     }
 
-    public LocationInfo setItemStand(ArmorStand itemStand) {
+    public void setItemStand(ArmorStand itemStand) {
         this.itemStand = itemStand;
-        return this;
     }
 
-    public LocationInfo setToolItemStand(ArmorStand toolItemStand) {
+    public void setToolItemStand(ArmorStand toolItemStand) {
         this.toolItemStand = toolItemStand;
-        return this;
     }
 
     public static List<LocationInfo> convert(List<Location> locationList){
