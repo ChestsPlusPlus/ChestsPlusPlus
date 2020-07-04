@@ -2,7 +2,6 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-
     <parent>
         <artifactId>ChestsPlusPlus-Parent</artifactId>
         <groupId>com.jamesdpeters.minecraft.chests</groupId>
@@ -12,7 +11,7 @@
 
     <modelVersion>4.0.0</modelVersion>
     <packaging>jar</packaging>
-    <artifactId>ChestsPlusPlus_1_16</artifactId>
+    <artifactId>ChestsPlusPlus_1_14</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <repositories>
@@ -24,20 +23,14 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.jamesdpeters.minecraft.chests</groupId>
-            <artifactId>ChestsPlusPlus-API</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
-            <version>1.16.1-R0.1-SNAPSHOT</version>
+            <version>1.14.4-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.jamesdpeters.minecraft.chests</groupId>
-            <artifactId>ChestsPlusPlus_1_15</artifactId>
+            <artifactId>ChestsPlusPlus-API</artifactId>
             <version>1.0-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
@@ -45,7 +38,7 @@
         <dependency>
             <groupId>org.bukkit</groupId>
             <artifactId>craftbukkit</artifactId>
-            <version>1.16.1-R0.1-SNAPSHOT</version>
+            <version>1.14.4-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

@@ -5,13 +5,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>ChestsPlusPlus-API</artifactId>
-    <version>1.5-BETA-3</version>
+    <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <parent>
         <artifactId>ChestsPlusPlus-Parent</artifactId>
         <groupId>com.jamesdpeters.minecraft.chests</groupId>
-        <version>1.5-BETA-3</version>
+        <version>1.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 

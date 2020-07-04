@@ -1,7 +1,9 @@
 package com.jamesdpeters.minecraft.chests.misc;
 
+import com.jamesdpeters.minecraft.chests.api_interfaces.ApiSpecific;
 import com.jamesdpeters.minecraft.chests.filters.Filter;
 import com.jamesdpeters.minecraft.chests.filters.HopperFilter;
+import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorage;
 import org.bukkit.*;
 import org.bukkit.block.*;
 import org.bukkit.entity.Player;
@@ -16,9 +18,21 @@ import java.util.stream.Collectors;
 
 public class Utils {
 
+    public static void openChestInventory(Player player, ChestLinkStorage storage, Location location){
+        storage.getLocations().forEach(locationInfo -> {
+            if(locationInfo.getLocation() != null){
+                Block block = locationInfo.getLocation().getBlock();
+                if(block.getState() instanceof Chest){
+                    Chest chest = (Chest) block.getState();
+                    ApiSpecific.getChestOpener().setLidOpen(chest,true);
+                }
+            }
+        });
+        player.openInventory(storage.getInventory());
+    }
+
     public static void openChestInventory(Player player, Inventory inventory){
-        if(inventory.getLocation() != null) player.getWorld().playSound(inventory.getLocation(), Sound.BLOCK_CHEST_OPEN,0.5f,1f);
-        else player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN,0.5f,1f);
+        player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN,0.5f,1f);
         player.openInventory(inventory);
     }
 

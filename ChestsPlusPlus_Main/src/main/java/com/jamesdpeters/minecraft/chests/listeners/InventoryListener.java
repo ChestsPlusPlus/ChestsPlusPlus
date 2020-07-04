@@ -1,6 +1,7 @@
 package com.jamesdpeters.minecraft.chests.listeners;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
+import com.jamesdpeters.minecraft.chests.api_interfaces.ApiSpecific;
 import com.jamesdpeters.minecraft.chests.interfaces.VirtualCraftingHolder;
 import com.jamesdpeters.minecraft.chests.storage.autocraft.AutoCraftingStorage;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
@@ -10,6 +11,9 @@ import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.interfaces.VirtualInventoryHolder;
 import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorage;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.block.Block;
+import org.bukkit.block.Chest;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -35,7 +39,7 @@ public class InventoryListener implements Listener {
                     if (storage != null) {
                         event.setCancelled(true);
                         if (event.getPlayer().hasPermission(Permissions.OPEN) && storage.hasPermission((Player) event.getPlayer())) {
-                            Utils.openChestInventory((Player) event.getPlayer(), storage.getInventory());
+                            Utils.openChestInventory((Player) event.getPlayer(), storage, event.getInventory().getLocation());
                         } else {
                             Messages.NO_PERMISSION((Player) event.getPlayer());
                         }
@@ -63,9 +67,17 @@ public class InventoryListener implements Listener {
             if (holder instanceof VirtualInventoryHolder) {
                 VirtualInventoryHolder vHolder = (VirtualInventoryHolder) holder;
                 vHolder.openPreviousInventory();
-                if (event.getInventory().getLocation() == null) {
+                Location location = event.getInventory().getLocation();
+                if (location == null) {
                     Utils.closeInventorySound((Player) event.getPlayer(), event.getInventory());
                 }
+                vHolder.getStorage().getLocations().forEach(locationInfo -> {
+                    Block block = locationInfo.getLocation().getBlock();
+                    if(block.getState() instanceof Chest){
+                        Chest chest = (Chest) block.getState();
+                        ApiSpecific.getChestOpener().setLidOpen(chest,false);
+                    }
+                });
             }
             if(holder instanceof VirtualCraftingHolder){
                 ((VirtualCraftingHolder) holder).stopAnimation();

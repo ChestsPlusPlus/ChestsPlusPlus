@@ -1,18 +1,19 @@
 package com.jamesdpeters.minecraft.chests;
 
 
+import net.minecraft.server.v1_14_R1.TileEntityChest;
 import org.bukkit.Material;
-import org.bukkit.craftbukkit.v1_15_R1.CraftWorld;
+import org.bukkit.craftbukkit.v1_14_R1.block.CraftChest;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class MaterialChecker_1_15 extends MaterialChecker {
+public class MaterialChecker_1_14 extends MaterialChecker {
 
     private List<Material> materials;
     private List<Material> ignoredMaterials;
 
-    public MaterialChecker_1_15(){
+    public MaterialChecker_1_14(){
         materials = new ArrayList<>();
         materials.addAll(version_1_14_Items);
 
