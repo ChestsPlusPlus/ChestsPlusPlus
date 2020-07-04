@@ -9,6 +9,8 @@ public class Settings {
     private static String CHECK_UPDATE_PERIOD = "update-checker-period";
     private static String LIMIT_CHESTS = "limit-chestlinks";
     private static String LIMIT_CHESTS_NUMBER = "limit-chestlinks-amount";
+    private static String SHOULD_ANIMATE_ALL_CHESTS = "should-animate-all-chests";
+    private static String RUN_HOPPERS_UNLOADED_CHUNKS = "run-hoppers-unloaded-chunks";
 
     private static Settings cf;
     private FileConfiguration configuration;
@@ -18,6 +20,8 @@ public class Settings {
     private static int updateCheckerPeriod;
     private static boolean limitChests;
     private static int limitChestsAmount;
+    private static boolean shouldAnimateAllChests;
+    private static boolean runHoppersInUnloadedChunks;
 
     public static void initConfig(Plugin plugin){
         cf = new Settings();
@@ -29,6 +33,8 @@ public class Settings {
         cf.configuration.addDefault(CHECK_UPDATE_PERIOD,60*60);
         cf.configuration.addDefault(LIMIT_CHESTS,false);
         cf.configuration.addDefault(LIMIT_CHESTS_NUMBER,0);
+        cf.configuration.addDefault(SHOULD_ANIMATE_ALL_CHESTS,false);
+        cf.configuration.addDefault(RUN_HOPPERS_UNLOADED_CHUNKS,false);
 
         cf.configuration.options().copyDefaults(true);
         cf.plugin.saveConfig();
@@ -47,6 +53,8 @@ public class Settings {
         updateCheckerPeriod  = cf.configuration.getInt(CHECK_UPDATE_PERIOD);
         limitChests = cf.configuration.getBoolean(LIMIT_CHESTS);
         limitChestsAmount = cf.configuration.getInt(LIMIT_CHESTS_NUMBER);
+        shouldAnimateAllChests = cf.configuration.getBoolean(SHOULD_ANIMATE_ALL_CHESTS);
+        runHoppersInUnloadedChunks = cf.configuration.getBoolean(RUN_HOPPERS_UNLOADED_CHUNKS);
     }
 
     /**
@@ -58,4 +66,10 @@ public class Settings {
     public static int getUpdateCheckerPeriodTicks() { return 20*updateCheckerPeriod;}
     public static boolean isLimitChests() { return limitChests; }
     public static int getLimitChestsAmount() { return  limitChestsAmount; }
+    public static boolean isShouldAnimateAllChests() {
+        return shouldAnimateAllChests;
+    }
+    public static boolean isRunHoppersInUnloadedChunks() {
+        return runHoppersInUnloadedChunks;
+    }
 }

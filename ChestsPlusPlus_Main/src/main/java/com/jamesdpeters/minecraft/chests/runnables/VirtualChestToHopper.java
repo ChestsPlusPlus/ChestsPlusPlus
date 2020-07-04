@@ -2,6 +2,7 @@ package com.jamesdpeters.minecraft.chests.runnables;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.filters.HopperFilter;
+import com.jamesdpeters.minecraft.chests.misc.Settings;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorage;
 import com.jamesdpeters.minecraft.chests.serialize.LocationInfo;
@@ -13,8 +14,8 @@ import org.bukkit.scheduler.BukkitTask;
 
 public class VirtualChestToHopper extends BukkitRunnable {
 
-    ChestLinkStorage storage;
-    BukkitTask task;
+    private ChestLinkStorage storage;
+    private BukkitTask task;
 
     public VirtualChestToHopper(ChestLinkStorage storage){
         this.storage = storage;
@@ -33,7 +34,7 @@ public class VirtualChestToHopper extends BukkitRunnable {
         for(LocationInfo location : storage.getLocations()) {
             if(location != null) {
                 if (location.getLocation() != null) {
-                    if(!location.getLocation().getChunk().isLoaded()) continue;
+                    if(!location.getLocation().getChunk().isLoaded() && !Settings.isRunHoppersInUnloadedChunks()) continue;
                     Location below = location.getLocation().clone().subtract(0, 1, 0);
                     if (below.getBlock().getState() instanceof Hopper) {
                         Hopper hopper = (Hopper) below.getBlock().getState();

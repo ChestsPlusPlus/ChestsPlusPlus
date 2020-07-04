@@ -18,17 +18,28 @@ import java.util.stream.Collectors;
 
 public class Utils {
 
-    public static void openChestInventory(Player player, ChestLinkStorage storage, Location location){
-        storage.getLocations().forEach(locationInfo -> {
-            if(locationInfo.getLocation() != null){
-                Block block = locationInfo.getLocation().getBlock();
-                if(block.getState() instanceof Chest){
-                    Chest chest = (Chest) block.getState();
-                    ApiSpecific.getChestOpener().setLidOpen(chest,true);
+    public static void openChestInventory(Player player, ChestLinkStorage storage, Location openedChestLocation){
+        //Check if all chests should perform open animation.
+        if(Settings.isShouldAnimateAllChests()) {
+            storage.getLocations().forEach(locationInfo -> {
+                if (locationInfo.getLocation() != null) {
+                    chestOpenAnimation(locationInfo.getLocation());
                 }
-            }
-        });
+            });
+        } else {
+            chestOpenAnimation(openedChestLocation);
+        }
         player.openInventory(storage.getInventory());
+    }
+
+    private static void chestOpenAnimation(Location location){
+        if (location != null) {
+            Block block = location.getBlock();
+            if (block.getState() instanceof Chest) {
+                Chest chest = (Chest) block.getState();
+                ApiSpecific.getChestOpener().setLidOpen(chest, true);
+            }
+        }
     }
 
     public static void openChestInventory(Player player, Inventory inventory){
