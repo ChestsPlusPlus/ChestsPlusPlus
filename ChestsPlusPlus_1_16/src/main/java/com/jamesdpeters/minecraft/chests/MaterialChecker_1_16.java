@@ -1,22 +1,21 @@
 package com.jamesdpeters.minecraft.chests;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Tag;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class MaterialChecker_1_16 extends MaterialChecker {
 
     private List<Material> materials;
     private List<Material> ignoredMaterials;
-    MaterialChecker_1_15 version1_15;
+    private MaterialChecker_1_15 version1_15;
 
     public MaterialChecker_1_16(){
         version1_15 = new MaterialChecker_1_15();
+
         materials = new ArrayList<>();
         materials.addAll(version1_15.graphically2DList());
         materials.addAll(Tag.CROPS.getValues());

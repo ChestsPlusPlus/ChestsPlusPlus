@@ -6,6 +6,7 @@ import com.jamesdpeters.minecraft.chests.ChestOpener_1_15;
 import com.jamesdpeters.minecraft.chests.ChestOpener_1_16;
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.MaterialChecker;
+import com.jamesdpeters.minecraft.chests.MaterialChecker_1_14;
 import com.jamesdpeters.minecraft.chests.MaterialChecker_1_15;
 import com.jamesdpeters.minecraft.chests.MaterialChecker_1_16;
 import org.bukkit.Bukkit;
@@ -48,9 +49,10 @@ public class ApiSpecific {
 
     private static MaterialChecker getMaterialChecker(Version version){
         switch (version){
-            case API_1_16: return new MaterialChecker_1_16();
+            //Return latest version as default since only builds newer won't be present here.
+            default: return new MaterialChecker_1_16();
             case API_1_15: return new MaterialChecker_1_15();
-            default: return MaterialChecker.Version_1_14;
+            case API_1_14: return new MaterialChecker_1_14();
         }
     }
 
@@ -71,4 +73,5 @@ public class ApiSpecific {
     public static ChestOpener getChestOpener() {
         return chestOpener;
     }
+    public static Version getApiVersion(){ return version; }
 }
