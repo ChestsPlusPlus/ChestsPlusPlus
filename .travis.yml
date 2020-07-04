@@ -10,12 +10,14 @@ install:
 
 script:
 - mvn package -DskipTests
-- export FOO=$(ls /Server/plugins/ChestsPlusPlus-*.jar)
 
 cache:
   directories:
   - $HOME/.m2
   - BuildTools
+  
+before-deploy:
+- export FOO=$(ls /Server/plugins/ChestsPlusPlus-*.jar)
 
 deploy:
   provider: releases
