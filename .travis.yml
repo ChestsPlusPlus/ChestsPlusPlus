@@ -1,9 +1,11 @@
 language: java
 
-script:
+before_install:
 - cd /BuildTools
 - bash build.sh
 - cd ../
+
+script:
 - mvn -DskipTests package
 - export FOO=$(ls /Server/plugins/ChestsPlusPlus-*.jar)
 
