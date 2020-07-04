@@ -3,6 +3,7 @@ package com.jamesdpeters.minecraft.chests;
 import com.jamesdpeters.minecraft.chests.api_interfaces.ApiSpecific;
 import com.jamesdpeters.minecraft.chests.commands.AutoCraftCommand;
 import com.jamesdpeters.minecraft.chests.commands.ChestLinkCommand;
+import com.jamesdpeters.minecraft.chests.commands.ChestsPlusPlusCommand;
 import com.jamesdpeters.minecraft.chests.crafting.Crafting;
 import com.jamesdpeters.minecraft.chests.listeners.StorageListener;
 import com.jamesdpeters.minecraft.chests.listeners.HopperListener;
@@ -43,7 +44,8 @@ import org.bukkit.plugin.java.annotation.plugin.author.Author;
 @Author(value = "jameslfc19")
 @Commands({
         @Command(name = "chestlink", desc = "Chests++ ChestLink Commands.", aliases = {"cl"}, usage = "Use /chestlink help for more info."),
-        @Command(name = "autocraft", desc = "Chests++ AutoCraft Commands.", aliases = {"ac"}, usage = "Use /autocraft help for more info.")})
+        @Command(name = "autocraft", desc = "Chests++ AutoCraft Commands.", aliases = {"ac"}, usage = "Use /autocraft help for more info."),
+        @Command(name = "chests++", desc = "Chests++ Commands.", aliases = {"c++"}, usage = "/chests++ version")})
 @Permission(name = Permissions.ADD, desc = "Gives permission to add ChestLinks!", defaultValue = PermissionDefault.TRUE)
 @Permission(name = Permissions.OPEN, desc = "Gives permission to open ChestLinks!", defaultValue = PermissionDefault.TRUE)
 @Permission(name = Permissions.MENU, desc = "Gives permission to open the ChestLink menu!", defaultValue = PermissionDefault.TRUE)
@@ -88,13 +90,18 @@ public class ChestsPlusPlus extends JavaPlugin {
         //Remove entities that could have been left behind from bad save files/crashes etc.
         Utils.removeEntities();
 
+        //Register commands
         new ChestLinkCommand().register(this);
         new AutoCraftCommand().register(this);
+        new ChestsPlusPlusCommand().register(this);
+
+        //Register event listeners
         getServer().getPluginManager().registerEvents(new StorageListener(),this);
         getServer().getPluginManager().registerEvents(new InventoryListener(),this);
         getServer().getPluginManager().registerEvents(new HopperListener(),this);
         getServer().getPluginManager().registerEvents(new WorldListener(),this);
 
+        //Load storage
         SpigotConfig.load(this);
         new Config();
 
