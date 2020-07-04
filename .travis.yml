@@ -5,8 +5,11 @@ before_install:
 - bash build.sh
 - cd ../
 
+install:
+- mvn -U clean install
+
 script:
-- mvn clean package -DskipTests
+- mvn package -DskipTests
 - export FOO=$(ls /Server/plugins/ChestsPlusPlus-*.jar)
 
 cache:
