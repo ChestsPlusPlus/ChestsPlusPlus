@@ -6,7 +6,7 @@ before_install:
 - cd ../
 
 script:
-- mvn -DskipTests package
+- mvn clean package -DskipTests
 - export FOO=$(ls /Server/plugins/ChestsPlusPlus-*.jar)
 
 cache:
