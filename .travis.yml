@@ -1,8 +1,15 @@
 language: java
 
 script:
+- cd /BuildTools
+- bash build.sh
+- cd ../
 - mvn -DskipTests package
 - export FOO=$(ls /Server/plugins/ChestsPlusPlus-*.jar)
+
+cache:
+  directories:
+  - $HOME/.m2
 
 deploy:
   provider: releases
