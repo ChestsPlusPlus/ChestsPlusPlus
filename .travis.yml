@@ -17,7 +17,7 @@ cache:
   - BuildTools
   
 before-deploy:
-- export FOO=$(ls /Server/plugins/ChestsPlusPlus-*.jar)
+- export FOO=$(ls Server/plugins/ChestsPlusPlus-*.jar)
 
 deploy:
   provider: releases
