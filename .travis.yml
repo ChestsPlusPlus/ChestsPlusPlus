@@ -14,14 +14,16 @@ script:
 cache:
   directories:
   - $HOME/.m2
-  - BuildTools
-  
+  - BuildTools/Bukkit
+  - BuildTools/Spigot
+  - BuildTools/CraftBukkit
+  - BuildTools/BuildData
+
 before-deploy:
 - export FOO=$(ls Server/plugins/ChestsPlusPlus-*.jar)
 
 deploy:
   provider: releases
-  skip_cleanup: true
   api_key:
     secure: T0WxSTwYWgfpWXbEx/qCJDrI5bjPfsVvX2MD90G976QWOQGzt7k1EleLBwXHEo5x96/POJN6JM3qGT2I8ehGKIJ8x0MabBpc1R3PP9QTwAaMTOowye5160Gr0X3zeSqGHJP2WzaD6RvQxCcOOvn+kUKgEaRuYTozjPEal/iFPsbhz3tceKicRSlXJjU/43LLfVZDWk/catLFKfdHM9n7WGCdH7Bims6wIWxNyKLVBH+655UGN6jhRm1kZB3f5CDURUteG8jGak5h86XL4iH0Yaq1xHUtcU6V3DBwxKhzwk812chsjnbXOL8C8mxo96O3934RQGgtQVoS/u4WwCP/LRjnS4EzOK7q+GqFjgCyR9Z67t3tNMCb4XRQci/YnYnpWxxpD9Sv1VIfYEXVCTeWAqOV4YzKQdoA/wPGV8UY20F3pm/LRZH/VNtFvWWATvjEB+4cGJ2GxN2Av9jkmVB0b+nUAURIuJIrPN6eoekLVUXELzbq4BfpGly0lrtuhBBTGdAXwN46+XBExB+GTJjZIuxc+pRPUnrzPM7Zh7GxMf5ZY6cRIXYCaggv9FQPg00PLEmeYW30WB0BHyevj66uqQMWMGk2tRVJv8n285Ae/udUH9yulHU64K/us3hq/U4FXumQCvm0voIVAc575mbmgDHk7CpjqKSNhv+bP7JhmsA=
   file: "${FOO}"

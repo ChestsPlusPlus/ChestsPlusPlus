@@ -19,10 +19,13 @@ do
 
     if [ -d "$VERSION_DIR" ]; then
       echo "CraftBukkit version ${i} is cached!"
+      echo "Checking for latest commit! "
+      java -jar BuildTools.jar --rev ${i} --compile craftbukkit --compile-if-changed  > /dev/null 2>&1
+      echo "Finished Check."
     else
       echo "CraftBukkit version ${i} isn't cached!"
       echo "Running BuildTools!"
-      java -jar BuildTools.jar --rev ${i} --compile craftbukkit | awk 'NR <= 3'
+      java -jar BuildTools.jar --rev ${i} --compile craftbukkit  > /dev/null 2>&1
       echo "Compiled CraftBukkit ${i}"
     fi
 done
