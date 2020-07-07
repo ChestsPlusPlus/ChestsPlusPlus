@@ -35,7 +35,7 @@ public class Config {
 
         try {
             config = YamlConfiguration.loadConfiguration(getStorageFile());
-        } catch (IllegalArgumentException e){
+        } catch (IllegalArgumentException | IOException e){
             ChestsPlusPlus.PLUGIN.getLogger().severe("Config was null or couldn't be read!");
             config = new YamlConfiguration();
         }
@@ -89,9 +89,12 @@ public class Config {
         return null;
     }
 
-    private static File getStorageFile(){
+    private static File getStorageFile() throws IOException {
         File pluginDataFolder = ChestsPlusPlus.PLUGIN.getDataFolder();
-        return new File(pluginDataFolder, saveName);
+        File file = new File(pluginDataFolder, saveName);
+        file.getParentFile().mkdirs();
+        if(!file.exists()) file.createNewFile();
+        return file;
     }
 
     private File getLegacyFile(){
@@ -119,6 +122,7 @@ public class Config {
     private String legacyContentConverter(String content){
         content = content.replaceAll("==: LinkedChest", "==: ConfigStorage");
         content = content.replaceAll("==: com.jamesdpeters.minecraft.chests.storage.InventoryStorage", "==: ChestLinkStorage");
+        content = content.replaceAll("==: com.jamesdpeters.minecraft.chests.serialize.InventoryStorage", "==: ChestLinkStorage");
         return content;
     }
 }
