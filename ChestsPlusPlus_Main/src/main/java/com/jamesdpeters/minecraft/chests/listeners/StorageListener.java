@@ -6,6 +6,7 @@ import com.jamesdpeters.minecraft.chests.runnables.ChestLinkVerifier;
 import com.jamesdpeters.minecraft.chests.storage.abstracts.AbstractStorage;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.storage.abstracts.StorageType;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
@@ -23,6 +24,8 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.persistence.PersistentDataType;
 
+import java.util.stream.Collectors;
+
 public class StorageListener implements Listener {
 
     @EventHandler
@@ -35,22 +38,22 @@ public class StorageListener implements Listener {
                                 if (event.getBlockPlaced().getLocation().equals(signChangeEvent.getBlock().getLocation())) {
                                     Sign sign = (Sign) signChangeEvent.getBlock().getState();
 
-                                    for (StorageType storageType : Config.getStorageTypes()) {
+                                    for (StorageType storageType : Config.getStorageTypes().stream().filter(storageType -> storageType.isValidBlockType(event.getBlockAgainst())).collect(Collectors.toList())) {
                                         if(storageType.hasPermissionToAdd(event.getPlayer())) {
-                                                StorageInfo info = storageType.getStorageUtils().getStorageInfo(sign, signChangeEvent.getLines(), event.getPlayer().getUniqueId());
-                                                if (info != null) {
-                                                    Location signLocation = event.getBlockPlaced().getLocation();
-                                                    if (storageType.getStorageUtils().isValidSignPosition(signLocation)) {
-                                                        if(!storageType.add(event.getPlayer(), info.getGroup(), event.getBlockAgainst().getLocation(), info.getPlayer())){
+                                                Location signLocation = event.getBlockPlaced().getLocation();
+                                                if (storageType.getStorageUtils().isValidSignPosition(signLocation)) {
+                                                    StorageInfo info = storageType.getStorageUtils().getStorageInfo(sign, signChangeEvent.getLines(), event.getPlayer().getUniqueId());
+                                                    if (info != null) {
+                                                        if (!storageType.add(event.getPlayer(), info.getGroup(), event.getBlockAgainst().getLocation(), info.getPlayer())) {
                                                             sign.getBlock().breakNaturally();
                                                             done();
                                                             return;
                                                         }
                                                         storageType.getMessages().storageAdded(event.getPlayer(), signChangeEvent.getLine(1), info.getPlayer().getName());
-                                                        signChange(sign,signChangeEvent,info.getPlayer(),event.getPlayer());
-                                                    } else {
-                                                        storageType.getMessages().invalidSignPlacement(event.getPlayer());
+                                                        signChange(sign, signChangeEvent, info.getPlayer(), event.getPlayer());
                                                     }
+                                                } else {
+                                                    storageType.getMessages().invalidSignPlacement(event.getPlayer());
                                                 }
                                         } else {
                                             Messages.NO_PERMISSION(event.getPlayer());

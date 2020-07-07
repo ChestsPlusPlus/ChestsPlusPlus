@@ -81,6 +81,12 @@ public abstract class StorageType<T extends AbstractStorage> {
      */
     public abstract BlockFace getStorageFacing(Block block);
 
+    /**
+     * @param block - the block being tested.
+     * @return A list of @{@link BlockFace} that are valid to place a sign on this type of storage.
+     */
+    public abstract List<BlockFace> getValidBlockFaces(Block block);
+
     public abstract StorageMessages getMessages();
 
     /*
@@ -251,7 +257,6 @@ public abstract class StorageType<T extends AbstractStorage> {
     /* HELPER UTILS */
 
     protected void placeSign(Block placedAgainst, Block toReplace, BlockFace facing, Player player, String identifier, String linkTag){
-        Bukkit.broadcastMessage("Placing Sign!");
         if(toReplace.getType() == Material.AIR){
             BlockState replacedBlockState = toReplace.getState();
 

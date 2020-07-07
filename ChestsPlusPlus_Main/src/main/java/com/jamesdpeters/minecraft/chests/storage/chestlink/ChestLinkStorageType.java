@@ -16,7 +16,9 @@ import org.bukkit.block.Chest;
 import org.bukkit.block.data.Directional;
 import org.bukkit.entity.Player;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 
 public class ChestLinkStorageType extends StorageType<ChestLinkStorage> {
 
@@ -77,6 +79,11 @@ public class ChestLinkStorageType extends StorageType<ChestLinkStorage> {
             return chest.getFacing();
         }
         return null;
+    }
+
+    @Override
+    public List<BlockFace> getValidBlockFaces(Block block) {
+        return Collections.singletonList(getStorageFacing(block));
     }
 
     @Override

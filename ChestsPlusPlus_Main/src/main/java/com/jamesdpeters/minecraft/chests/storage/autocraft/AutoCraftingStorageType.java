@@ -18,9 +18,13 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
 public class AutoCraftingStorageType extends StorageType<AutoCraftingStorage> {
+
+    private static final List<BlockFace> blockfaces = Arrays.asList(BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST);
 
     public AutoCraftingStorageType(ConfigStorage store) {
         super(store);
@@ -74,8 +78,6 @@ public class AutoCraftingStorageType extends StorageType<AutoCraftingStorage> {
         }
     }
 
-    private static final BlockFace[] blockfaces = new BlockFace[]{BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST};
-
     @Override
     public BlockFace getStorageFacing(Block block) {
         for(BlockFace face : blockfaces){
@@ -86,6 +88,11 @@ public class AutoCraftingStorageType extends StorageType<AutoCraftingStorage> {
             }
         }
         return null;
+    }
+
+    @Override
+    public List<BlockFace> getValidBlockFaces(Block block) {
+        return blockfaces;
     }
 
     @Override

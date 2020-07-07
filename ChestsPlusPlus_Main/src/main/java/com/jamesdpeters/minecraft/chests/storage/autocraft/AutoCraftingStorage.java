@@ -89,6 +89,11 @@ public class AutoCraftingStorage extends AbstractStorage implements Configuratio
     }
 
     @Override
+    public boolean dropInventory() {
+        return true;
+    }
+
+    @Override
     public double getBlockOffset() {
         return -0.07;
     }

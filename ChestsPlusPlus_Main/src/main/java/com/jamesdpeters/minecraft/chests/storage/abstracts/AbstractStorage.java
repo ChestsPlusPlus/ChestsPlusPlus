@@ -145,6 +145,11 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
     public abstract boolean shouldDisplayArmourStands();
 
     /**
+     * @return whether to drop the inventory of this storage when it's removed.
+     */
+    public abstract boolean dropInventory();
+
+    /**
      * This is the distance from a full block to the size of the storage block. (e.g Chest is smaller than a regular block.)
      * @return
      */

@@ -193,6 +193,11 @@ public class ChestLinkStorage extends AbstractStorage implements ConfigurationSe
     }
 
     @Override
+    public boolean dropInventory() {
+        return false;
+    }
+
+    @Override
     public double getBlockOffset() {
         return 0;
     }

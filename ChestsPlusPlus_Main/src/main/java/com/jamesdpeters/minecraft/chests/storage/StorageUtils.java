@@ -32,6 +32,7 @@ public class StorageUtils<T extends StorageInfo<S>, S extends AbstractStorage> {
                 String playerUUID = sign.getPersistentDataContainer().get(Values.playerUUID, PersistentDataType.STRING);
                 String group = ChatColor.stripColor(StringUtils.substringBetween(lines[1], "[", "]"));
                 if(playerUUID == null){
+                    if(uuid == null) return null;
                     playerUUID = uuid.toString();
                     if(lines[2] != null){
                         OfflinePlayer owner = Config.getOfflinePlayer(lines[2]);
@@ -93,14 +94,16 @@ public class StorageUtils<T extends StorageInfo<S>, S extends AbstractStorage> {
             BlockFace facing = sign.getFacing().getOppositeFace();
             Block toTest = block.getRelative(facing);
 
-            //Return if block isn't valid
-            return storageType.isValidBlockType(toTest);
+            //Check if block face is a valid place for a sign!
+            if(!storageType.getValidBlockFaces(toTest).contains(sign.getFacing())) return false;
 
-//            //Check if block placed against is already part of this group.
-//            if(block.getState() instanceof Sign) {
-//                StorageInfo info = getStorageInfo((Sign) block.getState());
-//                return (info == null);
-//            }
+            //Return if block isn't valid
+            if (!storageType.isValidBlockType(toTest)) return false;
+
+            //Check if block placed against is already part of this group.
+            StorageInfo info = getStorageInfo(toTest.getLocation());
+            System.out.println(info);
+            return (info == null);
         }
         return false;
     }
