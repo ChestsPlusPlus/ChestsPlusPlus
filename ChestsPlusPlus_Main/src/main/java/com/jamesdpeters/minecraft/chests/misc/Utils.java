@@ -1,8 +1,9 @@
 package com.jamesdpeters.minecraft.chests.misc;
 
-import com.jamesdpeters.minecraft.chests.api_interfaces.ApiSpecific;
+import com.jamesdpeters.minecraft.chests.api.ApiSpecific;
 import com.jamesdpeters.minecraft.chests.filters.Filter;
 import com.jamesdpeters.minecraft.chests.filters.HopperFilter;
+import com.jamesdpeters.minecraft.chests.interfaces.VirtualInventoryHolder;
 import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorage;
 import org.bukkit.*;
 import org.bukkit.block.*;
@@ -43,6 +44,8 @@ public class Utils {
     }
 
     public static void openChestInventory(Player player, Inventory inventory){
+        VirtualInventoryHolder holder = (VirtualInventoryHolder) inventory.getHolder();
+        if (holder != null) holder.onPlayerRemoteOpened(player.getUniqueId());
         player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN,0.5f,1f);
         player.openInventory(inventory);
     }

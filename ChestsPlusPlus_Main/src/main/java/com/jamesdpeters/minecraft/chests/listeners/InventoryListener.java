@@ -1,7 +1,7 @@
 package com.jamesdpeters.minecraft.chests.listeners;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
-import com.jamesdpeters.minecraft.chests.api_interfaces.ApiSpecific;
+import com.jamesdpeters.minecraft.chests.api.ApiSpecific;
 import com.jamesdpeters.minecraft.chests.interfaces.VirtualCraftingHolder;
 import com.jamesdpeters.minecraft.chests.storage.autocraft.AutoCraftingStorage;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
@@ -67,8 +67,7 @@ public class InventoryListener implements Listener {
             if (holder instanceof VirtualInventoryHolder) {
                 VirtualInventoryHolder vHolder = (VirtualInventoryHolder) holder;
                 vHolder.openPreviousInventory();
-                Location location = event.getInventory().getLocation();
-                if (location == null) {
+                if (vHolder.didPlayerRemoteOpen(event.getPlayer().getUniqueId())) {
                     Utils.closeInventorySound((Player) event.getPlayer(), event.getInventory());
                 }
                 vHolder.getStorage().getLocations().forEach(locationInfo -> {
