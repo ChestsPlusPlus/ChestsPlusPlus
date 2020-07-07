@@ -15,13 +15,13 @@ public abstract class MaterialChecker {
      * @return
      * List of Materials.
      */
-    protected abstract List<Material> graphically2DList();
+    public abstract List<Material> graphically2DList();
 
     /**
      * List of @{@link Material} that gets ignored (Beds are a pain).
      * @return
      */
-    protected abstract List<Material> ignoredMaterials();
+    public abstract List<Material> ignoredMaterials();
 
     /**
      * This returns true if an item is held like a pickaxe/sword etc.

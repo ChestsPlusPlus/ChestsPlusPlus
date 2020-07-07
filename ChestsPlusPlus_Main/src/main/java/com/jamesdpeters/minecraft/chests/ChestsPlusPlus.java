@@ -1,6 +1,6 @@
 package com.jamesdpeters.minecraft.chests;
 
-import com.jamesdpeters.minecraft.chests.api_interfaces.ApiSpecific;
+import com.jamesdpeters.minecraft.chests.api.ApiSpecific;
 import com.jamesdpeters.minecraft.chests.commands.AutoCraftCommand;
 import com.jamesdpeters.minecraft.chests.commands.ChestLinkCommand;
 import com.jamesdpeters.minecraft.chests.commands.ChestsPlusPlusCommand;

@@ -1,7 +1,7 @@
 package com.jamesdpeters.minecraft.chests.storage.abstracts;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
-import com.jamesdpeters.minecraft.chests.api_interfaces.ApiSpecific;
+import com.jamesdpeters.minecraft.chests.api.ApiSpecific;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Values;
 import com.jamesdpeters.minecraft.chests.serialize.LocationInfo;

@@ -1,14 +1,20 @@
-package com.jamesdpeters.minecraft.chests;
+package com.jamesdpeters.minecraft.chests.v1_16_R1;
 
-import net.minecraft.server.v1_14_R1.BlockPosition;
-import net.minecraft.server.v1_14_R1.TileEntity;
-import net.minecraft.server.v1_14_R1.TileEntityChest;
-import net.minecraft.server.v1_14_R1.World;
+import com.jamesdpeters.minecraft.chests.ChestOpener;
+import net.minecraft.server.v1_16_R1.BlockPosition;
+import net.minecraft.server.v1_16_R1.TileEntity;
+import net.minecraft.server.v1_16_R1.TileEntityChest;
+import net.minecraft.server.v1_16_R1.World;
 import org.bukkit.block.Chest;
-import org.bukkit.craftbukkit.v1_14_R1.CraftWorld;
-import org.bukkit.craftbukkit.v1_14_R1.block.CraftChest;
+import org.bukkit.craftbukkit.v1_16_R1.CraftWorld;
+import org.bukkit.craftbukkit.v1_16_R1.block.CraftChest;
 
-public class ChestOpener_1_14 implements ChestOpener {
+
+public class ChestOpener_1_16 implements ChestOpener {
+
+    public ChestOpener_1_16(){
+        System.out.println("Created ChestOpener v1.16!!");
+    }
 
     @Override
     public void setLidOpen(Chest chest, boolean open) {

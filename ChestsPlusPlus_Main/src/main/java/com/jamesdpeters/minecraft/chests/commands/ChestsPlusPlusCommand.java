@@ -1,7 +1,7 @@
 package com.jamesdpeters.minecraft.chests.commands;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
-import com.jamesdpeters.minecraft.chests.api_interfaces.ApiSpecific;
+import com.jamesdpeters.minecraft.chests.api.ApiSpecific;
 import com.jamesdpeters.minecraft.chests.maventemplates.BuildConstants;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;

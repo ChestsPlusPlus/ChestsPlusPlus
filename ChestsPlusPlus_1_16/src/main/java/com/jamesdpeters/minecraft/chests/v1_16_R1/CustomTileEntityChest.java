@@ -1,15 +1,15 @@
-package com.jamesdpeters.minecraft.chests;
+package com.jamesdpeters.minecraft.chests.v1_16_R1;
 
-import net.minecraft.server.v1_15_R1.Block;
-import net.minecraft.server.v1_15_R1.BlockChest;
-import net.minecraft.server.v1_15_R1.TileEntityChest;
+import net.minecraft.server.v1_16_R1.Block;
+import net.minecraft.server.v1_16_R1.BlockChest;
+import net.minecraft.server.v1_16_R1.TileEntityChest;
 
 public class CustomTileEntityChest extends TileEntityChest {
 
     private int phantomViewers;
 
     @Override
-    public void onOpen() {
+    protected void onOpen() {
         Block block = this.getBlock().getBlock();
         if (block instanceof BlockChest) {
             this.world.playBlockAction(this.position, block, 1, phantomViewers);

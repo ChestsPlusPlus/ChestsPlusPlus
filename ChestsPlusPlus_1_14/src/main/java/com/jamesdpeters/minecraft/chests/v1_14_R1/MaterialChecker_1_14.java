@@ -1,5 +1,6 @@
-package com.jamesdpeters.minecraft.chests;
+package com.jamesdpeters.minecraft.chests.v1_14_R1;
 
+import com.jamesdpeters.minecraft.chests.MaterialChecker;
 import org.bukkit.Material;
 import org.bukkit.Tag;
 import org.bukkit.inventory.ItemStack;
@@ -106,12 +107,12 @@ public class MaterialChecker_1_14 extends MaterialChecker {
     }
 
     @Override
-    protected List<Material> graphically2DList() {
+    public List<Material> graphically2DList() {
         return version_1_14_Items;
     }
 
     @Override
-    protected List<Material> ignoredMaterials() {
+    public List<Material> ignoredMaterials() {
         return version_1_14_Ignored_Items;
     }
 
