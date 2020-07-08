@@ -102,7 +102,6 @@ public class StorageUtils<T extends StorageInfo<S>, S extends AbstractStorage> {
 
             //Check if block placed against is already part of this group.
             StorageInfo info = getStorageInfo(toTest.getLocation());
-            System.out.println(info);
             return (info == null);
         }
         return false;

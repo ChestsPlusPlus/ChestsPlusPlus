@@ -96,6 +96,11 @@ public class AutoCraftingStorageType extends StorageType<AutoCraftingStorage> {
     }
 
     @Override
+    public void validate(Block block) {
+        //Doesn't do any validation.
+    }
+
+    @Override
     public StorageMessages getMessages() {
         return messages;
     }

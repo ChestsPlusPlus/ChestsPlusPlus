@@ -12,10 +12,6 @@ import org.bukkit.craftbukkit.v1_16_R1.block.CraftChest;
 
 public class ChestOpener_1_16 implements ChestOpener {
 
-    public ChestOpener_1_16(){
-        System.out.println("Created ChestOpener v1.16!!");
-    }
-
     @Override
     public void setLidOpen(Chest chest, boolean open) {
         CraftChest craftChest = (CraftChest) chest;

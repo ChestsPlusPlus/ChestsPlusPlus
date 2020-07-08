@@ -1,10 +1,11 @@
 package com.jamesdpeters.minecraft.chests.listeners;
 
-import com.jamesdpeters.minecraft.chests.storage.abstracts.StorageInfo;
-import com.jamesdpeters.minecraft.chests.misc.*;
+import com.jamesdpeters.minecraft.chests.misc.Messages;
+import com.jamesdpeters.minecraft.chests.misc.Values;
 import com.jamesdpeters.minecraft.chests.runnables.ChestLinkVerifier;
-import com.jamesdpeters.minecraft.chests.storage.abstracts.AbstractStorage;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
+import com.jamesdpeters.minecraft.chests.storage.abstracts.AbstractStorage;
+import com.jamesdpeters.minecraft.chests.storage.abstracts.StorageInfo;
 import com.jamesdpeters.minecraft.chests.storage.abstracts.StorageType;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -20,6 +21,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPistonExtendEvent;
+import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.persistence.PersistentDataType;
@@ -49,6 +52,7 @@ public class StorageListener implements Listener {
                                                             done();
                                                             return;
                                                         }
+                                                        storageType.validate(event.getBlockAgainst());
                                                         storageType.getMessages().storageAdded(event.getPlayer(), signChangeEvent.getLine(1), info.getPlayer().getName());
                                                         signChange(sign, signChangeEvent, info.getPlayer(), event.getPlayer());
                                                     }
@@ -117,6 +121,32 @@ public class StorageListener implements Listener {
                 }
             }
         }
+    }
+
+    @EventHandler
+    public void onPistonMove(BlockPistonExtendEvent event){
+        event.getBlocks().forEach(block -> {
+            for(StorageType storageType : Config.getStorageTypes()){
+                if(storageType.isValidBlockType(block)){
+                    Location blockLoc = block.getLocation();
+                    AbstractStorage storage = storageType.getStorage(blockLoc);
+                    if(storage != null) event.setCancelled(true);
+                }
+            }
+        });
+    }
+
+    @EventHandler
+    public void onPistonRetract(BlockPistonRetractEvent event){
+        event.getBlocks().forEach(block -> {
+            for(StorageType storageType : Config.getStorageTypes()){
+                if(storageType.isValidBlockType(block)){
+                    Location blockLoc = block.getLocation();
+                    AbstractStorage storage = storageType.getStorage(blockLoc);
+                    if(storage != null) event.setCancelled(true);
+                }
+            }
+        });
     }
 
     private void setLine(Sign sign, SignChangeEvent signChangeEvent, int i, String s){

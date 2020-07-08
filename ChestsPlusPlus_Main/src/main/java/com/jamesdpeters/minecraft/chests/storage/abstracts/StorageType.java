@@ -87,6 +87,12 @@ public abstract class StorageType<T extends AbstractStorage> {
      */
     public abstract List<BlockFace> getValidBlockFaces(Block block);
 
+    /**
+     * Used to validate the block type/data when a new storage has been added.
+     * For example, converting DoubleChests into a Chest.
+     */
+    public abstract void validate(Block block);
+
     public abstract StorageMessages getMessages();
 
     /*
@@ -260,12 +266,14 @@ public abstract class StorageType<T extends AbstractStorage> {
         if(toReplace.getType() == Material.AIR){
             BlockState replacedBlockState = toReplace.getState();
 
+            Material signMaterial = Material.OAK_WALL_SIGN;
             if(player.getGameMode() != GameMode.CREATIVE) {
                 if (player.getEquipment() != null) {
                     if (!Tag.SIGNS.isTagged(player.getEquipment().getItemInMainHand().getType())) {
                         Messages.MUST_HOLD_SIGN(player);
                         return;
                     }
+                    signMaterial = player.getEquipment().getItemInMainHand().getType();
                     player.getEquipment().getItemInMainHand().setAmount(player.getEquipment().getItemInMainHand().getAmount() - 1);
                 } else {
                     Messages.MUST_HOLD_SIGN(player);
@@ -298,7 +306,8 @@ public abstract class StorageType<T extends AbstractStorage> {
                 lines[2] = owner;
             }
 
-            toReplace.setType(Material.OAK_WALL_SIGN);
+            Material wallSign = Material.getMaterial(signMaterial.name().replace("SIGN", "WALL_SIGN"));
+            toReplace.setType(wallSign != null ? wallSign : Material.OAK_WALL_SIGN);
             Sign sign = (Sign) toReplace.getState();
             WallSign signBlockData = (WallSign) sign.getBlockData();
             signBlockData.setFacing(facing);

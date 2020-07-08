@@ -87,6 +87,11 @@ public class ChestLinkStorageType extends StorageType<ChestLinkStorage> {
     }
 
     @Override
+    public void validate(Block block) {
+        if(block.getState() instanceof Chest) new ChestLinkVerifier(block).withDelay(0).check();
+    }
+
+    @Override
     public StorageMessages getMessages() {
         return messages;
     }
