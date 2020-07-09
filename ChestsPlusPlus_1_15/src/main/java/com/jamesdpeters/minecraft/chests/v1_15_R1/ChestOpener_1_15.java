@@ -30,7 +30,7 @@ public class ChestOpener_1_15 implements ChestOpener {
                 customTileEntityChest = (CustomTileEntityChest) tileEntity;
             }
             customTileEntityChest.setOpen(open);
-            customTileEntityChest.onOpen();
+            customTileEntityChest.animate();
         }
     }
 }
