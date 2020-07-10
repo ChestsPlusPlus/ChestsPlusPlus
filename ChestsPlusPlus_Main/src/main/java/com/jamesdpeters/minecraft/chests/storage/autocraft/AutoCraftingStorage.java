@@ -55,17 +55,6 @@ public class AutoCraftingStorage extends AbstractStorage implements Configuratio
     }
 
     @Override
-    protected ItemStack getArmorStandItem() {
-        if(recipeSerializable != null){
-            if(recipeSerializable.getRecipe() != null){
-                return recipeSerializable.getRecipe().getResult();
-            }
-        }
-        return null;
-    }
-
-
-    @Override
     public boolean storeInventory() {
         return false;
     }
@@ -89,8 +78,13 @@ public class AutoCraftingStorage extends AbstractStorage implements Configuratio
     }
 
     @Override
-    public boolean dropInventory() {
-        return true;
+    public void postConfigLoad() {
+
+    }
+
+    @Override
+    public boolean doesDropInventory() {
+        return false;
     }
 
     @Override

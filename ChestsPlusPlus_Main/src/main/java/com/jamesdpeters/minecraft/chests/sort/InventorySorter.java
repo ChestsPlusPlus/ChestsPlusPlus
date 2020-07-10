@@ -1,5 +1,6 @@
 package com.jamesdpeters.minecraft.chests.sort;
 
+import org.bukkit.Bukkit;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
@@ -12,9 +13,9 @@ import java.util.Optional;
 
 public class InventorySorter {
 
-    public static void sort(Inventory inventory, SortMethod sortMethod){
+    public static ItemStack[] sort(Inventory inventory, SortMethod sortMethod){
         switch (sortMethod){
-            case OFF: return;
+            case OFF: return inventory.getContents();
             case NAME: {
                 List<ItemStack> condensed = condenseInventory(inventory.getContents());
                 condensed.sort((item1, item2) -> {
@@ -24,22 +25,20 @@ public class InventorySorter {
                         return item1.getType().name().compareTo(item2.getType().name());
                     }
                 });
-                ItemStack[] itemStacks = condensed.toArray(new ItemStack[0]);
-                inventory.setContents(itemStacks);
-                return;
+                //                inventory.setContents(itemStacks);
+                return condensed.toArray(new ItemStack[0]);
             }
             case AMOUNT_DESC: {
-                sortByAmount(inventory,true);
-                return;
+                return sortByAmount(inventory,true);
             }
             case AMOUNT_ASC: {
-                sortByAmount(inventory,false);
+                return sortByAmount(inventory,false);
             }
         }
+        return inventory.getContents();
     }
 
-    private static void sortByAmount(Inventory inventory, boolean descending){
-
+    private static ItemStack[] sortByAmount(Inventory inventory, boolean descending){
         HashMap<ItemStack,Integer> itemAmounts = getItemAmounts(inventory.getContents());
         List<ItemStack> condensed = condenseInventory(inventory.getContents());
 
@@ -56,8 +55,8 @@ public class InventorySorter {
             if(descending) itemOrder *= -1;
             return itemOrder;
         });
-        ItemStack[] itemStacks = condensed.toArray(new ItemStack[0]);
-        inventory.setContents(itemStacks);
+
+        return condensed.toArray(new ItemStack[0]);
     }
 
     private static HashMap<ItemStack,Integer> getItemAmounts(ItemStack[] itemStacks){

@@ -72,11 +72,6 @@ public class ChestLinkStorage extends AbstractStorage implements ConfigurationSe
         init();
     }
 
-    @Override
-    protected ItemStack getArmorStandItem() {
-        return InventorySorter.getMostCommonItem(getInventory());
-    }
-
     private void init(){
         VirtualChestToHopper chestToHopper = new VirtualChestToHopper(this);
         chestToHopper.start();
@@ -179,7 +174,12 @@ public class ChestLinkStorage extends AbstractStorage implements ConfigurationSe
     }
 
     public void sort(){
-        InventorySorter.sort(getInventory(), sortMethod);
+        ItemStack[] sortedInventory = InventorySorter.sort(getInventory(), sortMethod);
+        getInventory().setContents(sortedInventory);
+    }
+
+    public void updateDisplayItem(){
+        onItemDisplayUpdate(InventorySorter.getMostCommonItem(getInventory()));
     }
 
     @Override
@@ -193,8 +193,13 @@ public class ChestLinkStorage extends AbstractStorage implements ConfigurationSe
     }
 
     @Override
-    public boolean dropInventory() {
-        return false;
+    public void postConfigLoad() {
+        onItemDisplayUpdate(InventorySorter.getMostCommonItem(getInventory()));
+    }
+
+    @Override
+    public boolean doesDropInventory() {
+        return true;
     }
 
     @Override

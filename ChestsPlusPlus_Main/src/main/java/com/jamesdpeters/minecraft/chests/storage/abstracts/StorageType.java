@@ -340,4 +340,13 @@ public abstract class StorageType<T extends AbstractStorage> {
         return playerList;
     }
 
+
+    /*
+    POST LOAD
+     */
+
+    public void onConfigLoad(){
+        getMap().values().forEach(stringTHashMap -> stringTHashMap.values().forEach(AbstractStorage::postConfigLoad));
+    }
+
 }

@@ -3,6 +3,7 @@ package com.jamesdpeters.minecraft.chests.listeners;
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.api.ApiSpecific;
 import com.jamesdpeters.minecraft.chests.interfaces.VirtualCraftingHolder;
+import com.jamesdpeters.minecraft.chests.sort.InventorySorter;
 import com.jamesdpeters.minecraft.chests.storage.autocraft.AutoCraftingStorage;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.misc.Messages;
@@ -39,6 +40,7 @@ public class InventoryListener implements Listener {
                     if (storage != null) {
                         event.setCancelled(true);
                         if (event.getPlayer().hasPermission(Permissions.OPEN) && storage.hasPermission((Player) event.getPlayer())) {
+                            storage.getInventory().getViewers().remove(event.getPlayer());
                             Utils.openChestInventory((Player) event.getPlayer(), storage, event.getInventory().getLocation());
                         } else {
                             Messages.NO_PERMISSION((Player) event.getPlayer());
@@ -70,13 +72,15 @@ public class InventoryListener implements Listener {
                 if (vHolder.didPlayerRemoteOpen(event.getPlayer().getUniqueId())) {
                     Utils.closeInventorySound((Player) event.getPlayer(), event.getInventory());
                 }
+                event.getViewers().remove(event.getPlayer());
                 vHolder.getStorage().getLocations().forEach(locationInfo -> {
                     Block block = locationInfo.getLocation().getBlock();
                     if(block.getState() instanceof Chest){
                         Chest chest = (Chest) block.getState();
-                        ApiSpecific.getChestOpener().setLidOpen(chest,false);
+                        Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN, () -> ApiSpecific.getChestOpener().setLidOpen(event.getInventory(),chest,false),1);
                     }
                 });
+                vHolder.getStorage().onItemDisplayUpdate(InventorySorter.getMostCommonItem(event.getInventory()));
             }
             if(holder instanceof VirtualCraftingHolder){
                 ((VirtualCraftingHolder) holder).stopAnimation();
@@ -87,7 +91,11 @@ public class InventoryListener implements Listener {
     public void inventoryUpdate(InventoryInteractEvent event){
         InventoryHolder holder = event.getInventory().getHolder();
         if(holder instanceof VirtualInventoryHolder){
-            Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN, () -> ((VirtualInventoryHolder) event.getInventory().getHolder()).getStorage().sort(),1);
+            VirtualInventoryHolder vHolder = (VirtualInventoryHolder) holder;
+            Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN, () -> {
+                vHolder.getStorage().sort();
+                vHolder.getStorage().onItemDisplayUpdate(InventorySorter.getMostCommonItem(event.getInventory()));
+            },1);
         }
 
     }

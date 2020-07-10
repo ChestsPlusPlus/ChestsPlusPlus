@@ -52,6 +52,8 @@ public class Config {
         storageTypes = new ArrayList<>();
         storageTypes.add(chestLinkStorageType);
         storageTypes.add(autoCraftingStorageType);
+
+        storageTypes.forEach(StorageType::onConfigLoad);
     }
 
     public static void save() {

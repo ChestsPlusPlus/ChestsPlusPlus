@@ -1,6 +1,5 @@
 package com.jamesdpeters.minecraft.chests.storage.abstracts;
 
-import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.api.ApiSpecific;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Values;
@@ -117,7 +116,7 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
     }
 
     private void init(){
-        if(shouldDisplayArmourStands()) Bukkit.getScheduler().scheduleSyncRepeatingTask(ChestsPlusPlus.PLUGIN, this::updateClients, 1, 5);
+//        if(shouldDisplayArmourStands()) Bukkit.getScheduler().scheduleSyncRepeatingTask(ChestsPlusPlus.PLUGIN, this::updateClients, 1, 5);
     }
 
     public abstract StorageType getStorageType();
@@ -145,9 +144,14 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
     public abstract boolean shouldDisplayArmourStands();
 
     /**
+     * This is called after the config has loaded into memory.
+     */
+    public abstract void postConfigLoad();
+
+    /**
      * @return whether to drop the inventory of this storage when it's removed.
      */
-    public abstract boolean dropInventory();
+    public abstract boolean doesDropInventory();
 
     /**
      * This is the distance from a full block to the size of the storage block. (e.g Chest is smaller than a regular block.)
@@ -235,11 +239,13 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
      * @param location - location to drop.
      */
     public void dropInventory(Location location){
-        for(ItemStack item : getInventory().getContents()) {
-            if(location.getWorld() != null){
-                if(item != null) {
-                    location.getWorld().dropItemNaturally(location, item);
-                    getInventory().remove(item);
+        if(doesDropInventory()) {
+            for (ItemStack item : getInventory().getContents()) {
+                if (location.getWorld() != null) {
+                    if (item != null) {
+                        location.getWorld().dropItemNaturally(location, item);
+                        getInventory().remove(item);
+                    }
                 }
             }
         }
@@ -309,10 +315,12 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
 
     /* ARMOR STAND METHODS */
 
-    /**
-     * @return the @{@link ItemStack} an @{@link ArmorStand} should be holding.
-     */
-    protected abstract ItemStack getArmorStandItem();
+    private static ItemStack displayItem;
+
+    public void onItemDisplayUpdate(ItemStack newItem){
+        displayItem = newItem;
+        updateClients();
+    }
 
     private EulerAngle BLOCK_POSE = new EulerAngle( Math.toRadians( -15 ), Math.toRadians( -45 ), Math.toRadians(0) );
     private EulerAngle STANDARD_ITEM_POSE = new EulerAngle(Math.toRadians(90),0,Math.toRadians(180));
@@ -324,7 +332,8 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
      *   spawned that displays the item.
      */
     private void updateClients(){
-        for (LocationInfo location : locationInfoList) {
+        if(locationInfoList == null) return;
+        for (LocationInfo location : locationInfoList){
             World world = location.getLocation().getWorld();
             Block block = location.getLocation().getBlock();
             BlockData air = Material.AIR.createBlockData();
@@ -341,21 +350,19 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
 
                             Block anchor = block.getRelative(facing);
 
-                            ItemStack displayItem = getArmorStandItem();
-
                             if(displayItem != null && !ApiSpecific.getMaterialChecker().isIgnored(displayItem)) {
                                 boolean isBlock = !ApiSpecific.getMaterialChecker().isGraphically2D(displayItem);
 
                                 boolean isTool = ApiSpecific.getMaterialChecker().isTool(displayItem);
-                                Location standLoc = isTool ? getHeldItemArmorStandLoc(anchor,facing) : getArmorStandLoc(anchor,facing, isBlock);
+                                Location standLoc = isTool ? getHeldItemArmorStandLoc(anchor, facing) : getArmorStandLoc(anchor, facing, isBlock);
 
                                 //Make client think sign is invisible.
                                 player.sendBlockChange(anchor.getLocation(), air);
 
                                 //Get currently stored armorStand if there isn't one spawn it.
                                 ArmorStand stand = isTool ? location.getToolItemStand() : (isBlock ? location.getBlockStand() : location.getItemStand());
-                                if(stand == null || !stand.isValid()){
-                                    stand = createArmorStand(world,standLoc,isBlock,isTool);
+                                if(stand == null || !stand.isValid()) {
+                                    stand = createArmorStand(world, standLoc, isBlock, isTool);
                                     addArmorStand(isBlock, isTool, location, stand);
                                 }
 
@@ -365,7 +372,7 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
                                 stand.setFireTicks(Integer.MAX_VALUE);
 
                                 //Set other armor stand helmet to null.
-                                if(isBlock){
+                                if(isBlock) {
                                     setArmorStandHelmet(location.getToolItemStand(), null);
                                     setArmorStandHelmet(location.getItemStand(), null);
                                 } else {
@@ -377,9 +384,9 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
 
                             } else {
                                 anchor.getState().update();
-                                setArmorStandHelmet(location.getToolItemStand(),null);
-                                setArmorStandHelmet(location.getItemStand(),null);
-                                setArmorStandHelmet(location.getBlockStand(),null);
+                                setArmorStandHelmet(location.getToolItemStand(), null);
+                                setArmorStandHelmet(location.getItemStand(), null);
+                                setArmorStandHelmet(location.getBlockStand(), null);
                             }
                         }
                     }

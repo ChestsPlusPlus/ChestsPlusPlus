@@ -128,6 +128,7 @@ public class VirtualCraftingHolder implements InventoryHolder {
         }
         isUpdatingRecipe = false;
         updateGUI();
+        storage.onItemDisplayUpdate(result);
     }
 
     private void playSound(Sound sound, float volume, float pitch){
