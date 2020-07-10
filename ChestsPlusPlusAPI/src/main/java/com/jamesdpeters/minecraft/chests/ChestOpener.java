@@ -1,7 +1,8 @@
 package com.jamesdpeters.minecraft.chests;
 
 import org.bukkit.block.Chest;
+import org.bukkit.inventory.Inventory;
 
 public interface ChestOpener {
-    void setLidOpen(Chest chest, boolean open);
+    void setLidOpen(Inventory inventory, Chest chest, boolean open);
 }

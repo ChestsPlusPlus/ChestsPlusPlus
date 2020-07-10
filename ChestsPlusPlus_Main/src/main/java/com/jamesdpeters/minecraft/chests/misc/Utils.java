@@ -1,5 +1,6 @@
 package com.jamesdpeters.minecraft.chests.misc;
 
+import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.api.ApiSpecific;
 import com.jamesdpeters.minecraft.chests.filters.Filter;
 import com.jamesdpeters.minecraft.chests.filters.HopperFilter;
@@ -24,21 +25,22 @@ public class Utils {
         if(Settings.isShouldAnimateAllChests()) {
             storage.getLocations().forEach(locationInfo -> {
                 if (locationInfo.getLocation() != null) {
-                    chestOpenAnimation(locationInfo.getLocation());
+                    chestOpenAnimation(storage.getInventory(), locationInfo.getLocation());
                 }
             });
         } else {
-            chestOpenAnimation(openedChestLocation);
+            chestOpenAnimation(storage.getInventory(), openedChestLocation);
         }
         player.openInventory(storage.getInventory());
     }
 
-    private static void chestOpenAnimation(Location location){
+    private static void chestOpenAnimation(Inventory inventory, Location location){
         if (location != null) {
             Block block = location.getBlock();
             if (block.getState() instanceof Chest) {
                 Chest chest = (Chest) block.getState();
-                ApiSpecific.getChestOpener().setLidOpen(chest, true);
+//                ApiSpecific.getChestOpener().setLidOpen(inventory, chest, true);
+                Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN,() -> ApiSpecific.getChestOpener().setLidOpen(inventory, chest, true),1);
             }
         }
     }
@@ -76,6 +78,7 @@ public class Utils {
             HashMap<Integer, ItemStack> leftOvers = to.addItem(removed);
             for (ItemStack leftOver : leftOvers.values()) {
                 from.addItem(leftOver);
+                if(removed.equals(leftOver)) return false;
             }
             return true;
         }

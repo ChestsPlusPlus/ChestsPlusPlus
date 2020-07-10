@@ -8,7 +8,7 @@ import com.jamesdpeters.minecraft.chests.v1_16_R1.MaterialChecker_1_16;
 public class NMSProviderDefault implements NMSProvider {
     @Override
     public ChestOpener getChestOpener() {
-        return (chest, open) -> {
+        return (storage, chest, open) -> {
             //Default to doing nothing.
         };
     }

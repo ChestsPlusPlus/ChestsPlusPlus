@@ -9,39 +9,43 @@ import net.minecraft.server.v1_15_R1.SoundCategory;
 import net.minecraft.server.v1_15_R1.SoundEffect;
 import net.minecraft.server.v1_15_R1.SoundEffects;
 import net.minecraft.server.v1_15_R1.TileEntityChest;
+import org.bukkit.entity.HumanEntity;
+
+import java.util.List;
 
 public class CustomTileEntityChest extends TileEntityChest {
 
     private int phantomViewers = 0;
-    private int previousViewers = 0;
+    private List<HumanEntity> viewers;
+
+    @Override
+    public List<HumanEntity> getViewers() {
+        return viewers;
+    }
 
     @Override
     public void tick() {
-        //Don't need to tick
+        //Do nothing.
     }
 
     @Override
     public void onOpen() {
-        //Do nothing
-    }
-
-    public void animate(){
         Block block = this.getBlock().getBlock();
         if (block instanceof BlockChest) {
-            this.world.playBlockAction(this.position, block, 1, phantomViewers);
+            this.world.playBlockAction(this.position, block, 1, viewers.size());
             this.world.applyPhysics(this.position, block);
-
-            //Play block sound.
-            if(phantomViewers == 1 && previousViewers == 0) this.a(SoundEffects.BLOCK_CHEST_OPEN);
-            if(phantomViewers == 0) this.a(SoundEffects.BLOCK_CHEST_CLOSE);
         }
     }
 
-    public void setOpen(boolean open){
-        previousViewers = phantomViewers;
-        if(open) phantomViewers++;
-        else phantomViewers--;
-        if(phantomViewers < 0) phantomViewers = 0;
+    public void setViewers(List<HumanEntity> viewers){
+        int previousViewers = phantomViewers;
+        phantomViewers = viewers.size();
+        this.viewers = viewers;
+
+        if(phantomViewers > 1 && previousViewers == 0) this.a(SoundEffects.BLOCK_CHEST_OPEN);
+        if(phantomViewers == 0) this.a(SoundEffects.BLOCK_CHEST_CLOSE);
+
+        onOpen();
     }
 
     private void a(SoundEffect soundeffect) {

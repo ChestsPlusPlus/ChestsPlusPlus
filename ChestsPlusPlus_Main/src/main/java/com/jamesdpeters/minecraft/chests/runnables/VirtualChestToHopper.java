@@ -4,9 +4,9 @@ import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.filters.HopperFilter;
 import com.jamesdpeters.minecraft.chests.misc.Settings;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
-import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorage;
 import com.jamesdpeters.minecraft.chests.serialize.LocationInfo;
 import com.jamesdpeters.minecraft.chests.serialize.SpigotConfig;
+import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorage;
 import org.bukkit.Location;
 import org.bukkit.block.Hopper;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -42,7 +42,9 @@ public class VirtualChestToHopper extends BukkitRunnable {
                             continue;
                         }
                         int hopperAmount = SpigotConfig.getWorldSettings(location.getLocation().getWorld().getName()).getHopperAmount();
-                        Utils.moveToOtherInventory(storage.getInventory(), hopperAmount, hopper.getInventory(), HopperFilter.getHopperFilters(below.getBlock()));
+                        if(Utils.moveToOtherInventory(storage.getInventory(), hopperAmount, hopper.getInventory(), HopperFilter.getHopperFilters(below.getBlock()))){
+                            storage.updateDisplayItem();
+                        }
                         if(storage.getInventory().getViewers().size() > 0) storage.sort();
                     }
                 }
