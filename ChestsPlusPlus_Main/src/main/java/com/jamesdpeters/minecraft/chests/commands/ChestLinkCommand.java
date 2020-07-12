@@ -31,8 +31,7 @@ public class ChestLinkCommand extends ServerCommand  {
         REMOVE("/chestlink remove <Group>", "Delete a ChestLink and drop its inventory at your feet!"),
         RENAME("/chestlink rename <group> <new-name>","Rename a ChestLink."),
         SETPUBLIC("/chestlink setpublic <group> <true/false>", "Set a ChestLink to be accessible by anyone."),
-        SORT("/chestlink sort <group> <sort-method>","Set the sorting option for the given ChestLink."),
-        AUTOCRAFT("autocraft","craft");
+        SORT("/chestlink sort <group> <sort-method>","Set the sorting option for the given ChestLink.");
 
         String description, commandHelp;
         static List<String> valuesList;
