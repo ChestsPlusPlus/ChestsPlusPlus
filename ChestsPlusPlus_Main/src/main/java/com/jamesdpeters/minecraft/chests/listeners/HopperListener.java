@@ -47,9 +47,11 @@ public class HopperListener implements Listener {
                         @Override
                         public void run() {
                             int hopperAmount = SpigotConfig.getWorldSettings(location.getWorld().getName()).getHopperAmount();
-                            Utils.moveToOtherInventory(event.getSource(), hopperAmount, storage.getInventory());
+                            if(Utils.moveToOtherInventory(event.getSource(), hopperAmount, storage.getInventory())){
+                                storage.updateDisplayItem();
+                            }
                             event.getDestination().getHolder().getInventory().clear();
-                            storage.sort();
+                            if(storage.getInventory().getViewers().size() > 0) storage.sort();
                         }
                     }.runTaskLater(ChestsPlusPlus.PLUGIN, 1);
                 }
