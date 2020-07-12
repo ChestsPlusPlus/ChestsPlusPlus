@@ -1,5 +1,6 @@
 package com.jamesdpeters.minecraft.chests.filters;
 
+import org.bukkit.Material;
 import org.bukkit.Rotation;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
@@ -27,12 +28,10 @@ public class HopperFilter {
         for(Entity entity : ent){
             if(entity instanceof ItemFrame){
                 ItemFrame frame = (ItemFrame) entity;
+                if(frame.getItem().getType().equals(Material.AIR)) continue;
                 Block attachedBlock = frame.getLocation().getBlock().getRelative(frame.getAttachedFace());
                 if(block.equals(attachedBlock)){
-                    boolean isFilteredByItemMeta = true;
-                    Rotation rotation = frame.getRotation();
-                    if(rotation.equals(Rotation.FLIPPED)) isFilteredByItemMeta = false;
-                    filters.add(new Filter(frame.getItem(),isFilteredByItemMeta));
+                    filters.add(new Filter(frame.getItem(),frame));
                 }
             }
         }
