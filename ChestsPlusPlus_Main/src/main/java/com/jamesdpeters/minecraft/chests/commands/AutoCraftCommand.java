@@ -183,10 +183,10 @@ public class AutoCraftCommand extends ServerCommand  {
                     switch (OPTIONS.valueOf(args[0].toUpperCase())) {
                         case ADD:
                         case OPEN:
-                            return Config.getAutoCraft().getOpenableStorageList(player);
+                            return Config.getAutoCraft().getOpenableStorageList(player, args[1]);
                         case REMOVE:
                         case RENAME:
-                            return Config.getAutoCraft().getStorageList(player);
+                            return Config.getAutoCraft().getStorageList(player, args[1]);
                         case MEMBER:
                             return Arrays.asList("add","remove","list");
                     }
@@ -196,7 +196,7 @@ public class AutoCraftCommand extends ServerCommand  {
                 try {
                     switch (OPTIONS.valueOf(args[0].toUpperCase())) {
                         case MEMBER:
-                            return Config.getAutoCraft().getStorageList(player);
+                            return Config.getAutoCraft().getStorageList(player, args[2]);
                     }
                 } catch (IllegalArgumentException ignored) { }
             }

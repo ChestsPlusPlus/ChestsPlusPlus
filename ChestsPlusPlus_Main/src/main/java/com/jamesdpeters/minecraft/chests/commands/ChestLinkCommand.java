@@ -204,11 +204,11 @@ public class ChestLinkCommand extends ServerCommand  {
                     switch (OPTIONS.valueOf(args[0].toUpperCase())) {
                         case ADD:
                         case OPEN:
-                            return Config.getChestLink().getOpenableStorageList(player);
+                            return Config.getChestLink().getOpenableStorageList(player, args[1]);
                         case REMOVE:
                         case SORT:
                         case RENAME:
-                            return Config.getChestLink().getStorageList(player);
+                            return Config.getChestLink().getStorageList(player, args[1]);
                         case MEMBER:
                             return Arrays.asList("add","remove","list");
                     }
@@ -218,7 +218,7 @@ public class ChestLinkCommand extends ServerCommand  {
                 try {
                     switch (OPTIONS.valueOf(args[0].toUpperCase())) {
                         case MEMBER:
-                            return Config.getChestLink().getStorageList(player);
+                            return Config.getChestLink().getStorageList(player, args[2]);
                         case SORT:
                             return SortMethod.valuesList;
                     }

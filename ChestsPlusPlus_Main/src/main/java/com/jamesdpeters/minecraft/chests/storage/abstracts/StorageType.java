@@ -329,13 +329,13 @@ public abstract class StorageType<T extends AbstractStorage> {
         }
     }
 
-    public List<String> getStorageList(Player player){
-        return getStorageMap(player.getUniqueId()).values().stream().map(AbstractStorage::getIdentifier).collect(Collectors.toList());
+    public List<String> getStorageList(Player player, String searchedArg){
+        return getStorageMap(player.getUniqueId()).values().stream().filter(t -> t.getIdentifier().contains(searchedArg)).map(AbstractStorage::getIdentifier).collect(Collectors.toList());
     }
 
-    public List<String> getOpenableStorageList(Player player){
-        List<String> playerList = getStorageList(player);
-        List<String> memberList = getStorageMemberOf(player).stream().map(storage -> storage.getOwner().getName()+":"+storage.getIdentifier()).collect(Collectors.toList());
+    public List<String> getOpenableStorageList(Player player, String searchedArg){
+        List<String> playerList = getStorageList(player, searchedArg);
+        List<String> memberList = getStorageMemberOf(player).stream().filter(t -> t.getIdentifier().contains(searchedArg)).map(storage -> storage.getOwner().getName()+":"+storage.getIdentifier()).collect(Collectors.toList());
         playerList.addAll(memberList);
         return playerList;
     }
