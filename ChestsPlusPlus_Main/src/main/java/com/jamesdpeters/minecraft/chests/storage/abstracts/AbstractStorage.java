@@ -46,6 +46,8 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
     private List<LocationInfo> locationInfoList;
     private Inventory inventory;
 
+    private int signUpdateTask;
+
     public AbstractStorage(OfflinePlayer player, String identifier, Location location, Location signLocation){
         this.player = player;
         this.playerUUID = player.getUniqueId();
@@ -118,21 +120,21 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
 
     private void init(){
         if(shouldDisplayArmourStands()) {
-            Bukkit.getScheduler().scheduleSyncRepeatingTask(ChestsPlusPlus.PLUGIN, () -> {
-                for (LocationInfo locationInfo : locationInfoList) {
-                    World world = locationInfo.getLocation().getWorld();
-                    if (world != null) {
-                        //Make client think sign is invisible.
-                        if (displayItem != null) world.getPlayers().forEach(player -> player.sendBlockChange(locationInfo.getSignLocation(), air));
-                        else locationInfo.getSignLocation().getBlock().getState().update();
-                    }
-                }
-            }, 1, 1);
+            startSignChangeTask();
         } else {
             for (LocationInfo locationInfo : locationInfoList) {
                 locationInfo.getSignLocation().getBlock().getState().update();
             }
         }
+    }
+
+    private int startSignChangeTask(){
+        return Bukkit.getScheduler().scheduleSyncRepeatingTask(ChestsPlusPlus.PLUGIN, () -> Bukkit.getOnlinePlayers().forEach(player -> {
+            for (LocationInfo locationInfo : locationInfoList) {
+                if (displayItem != null) player.sendBlockChange(locationInfo.getSignLocation(), air);
+                else locationInfo.getSignLocation().getBlock().getState().update();
+            }
+        }), 1, 5);
     }
 
     /**
@@ -358,6 +360,12 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
     private ItemStack displayItem;
 
     public void onItemDisplayUpdate(ItemStack newItem){
+        if(displayItem == null || displayItem.getType().equals(Material.AIR)){
+            Bukkit.getScheduler().cancelTask(signUpdateTask);
+            signUpdateTask = -1;
+        } else {
+            if(signUpdateTask == -1) signUpdateTask = startSignChangeTask();
+        }
         displayItem = newItem;
         updateClients();
     }

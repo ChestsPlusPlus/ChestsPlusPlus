@@ -125,6 +125,8 @@ public class VirtualCraftingHolder implements InventoryHolder {
         if(recipe != null){
             setCrafting(recipe);
             playSound(Sound.BLOCK_NOTE_BLOCK_CHIME,0.5f,1f);
+        } else {
+            stopCraftingItems();
         }
         isUpdatingRecipe = false;
         updateGUI();
@@ -185,7 +187,7 @@ public class VirtualCraftingHolder implements InventoryHolder {
     }
 
     public void startCraftingItems(){
-        craftItemTask = new CraftItems();
+        if(craftItemTask == null || craftItemTask.isCancelled()) craftItemTask = new CraftItems();
     }
     public void stopCraftingItems(){
         if(craftItemTask != null) craftItemTask.cancel();
@@ -234,6 +236,9 @@ public class VirtualCraftingHolder implements InventoryHolder {
             //Play sound if crafting occured.
             if(didCraft) if(location.getLocation().getWorld() != null) {
                 location.getLocation().getWorld().playSound(location.getLocation(), Sound.BLOCK_DISPENSER_DISPENSE, 0.25f, 1f);
+                if(output.getHolder() instanceof VirtualInventoryHolder){
+                    ((VirtualInventoryHolder) output.getHolder()).getStorage().updateDisplayItem();
+                }
             }
         }
     }
