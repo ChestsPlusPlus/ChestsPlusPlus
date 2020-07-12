@@ -16,14 +16,14 @@ public class WorldListener implements Listener {
     @EventHandler
     public void onWorldSave(WorldSaveEvent event){
         if(!justSaved){
-            Config.save();
+            Config.saveASync();
             justSaved = true;
             new BukkitRunnable(){
                 @Override
                 public void run() {
                     justSaved = false;
                 }
-            }.runTaskLater(ChestsPlusPlus.PLUGIN,5);
+            }.runTaskLater(ChestsPlusPlus.PLUGIN,20);
         }
     }
 
