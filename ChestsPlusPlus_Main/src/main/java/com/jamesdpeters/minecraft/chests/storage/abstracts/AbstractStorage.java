@@ -1,5 +1,6 @@
 package com.jamesdpeters.minecraft.chests.storage.abstracts;
 
+import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.api.ApiSpecific;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Values;
@@ -14,6 +15,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
 import org.bukkit.block.data.BlockData;
+import org.bukkit.block.data.Directional;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
@@ -44,12 +46,13 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
     private List<LocationInfo> locationInfoList;
     private Inventory inventory;
 
-    public AbstractStorage(OfflinePlayer player, String identifier, Location location){
+    public AbstractStorage(OfflinePlayer player, String identifier, Location location, Location signLocation){
         this.player = player;
         this.playerUUID = player.getUniqueId();
         this.isPublic = false;
         setIdentifier(identifier);
         LocationInfo locationInfo = new LocationInfo(location);
+        locationInfo.setSignLocation(signLocation);
         locationInfoList = new ArrayList<>(Collections.singleton(locationInfo));
         inventory = initInventory();
         init();
@@ -97,8 +100,6 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
             ItemStack[] itemStacks = ((ArrayList<ItemStack>) map.get("inventory")).toArray(new ItemStack[0]);
             inventory.setContents(itemStacks);
         }
-
-        init();
     }
 
     @Override
@@ -116,7 +117,33 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
     }
 
     private void init(){
-//        if(shouldDisplayArmourStands()) Bukkit.getScheduler().scheduleSyncRepeatingTask(ChestsPlusPlus.PLUGIN, this::updateClients, 1, 5);
+        if(shouldDisplayArmourStands()) {
+            Bukkit.getScheduler().scheduleSyncRepeatingTask(ChestsPlusPlus.PLUGIN, () -> {
+                for (LocationInfo locationInfo : locationInfoList) {
+                    World world = locationInfo.getLocation().getWorld();
+                    if (world != null) {
+                        //Make client think sign is invisible.
+                        if (displayItem != null) world.getPlayers().forEach(player -> player.sendBlockChange(locationInfo.getSignLocation(), air));
+                        else locationInfo.getSignLocation().getBlock().getState().update();
+                    }
+                }
+            }, 1, 1);
+        } else {
+            for (LocationInfo locationInfo : locationInfoList) {
+                locationInfo.getSignLocation().getBlock().getState().update();
+            }
+        }
+    }
+
+    /**
+     * This is called after the config has loaded into memory.
+     */
+    public void postConfigLoad(){
+        for(LocationInfo locationInfo : locationInfoList) {
+            locationInfo.setSignLocation(getSignLocation(locationInfo.getLocation()));
+        }
+
+        init();
     }
 
     public abstract StorageType getStorageType();
@@ -142,11 +169,6 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
     protected abstract void setIdentifier(String newIdentifier);
     public abstract String getIdentifier();
     public abstract boolean shouldDisplayArmourStands();
-
-    /**
-     * This is called after the config has loaded into memory.
-     */
-    public abstract void postConfigLoad();
 
     /**
      * @return whether to drop the inventory of this storage when it's removed.
@@ -178,8 +200,11 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
      * Adds a location to this storage.
      * @param location - location to be added.
      */
-    public void addLocation(Location location){
-        locationInfoList.add(new LocationInfo(location));
+    public void addLocation(Location location, Location signLocation){
+        LocationInfo locationInfo = new LocationInfo(location);
+        locationInfo.setSignLocation(signLocation);
+        locationInfoList.add(locationInfo);
+        updateClient(locationInfo);
     }
 
     /**
@@ -251,6 +276,21 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
         }
     }
 
+    public Location getSignLocation(Location storageBlock){
+        World world = storageBlock.getWorld();
+        Block block = storageBlock.getBlock();
+
+        if(world != null) {
+            BlockFace facing = getStorageType().getStorageFacing(block);
+
+            if (facing != null) {
+                Block sign = block.getRelative(facing);
+                return sign.getLocation();
+            }
+        }
+        return null;
+    }
+
     /* MEMBER METHODS */
 
     /**
@@ -315,7 +355,7 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
 
     /* ARMOR STAND METHODS */
 
-    private static ItemStack displayItem;
+    private ItemStack displayItem;
 
     public void onItemDisplayUpdate(ItemStack newItem){
         displayItem = newItem;
@@ -334,65 +374,63 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
     private void updateClients(){
         if(locationInfoList == null) return;
         for (LocationInfo location : locationInfoList){
-            World world = location.getLocation().getWorld();
-            Block block = location.getLocation().getBlock();
-            BlockData air = Material.AIR.createBlockData();
-
-            if(world != null) {
-                Collection<Entity> players = world.getNearbyEntities(location.getLocation(), 20, 20, 20, entity -> entity instanceof Player);
-
-                players.forEach(entity -> {
-                    if(entity instanceof Player){
-                        Player player = (Player) entity;
-                        BlockFace facing = getStorageType().getStorageFacing(block);
-
-                        if(facing != null) {
-
-                            Block anchor = block.getRelative(facing);
-
-                            if(displayItem != null && !ApiSpecific.getMaterialChecker().isIgnored(displayItem)) {
-                                boolean isBlock = !ApiSpecific.getMaterialChecker().isGraphically2D(displayItem);
-
-                                boolean isTool = ApiSpecific.getMaterialChecker().isTool(displayItem);
-                                Location standLoc = isTool ? getHeldItemArmorStandLoc(anchor, facing) : getArmorStandLoc(anchor, facing, isBlock);
-
-                                //Make client think sign is invisible.
-                                player.sendBlockChange(anchor.getLocation(), air);
-
-                                //Get currently stored armorStand if there isn't one spawn it.
-                                ArmorStand stand = isTool ? location.getToolItemStand() : (isBlock ? location.getBlockStand() : location.getItemStand());
-                                if(stand == null || !stand.isValid()) {
-                                    stand = createArmorStand(world, standLoc, isBlock, isTool);
-                                    addArmorStand(isBlock, isTool, location, stand);
-                                }
-
-                                stand.setItemInHand(displayItem);
-
-                                //Set on fire to correct lighting.
-                                stand.setFireTicks(Integer.MAX_VALUE);
-
-                                //Set other armor stand helmet to null.
-                                if(isBlock) {
-                                    setArmorStandHelmet(location.getToolItemStand(), null);
-                                    setArmorStandHelmet(location.getItemStand(), null);
-                                } else {
-                                    setArmorStandHelmet(location.getBlockStand(), null);
-                                    if(isTool) setArmorStandHelmet(location.getItemStand(), null);
-                                    else setArmorStandHelmet(location.getToolItemStand(), null);
-                                }
-
-
-                            } else {
-                                anchor.getState().update();
-                                setArmorStandHelmet(location.getToolItemStand(), null);
-                                setArmorStandHelmet(location.getItemStand(), null);
-                                setArmorStandHelmet(location.getBlockStand(), null);
-                            }
-                        }
-                    }
-                });
-            }
+            updateClient(location);
         }
+    }
+
+    private BlockData air = Material.AIR.createBlockData();
+
+    private void updateClient(LocationInfo location){
+        World world = location.getLocation().getWorld();
+
+        if(world != null) {
+                Block anchor = location.getSignLocation().getBlock();
+                BlockFace facing;
+                if(anchor.getBlockData() instanceof Directional){
+                    facing = ((Directional) anchor.getBlockData()).getFacing();
+                } else {
+                    Bukkit.broadcastMessage("Not directional");
+                    return;
+                }
+                if(displayItem != null && !ApiSpecific.getMaterialChecker().isIgnored(displayItem)) {
+                    boolean isBlock = !ApiSpecific.getMaterialChecker().isGraphically2D(displayItem);
+
+                    boolean isTool = ApiSpecific.getMaterialChecker().isTool(displayItem);
+                    Location standLoc = isTool ? getHeldItemArmorStandLoc(anchor, facing) : getArmorStandLoc(anchor, facing, isBlock);
+
+
+
+                    //Get currently stored armorStand if there isn't one spawn it.
+                    ArmorStand stand = isTool ? location.getToolItemStand() : (isBlock ? location.getBlockStand() : location.getItemStand());
+                    if(stand == null || !stand.isValid()) {
+                        stand = createArmorStand(world, standLoc, isBlock, isTool);
+                        addArmorStand(isBlock, isTool, location, stand);
+                    }
+
+                    stand.setItemInHand(displayItem);
+
+                    //Set on fire to correct lighting.
+                    stand.setFireTicks(Integer.MAX_VALUE);
+
+                    //Set other armor stand helmet to null.
+                    if(isBlock) {
+                        setArmorStandHelmet(location.getToolItemStand(), null);
+                        setArmorStandHelmet(location.getItemStand(), null);
+                    } else {
+                        setArmorStandHelmet(location.getBlockStand(), null);
+                        if(isTool) setArmorStandHelmet(location.getItemStand(), null);
+                        else setArmorStandHelmet(location.getToolItemStand(), null);
+                    }
+
+
+                } else {
+                    anchor.getState().update();
+                    setArmorStandHelmet(location.getToolItemStand(), null);
+                    setArmorStandHelmet(location.getItemStand(), null);
+                    setArmorStandHelmet(location.getBlockStand(), null);
+                }
+        }
+
     }
 
     /**

@@ -36,8 +36,8 @@ public class AutoCraftingStorageType extends StorageType<AutoCraftingStorage> {
     }
 
     @Override
-    public AutoCraftingStorage createNewStorageInstance(OfflinePlayer player, String inventoryName, Location location) {
-        return new AutoCraftingStorage(player, inventoryName, location);
+    public AutoCraftingStorage createNewStorageInstance(OfflinePlayer player, String inventoryName, Location location, Location sign) {
+        return new AutoCraftingStorage(player, inventoryName, location, sign);
     }
 
     @Override

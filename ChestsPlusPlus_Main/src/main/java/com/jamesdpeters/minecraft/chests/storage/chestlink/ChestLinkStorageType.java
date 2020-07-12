@@ -32,8 +32,8 @@ public class ChestLinkStorageType extends StorageType<ChestLinkStorage> {
     }
 
     @Override
-    public ChestLinkStorage createNewStorageInstance(OfflinePlayer player, String inventoryName, Location location) {
-        return new ChestLinkStorage(player, inventoryName, location);
+    public ChestLinkStorage createNewStorageInstance(OfflinePlayer player, String inventoryName, Location location, Location signLocation) {
+        return new ChestLinkStorage(player, inventoryName, location, signLocation);
     }
 
     @Override

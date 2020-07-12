@@ -14,7 +14,7 @@ import java.util.Optional;
 @SerializableAs("LocationInfo")
 public class LocationInfo implements ConfigurationSerializable {
 
-    private Location location;
+    private Location location, signLocation;
     private ArmorStand itemStand, blockStand, toolItemStand;
 
     @Override
@@ -34,6 +34,10 @@ public class LocationInfo implements ConfigurationSerializable {
 
     public Location getLocation() {
         return location;
+    }
+
+    public Location getSignLocation() {
+        return signLocation;
     }
 
     public ArmorStand getBlockStand() {
@@ -58,6 +62,10 @@ public class LocationInfo implements ConfigurationSerializable {
 
     public void setToolItemStand(ArmorStand toolItemStand) {
         this.toolItemStand = toolItemStand;
+    }
+
+    public void setSignLocation(Location signLocation) {
+        this.signLocation = signLocation;
     }
 
     public static List<LocationInfo> convert(List<Location> locationList){

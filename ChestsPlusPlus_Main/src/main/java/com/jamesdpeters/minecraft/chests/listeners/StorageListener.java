@@ -47,7 +47,7 @@ public class StorageListener implements Listener {
                                                 if (storageType.getStorageUtils().isValidSignPosition(signLocation)) {
                                                     StorageInfo info = storageType.getStorageUtils().getStorageInfo(sign, signChangeEvent.getLines(), event.getPlayer().getUniqueId());
                                                     if (info != null) {
-                                                        if (!storageType.add(event.getPlayer(), info.getGroup(), event.getBlockAgainst().getLocation(), info.getPlayer())) {
+                                                        if (!storageType.add(event.getPlayer(), info.getGroup(), event.getBlockAgainst().getLocation(), event.getBlockPlaced().getLocation(), info.getPlayer())) {
                                                             sign.getBlock().breakNaturally();
                                                             done();
                                                             return;

@@ -50,7 +50,7 @@ public abstract class StorageType<T extends AbstractStorage> {
 
     public abstract HashMap<String, HashMap<String, T>> getStorageMap(ConfigStorage store);
 
-    public abstract T createNewStorageInstance(OfflinePlayer player, String inventoryName, Location location);
+    public abstract T createNewStorageInstance(OfflinePlayer player, String inventoryName, Location location, Location signLocation);
 
     /**
      * This is the tag used in Signs such as [ChestLink] or [AutoCraft]
@@ -157,7 +157,7 @@ public abstract class StorageType<T extends AbstractStorage> {
     ADD/REMOVE UTILS
      */
 
-    public boolean add(Player player, String identifier, Location chestLocation, OfflinePlayer owner) {
+    public boolean add(Player player, String identifier, Location chestLocation, Location sign, OfflinePlayer owner) {
         //List of groups this player has.
         HashMap<String, T> map = getStorageMap(owner.getUniqueId());
 
@@ -168,7 +168,7 @@ public abstract class StorageType<T extends AbstractStorage> {
                 Messages.OWNER_HAS_TOO_MANY_CHESTS(player, owner);
                 return false;
             }
-            T storage = createNewStorageInstance(owner, identifier, chestLocation);
+            T storage = createNewStorageInstance(owner, identifier, chestLocation, sign);
             map.put(identifier, storage);
         }
 
@@ -177,7 +177,7 @@ public abstract class StorageType<T extends AbstractStorage> {
 
         //If the location isn't already part of the system add it.
         if (!storage.containsLocation(chestLocation)) {
-            storage.addLocation(chestLocation);
+            storage.addLocation(chestLocation, sign);
         }
 
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1f);

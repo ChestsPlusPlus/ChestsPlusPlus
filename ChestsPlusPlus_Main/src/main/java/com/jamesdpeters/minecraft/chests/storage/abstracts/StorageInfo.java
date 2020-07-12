@@ -33,7 +33,7 @@ public class StorageInfo<T extends AbstractStorage> {
                 Block storageBlock = sign.getBlock().getRelative(storageFace);
                 Player player = Bukkit.getPlayer(playerUUID);
                 if(player != null) {
-                    boolean added = storageType.add(player, group, storageBlock.getLocation(), this.player);
+                    boolean added = storageType.add(player, group, storageBlock.getLocation(), sign.getLocation(), this.player);
                     if(added) {
                         this.storage = storageType.getStorage(playerUUID, group);
 //                        storageType.getMessages().foundUnlinkedStorage(player,group);
@@ -58,7 +58,7 @@ public class StorageInfo<T extends AbstractStorage> {
      */
     public T getStorage(Location location) {
         if(!storage.containsLocation(location)){
-            storage.addLocation(location);
+            storage.addLocation(location, storage.getSignLocation(location));
             Player player = storage.getOwner().getPlayer();
             if(player != null) storage.getStorageType().getMessages().foundUnlinkedStorage(player,getGroup());
         }

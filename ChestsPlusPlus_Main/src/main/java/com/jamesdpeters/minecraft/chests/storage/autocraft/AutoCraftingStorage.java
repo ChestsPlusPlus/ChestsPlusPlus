@@ -35,8 +35,8 @@ public class AutoCraftingStorage extends AbstractStorage implements Configuratio
         return Config.getAutoCraft();
     }
 
-    public AutoCraftingStorage(OfflinePlayer player, String identifier, Location location){
-        super(player, identifier, location);
+    public AutoCraftingStorage(OfflinePlayer player, String identifier, Location location, Location signLocation){
+        super(player, identifier, location, signLocation);
         this.identifier = identifier;
         initInventory();
     }
@@ -75,11 +75,6 @@ public class AutoCraftingStorage extends AbstractStorage implements Configuratio
     @Override
     public boolean shouldDisplayArmourStands() {
         return Settings.isShouldDisplayAutoCraftStand();
-    }
-
-    @Override
-    public void postConfigLoad() {
-
     }
 
     @Override
@@ -126,5 +121,11 @@ public class AutoCraftingStorage extends AbstractStorage implements Configuratio
     @Override
     public void onStorageAdded(Block block, Player player) {
         //Don't need to do anything with the Crafting table.
+    }
+
+    @Override
+    public void postConfigLoad() {
+        super.postConfigLoad();
+        if(recipeSerializable != null) onItemDisplayUpdate(recipeSerializable.getRecipe().getResult());
     }
 }

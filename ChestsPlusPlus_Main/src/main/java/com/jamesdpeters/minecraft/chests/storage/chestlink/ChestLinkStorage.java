@@ -41,8 +41,8 @@ public class ChestLinkStorage extends AbstractStorage implements ConfigurationSe
         super(map);
     }
 
-    public ChestLinkStorage(OfflinePlayer player, String group, Location location){
-        super(player, group, location);
+    public ChestLinkStorage(OfflinePlayer player, String group, Location location, Location signLocation){
+        super(player, group, location, signLocation);
         this.inventoryName = group;
         this.sortMethod = SortMethod.OFF;
 
@@ -194,6 +194,7 @@ public class ChestLinkStorage extends AbstractStorage implements ConfigurationSe
 
     @Override
     public void postConfigLoad() {
+        super.postConfigLoad();
         onItemDisplayUpdate(InventorySorter.getMostCommonItem(getInventory()));
     }
 
