@@ -14,6 +14,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.util.Vector;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -131,6 +132,22 @@ public class Utils {
         Block targetBlock = lastTwoTargetBlocks.get(1);
         Block adjacentBlock = lastTwoTargetBlocks.get(0);
         return targetBlock.getFace(adjacentBlock);
+    }
+
+    public static BlockFace getNearestBlockFace(Player player, Location blockPlaced){
+        Vector blockCentre = blockPlaced.add(0.5, 0, 0.5).toVector().setY(0);
+        Vector directionLoc = player.getEyeLocation().toVector().setY(0);
+        double angle = Math.toDegrees(calculateXZAngle(blockCentre,directionLoc));
+        if(angle <= 45 && angle > -45) return BlockFace.EAST;
+        if(angle <= 135 && angle > 45) return BlockFace.SOUTH;
+        if(angle <= -45 && angle > -135) return BlockFace.NORTH;
+        if(angle <= -135 || angle > 135) return BlockFace.WEST;
+        return null;
+    }
+
+    private static double calculateXZAngle(Vector origin, Vector to){
+        Vector vec = to.subtract(origin);
+        return Math.atan2(vec.getZ(), vec.getX());
     }
 
     public static boolean isSideFace(BlockFace face){

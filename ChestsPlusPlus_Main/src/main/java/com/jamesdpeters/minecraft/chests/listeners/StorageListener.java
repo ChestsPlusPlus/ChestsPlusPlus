@@ -1,6 +1,8 @@
 package com.jamesdpeters.minecraft.chests.listeners;
 
+import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.misc.Messages;
+import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.misc.Values;
 import com.jamesdpeters.minecraft.chests.runnables.ChestLinkVerifier;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
@@ -10,12 +12,15 @@ import com.jamesdpeters.minecraft.chests.storage.abstracts.StorageType;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Chest;
 import org.bukkit.block.Sign;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Directional;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -25,11 +30,15 @@ import org.bukkit.event.block.BlockPistonExtendEvent;
 import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.SignChangeEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.stream.Collectors;
 
 public class StorageListener implements Listener {
+
+    private BlockData air = Material.AIR.createBlockData();
 
     @EventHandler
     public void playerInteract(BlockPlaceEvent event){
@@ -105,6 +114,28 @@ public class StorageListener implements Listener {
 
     @EventHandler
     public void onChestPlace(BlockPlaceEvent event){
+        for(StorageType storageType : Config.getStorageTypes()){
+            if(storageType.isValidBlockType(event.getBlockPlaced())){
+                ItemMeta itemMeta = event.getItemInHand().getItemMeta();
+                if(itemMeta != null){
+                    String playerUUID = itemMeta.getPersistentDataContainer().get(Values.playerUUID, PersistentDataType.STRING);
+                    String storageID = itemMeta.getPersistentDataContainer().get(Values.storageID, PersistentDataType.STRING);
+
+                    BlockFace blockFace = storageType.onStoragePlacedBlockFace(event.getPlayer(),event.getBlockPlaced());
+                    Block signSpace = event.getBlockPlaced().getRelative(blockFace);
+                    if(signSpace.getType() != Material.AIR){
+                        event.setCancelled(true);
+                        return;
+                    }
+                    if(storageType.hasPermissionToAdd(event.getPlayer())){
+                        storageType.createStorageFacing(event.getPlayer(), event.getBlockPlaced(), storageID, blockFace,false);
+//                        storageType.add(event.getPlayer(), storageID, event.getBlockPlaced().getLocation(), event.getPlayer().)
+                    } else {
+                        Messages.NO_PERMISSION(event.getPlayer());
+                    }
+                }
+            }
+        }
         if(event.getBlockPlaced().getState() instanceof Chest){
             new ChestLinkVerifier(event.getBlock()).check();
         }
@@ -113,11 +144,38 @@ public class StorageListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onChestBreak(BlockBreakEvent event){
+        if(event.isCancelled()) return;
         for (StorageType storageType : Config.getStorageTypes()) {
             if(storageType.isValidBlockType(event.getBlock())) {
-                AbstractStorage storage = storageType.removeBlock(event.getBlock().getLocation());
+                boolean hasPickedUp = false;
+                ItemStack mainHand = event.getPlayer().getInventory().getItemInMainHand();
+                if(mainHand.containsEnchantment(Enchantment.SILK_TOUCH)){
+                    hasPickedUp = true;
+                }
+                AbstractStorage storage = storageType.removeBlock(event.getBlock().getLocation(),hasPickedUp);
                 if (storage != null) {
-                    storageType.getMessages().storageRemoved(event.getPlayer(), storage.getIdentifier(), storage.getOwner().getName());
+                    if(hasPickedUp){
+                        event.setCancelled(true);
+                        Block storageBlock = event.getBlock();
+                        Location signLoc = storage.getSignLocation(storageBlock.getLocation());
+
+                        //Custom dropped Chest
+                        ItemStack customChest = new ItemStack(storageBlock.getType(),1);
+                        ItemMeta itemMeta = customChest.getItemMeta();
+                        if(itemMeta != null){
+                            itemMeta.setDisplayName(ChatColor.AQUA+""+storageType.getSignTag()+" "+storage.getIdentifier());
+                            itemMeta.getPersistentDataContainer().set(Values.playerUUID, PersistentDataType.STRING, storage.getOwner().getUniqueId().toString());
+                            itemMeta.getPersistentDataContainer().set(Values.storageID, PersistentDataType.STRING, storage.getIdentifier());
+                        }
+                        customChest.setItemMeta(itemMeta);
+                        storageBlock.getWorld().dropItemNaturally(storageBlock.getLocation(),customChest);
+
+                        if(signLoc != null) signLoc.getBlock().setType(Material.AIR);
+                        storageBlock.setType(Material.AIR);
+
+                    } else {
+                        storageType.getMessages().storageRemoved(event.getPlayer(), storage.getIdentifier(), storage.getOwner().getName());
+                    }
                 }
             }
         }

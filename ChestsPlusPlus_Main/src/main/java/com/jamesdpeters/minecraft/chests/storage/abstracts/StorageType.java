@@ -19,6 +19,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Sign;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.type.WallSign;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockPlaceEvent;
@@ -74,7 +75,17 @@ public abstract class StorageType<T extends AbstractStorage> {
 
     public abstract boolean hasPermissionToAdd(Player player);
 
-    public abstract void createStorage(Player player, Block block, String identifier);
+    public void createStorage(Player player, Block block, String identifier, boolean requireSign){
+        createStorage(player, player, block, identifier, requireSign);
+    }
+    public abstract void createStorage(Player player, OfflinePlayer owner, Block block, String identifier, boolean requireSign);
+
+    public abstract void createStorageFacing(Player player, OfflinePlayer owner, Block block, String identifier, BlockFace facing, boolean requireSign);
+    public void createStorageFacing(Player player, Block block, String identifier, BlockFace facing, boolean requireSign){
+        createStorageFacing(player, player, block, identifier, facing, requireSign);
+    }
+
+    public abstract BlockFace onStoragePlacedBlockFace(Player player, Block placed);
 
     /**
      * @return the direction the storage at the given location is facing.
@@ -192,10 +203,17 @@ public abstract class StorageType<T extends AbstractStorage> {
         return false;
     }
 
-    public T removeBlock(T storage, Location location) {
+    /**
+     * Removes a block from the given storage system.
+     * @param storage - @{@link AbstractStorage}
+     * @param location - the @{@link Location} to remove
+     * @param hasPickedUp - true if the player Silk Touched the block.
+     * @return
+     */
+    public T removeBlock(T storage, Location location, boolean hasPickedUp) {
         if (storage != null) {
             storage.removeLocation(location);
-            if (storage.getLocationsSize() == 0) {
+            if (storage.getLocationsSize() == 0 && !hasPickedUp) {
                 storage.dropInventory(location);
                 getStorageMap(storage.getOwner().getUniqueId()).remove(storage.getIdentifier());
             }
@@ -206,12 +224,12 @@ public abstract class StorageType<T extends AbstractStorage> {
     }
 
     public T removeBlock(OfflinePlayer owner, String identifier, Location chestLocation) {
-        return removeBlock(getStorageMap(owner.getUniqueId()).get(identifier), chestLocation);
+        return removeBlock(getStorageMap(owner.getUniqueId()).get(identifier), chestLocation, false);
     }
 
-    public T removeBlock(Location chestLocation) {
+    public T removeBlock(Location chestLocation, boolean hasPickedUp) {
         T storage = getStorage(chestLocation);
-        return removeBlock(storage, chestLocation);
+        return removeBlock(storage, chestLocation, hasPickedUp);
     }
 
     public void removeStorage(Player player, String group) {
@@ -262,12 +280,12 @@ public abstract class StorageType<T extends AbstractStorage> {
 
     /* HELPER UTILS */
 
-    protected void placeSign(Block placedAgainst, Block toReplace, BlockFace facing, Player player, String identifier, String linkTag){
+    protected void placeSign(Block placedAgainst, Block toReplace, BlockFace facing, Player player, OfflinePlayer ownerPlayer, String identifier, String linkTag, boolean requireSign){
         if(toReplace.getType() == Material.AIR){
             BlockState replacedBlockState = toReplace.getState();
 
             Material signMaterial = Material.OAK_WALL_SIGN;
-            if(player.getGameMode() != GameMode.CREATIVE) {
+            if(player.getGameMode() != GameMode.CREATIVE && requireSign) {
                 if (player.getEquipment() != null) {
                     if (!Tag.SIGNS.isTagged(player.getEquipment().getItemInMainHand().getType())) {
                         Messages.MUST_HOLD_SIGN(player);
@@ -286,7 +304,7 @@ public abstract class StorageType<T extends AbstractStorage> {
                 String[] args = identifier.split(":");
                 owner = args[0];
                 group = args[1];
-                OfflinePlayer ownerPlayer = Config.getOfflinePlayer(owner);
+                ownerPlayer = Config.getOfflinePlayer(owner);
                 if(ownerPlayer != null){
                     uuid = ownerPlayer.getUniqueId().toString();
                 } else {
@@ -295,9 +313,8 @@ public abstract class StorageType<T extends AbstractStorage> {
                 }
             } else {
                 group = identifier;
-                uuid = player.getUniqueId().toString();
+                uuid = ownerPlayer.getUniqueId().toString();
             }
-
 
             String[] lines = new String[4];
             lines[0] = linkTag;

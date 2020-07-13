@@ -78,6 +78,7 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
         } else {
             locationInfoList = (List<LocationInfo>) map.get("locationInfo");
             locationInfoList.removeAll(Collections.singletonList(null));
+            locationInfoList.removeIf(locationInfo -> locationInfo.getLocation() == null);
         }
 
         //Read owners UUID and find the player for that ID.
@@ -123,18 +124,26 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
             startSignChangeTask();
         } else {
             for (LocationInfo locationInfo : locationInfoList) {
-                locationInfo.getSignLocation().getBlock().getState().update();
+                if(locationInfo.getSignLocation() != null) locationInfo.getSignLocation().getBlock().getState().update();
+                if(locationInfo.getBlockStand() != null) locationInfo.getBlockStand().remove();
+                if(locationInfo.getToolItemStand() != null) locationInfo.getToolItemStand().remove();
             }
         }
     }
 
     private int startSignChangeTask(){
-        return Bukkit.getScheduler().scheduleSyncRepeatingTask(ChestsPlusPlus.PLUGIN, () -> Bukkit.getOnlinePlayers().forEach(player -> {
+        return Bukkit.getScheduler().scheduleSyncRepeatingTask(ChestsPlusPlus.PLUGIN, this::updateSign, 1, 1);
+    }
+
+    private void updateSign(){
+        Bukkit.getOnlinePlayers().forEach(player -> {
             for (LocationInfo locationInfo : locationInfoList) {
-                if (displayItem != null) player.sendBlockChange(locationInfo.getSignLocation(), air);
-                else locationInfo.getSignLocation().getBlock().getState().update();
+                if (locationInfo.getSignLocation() != null) {
+                    if (displayItem != null) player.sendBlockChange(locationInfo.getSignLocation(), air);
+                    else locationInfo.getSignLocation().getBlock().getState().update();
+                }
             }
-        }), 1, 5);
+        });
     }
 
     /**
@@ -206,7 +215,10 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
         LocationInfo locationInfo = new LocationInfo(location);
         locationInfo.setSignLocation(signLocation);
         locationInfoList.add(locationInfo);
-        updateClient(locationInfo);
+        if(shouldDisplayArmourStands()){
+            updateSign();
+            updateClient(locationInfo);
+        }
     }
 
     /**
@@ -230,7 +242,11 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
      * @return true if this storage contains this location
      */
     public boolean containsLocation(Location location){
-        return locationInfoList.stream().anyMatch(locationInfo -> locationInfo.getLocation().equals(location));
+        return locationInfoList.stream().filter(locationInfo -> locationInfo.getLocation() != null).anyMatch(locationInfo -> locationInfo.getLocation().equals(location));
+    }
+
+    public LocationInfo getLocationInfo(Location location){
+        return locationInfoList.stream().filter(locationInfo -> locationInfo.getLocation().equals(location)).findFirst().orElse(null);
     }
 
     public int getLocationsSize(){
@@ -279,6 +295,7 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
     }
 
     public Location getSignLocation(Location storageBlock){
+        if(storageBlock == null) return null;
         World world = storageBlock.getWorld();
         Block block = storageBlock.getBlock();
 
@@ -327,7 +344,7 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
      * @param player - the player being added.
      * @return true if the player was added
      */
-    public boolean addMember(Player player){
+    public boolean addMember(OfflinePlayer player){
         if(player != null){
             if(members == null) members = new ArrayList<>();
             if(bukkitMembers == null) bukkitMembers = new ArrayList<>();
@@ -345,7 +362,7 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
      * @param player - player being removed.
      * @return true if player was removed.
      */
-    public boolean removeMember(Player player){
+    public boolean removeMember(OfflinePlayer player){
         if(player != null){
             if(bukkitMembers != null) bukkitMembers.remove(player);
             if(members != null){
@@ -360,14 +377,16 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
     private ItemStack displayItem;
 
     public void onItemDisplayUpdate(ItemStack newItem){
-        if(displayItem == null || displayItem.getType().equals(Material.AIR)){
-            Bukkit.getScheduler().cancelTask(signUpdateTask);
-            signUpdateTask = -1;
-        } else {
-            if(signUpdateTask == -1) signUpdateTask = startSignChangeTask();
+        if(shouldDisplayArmourStands()) {
+            if (displayItem == null || displayItem.getType().equals(Material.AIR)) {
+                Bukkit.getScheduler().cancelTask(signUpdateTask);
+                signUpdateTask = -1;
+            } else {
+                if (signUpdateTask == -1) signUpdateTask = startSignChangeTask();
+            }
         }
         displayItem = newItem;
-        updateClients();
+        if(shouldDisplayArmourStands()) updateClients();
     }
 
     private EulerAngle BLOCK_POSE = new EulerAngle( Math.toRadians( -15 ), Math.toRadians( -45 ), Math.toRadians(0) );
@@ -389,24 +408,23 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
     private BlockData air = Material.AIR.createBlockData();
 
     private void updateClient(LocationInfo location){
+        if(location.getLocation() == null) return;
         World world = location.getLocation().getWorld();
 
         if(world != null) {
+            if(location.getSignLocation() == null) return;
                 Block anchor = location.getSignLocation().getBlock();
                 BlockFace facing;
                 if(anchor.getBlockData() instanceof Directional){
                     facing = ((Directional) anchor.getBlockData()).getFacing();
                 } else {
-                    Bukkit.broadcastMessage("Not directional");
                     return;
                 }
                 if(displayItem != null && !ApiSpecific.getMaterialChecker().isIgnored(displayItem)) {
-                    boolean isBlock = !ApiSpecific.getMaterialChecker().isGraphically2D(displayItem);
 
+                    boolean isBlock = !ApiSpecific.getMaterialChecker().isGraphically2D(displayItem);
                     boolean isTool = ApiSpecific.getMaterialChecker().isTool(displayItem);
                     Location standLoc = isTool ? getHeldItemArmorStandLoc(anchor, facing) : getArmorStandLoc(anchor, facing, isBlock);
-
-
 
                     //Get currently stored armorStand if there isn't one spawn it.
                     ArmorStand stand = isTool ? location.getToolItemStand() : (isBlock ? location.getBlockStand() : location.getItemStand());
@@ -429,8 +447,6 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
                         if(isTool) setArmorStandHelmet(location.getItemStand(), null);
                         else setArmorStandHelmet(location.getToolItemStand(), null);
                     }
-
-
                 } else {
                     anchor.getState().update();
                     setArmorStandHelmet(location.getToolItemStand(), null);

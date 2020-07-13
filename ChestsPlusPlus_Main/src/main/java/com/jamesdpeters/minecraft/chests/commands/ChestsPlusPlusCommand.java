@@ -55,7 +55,6 @@ public class ChestsPlusPlusCommand extends ServerCommand  {
                     return true;
 
                 case RELOAD:
-                    ChestsPlusPlus.PLUGIN.onDisable();
                     ChestsPlusPlus.PLUGIN.onEnable();
                     return true;
 

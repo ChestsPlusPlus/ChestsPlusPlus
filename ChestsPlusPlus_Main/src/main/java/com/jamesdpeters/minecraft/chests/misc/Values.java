@@ -12,4 +12,5 @@ public class Values {
 
     public final static NamespacedKey playerUUID = new NamespacedKey(ChestsPlusPlus.PLUGIN,"playerUUID");
     public final static NamespacedKey PluginKey = new NamespacedKey(ChestsPlusPlus.PLUGIN,"ChestsPlusPlus");
+    public final static NamespacedKey storageID = new NamespacedKey(ChestsPlusPlus.PLUGIN,"storageID");
 }

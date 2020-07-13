@@ -82,7 +82,7 @@ public class ChestLinkCommand extends ServerCommand  {
                     if(args.length > 1){
                         if(sender.hasPermission(Permissions.ADD)) {
                             Block targetBlock = player.getTargetBlockExact(5);
-                            if (targetBlock != null) Config.getChestLink().createStorage(player,targetBlock,args[1]);
+                            if (targetBlock != null) Config.getChestLink().createStorage(player,targetBlock,args[1],true);
                             else Config.getChestLink().getMessages().mustLookAtBlock(player);
                             return true;
                         } else {

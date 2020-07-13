@@ -79,7 +79,7 @@ public class AutoCraftCommand extends ServerCommand  {
                     if(args.length > 1){
                         if (player.hasPermission(Permissions.AUTOCRAFT_ADD)) {
                             Block targetBlock = player.getTargetBlockExact(5);
-                            if (targetBlock != null) Config.getAutoCraft().createStorage(player, targetBlock, args[1]);
+                            if (targetBlock != null) Config.getAutoCraft().createStorage(player, targetBlock, args[1],true);
                             else Config.getAutoCraft().getMessages().mustLookAtBlock(player);
                         } else {
                             Messages.NO_PERMISSION(player);

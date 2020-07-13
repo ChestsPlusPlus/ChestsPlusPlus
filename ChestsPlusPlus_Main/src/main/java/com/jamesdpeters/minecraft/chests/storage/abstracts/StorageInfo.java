@@ -57,6 +57,7 @@ public class StorageInfo<T extends AbstractStorage> {
      * @return @{@link AutoCraftingStorage}
      */
     public T getStorage(Location location) {
+        if(storage == null) return null;
         if(!storage.containsLocation(location)){
             storage.addLocation(location, storage.getSignLocation(location));
             Player player = storage.getOwner().getPlayer();

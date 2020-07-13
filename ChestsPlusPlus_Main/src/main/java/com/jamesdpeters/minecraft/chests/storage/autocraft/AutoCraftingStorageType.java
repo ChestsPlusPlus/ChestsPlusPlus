@@ -61,21 +61,31 @@ public class AutoCraftingStorageType extends StorageType<AutoCraftingStorage> {
     }
 
     @Override
-    public void createStorage(Player player, Block block, String identifier) {
+    public void createStorage(Player player, OfflinePlayer owner, Block block, String identifier, boolean requireSign) {
         if(isValidBlockType(block)){
             BlockFace facing = Utils.getBlockFace(player);
             if(facing != null) {
-                if(Utils.isSideFace(facing)) {
-                    Block toReplace = block.getRelative(facing);
-                    StorageInfo info = getStorageUtils().getStorageInfo(block.getLocation());
-                    if(info != null){
-                        Messages.ALREADY_PART_OF_GROUP(player,"Crafting Table");
-                        return;
-                    }
-                    placeSign(block, toReplace, facing, player, identifier, Values.AutoCraftTag);
-                }
+                createStorageFacing(player, owner, block, identifier, facing, requireSign);
             }
         }
+    }
+
+    @Override
+    public void createStorageFacing(Player player, OfflinePlayer owner, Block block, String identifier, BlockFace facing, boolean requireSign) {
+        if(Utils.isSideFace(facing)) {
+            Block toReplace = block.getRelative(facing);
+            StorageInfo info = getStorageUtils().getStorageInfo(block.getLocation());
+            if(info != null){
+                Messages.ALREADY_PART_OF_GROUP(player,"Crafting Table");
+                return;
+            }
+            placeSign(block, toReplace, facing, player, owner, identifier, Values.AutoCraftTag,requireSign);
+        }
+    }
+
+    @Override
+    public BlockFace onStoragePlacedBlockFace(Player player, Block placed) {
+        return Utils.getNearestBlockFace(player,placed.getLocation());
     }
 
     @Override
