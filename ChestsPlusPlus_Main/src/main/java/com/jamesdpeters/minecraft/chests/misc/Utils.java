@@ -102,6 +102,10 @@ public class Utils {
         return getPlayersAsNameList(Bukkit.getOnlinePlayers());
     }
 
+    public static List<String> getAllPlayers(){
+        return getPlayersAsNameList(Arrays.asList(Bukkit.getOfflinePlayers()));
+    }
+
     public static List<String> getPlayersAsNameList(Collection<? extends OfflinePlayer> players){
         List<String> arr = new ArrayList<>();
         for(OfflinePlayer player : players){
@@ -159,5 +163,9 @@ public class Utils {
             Integer val = entity.getPersistentDataContainer().get(Values.PluginKey, PersistentDataType.INTEGER);
             if(val != null && val == 1) entity.remove();
         });
+    }
+
+    public static List<String> filterList(List<String> list, String phrase){
+        return list.stream().filter(s -> s.contains(phrase)).collect(Collectors.toList());
     }
 }

@@ -1,5 +1,6 @@
 package com.jamesdpeters.minecraft.chests.commands;
 
+import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.inventories.ChestLinkMenu;
 import com.jamesdpeters.minecraft.chests.misc.Messages;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
@@ -9,12 +10,14 @@ import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorage;
 import com.jamesdpeters.minecraft.chests.sort.SortMethod;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -210,7 +213,7 @@ public class ChestLinkCommand extends ServerCommand  {
                         case RENAME:
                             return Config.getChestLink().getStorageList(player, args[1]);
                         case MEMBER:
-                            return Arrays.asList("add","remove","list");
+                            return Stream.of("add","remove","list","add-to-all","remove-from-all").filter(s -> s.contains(args[1])).collect(Collectors.toList());
                     }
                 } catch (IllegalArgumentException ignored) { }
             }
@@ -218,6 +221,8 @@ public class ChestLinkCommand extends ServerCommand  {
                 try {
                     switch (OPTIONS.valueOf(args[0].toUpperCase())) {
                         case MEMBER:
+                            if(args[1].equals("add-to-all")) return Utils.filterList(Utils.getAllPlayers(), args[2]);
+                            if(args[1].equals("remove-from-all")) return Utils.filterList(Utils.getAllPlayers(), args[2]);
                             return Config.getChestLink().getStorageList(player, args[2]);
                         case SORT:
                             return SortMethod.valuesList;
@@ -228,10 +233,11 @@ public class ChestLinkCommand extends ServerCommand  {
                 try {
                     switch (OPTIONS.valueOf(args[0].toUpperCase())) {
                         case MEMBER:
-                            return Utils.getOnlinePlayers();
+                            return Utils.filterList(Utils.getAllPlayers(), args[3]);
                     }
                 } catch (IllegalArgumentException ignored) { }
             }
+            return Collections.singletonList("");
         }
         return null;
     }
@@ -241,17 +247,23 @@ public class ChestLinkCommand extends ServerCommand  {
         if(args.length > 3){
             if(sender.hasPermission(Permissions.MEMBER)){
                 if(args[1].equals("add")) {
-                    Player toAdd = Bukkit.getPlayer(args[3]);
-                    ChestLinkStorage storage = Config.getChestLink().getStorage(player.getUniqueId(), args[2]);
-                    if (storage != null && storage.addMember(toAdd))
-                        storage.getStorageType().getMessages().addedMember(player, storage, args[3]);
-                    else Config.getChestLink().getMessages().unableToAddMember(player,args[3]);
+                    Bukkit.getScheduler().runTaskAsynchronously(ChestsPlusPlus.PLUGIN, () -> {
+                        OfflinePlayer toAdd = Bukkit.getOfflinePlayer(args[3]);
+                        ChestLinkStorage storage = Config.getChestLink().getStorage(player.getUniqueId(), args[2]);
+                        if (storage != null && storage.addMember(toAdd))
+                            storage.getStorageType().getMessages().addedMember(player, storage, args[3]);
+                        else Config.getChestLink().getMessages().unableToAddMember(player,args[3]);
+                    });
+                    return true;
                 } else if(args[1].equals("remove")){
-                    Player toAdd = Bukkit.getPlayer(args[3]);
-                    ChestLinkStorage storage = Config.getChestLink().getStorage(player.getUniqueId(),args[2]);
-                    if(storage != null && storage.removeMember(toAdd))
-                        storage.getStorageType().getMessages().removedMember(player, storage, args[3]);
-                    else Config.getChestLink().getMessages().unableToRemoveMember(player, args[3]);
+                    Bukkit.getScheduler().runTaskAsynchronously(ChestsPlusPlus.PLUGIN, () -> {
+                        OfflinePlayer toAdd = Bukkit.getOfflinePlayer(args[3]);
+                        ChestLinkStorage storage = Config.getChestLink().getStorage(player.getUniqueId(), args[2]);
+                        if (storage != null && storage.removeMember(toAdd))
+                            storage.getStorageType().getMessages().removedMember(player, storage, args[3]);
+                        else Config.getChestLink().getMessages().unableToRemoveMember(player, args[3]);
+                    });
+                    return true;
                 } else {
                     player.sendMessage(ChatColor.RED+OPTIONS.MEMBER.commandHelp);
                     player.sendMessage(ChatColor.RED+OPTIONS.MEMBER.description);
@@ -268,6 +280,20 @@ public class ChestLinkCommand extends ServerCommand  {
                         storage.getStorageType().getMessages().listMembers(player, storage);
                         return true;
                     }
+                } else if(args[1].equals("add-to-all")){
+                    Bukkit.getScheduler().runTaskAsynchronously(ChestsPlusPlus.PLUGIN, () -> {
+                        OfflinePlayer toAdd = Bukkit.getOfflinePlayer(args[2]);
+                        Config.getChestLink().getStorageMap(player.getUniqueId()).forEach((s, storage) -> storage.addMember(toAdd));
+                        Config.getChestLink().getMessages().addMemberToAll(player, toAdd);
+                    });
+                    return true;
+                } else if(args[1].equals("remove-from-all")){
+                    Bukkit.getScheduler().runTaskAsynchronously(ChestsPlusPlus.PLUGIN, () -> {
+                        OfflinePlayer toAdd = Bukkit.getOfflinePlayer(args[2]);
+                        Config.getChestLink().getStorageMap(player.getUniqueId()).forEach((s, storage) -> storage.removeMember(toAdd));
+                        Config.getChestLink().getMessages().removeMemberFromAll(player, toAdd);
+                    });
+                    return true;
                 }
             }
         } else {

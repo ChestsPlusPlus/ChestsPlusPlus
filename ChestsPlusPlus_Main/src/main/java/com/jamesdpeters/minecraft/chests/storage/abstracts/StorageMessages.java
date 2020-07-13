@@ -2,6 +2,7 @@ package com.jamesdpeters.minecraft.chests.storage.abstracts;
 
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import org.bukkit.ChatColor;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
 public abstract class StorageMessages {
@@ -35,6 +36,10 @@ public abstract class StorageMessages {
         target.sendMessage(ChatColor.GREEN+""+ChatColor.BOLD+TAG+" Current Members: "+ Utils.prettyPrintPlayers(ChatColor.GREEN,storage.getMembers()));
     }
 
+    public void addMemberToAll(Player target, OfflinePlayer added){
+        target.sendMessage(ChatColor.GREEN+""+ChatColor.BOLD+TAG+" Succesfully added "+ChatColor.WHITE+added.getName()+ChatColor.GREEN+" to all "+getStorageName()+" groups ");
+    }
+
     public void unableToAddMember(Player target, String toAdd){
         target.sendMessage(ChatColor.RED+""+ChatColor.BOLD+TAG+" Unable to add player "+toAdd+" to "+getStorageName()+"!");
     }
@@ -42,6 +47,10 @@ public abstract class StorageMessages {
     public void removedMember(Player target, AbstractStorage storage, String added){
         target.sendMessage(ChatColor.GREEN+""+ChatColor.BOLD+TAG+" Succesfully removed "+ChatColor.WHITE+added+ChatColor.GREEN+" from "+getStorageName()+" group "+ChatColor.WHITE+storage.getIdentifier());
         target.sendMessage(ChatColor.GREEN+""+ChatColor.BOLD+TAG+" Current Members: "+ Utils.prettyPrintPlayers(ChatColor.GREEN,storage.getMembers()));
+    }
+
+    public void removeMemberFromAll(Player target, OfflinePlayer added){
+        target.sendMessage(ChatColor.GREEN+""+ChatColor.BOLD+TAG+" Succesfully removed "+ChatColor.WHITE+added.getName()+ChatColor.GREEN+" from all "+getStorageName()+" groups ");
     }
 
     public void unableToRemoveMember(Player target, String toAdd){
