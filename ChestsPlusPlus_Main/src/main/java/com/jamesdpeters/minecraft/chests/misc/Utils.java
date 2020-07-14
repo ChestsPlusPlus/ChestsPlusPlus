@@ -185,4 +185,8 @@ public class Utils {
     public static List<String> filterList(List<String> list, String phrase){
         return list.stream().filter(s -> s.contains(phrase)).collect(Collectors.toList());
     }
+
+    public static  <T> void addIfNotNull(List<T> list, T value){
+        if(value != null) list.add(value);
+    }
 }

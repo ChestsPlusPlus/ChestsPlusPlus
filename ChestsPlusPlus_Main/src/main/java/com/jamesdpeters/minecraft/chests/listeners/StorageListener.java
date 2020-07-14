@@ -34,6 +34,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class StorageListener implements Listener {
@@ -121,17 +122,23 @@ public class StorageListener implements Listener {
                     String playerUUID = itemMeta.getPersistentDataContainer().get(Values.playerUUID, PersistentDataType.STRING);
                     String storageID = itemMeta.getPersistentDataContainer().get(Values.storageID, PersistentDataType.STRING);
 
-                    BlockFace blockFace = storageType.onStoragePlacedBlockFace(event.getPlayer(),event.getBlockPlaced());
-                    Block signSpace = event.getBlockPlaced().getRelative(blockFace);
-                    if(signSpace.getType() != Material.AIR){
-                        event.setCancelled(true);
-                        return;
-                    }
-                    if(storageType.hasPermissionToAdd(event.getPlayer())){
-                        storageType.createStorageFacing(event.getPlayer(), event.getBlockPlaced(), storageID, blockFace,false);
+                    if(playerUUID != null && storageID != null) {
+                        OfflinePlayer owner = Bukkit.getOfflinePlayer(UUID.fromString(playerUUID));
+
+                        BlockFace blockFace = storageType.onStoragePlacedBlockFace(event.getPlayer(), event.getBlockPlaced());
+                        Block signSpace = event.getBlockPlaced().getRelative(blockFace);
+                        if (signSpace.getType() != Material.AIR) {
+                            event.setCancelled(true);
+                            return;
+                        }
+                        if (storageType.hasPermissionToAdd(event.getPlayer())) {
+                            storageType.createStorageFacing(event.getPlayer(), owner, event.getBlockPlaced(), storageID, blockFace, false);
 //                        storageType.add(event.getPlayer(), storageID, event.getBlockPlaced().getLocation(), event.getPlayer().)
-                    } else {
-                        Messages.NO_PERMISSION(event.getPlayer());
+                        } else {
+                            event.setCancelled(true);
+                            Messages.NO_PERMISSION(event.getPlayer());
+                            return;
+                        }
                     }
                 }
             }

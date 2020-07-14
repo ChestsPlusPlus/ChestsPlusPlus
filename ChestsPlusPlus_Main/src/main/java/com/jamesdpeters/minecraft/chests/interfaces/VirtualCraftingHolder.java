@@ -221,39 +221,31 @@ public class VirtualCraftingHolder implements InventoryHolder {
                 output = hopper.getInventory();
             } else {
                 output = getInventory(blockBelow);
+                //If there is no output crafting isn't possible, so skip this location.
                 if(output == null) continue;
                 //If crafting table is powered output into container is possible.
                 if(!block.isBlockPowered()) continue;
             }
 
-            boolean didCraft = false;
-            if(craftItem(blockAbove,output)) didCraft = true;
-            if(craftItemIfHopperSource(block.getRelative(BlockFace.NORTH),output)) didCraft = true;
-            if(craftItemIfHopperSource(block.getRelative(BlockFace.EAST),output)) didCraft = true;
-            if(craftItemIfHopperSource(block.getRelative(BlockFace.SOUTH),output)) didCraft = true;
-            if(craftItemIfHopperSource(block.getRelative(BlockFace.WEST),output)) didCraft = true;
+            List<Inventory> inventories = new ArrayList<>();
+            Utils.addIfNotNull(inventories, getInventory(blockAbove));
+            Utils.addIfNotNull(inventories, getInventory(block.getRelative(BlockFace.NORTH)));
+            Utils.addIfNotNull(inventories, getInventory(block.getRelative(BlockFace.EAST)));
+            Utils.addIfNotNull(inventories, getInventory(block.getRelative(BlockFace.SOUTH)));
+            Utils.addIfNotNull(inventories, getInventory(block.getRelative(BlockFace.WEST)));
+
+            boolean didCraft = craftItem(inventories,output);
 
             //Play sound if crafting occured.
-            if(didCraft) if(location.getLocation().getWorld() != null) {
-                location.getLocation().getWorld().playSound(location.getLocation(), Sound.BLOCK_DISPENSER_DISPENSE, 0.25f, 1f);
-                if(output.getHolder() instanceof VirtualInventoryHolder){
-                    ((VirtualInventoryHolder) output.getHolder()).getStorage().updateDisplayItem();
+            if(didCraft) {
+                if (location.getLocation().getWorld() != null) {
+                    location.getLocation().getWorld().playSound(location.getLocation(), Sound.BLOCK_DISPENSER_DISPENSE, 0.25f, 1f);
+                    if (output.getHolder() instanceof VirtualInventoryHolder) {
+                        ((VirtualInventoryHolder) output.getHolder()).getStorage().updateDisplayItem();
+                    }
                 }
             }
         }
-    }
-
-    private boolean craftItemIfHopperSource(Block sourceBlock, Inventory output){
-        if(sourceBlock.getState() instanceof Hopper){
-            return craftItem(sourceBlock, output);
-        }
-        return false;
-    }
-
-    private boolean craftItem(Block sourceBlock, Inventory output){
-        Inventory source = getInventory(sourceBlock);
-        if(source == null) return false;
-        return craftItem(source, output);
     }
 
     private Inventory getInventory(Block block){
@@ -274,22 +266,34 @@ public class VirtualCraftingHolder implements InventoryHolder {
         return inventory;
     }
 
-    private boolean craftItem(Inventory inputInventory, Inventory output){
-        boolean sameInv = inputInventory.equals(output);
+    private boolean craftItem(List<Inventory> inputs, Inventory output){
+        boolean sameInv = false;
+        Inventory sameInventory = null;
+        List<Inventory> tempInvs = new ArrayList<>();
 
-        Inventory tempInv = Utils.copyInventory(inputInventory);
+        for (Inventory inv : inputs) {
+            Inventory tempInv = Utils.copyInventory(inv);
+            tempInvs.add(tempInv);
+            if(inv.equals(output)){
+                sameInv = true;
+                sameInventory = tempInv;
+            }
+        }
+
         for(ItemStack[] choices : recipeChoices){
             if(choices == null) continue;
             boolean foundMatch = false;
             for(ItemStack choice : choices){
-                int index = tempInv.first(choice.getType());
-                if(index != -1){
-                    ItemStack item = tempInv.getItem(index);
-                    if(item != null) {
-                        item.setAmount(item.getAmount() - 1);
-                        tempInv.setItem(index, item);
-                        foundMatch = true;
-                        break;
+                for(Inventory tempInv : tempInvs) {
+                    int index = tempInv.first(choice.getType());
+                    if (index != -1) {
+                        ItemStack item = tempInv.getItem(index);
+                        if (item != null) {
+                            item.setAmount(item.getAmount() - 1);
+                            tempInv.setItem(index, item);
+                            foundMatch = true;
+                            break;
+                        }
                     }
                 }
             }
@@ -299,12 +303,14 @@ public class VirtualCraftingHolder implements InventoryHolder {
 
         //If we reach here there are enough materials so check for space in the Hopper and update inventory.
         //Check if output and input are the same inventory to avoid duplication.
-        Inventory tempOutput = sameInv ? tempInv : Utils.copyInventory(output);
+        Inventory tempOutput = sameInv ? sameInventory : Utils.copyInventory(output);
         HashMap map = tempOutput.addItem(result.clone());
 
         //If result fits into output copy over the temporary inventories.
         if(map.isEmpty()){
-            moveTempInv(tempInv,inputInventory);
+            for(int i=0; i<tempInvs.size(); i++) {
+                moveTempInv(tempInvs.get(i), inputs.get(i));
+            }
             if(!sameInv) moveTempInv(tempOutput, output);
             return true;
         }

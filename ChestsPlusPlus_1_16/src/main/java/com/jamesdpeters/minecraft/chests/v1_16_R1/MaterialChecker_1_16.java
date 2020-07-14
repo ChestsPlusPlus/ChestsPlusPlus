@@ -32,6 +32,7 @@ public class MaterialChecker_1_16 extends MaterialChecker {
         materials.add(Material.CRIMSON_FUNGUS);
         materials.add(Material.SOUL_CAMPFIRE);
         materials.add(Material.SOUL_LANTERN);
+        materials.add(Material.SOUL_TORCH);
         materials.add(Material.CHAIN);
 
         ignoredMaterials = new ArrayList<>();

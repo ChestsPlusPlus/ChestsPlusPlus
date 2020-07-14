@@ -93,7 +93,7 @@ public class AutoCraftingStorage extends AbstractStorage implements Configuratio
 
     @Override
     protected Inventory initInventory(){
-        virtualCraftingHolder = new VirtualCraftingHolder(this);
+        if(virtualCraftingHolder == null) virtualCraftingHolder = new VirtualCraftingHolder(this);
 
         if(recipeSerializable != null) {
             Recipe recipe = recipeSerializable.getRecipe();

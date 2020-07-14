@@ -34,6 +34,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public abstract class AbstractStorage implements ConfigurationSerializable {
 
@@ -79,6 +80,7 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
             locationInfoList = (List<LocationInfo>) map.get("locationInfo");
             locationInfoList.removeAll(Collections.singletonList(null));
             locationInfoList.removeIf(locationInfo -> locationInfo.getLocation() == null);
+            locationInfoList = locationInfoList.stream().distinct().collect(Collectors.toList());
         }
 
         //Read owners UUID and find the player for that ID.
@@ -132,7 +134,7 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
     }
 
     private int startSignChangeTask(){
-        return Bukkit.getScheduler().scheduleSyncRepeatingTask(ChestsPlusPlus.PLUGIN, this::updateSign, 1, 1);
+        return Bukkit.getScheduler().scheduleSyncRepeatingTask(ChestsPlusPlus.PLUGIN, this::updateSign, 1, 5);
     }
 
     private void updateSign(){
