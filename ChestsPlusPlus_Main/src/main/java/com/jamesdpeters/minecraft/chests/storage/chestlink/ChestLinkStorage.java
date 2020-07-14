@@ -149,7 +149,7 @@ public class ChestLinkStorage extends AbstractStorage implements ConfigurationSe
             InventoryHolder inventoryHolder = getInventory().getHolder();
             if(inventoryHolder instanceof VirtualInventoryHolder){
                 ((VirtualInventoryHolder) inventoryHolder).setPreviousInventory(() -> {
-                    Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN, () -> ChestLinkMenu.getMenu(player).open(player), 1);
+                    Bukkit.getScheduler().runTask(ChestsPlusPlus.PLUGIN, () -> ChestLinkMenu.getMenu(player).open(player));
                 });
             }
             Utils.openChestInventory(player,getInventory());
