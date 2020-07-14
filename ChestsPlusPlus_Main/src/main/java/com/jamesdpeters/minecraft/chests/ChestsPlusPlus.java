@@ -125,6 +125,7 @@ public class ChestsPlusPlus extends JavaPlugin {
                                 getLogger().warning("New version of the plugin has been found: " + version);
                                 getLogger().warning("Download at: "+SPIGOT_URL);
                                 Bukkit.broadcastMessage(ChatColor.RED + "[Chests++] New version of the plugin was found: " + version);
+                                Bukkit.broadcastMessage(ChatColor.RED + "[Chests++] Download at: " +ChatColor.WHITE+ SPIGOT_URL);
                                 break;
                             case LATEST:
                                 if(!boot) getLogger().info("Plugin is up to date! Thank you for supporting Chests++!");
