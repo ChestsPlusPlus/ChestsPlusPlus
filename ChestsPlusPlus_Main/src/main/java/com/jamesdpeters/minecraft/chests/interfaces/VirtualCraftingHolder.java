@@ -217,10 +217,8 @@ public class VirtualCraftingHolder implements InventoryHolder {
             Inventory output;
 
             if(blockBelow.getState() instanceof Hopper){
-                Bukkit.broadcastMessage("Below is hopper!");
                 Hopper hopper = (Hopper) blockBelow.getState();
                 if(blockBelow.isBlockPowered() || blockBelow.isBlockIndirectlyPowered()){
-                    Bukkit.broadcastMessage("Hopper is powered!");
                     continue; //If hopper is powered no crafting should happen.
                 }
                 output = hopper.getInventory();
