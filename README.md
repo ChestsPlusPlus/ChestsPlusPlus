@@ -31,6 +31,7 @@ If your server is using this plugin let me know so I can feature it!
   
 ## How to Create Auto-Crafting Stations
   - Add a Crafting Table using **/autocraft add** <**group**> or simply write the AutoCraft format on a sign placed on a Crafting Table!
+  
   ![](https://i.imgur.com/RTeUOvX.png)
   - Open the Crafting Table and create your recipe (This requires at least one of each item and it won't use that item up!)
   - Once you have a valid recipe the table will notify you with a chime, at this point if the recipe has different variations such as wood type they will start to animate in the crafting grid.
