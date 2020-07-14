@@ -51,6 +51,7 @@ public class ChestLinkStorage extends AbstractStorage implements ConfigurationSe
             Chest chest = (Chest) block.getState();
             getInventory().setContents(chest.getInventory().getContents());
             chest.getInventory().clear();
+            updateDisplayItem();
         }
         init();
     }
