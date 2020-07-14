@@ -133,7 +133,6 @@ public class StorageListener implements Listener {
                         }
                         if (storageType.hasPermissionToAdd(event.getPlayer())) {
                             storageType.createStorageFacing(event.getPlayer(), owner, event.getBlockPlaced(), storageID, blockFace, false);
-//                        storageType.add(event.getPlayer(), storageID, event.getBlockPlaced().getLocation(), event.getPlayer().)
                         } else {
                             event.setCancelled(true);
                             Messages.NO_PERMISSION(event.getPlayer());

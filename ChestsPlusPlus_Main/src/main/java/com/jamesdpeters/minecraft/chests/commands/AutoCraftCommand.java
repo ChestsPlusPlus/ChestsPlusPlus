@@ -27,7 +27,7 @@ public class AutoCraftCommand extends ServerCommand  {
         HELP("/autocraft help","List of commands and their uses!"),
         LIST("/autocraft list","Lists all AutoCraft groups that you own!"),
         MEMBER("/autocraft member [add/remove <group> <player>] or [list <group>]","Add, remove or list members of a group"),
-        MENU("/autocraft menu","Open the AutoCraft menu to display all groups!"),
+//        MENU("/autocraft menu","Open the AutoCraft menu to display all groups!"),
         OPEN("/autocraft open <Group>","Open the workbench of an AutoCraft group"),
         REMOVE("/autocraft remove <Group>", "Delete an AutoCraft group and drop all the Crafting Tables!"),
         RENAME("/autocraft rename <group> <new-name>","Rename an AutoCraft group."),
@@ -110,16 +110,16 @@ public class AutoCraftCommand extends ServerCommand  {
                         player.sendMessage(ChatColor.RED+ OPTIONS.OPEN.description);
                         return true;
                     }
-                case MENU:
-                    if(sender.hasPermission(Permissions.MENU)) {
-                        //TODO Add AutoCraft menu.
-                        player.sendMessage(ChatColor.GOLD+" Currently unimplemented in this BETA!");
-                        //ChestLinkMenu.getMenu(player).open(player);
-                        return true;
-                    } else {
-                        Messages.NO_PERMISSION(player);
-                        return true;
-                    }
+//                case MENU:
+//                    if(sender.hasPermission(Permissions.MENU)) {
+//                        //TODO Add AutoCraft menu.
+//                        player.sendMessage(ChatColor.GOLD+" Currently unimplemented in this BETA!");
+//                        //ChestLinkMenu.getMenu(player).open(player);
+//                        return true;
+//                    } else {
+//                        Messages.NO_PERMISSION(player);
+//                        return true;
+//                    }
                 case LIST:
                     Config.getAutoCraft().getMessages().listStorageGroups(player);
                     return true;
