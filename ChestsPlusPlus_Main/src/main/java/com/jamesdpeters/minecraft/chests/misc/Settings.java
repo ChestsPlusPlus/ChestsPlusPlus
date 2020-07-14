@@ -13,6 +13,7 @@ public class Settings {
     private static String RUN_HOPPERS_UNLOADED_CHUNKS = "run-hoppers-unloaded-chunks";
     private static String SHOULD_CHEST_ARMOUR_STAND = "display_chestlink_armour_stands";
     private static String SHOULD_AUTOCRAFT_ARMOUR_STAND = "display_chestlink_armour_stands";
+    private static String INVISIBLE_FILTER_ITEM_FRAMES = "set-filter-itemframe-invisible";
 
     private static Settings cf;
     private FileConfiguration configuration;
@@ -26,6 +27,7 @@ public class Settings {
     private static boolean runHoppersInUnloadedChunks;
     private static boolean shouldDisplayChestLinkStand;
     private static boolean shouldDisplayAutoCraftStand;
+    private static boolean filterItemFrameInvisible;
 
     public static void initConfig(Plugin plugin){
         cf = new Settings();
@@ -37,10 +39,11 @@ public class Settings {
         cf.configuration.addDefault(CHECK_UPDATE_PERIOD,60*60);
         cf.configuration.addDefault(LIMIT_CHESTS,false);
         cf.configuration.addDefault(LIMIT_CHESTS_NUMBER,0);
-        cf.configuration.addDefault(SHOULD_ANIMATE_ALL_CHESTS,false);
+        cf.configuration.addDefault(SHOULD_ANIMATE_ALL_CHESTS,true);
         cf.configuration.addDefault(RUN_HOPPERS_UNLOADED_CHUNKS,false);
         cf.configuration.addDefault(SHOULD_CHEST_ARMOUR_STAND,true);
         cf.configuration.addDefault(SHOULD_AUTOCRAFT_ARMOUR_STAND,true);
+        cf.configuration.addDefault(INVISIBLE_FILTER_ITEM_FRAMES, false);
 
         cf.configuration.options().copyDefaults(true);
         cf.plugin.saveConfig();
@@ -63,6 +66,7 @@ public class Settings {
         runHoppersInUnloadedChunks = cf.configuration.getBoolean(RUN_HOPPERS_UNLOADED_CHUNKS);
         shouldDisplayChestLinkStand = cf.configuration.getBoolean(SHOULD_CHEST_ARMOUR_STAND);
         shouldDisplayAutoCraftStand = cf.configuration.getBoolean(SHOULD_AUTOCRAFT_ARMOUR_STAND);
+        filterItemFrameInvisible = cf.configuration.getBoolean(INVISIBLE_FILTER_ITEM_FRAMES);
     }
 
     /**
@@ -85,5 +89,8 @@ public class Settings {
     }
     public static boolean isShouldDisplayAutoCraftStand() {
         return shouldDisplayAutoCraftStand;
+    }
+    public static boolean isFilterItemFrameInvisible() {
+        return filterItemFrameInvisible;
     }
 }

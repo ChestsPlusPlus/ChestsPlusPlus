@@ -1,7 +1,9 @@
 package com.jamesdpeters.minecraft.chests.listeners;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
+import com.jamesdpeters.minecraft.chests.api.ApiSpecific;
 import com.jamesdpeters.minecraft.chests.filters.HopperFilter;
+import com.jamesdpeters.minecraft.chests.misc.Settings;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorage;
@@ -15,10 +17,14 @@ import org.bukkit.block.Block;
 import org.bukkit.block.Hopper;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.ItemFrame;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityEvent;
+import org.bukkit.event.entity.EntityInteractEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
@@ -77,6 +83,9 @@ public class HopperListener implements Listener {
             Block attachedBlock = itemFrame.getLocation().getBlock().getRelative(itemFrame.getAttachedFace());
             if(!(attachedBlock.getState() instanceof Hopper)) return;
             Rotation rotation = itemFrame.getRotation();
+
+            //Set ItemFrame invisible based on config.
+            ApiSpecific.getNmsProvider().setItemFrameVisible(itemFrame, !Settings.isFilterItemFrameInvisible());
 
             //ItemFrame event acts weird, it returns the values of the itemframe *before* the event. So we have to calculate what the next state will be.
             if(!itemFrame.getItem().getType().equals(Material.AIR)) rotation = rotation.rotateClockwise();

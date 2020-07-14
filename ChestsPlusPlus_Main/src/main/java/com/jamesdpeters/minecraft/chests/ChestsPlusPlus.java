@@ -88,7 +88,7 @@ public class ChestsPlusPlus extends JavaPlugin {
         ApiSpecific.init();
 
         //Remove entities that could have been left behind from bad save files/crashes etc.
-        Utils.removeEntities();
+        Utils.fixEntities();
 
         //Register commands
         new ChestLinkCommand().register(this);

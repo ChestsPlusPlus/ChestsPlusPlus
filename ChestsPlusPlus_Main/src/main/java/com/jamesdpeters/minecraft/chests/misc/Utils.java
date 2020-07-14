@@ -8,6 +8,7 @@ import com.jamesdpeters.minecraft.chests.interfaces.VirtualInventoryHolder;
 import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorage;
 import org.bukkit.*;
 import org.bukkit.block.*;
+import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
@@ -170,9 +171,13 @@ public class Utils {
 
     /**
      * Removes all entities that contain a value of 1 under the Values.PluginKey key.
+     * Updates all Item Frames with invisibility status.
      */
-    public static void removeEntities(){
-        Bukkit.getServer().getWorlds().forEach(Utils::removeEntities);
+    public static void fixEntities(){
+        Bukkit.getServer().getWorlds().forEach(world -> {
+            removeEntities(world);
+            setItemFrames(world);
+        });
     }
 
     public static void removeEntities(World world){
@@ -180,6 +185,13 @@ public class Utils {
             Integer val = entity.getPersistentDataContainer().get(Values.PluginKey, PersistentDataType.INTEGER);
             if(val != null && val == 1) entity.remove();
         });
+    }
+
+    public static void setItemFrames(World world){
+        world.getEntities().stream().filter(entity ->
+                (entity instanceof ItemFrame
+                        && entity.getLocation().getBlock().getRelative(((ItemFrame) entity).getAttachedFace()).getState() instanceof Hopper))
+                .forEach(entity -> ApiSpecific.getNmsProvider().setItemFrameVisible((ItemFrame) entity, !Settings.isFilterItemFrameInvisible()));
     }
 
     public static List<String> filterList(List<String> list, String phrase){
