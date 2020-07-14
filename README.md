@@ -1,6 +1,6 @@
 # ChestsPlusPlus [![Build Status](https://travis-ci.org/JamesPeters98/ChestsPlusPlus.svg?branch=master)](https://travis-ci.org/JamesPeters98/ChestsPlusPlus)
 
-Minecraft Spigot mod that enhances chests and hoppers, with ChestLinks and Hopper filters!
+Minecraft Spigot mod that enhances chests and hoppers, with ChestLinks, Auto-Crafting and Hopper filters!
 
 <p align="center">
   <img src="https://i.imgur.com/fFWiH5Y.png">
@@ -42,9 +42,16 @@ If your server is using this plugin let me know so I can feature it!
   The following configurations work to AutoCraft torches with either a Hopper, or a chest underneath!
   ![](https://i.imgur.com/fpgNWLy.png)
 
-
-  - Filter chests using Hoppers with Item Frames! Any hopper with an Item Frame on it with an item inside will only pull items of that type! (Note: You can add multiple item frames to a hopper to filter multiple items!)
-  - Build giant smelting and sorting systems and share your creations!
+## Hopper Filters
+  - Hoppers can have filters applied to them so that they only accepted or reject certain items.
+  - To add a filter to a Hopper you simply place an item frame on top or on any of its sides, and then place the item you would like to filter in it.
+  - Currently there are four types of filters that can be enabled by rotating the item in the Item Frame.
+    1. 0° Default - The Hopper will only accept this item. (Note multiple filters can be used on a hopper.)
+    2. 45° Rejection Mode - The Hopper will prevent this item from being accepted but will accept other items.
+    3. 90° Type-Acceptance - The Hopper will accept items that are of the same type, e.g Enchanted Books, Enchanted weapons, Potions etc.
+    4. 135° Type-Rejection - The Hopper will reject all items that would normally be accepted in the filter above, so similar types are rejected. 
+    
+    ![](https://i.imgur.com/DU1rlxq.png)
   
 ## Example Sorting System:
 
@@ -73,6 +80,8 @@ If your server is using this plugin let me know so I can feature it!
   - /chestlink rename <group> <new-name> "Rename a ChestLink."
   - /chestlink sort <group> <sort-method> "Set the sorting option for the given ChestLink."
   
+    #### AutoCraft Commands - **/autocraft** or **/ac** are accepted.
+
   - /autocraft add <Group> "Create/add a Crafting Table to an AutoCraft group"
   - /autocraft remove <Group>  "Delete an AutoCraft group and drop all the Crafting Tables!"
   - /autocraft open <Group>  "Open the workbench of an AutoCraft group"
