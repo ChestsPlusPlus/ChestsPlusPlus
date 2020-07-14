@@ -234,6 +234,8 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
             if(blockStand != null) blockStand.remove();
             ArmorStand itemStand = locationInfo.getItemStand();
             if(itemStand != null) itemStand.remove();
+            ArmorStand toolStand = locationInfo.getToolItemStand();
+            if(toolStand != null) toolStand.remove();
         });
         //Remove this location from storage.
         locationInfoList.removeIf(locationInfo -> locationInfo.getLocation().equals(location));
