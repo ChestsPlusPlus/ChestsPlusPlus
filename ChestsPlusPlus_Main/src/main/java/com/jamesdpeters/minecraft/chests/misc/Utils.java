@@ -26,8 +26,14 @@ public class Utils {
         //Check if all chests should perform open animation.
         if(Settings.isShouldAnimateAllChests()) {
             storage.getLocations().forEach(locationInfo -> {
-                if (locationInfo.getLocation() != null) {
-                    chestOpenAnimation(storage.getInventory(), locationInfo.getLocation());
+                int chunkX = locationInfo.getLocation().getBlockX() >> 4;
+                int chunkZ = locationInfo.getLocation().getBlockZ() >> 4;
+                Location location = locationInfo.getLocation();
+                if (location != null) {
+                    World world = location.getWorld();
+                    if (world != null && world.isChunkLoaded(chunkX, chunkZ)) {
+                        chestOpenAnimation(storage.getInventory(), locationInfo.getLocation());
+                    }
                 }
             });
         } else {
