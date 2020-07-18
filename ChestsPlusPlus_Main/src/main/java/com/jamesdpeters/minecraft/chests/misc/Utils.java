@@ -10,11 +10,14 @@ import org.bukkit.*;
 import org.bukkit.block.*;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
+import org.bukkit.event.HandlerList;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.plugin.RegisteredListener;
 import org.bukkit.util.Vector;
 
 import java.util.*;
@@ -26,10 +29,10 @@ public class Utils {
         //Check if all chests should perform open animation.
         if(Settings.isShouldAnimateAllChests()) {
             storage.getLocations().forEach(locationInfo -> {
-                int chunkX = locationInfo.getLocation().getBlockX() >> 4;
-                int chunkZ = locationInfo.getLocation().getBlockZ() >> 4;
                 Location location = locationInfo.getLocation();
                 if (location != null) {
+                    int chunkX = locationInfo.getLocation().getBlockX() >> 4;
+                    int chunkZ = locationInfo.getLocation().getBlockZ() >> 4;
                     World world = location.getWorld();
                     if (world != null && world.isChunkLoaded(chunkX, chunkZ)) {
                         chestOpenAnimation(storage.getInventory(), locationInfo.getLocation());
@@ -45,9 +48,8 @@ public class Utils {
     private static void chestOpenAnimation(Inventory inventory, Location location){
         if (location != null) {
             Block block = location.getBlock();
-            if (block.getState() instanceof Chest) {
-                Chest chest = (Chest) block.getState();
-//                ApiSpecific.getChestOpener().setLidOpen(inventory, chest, true);
+            if (block.getState() instanceof Container) {
+                Container chest = (Container) block.getState();
                 Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN,() -> ApiSpecific.getChestOpener().setLidOpen(inventory, chest, true),1);
             }
         }

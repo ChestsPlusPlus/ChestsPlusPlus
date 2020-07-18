@@ -17,11 +17,14 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.block.Barrel;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
+import org.bukkit.block.Container;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
@@ -47,10 +50,10 @@ public class ChestLinkStorage extends AbstractStorage implements ConfigurationSe
         this.sortMethod = SortMethod.OFF;
 
         Block block = location.getBlock();
-        if(block.getState() instanceof Chest){
-            Chest chest = (Chest) block.getState();
-            getInventory().setContents(chest.getInventory().getContents());
-            chest.getInventory().clear();
+        if(block.getState() instanceof Container) {
+            Container container = (Container) block.getState();
+            getInventory().setContents(container.getInventory().getContents());
+            container.getInventory().clear();
             updateDisplayItem();
         }
         init();
@@ -101,8 +104,8 @@ public class ChestLinkStorage extends AbstractStorage implements ConfigurationSe
     @Override
     public void onStorageAdded(Block block, Player player) {
         //Migrates that chest into InventoryStorage and if full drops it at the chest location.
-        if(block.getState() instanceof Chest) {
-            Chest chest = (Chest) block.getState();
+        if(block.getState() instanceof Container) {
+            Container chest = (Container) block.getState();
             boolean hasOverflow = false;
             for (ItemStack chestItem : chest.getInventory().getContents()) {
                 if (chestItem != null) {
@@ -205,8 +208,10 @@ public class ChestLinkStorage extends AbstractStorage implements ConfigurationSe
     }
 
     @Override
-    public double getBlockOffset() {
-        return 0;
+    public double getBlockOffset(Block block) {
+        if(block.getState() instanceof Chest) return 0;
+        //Barrel is full block.
+        else return -0.07;
     }
 
     @Override

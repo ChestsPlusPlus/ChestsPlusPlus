@@ -1,5 +1,6 @@
-package com.jamesdpeters.minecraft.chests.v1_16_R1;
+package com.jamesdpeters.minecraft.chests.v1_16_R1.tileentities;
 
+import com.jamesdpeters.minecraft.chests.TileEntityOpener;
 import net.minecraft.server.v1_16_R1.Block;
 import net.minecraft.server.v1_16_R1.BlockChest;
 import net.minecraft.server.v1_16_R1.BlockPropertyChestType;
@@ -16,7 +17,7 @@ import org.bukkit.entity.HumanEntity;
 
 import java.util.List;
 
-public class CustomTileEntityChest extends TileEntityChest {
+public class CustomTileEntityChest extends TileEntityChest implements TileEntityOpener {
 
     private int phantomViewers = 0;
     private List<HumanEntity> viewers;
@@ -40,6 +41,7 @@ public class CustomTileEntityChest extends TileEntityChest {
         }
     }
 
+    @Override
     public void setViewers(List<HumanEntity> viewers){
         int previousViewers = phantomViewers;
         phantomViewers = viewers.size();

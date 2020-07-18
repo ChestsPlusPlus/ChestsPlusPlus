@@ -83,7 +83,7 @@ public class AutoCraftingStorage extends AbstractStorage implements Configuratio
     }
 
     @Override
-    public double getBlockOffset() {
+    public double getBlockOffset(Block block) {
         return -0.07;
     }
 

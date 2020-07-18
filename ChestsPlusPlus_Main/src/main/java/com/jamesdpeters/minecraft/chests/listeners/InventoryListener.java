@@ -15,6 +15,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
+import org.bukkit.block.Container;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -75,8 +76,8 @@ public class InventoryListener implements Listener {
                 event.getViewers().remove(event.getPlayer());
                 vHolder.getStorage().getLocations().forEach(locationInfo -> {
                     Block block = locationInfo.getLocation().getBlock();
-                    if(block.getState() instanceof Chest){
-                        Chest chest = (Chest) block.getState();
+                    if(block.getState() instanceof Container){
+                        Container chest = (Container) block.getState();
                         Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN, () -> ApiSpecific.getChestOpener().setLidOpen(event.getInventory(),chest,false),1);
                     }
                 });

@@ -192,7 +192,7 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
      * This is the distance from a full block to the size of the storage block. (e.g Chest is smaller than a regular block.)
      * @return
      */
-    public abstract double getBlockOffset();
+    public abstract double getBlockOffset(Block block);
 
     /**
      * This is called when a block is added to the storage system.
@@ -417,6 +417,7 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
 
         if(world != null) {
             if(location.getSignLocation() == null) return;
+                Block storageBlock = location.getLocation().getBlock();
                 Block anchor = location.getSignLocation().getBlock();
                 BlockFace facing;
                 if(anchor.getBlockData() instanceof Directional){
@@ -428,7 +429,7 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
 
                     boolean isBlock = !ApiSpecific.getMaterialChecker().isGraphically2D(displayItem);
                     boolean isTool = ApiSpecific.getMaterialChecker().isTool(displayItem);
-                    Location standLoc = isTool ? getHeldItemArmorStandLoc(anchor, facing) : getArmorStandLoc(anchor, facing, isBlock);
+                    Location standLoc = isTool ? getHeldItemArmorStandLoc(storageBlock,anchor, facing) : getArmorStandLoc(storageBlock, anchor, facing, isBlock);
 
                     //Get currently stored armorStand if there isn't one spawn it.
                     ArmorStand stand = isTool ? location.getToolItemStand() : (isBlock ? location.getBlockStand() : location.getItemStand());
@@ -494,29 +495,29 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
      * @param isBlock - true if the @{@link ItemStack} is a Block / false if an Item.
      * @return the calculated location for the @{@link ArmorStand}
      */
-    private Location getArmorStandLoc(Block anchor, BlockFace facing, boolean isBlock){
+    private Location getArmorStandLoc(Block storageBlock, Block anchor, BlockFace facing, boolean isBlock){
         double directionFactor = isBlock ? 0.65 : 0.275;
         double perpendicularFactor = isBlock ? 0.025 : 0.125;
         double y = isBlock ? -0.3 : 0.1;
         float yaw = 180;
-        return getArmorStandLoc(anchor, facing, directionFactor, perpendicularFactor, y, yaw);
+        return getArmorStandLoc(storageBlock, anchor, facing, directionFactor, perpendicularFactor, y, yaw);
     }
 
 
-    private Location getHeldItemArmorStandLoc(Block anchor, BlockFace facing){
+    private Location getHeldItemArmorStandLoc(Block storageBlock, Block anchor, BlockFace facing){
         double directionFactor = 0.36;
         double perpendicularFactor = 0;
         double y = 0.275;
         float yaw = -90;
-        return getArmorStandLoc(anchor, facing, directionFactor, perpendicularFactor, y, yaw);
+        return getArmorStandLoc(storageBlock, anchor, facing, directionFactor, perpendicularFactor, y, yaw);
     }
 
-    private Location getArmorStandLoc(Block anchor, BlockFace facing, double directionFactor, double perpendicularFactor, double y, float yaw){
+    private Location getArmorStandLoc(Block storageBlock, Block anchor, BlockFace facing, double directionFactor, double perpendicularFactor, double y, float yaw){
         //Get centre of block location.
         Location standLoc = anchor.getLocation().add(0.5,-0.5,0.5);
         Vector direction = facing.getDirection();
 
-        directionFactor = directionFactor + getBlockOffset();
+        directionFactor = directionFactor + getBlockOffset(storageBlock);
         double x = directionFactor*direction.getX() - perpendicularFactor*direction.getZ();
         double z = directionFactor*direction.getZ() + perpendicularFactor*direction.getX();
 
