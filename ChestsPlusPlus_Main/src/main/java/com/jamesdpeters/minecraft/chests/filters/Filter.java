@@ -6,6 +6,11 @@ import org.bukkit.inventory.ItemStack;
 
 public class Filter {
 
+    enum Type {
+        ACCEPT,
+        REJECT
+    }
+
     private ItemStack filter;
     private boolean filterByItemMeta;
     private boolean dontAllowThisItem;
@@ -16,10 +21,17 @@ public class Filter {
         this.dontAllowThisItem = itemFrame.getRotation().equals(Rotation.CLOCKWISE) || itemFrame.getRotation().equals(Rotation.COUNTER_CLOCKWISE);
     }
 
-    public boolean isFiltered(ItemStack itemStack){
-        if(dontAllowThisItem && !filterByItemMeta) return !filter.isSimilar(itemStack);
-        else if (dontAllowThisItem) return !isFilteredByMeta(itemStack);
-        return isFilteredByMeta(itemStack);
+    public Type getFilterType(ItemStack itemStack){
+        if(dontAllowThisItem && !filterByItemMeta){
+            if(filter.isSimilar(itemStack)) return Type.REJECT;
+            else return Type.ACCEPT;
+        }
+        else if (dontAllowThisItem){
+             if(isFilteredByMeta(itemStack)) return Type.REJECT;
+             else return Type.ACCEPT;
+        }
+        if(isFilteredByMeta(itemStack)) return Type.ACCEPT;
+        return Type.REJECT;
     }
 
     private boolean isFilteredByMeta(ItemStack itemStack){

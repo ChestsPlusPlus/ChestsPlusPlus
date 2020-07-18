@@ -1,7 +1,6 @@
 package com.jamesdpeters.minecraft.chests.filters;
 
 import org.bukkit.Material;
-import org.bukkit.Rotation;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemFrame;
@@ -16,10 +15,7 @@ public class HopperFilter {
     public static boolean isInFilter(List<Filter> filters, ItemStack item){
         if(filters == null) return true;
         if(filters.size() == 0) return true;
-        for(Filter filter : filters){
-            if(filter.isFiltered(item)) return true;
-        }
-        return false;
+        return filters.stream().noneMatch(filter -> filter.getFilterType(item).equals(Filter.Type.REJECT));
     }
 
     public static List<Filter> getHopperFilters(Block block){
