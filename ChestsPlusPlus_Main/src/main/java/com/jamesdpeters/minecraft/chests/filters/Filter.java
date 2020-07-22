@@ -8,17 +8,20 @@ public class Filter {
 
     enum Type {
         ACCEPT,
-        REJECT
+        REJECT,
+        NONE
     }
 
     private ItemStack filter;
     private boolean filterByItemMeta;
     private boolean dontAllowThisItem;
+    private Type filteringMethod;
 
     public Filter(ItemStack filter, ItemFrame itemFrame){
         this.filter = filter;
         this.filterByItemMeta = itemFrame.getRotation().equals(Rotation.FLIPPED) || itemFrame.getRotation().equals(Rotation.COUNTER_CLOCKWISE);
         this.dontAllowThisItem = itemFrame.getRotation().equals(Rotation.CLOCKWISE) || itemFrame.getRotation().equals(Rotation.COUNTER_CLOCKWISE);
+        filteringMethod = dontAllowThisItem ? Type.REJECT : Type.ACCEPT;
     }
 
     public Type getFilterType(ItemStack itemStack){
@@ -31,7 +34,7 @@ public class Filter {
              else return Type.ACCEPT;
         }
         if(isFilteredByMeta(itemStack)) return Type.ACCEPT;
-        return Type.REJECT;
+        return Type.NONE;
     }
 
     private boolean isFilteredByMeta(ItemStack itemStack){
@@ -40,5 +43,9 @@ public class Filter {
             return filter.getType().equals(itemStack.getType());
         }
         return false;
+    }
+
+    public Type getFilteringMethod(){
+        return filteringMethod;
     }
 }

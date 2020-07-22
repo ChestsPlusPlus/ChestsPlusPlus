@@ -15,7 +15,9 @@ public class HopperFilter {
     public static boolean isInFilter(List<Filter> filters, ItemStack item){
         if(filters == null) return true;
         if(filters.size() == 0) return true;
-        return filters.stream().noneMatch(filter -> filter.getFilterType(item).equals(Filter.Type.REJECT));
+        boolean hasAcceptFilter = filters.stream().filter(filter -> filter.getFilteringMethod() == Filter.Type.ACCEPT).anyMatch(filter -> filter.getFilterType(item).equals(Filter.Type.ACCEPT));
+        boolean isRejected = filters.stream().filter(filter -> filter.getFilteringMethod() == Filter.Type.REJECT).anyMatch(filter -> filter.getFilterType(item).equals(Filter.Type.REJECT));
+        return hasAcceptFilter && !isRejected;
     }
 
     public static List<Filter> getHopperFilters(Block block){
