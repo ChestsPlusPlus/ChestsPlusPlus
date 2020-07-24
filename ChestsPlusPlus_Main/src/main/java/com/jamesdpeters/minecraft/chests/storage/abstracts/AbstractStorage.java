@@ -3,6 +3,7 @@ package com.jamesdpeters.minecraft.chests.storage.abstracts;
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.api.ApiSpecific;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
+import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.misc.Values;
 import com.jamesdpeters.minecraft.chests.serialize.LocationInfo;
 import org.bukkit.Bukkit;
@@ -140,7 +141,7 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
     private void updateSign(){
         Bukkit.getOnlinePlayers().forEach(player -> {
             for (LocationInfo locationInfo : locationInfoList) {
-                if (locationInfo.getSignLocation() != null) {
+                if (locationInfo.getSignLocation() != null && Utils.isLocationChunkLoaded(locationInfo.getSignLocation())) {
                     if (displayItem != null) player.sendBlockChange(locationInfo.getSignLocation(), air);
                     else locationInfo.getSignLocation().getBlock().getState().update();
                 }
@@ -412,7 +413,7 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
     private BlockData air = Material.AIR.createBlockData();
 
     private void updateClient(LocationInfo location){
-        if(location.getLocation() == null) return;
+        if(location.getLocation() == null || !Utils.isLocationChunkLoaded(location.getLocation())) return;
         World world = location.getLocation().getWorld();
 
         if(world != null) {

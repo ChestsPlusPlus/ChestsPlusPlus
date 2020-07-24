@@ -86,9 +86,6 @@ public class ChestsPlusPlus extends JavaPlugin {
         API.register(this);
         ApiSpecific.init();
 
-        //Remove entities that could have been left behind from bad save files/crashes etc.
-        Utils.fixEntities();
-
         //Register commands
         new ChestLinkCommand().register(this);
         new AutoCraftCommand().register(this);
@@ -150,6 +147,8 @@ public class ChestsPlusPlus extends JavaPlugin {
     public void onDisable() {
         super.onDisable();
         Config.save();
+        //Remove entities that could have been left behind from bad save files/crashes etc.
+        Utils.fixEntities();
     }
 
 }

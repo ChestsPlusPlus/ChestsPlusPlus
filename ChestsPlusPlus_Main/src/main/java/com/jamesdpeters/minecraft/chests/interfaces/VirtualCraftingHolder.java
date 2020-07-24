@@ -210,6 +210,7 @@ public class VirtualCraftingHolder implements InventoryHolder {
      */
     public void craftItem(){
         for(LocationInfo location : storage.getLocations()){
+            if(Utils.isLocationChunkLoaded(location.getLocation())) continue;
             Block block = location.getLocation().getBlock();
             Block blockBelow = block.getRelative(BlockFace.DOWN);
             Block blockAbove = block.getRelative(BlockFace.UP);

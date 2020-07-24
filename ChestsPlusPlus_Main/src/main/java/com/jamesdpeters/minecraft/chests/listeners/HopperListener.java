@@ -55,12 +55,14 @@ public class HopperListener implements Listener {
                     new BukkitRunnable() {
                         @Override
                         public void run() {
-                            int hopperAmount = SpigotConfig.getWorldSettings(location.getWorld().getName()).getHopperAmount();
-                            if(Utils.moveToOtherInventory(event.getSource(), hopperAmount, storage.getInventory())){
-                                storage.updateDisplayItem();
+                            if(location != null) {
+                                int hopperAmount = SpigotConfig.getWorldSettings(location.getWorld()).getHopperAmount();
+                                if (Utils.moveToOtherInventory(event.getSource(), hopperAmount, storage.getInventory())) {
+                                    storage.updateDisplayItem();
+                                }
+                                if (event.getDestination().getHolder() != null) event.getDestination().getHolder().getInventory().clear();
+                                if (storage.getInventory().getViewers().size() > 0) storage.sort();
                             }
-                            event.getDestination().getHolder().getInventory().clear();
-                            if(storage.getInventory().getViewers().size() > 0) storage.sort();
                         }
                     }.runTaskLater(ChestsPlusPlus.PLUGIN, 1);
                 }

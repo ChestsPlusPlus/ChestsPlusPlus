@@ -8,16 +8,14 @@ import com.jamesdpeters.minecraft.chests.interfaces.VirtualInventoryHolder;
 import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorage;
 import org.bukkit.*;
 import org.bukkit.block.*;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Event;
-import org.bukkit.event.HandlerList;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.plugin.RegisteredListener;
 import org.bukkit.util.Vector;
 
 import java.io.BufferedReader;
@@ -30,6 +28,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Utils {
 
@@ -39,26 +38,40 @@ public class Utils {
             storage.getLocations().forEach(locationInfo -> {
                 Location location = locationInfo.getLocation();
                 if (location != null) {
-                    int chunkX = locationInfo.getLocation().getBlockX() >> 4;
-                    int chunkZ = locationInfo.getLocation().getBlockZ() >> 4;
-                    World world = location.getWorld();
-                    if (world != null && world.isChunkLoaded(chunkX, chunkZ)) {
-                        chestOpenAnimation(storage.getInventory(), locationInfo.getLocation());
-                    }
+                    containerOpenAnimation(storage.getInventory(), locationInfo.getLocation());
                 }
             });
         } else {
-            chestOpenAnimation(storage.getInventory(), openedChestLocation);
+            containerOpenAnimation(storage.getInventory(), openedChestLocation);
         }
         player.openInventory(storage.getInventory());
     }
 
-    private static void chestOpenAnimation(Inventory inventory, Location location){
-        if (location != null) {
+    private static void containerOpenAnimation(Inventory inventory, Location location){
+        if (location != null && Utils.isLocationChunkLoaded(location)) {
             Block block = location.getBlock();
             if (block.getState() instanceof Container) {
                 Container chest = (Container) block.getState();
                 Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN,() -> ApiSpecific.getChestOpener().setLidOpen(inventory, chest, true),1);
+            }
+        }
+    }
+
+    public static void closeStorageInventory(ChestLinkStorage storage){
+        storage.getLocations().forEach(locationInfo -> {
+            Location location = locationInfo.getLocation();
+            if (location != null) {
+                containerCloseAnimation(storage.getInventory(), locationInfo.getLocation());
+            }
+        });
+    }
+
+    private static void containerCloseAnimation(Inventory inventory, Location location){
+        if (location != null && Utils.isLocationChunkLoaded(location)) {
+            Block block = location.getBlock();
+            if (block.getState() instanceof Container) {
+                Container chest = (Container) block.getState();
+                Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN,() -> ApiSpecific.getChestOpener().setLidOpen(inventory, chest, false),1);
             }
         }
     }
@@ -196,15 +209,36 @@ public class Utils {
         });
     }
 
+    public static void fixEntities(Chunk chunk){
+        removeEntities(chunk);
+        setItemFrames(chunk);
+    }
+
     public static void removeEntities(World world){
-        world.getEntities().forEach(entity -> {
-            Integer val = entity.getPersistentDataContainer().get(Values.PluginKey, PersistentDataType.INTEGER);
-            if(val != null && val == 1) entity.remove();
-        });
+        world.getEntities().forEach(Utils::removeEntity);
+    }
+    
+    public static void removeEntities(Chunk chunk){
+        for (Entity entity : chunk.getEntities()) {
+            removeEntity(entity);
+        }
+    }
+
+    private static void removeEntity(Entity entity){
+        Integer val = entity.getPersistentDataContainer().get(Values.PluginKey, PersistentDataType.INTEGER);
+        if(val != null && val == 1) entity.remove();
     }
 
     public static void setItemFrames(World world){
-        world.getEntities().stream().filter(entity ->
+        setItemFrames(world.getEntities().stream());
+    }
+
+    public static void setItemFrames(Chunk chunk){
+        setItemFrames(Arrays.stream(chunk.getEntities()));
+    }
+
+    private static void setItemFrames(Stream<Entity> entityStream){
+        entityStream.filter(entity ->
                 (entity instanceof ItemFrame
                         && entity.getLocation().getBlock().getRelative(((ItemFrame) entity).getAttachedFace()).getState() instanceof Hopper))
                 .forEach(entity -> ApiSpecific.getNmsProvider().setItemFrameVisible((ItemFrame) entity, !Settings.isFilterItemFrameInvisible()));
@@ -218,39 +252,14 @@ public class Utils {
         if(value != null) list.add(value);
     }
 
-    public static void saveLoadedChunksToCSV(){
-        PrintWriter outputFile = getOutputFile("LoadedChunks@"+System.currentTimeMillis()+".csv"); // this sends the output to file1
-
-        // Write the file as a comma seperated file (.csv) so it can be read it into EXCEL
-        outputFile.println("Chunk X, Chunk Z, World");
-
-        // now make a loop to write the contents of each step to disk, one number at a time
-        Bukkit.getWorlds().forEach(world -> {
-            for (Chunk loadedChunk : world.getLoadedChunks()) {
-                outputFile.println(loadedChunk.getX()+", "+loadedChunk.getZ()+", "+world.getName());
-            }
-        });
-        outputFile.close(); // close the output file
-        System.out.println("Saved CSV Data");
-    }
-
-    private static PrintWriter getOutputFile(String filenamePath){
-        try {
-            Path path = Paths.get("outputs/"+filenamePath);
-            Files.createDirectories(path.getParent());
-            FileWriter file = new FileWriter(String.valueOf(path));     // this creates the file with the given name
-            return new PrintWriter(file); // this sends the output to file
-        } catch (IOException e) {
-            System.err.println("File couldn't be accessed it may be being used by another process!");
-            System.err.println("Close the file and press Enter to try again!");
-            BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-            try { reader.readLine(); } catch (IOException ex) { ex.printStackTrace(); }
-            return getOutputFile(filenamePath);
-        }
-    }
-
     public static boolean isAir(Block block){
         return (block.getType() == Material.AIR) || (block.getType() == Material.CAVE_AIR);
+    }
+
+    public static boolean isLocationChunkLoaded(Location location){
+        int chunkX = location.getBlockX() >> 4;
+        int chunkZ = location.getBlockZ() >> 4;
+        return location.getWorld() != null && location.getWorld().isChunkLoaded(chunkX, chunkZ);
     }
 
 }
