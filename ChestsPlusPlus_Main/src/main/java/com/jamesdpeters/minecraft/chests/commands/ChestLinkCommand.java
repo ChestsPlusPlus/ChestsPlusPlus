@@ -4,6 +4,7 @@ import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.inventories.ChestLinkMenu;
 import com.jamesdpeters.minecraft.chests.misc.Messages;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
+import com.jamesdpeters.minecraft.chests.misc.Settings;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorage;
@@ -80,7 +81,7 @@ public class ChestLinkCommand extends ServerCommand  {
                     return true;
                 case ADD:
                     if(args.length > 1){
-                        if(sender.hasPermission(Permissions.ADD)) {
+                        if(sender.hasPermission(Permissions.ADD) && !Settings.isBlacklistedWorld(player.getWorld())) {
                             Block targetBlock = player.getTargetBlockExact(5);
                             if (targetBlock != null) Config.getChestLink().createStorage(player,targetBlock,args[1],true);
                             else Config.getChestLink().getMessages().mustLookAtBlock(player);
@@ -96,7 +97,7 @@ public class ChestLinkCommand extends ServerCommand  {
                     }
                 case OPEN:
                     if(args.length > 1){
-                        if(sender.hasPermission(Permissions.OPEN)) {
+                        if(sender.hasPermission(Permissions.OPEN) && !Settings.isBlacklistedWorld(player.getWorld())) {
                             ChestLinkStorage invs;
                             if(args[1].contains(":")){
                                 invs = Config.getChestLink().getStorage(player,args[1]);
@@ -115,7 +116,7 @@ public class ChestLinkCommand extends ServerCommand  {
                         return true;
                     }
                 case MENU:
-                    if(sender.hasPermission(Permissions.MENU)) {
+                    if(sender.hasPermission(Permissions.MENU) && !Settings.isBlacklistedWorld(player.getWorld())) {
                         ChestLinkMenu.getMenu(player).open(player);
                         return true;
                     } else {

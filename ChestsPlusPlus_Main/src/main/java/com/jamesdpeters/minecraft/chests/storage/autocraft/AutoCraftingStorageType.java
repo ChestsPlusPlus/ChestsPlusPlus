@@ -2,6 +2,7 @@ package com.jamesdpeters.minecraft.chests.storage.autocraft;
 
 import com.jamesdpeters.minecraft.chests.misc.Messages;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
+import com.jamesdpeters.minecraft.chests.misc.Settings;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.misc.Values;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
@@ -57,7 +58,7 @@ public class AutoCraftingStorageType extends StorageType<AutoCraftingStorage> {
 
     @Override
     public boolean hasPermissionToAdd(Player player) {
-        return player.hasPermission(Permissions.AUTOCRAFT_ADD);
+        return player.hasPermission(Permissions.AUTOCRAFT_ADD) && !Settings.isBlacklistedWorld(player.getWorld());
     }
 
     @Override

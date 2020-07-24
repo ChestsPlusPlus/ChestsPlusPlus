@@ -1,7 +1,13 @@
 package com.jamesdpeters.minecraft.chests.misc;
 
+import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.Plugin;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 public class Settings {
 
@@ -14,6 +20,7 @@ public class Settings {
     private static String SHOULD_CHEST_ARMOUR_STAND = "display_chestlink_armour_stands";
     private static String SHOULD_AUTOCRAFT_ARMOUR_STAND = "display_chestlink_armour_stands";
     private static String INVISIBLE_FILTER_ITEM_FRAMES = "set-filter-itemframe-invisible";
+    private static String WORLD_BLACKLIST = "world-blacklist";
 
     private static Settings cf;
     private FileConfiguration configuration;
@@ -28,6 +35,7 @@ public class Settings {
     private static boolean shouldDisplayChestLinkStand;
     private static boolean shouldDisplayAutoCraftStand;
     private static boolean filterItemFrameInvisible;
+    private static List<String> worldBlacklist;
 
     public static void initConfig(Plugin plugin){
         cf = new Settings();
@@ -44,6 +52,7 @@ public class Settings {
         cf.configuration.addDefault(SHOULD_CHEST_ARMOUR_STAND,true);
         cf.configuration.addDefault(SHOULD_AUTOCRAFT_ARMOUR_STAND,true);
         cf.configuration.addDefault(INVISIBLE_FILTER_ITEM_FRAMES, false);
+        cf.configuration.addDefault(WORLD_BLACKLIST, Collections.singletonList(""));
 
         cf.configuration.options().copyDefaults(true);
         cf.plugin.saveConfig();
@@ -67,6 +76,7 @@ public class Settings {
         shouldDisplayChestLinkStand = cf.configuration.getBoolean(SHOULD_CHEST_ARMOUR_STAND);
         shouldDisplayAutoCraftStand = cf.configuration.getBoolean(SHOULD_AUTOCRAFT_ARMOUR_STAND);
         filterItemFrameInvisible = cf.configuration.getBoolean(INVISIBLE_FILTER_ITEM_FRAMES);
+        worldBlacklist = cf.configuration.getStringList(WORLD_BLACKLIST);
     }
 
     /**
@@ -92,5 +102,10 @@ public class Settings {
     }
     public static boolean isFilterItemFrameInvisible() {
         return filterItemFrameInvisible;
+    }
+    public static List<String> getWorldBlacklist(){ return worldBlacklist; }
+
+    public static boolean isBlacklistedWorld(World world){
+        return worldBlacklist.contains(world.getName());
     }
 }

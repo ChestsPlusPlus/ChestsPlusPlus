@@ -1,6 +1,7 @@
 package com.jamesdpeters.minecraft.chests.storage.chestlink;
 
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
+import com.jamesdpeters.minecraft.chests.misc.Settings;
 import com.jamesdpeters.minecraft.chests.misc.Values;
 import com.jamesdpeters.minecraft.chests.runnables.ChestLinkVerifier;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
@@ -52,7 +53,7 @@ public class ChestLinkStorageType extends StorageType<ChestLinkStorage> {
 
     @Override
     public boolean hasPermissionToAdd(Player player) {
-        return player.hasPermission(Permissions.ADD);
+        return player.hasPermission(Permissions.ADD) && !Settings.isBlacklistedWorld(player.getWorld());
     }
 
     @Override
