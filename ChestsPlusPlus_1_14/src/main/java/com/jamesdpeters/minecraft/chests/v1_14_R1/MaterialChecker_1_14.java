@@ -57,6 +57,9 @@ public class MaterialChecker_1_14 extends MaterialChecker {
         version_1_14_Items.add(Material.BREWING_STAND);
         version_1_14_Items.add(Material.HOPPER);
         version_1_14_Items.add(Material.TORCH);
+        version_1_14_Items.add(Material.BONE);
+        version_1_14_Items.add(Material.BLAZE_ROD);
+        version_1_14_Items.add(Material.WHEAT);
 
         version_1_14_Ignored_Items = new ArrayList<>();
         version_1_14_Ignored_Items.addAll(Tag.BEDS.getValues());
