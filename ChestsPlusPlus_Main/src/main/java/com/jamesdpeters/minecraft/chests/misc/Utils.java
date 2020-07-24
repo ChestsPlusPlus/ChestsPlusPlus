@@ -20,6 +20,14 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.RegisteredListener;
 import org.bukkit.util.Vector;
 
+import java.io.BufferedReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -209,4 +217,40 @@ public class Utils {
     public static  <T> void addIfNotNull(List<T> list, T value){
         if(value != null) list.add(value);
     }
+
+    public static void saveLoadedChunksToCSV(){
+        PrintWriter outputFile = getOutputFile("LoadedChunks@"+System.currentTimeMillis()+".csv"); // this sends the output to file1
+
+        // Write the file as a comma seperated file (.csv) so it can be read it into EXCEL
+        outputFile.println("Chunk X, Chunk Z, World");
+
+        // now make a loop to write the contents of each step to disk, one number at a time
+        Bukkit.getWorlds().forEach(world -> {
+            for (Chunk loadedChunk : world.getLoadedChunks()) {
+                outputFile.println(loadedChunk.getX()+", "+loadedChunk.getZ()+", "+world.getName());
+            }
+        });
+        outputFile.close(); // close the output file
+        System.out.println("Saved CSV Data");
+    }
+
+    private static PrintWriter getOutputFile(String filenamePath){
+        try {
+            Path path = Paths.get("outputs/"+filenamePath);
+            Files.createDirectories(path.getParent());
+            FileWriter file = new FileWriter(String.valueOf(path));     // this creates the file with the given name
+            return new PrintWriter(file); // this sends the output to file
+        } catch (IOException e) {
+            System.err.println("File couldn't be accessed it may be being used by another process!");
+            System.err.println("Close the file and press Enter to try again!");
+            BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+            try { reader.readLine(); } catch (IOException ex) { ex.printStackTrace(); }
+            return getOutputFile(filenamePath);
+        }
+    }
+
+    public static boolean isAir(Block block){
+        return (block.getType() == Material.AIR) || (block.getType() == Material.CAVE_AIR);
+    }
+
 }

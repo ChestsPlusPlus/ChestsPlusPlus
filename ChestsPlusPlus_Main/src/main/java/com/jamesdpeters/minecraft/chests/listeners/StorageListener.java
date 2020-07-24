@@ -1,6 +1,5 @@
 package com.jamesdpeters.minecraft.chests.listeners;
 
-import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.misc.Messages;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.misc.Values;
@@ -18,7 +17,6 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Chest;
 import org.bukkit.block.Sign;
-import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Directional;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
@@ -38,8 +36,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class StorageListener implements Listener {
-
-    private BlockData air = Material.AIR.createBlockData();
 
     @EventHandler
     public void playerInteract(BlockPlaceEvent event){
@@ -127,7 +123,7 @@ public class StorageListener implements Listener {
 
                         BlockFace blockFace = storageType.onStoragePlacedBlockFace(event.getPlayer(), event.getBlockPlaced());
                         Block signSpace = event.getBlockPlaced().getRelative(blockFace);
-                        if (signSpace.getType() != Material.AIR) {
+                        if (!Utils.isAir(signSpace)) {
                             event.setCancelled(true);
                             return;
                         }

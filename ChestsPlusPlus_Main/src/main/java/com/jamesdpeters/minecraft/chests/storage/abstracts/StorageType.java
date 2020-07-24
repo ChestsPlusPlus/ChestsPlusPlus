@@ -4,6 +4,7 @@ package com.jamesdpeters.minecraft.chests.storage.abstracts;
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.misc.Messages;
 import com.jamesdpeters.minecraft.chests.misc.Settings;
+import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.misc.Values;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.serialize.ConfigStorage;
@@ -281,7 +282,7 @@ public abstract class StorageType<T extends AbstractStorage> {
     /* HELPER UTILS */
 
     protected void placeSign(Block placedAgainst, Block toReplace, BlockFace facing, Player player, OfflinePlayer ownerPlayer, String identifier, String linkTag, boolean requireSign){
-        if(toReplace.getType() == Material.AIR){
+        if(Utils.isAir(toReplace)){
             BlockState replacedBlockState = toReplace.getState();
 
             Material signMaterial = Material.OAK_WALL_SIGN;
@@ -322,7 +323,7 @@ public abstract class StorageType<T extends AbstractStorage> {
             if(owner != null) {
                 lines[2] = owner;
             }
-
+            Material airType = toReplace.getType();
             Material wallSign = Material.getMaterial(signMaterial.name().replace("SIGN", "WALL_SIGN"));
             toReplace.setType(wallSign != null ? wallSign : Material.OAK_WALL_SIGN);
             Sign sign = (Sign) toReplace.getState();
@@ -335,7 +336,7 @@ public abstract class StorageType<T extends AbstractStorage> {
             BlockPlaceEvent event = new BlockPlaceEvent(sign.getBlock(),replacedBlockState,placedAgainst,new ItemStack(Material.AIR),player,true, EquipmentSlot.HAND);
             ChestsPlusPlus.PLUGIN.getServer().getPluginManager().callEvent(event);
             if(event.isCancelled()){
-                sign.setType(Material.AIR);
+                sign.setType(airType);
                 return;
             }
 
