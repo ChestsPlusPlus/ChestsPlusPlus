@@ -18,7 +18,7 @@ public class Settings {
     private static String SHOULD_ANIMATE_ALL_CHESTS = "should-animate-all-chests";
     private static String RUN_HOPPERS_UNLOADED_CHUNKS = "run-hoppers-unloaded-chunks";
     private static String SHOULD_CHEST_ARMOUR_STAND = "display_chestlink_armour_stands";
-    private static String SHOULD_AUTOCRAFT_ARMOUR_STAND = "display_chestlink_armour_stands";
+    private static String SHOULD_AUTOCRAFT_ARMOUR_STAND = "display_autocraft_armour_stands";
     private static String INVISIBLE_FILTER_ITEM_FRAMES = "set-filter-itemframe-invisible";
     private static String WORLD_BLACKLIST = "world-blacklist";
 
