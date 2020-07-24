@@ -1,5 +1,6 @@
 package com.jamesdpeters.minecraft.chests.serialize;
 
+import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -34,8 +35,8 @@ public class SpigotConfig {
 
     public static WorldSettings getDefault(){ return default_; }
 
-    public static WorldSettings getWorldSettings(String worldName){
-        return worlds.getOrDefault(worldName,default_);
+    public static WorldSettings getWorldSettings(World world){
+        return world != null ? worlds.getOrDefault(world.getName(),default_) : default_;
     }
 
 }
