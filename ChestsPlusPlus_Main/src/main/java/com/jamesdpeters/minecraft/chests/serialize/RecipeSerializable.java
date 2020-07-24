@@ -11,7 +11,7 @@ import org.bukkit.inventory.ShapelessRecipe;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-@SerializableAs("Recipe")
+@SerializableAs("C++Recipe")
 public class RecipeSerializable implements ConfigurationSerializable {
 
     private Recipe recipe;

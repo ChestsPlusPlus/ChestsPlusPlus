@@ -11,6 +11,7 @@ import org.bukkit.inventory.ShapelessRecipe;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -30,13 +31,26 @@ public class Crafting {
     }
 
     public static Recipe getResult(List<ItemStack> craftingTable){
-        for(ShapelessRecipe shapelessRecipe : shapelessRecipes) {
-            if (matchesShapeless(shapelessRecipe.getChoiceList(), craftingTable)) return shapelessRecipe;
+        Recipe returnRecipe = null;
+        Iterator<Recipe> iterator = Bukkit.recipeIterator();
+        while (iterator.hasNext()){
+            Recipe recipe = iterator.next();
+            if(recipe instanceof ShapedRecipe){
+                ShapedRecipe shapedRecipe = (ShapedRecipe) recipe;
+                if (matchesShaped(shapedRecipe, craftingTable)){
+                    returnRecipe = shapedRecipe;
+                    break;
+                }
+            }
+            else if(recipe instanceof ShapelessRecipe){
+                ShapelessRecipe shapelessRecipe = (ShapelessRecipe) recipe;
+                if (matchesShapeless(shapelessRecipe.getChoiceList(), craftingTable)){
+                    returnRecipe = shapelessRecipe;
+                    break;
+                }
+            }
         }
-        for(ShapedRecipe shapedRecipe : shapedRecipes) {
-            if (matchesShaped(shapedRecipe, craftingTable)) return shapedRecipe;
-        }
-        return null;
+        return returnRecipe;
     }
 
     private static boolean matchesShapeless(List<RecipeChoice> choice, List<ItemStack> items) {
@@ -64,11 +78,6 @@ public class Crafting {
         UserShapedRecipe userShapedRecipe = new UserShapedRecipe(items);
         return userShapedRecipe.matchesRecipe(shape);
     }
-
-//    public static void craft(Player player){
-//        Inventory craft = new VirtualCraftingHolder().getInventory();
-//        player.openInventory(craft);
-//    }
 
     public static Recipe getRecipeByKey(NamespacedKey key){
         Optional<ShapelessRecipe> recipe = shapelessRecipes.stream().filter(s -> s.getKey().equals(key)).findFirst();

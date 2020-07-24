@@ -80,7 +80,6 @@ public class ChestsPlusPlus extends JavaPlugin {
         Stats.addCharts(metrics);
 
         Settings.initConfig(this);
-        Crafting.load();
         PLUGIN = this;
 
         //API initialisation
@@ -103,7 +102,6 @@ public class ChestsPlusPlus extends JavaPlugin {
 
         //Load storage
         SpigotConfig.load(this);
-        new Config();
 
         INVENTORY_MANAGER = new InventoryManager(this);
         INVENTORY_MANAGER.init();
@@ -139,6 +137,13 @@ public class ChestsPlusPlus extends JavaPlugin {
         }
 
         getLogger().info("Chests++ enabled!");
+
+        //Load storages after load.
+        Bukkit.getScheduler().scheduleSyncDelayedTask(this, () ->{
+            Crafting.load();
+            new Config();
+            getLogger().info("Chests++ Successfully Loaded Config and Recipes");
+        },1);
     }
 
     @Override

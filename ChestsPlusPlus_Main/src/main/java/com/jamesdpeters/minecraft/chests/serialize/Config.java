@@ -32,6 +32,7 @@ public class Config {
 
     public Config() {
         legacyConverter();
+        configConverter();
 
         try {
             config = YamlConfiguration.loadConfiguration(getStorageFile());
@@ -126,5 +127,16 @@ public class Config {
         content = content.replaceAll("==: com.jamesdpeters.minecraft.chests.storage.InventoryStorage", "==: ChestLinkStorage");
         content = content.replaceAll("==: com.jamesdpeters.minecraft.chests.serialize.InventoryStorage", "==: ChestLinkStorage");
         return content;
+    }
+
+    private void configConverter(){
+        try {
+            Path path = Paths.get(getStorageFile().toURI());
+            String content = new String(Files.readAllBytes(path),Charsets.UTF_8);
+            content = content.replaceAll("==: Recipe", "==: C++Recipe");
+            Files.write(getStorageFile().toPath(), content.getBytes(Charsets.UTF_8));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
