@@ -58,7 +58,6 @@ public class MaterialChecker_1_14 extends MaterialChecker {
         version_1_14_Items.add(Material.HOPPER);
         version_1_14_Items.add(Material.TORCH);
         version_1_14_Items.add(Material.WHEAT);
-        version_1_14_Items.add(Material.BOW);
 
         version_1_14_Ignored_Items = new ArrayList<>();
         version_1_14_Ignored_Items.addAll(Tag.BEDS.getValues());
@@ -71,6 +70,7 @@ public class MaterialChecker_1_14 extends MaterialChecker {
         version_1_14_Ignored_Items.add(Material.SHIELD);
         version_1_14_Ignored_Items.add(Material.CROSSBOW);
         version_1_14_Ignored_Items.add(Material.TRIDENT);
+        version_1_14_Ignored_Items.add(Material.BOW);
     }
 
     private static List<Material> getGlassPanes(){
