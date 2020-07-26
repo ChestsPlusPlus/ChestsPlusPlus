@@ -42,7 +42,7 @@ public class InventoryListener implements Listener {
                         event.setCancelled(true);
                         if (event.getPlayer().hasPermission(Permissions.OPEN) && storage.hasPermission((Player) event.getPlayer())) {
                             storage.getInventory().getViewers().remove(event.getPlayer());
-                            Utils.openChestInventory((Player) event.getPlayer(), storage, event.getInventory().getLocation());
+                            Utils.openChestInventory((Player) event.getPlayer(), storage, storage.getLocationInfo(event.getInventory().getLocation()));
                         } else {
                             Messages.NO_PERMISSION((Player) event.getPlayer());
                         }

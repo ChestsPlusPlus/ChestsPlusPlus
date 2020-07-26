@@ -8,8 +8,10 @@ import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.misc.Values;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.serialize.ConfigStorage;
+import com.jamesdpeters.minecraft.chests.serialize.LocationInfo;
 import com.jamesdpeters.minecraft.chests.storage.StorageUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -29,6 +31,7 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
@@ -40,10 +43,12 @@ public abstract class StorageType<T extends AbstractStorage> {
 
     private ConfigStorage store;
     private StorageUtils<StorageInfo<T>, T> storageUtils;
+    private HashMap<Location, T> storageCache;
 
     protected StorageType(ConfigStorage store){
         this.store = store;
         storageUtils = new StorageUtils<>(this);
+        storageCache = new HashMap<>();
     }
 
     public StorageUtils<StorageInfo<T>, T> getStorageUtils() {
@@ -53,6 +58,10 @@ public abstract class StorageType<T extends AbstractStorage> {
     public abstract HashMap<String, HashMap<String, T>> getStorageMap(ConfigStorage store);
 
     public abstract T createNewStorageInstance(OfflinePlayer player, String inventoryName, Location location, Location signLocation);
+
+    public HashMap<String, HashMap<String, T>> getStorageMap(){
+        return getStorageMap(store);
+    }
 
     /**
      * This is the tag used in Signs such as [ChestLink] or [AutoCraft]
@@ -141,10 +150,11 @@ public abstract class StorageType<T extends AbstractStorage> {
     }
 
     public T getStorage(Location location) {
+        T storage = storageCache.get(location);
+        if(storage != null) return storage;
         if (location != null) {
             Block block = location.getBlock();
             if (isValidBlockType(block)) {
-
                 StorageInfo<T> storageInfo = storageUtils.getStorageInfo(location);
                 if(storageInfo != null){
                     return storageInfo.getStorage(location);
@@ -358,6 +368,25 @@ public abstract class StorageType<T extends AbstractStorage> {
         return playerList;
     }
 
+    public List<LocationInfo> getViewingDistanceStorages(Player player){
+        List<LocationInfo> list = new ArrayList<>();
+        getStorageMap(store).values().forEach(map -> map.values().forEach(abstractStorage -> abstractStorage.getLocations().forEach(locationInfo -> {
+            if(Utils.isLocationInViewDistance(player, locationInfo.getSignLocation())){
+                list.add(locationInfo);
+            }
+        })));
+        return list;
+    }
+
+    public List<LocationInfo> getLocationsInChunk(Chunk chunk){
+        List<LocationInfo> list = new ArrayList<>();
+        getStorageMap().values().forEach(map -> map.values().forEach(abstractStorage -> abstractStorage.getLocations().forEach(locationInfo -> {
+            if(locationInfo.getSignLocation().getChunk().equals(chunk)){
+                list.add(locationInfo);
+            }
+        })));
+        return list;
+    }
 
     /*
     POST LOAD

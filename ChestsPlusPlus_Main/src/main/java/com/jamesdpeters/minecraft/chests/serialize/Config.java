@@ -2,6 +2,7 @@ package com.jamesdpeters.minecraft.chests.serialize;
 
 import com.google.common.base.Charsets;
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
+import com.jamesdpeters.minecraft.chests.storage.abstracts.AbstractStorage;
 import com.jamesdpeters.minecraft.chests.storage.autocraft.AutoCraftingStorageType;
 import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorageType;
 import com.jamesdpeters.minecraft.chests.storage.abstracts.StorageType;
@@ -28,7 +29,7 @@ public class Config {
     private static ChestLinkStorageType chestLinkStorageType;
     private static AutoCraftingStorageType autoCraftingStorageType;
 
-    private static List<StorageType> storageTypes;
+    private static List<StorageType<? extends AbstractStorage>> storageTypes;
 
     public Config() {
         legacyConverter();
@@ -79,9 +80,11 @@ public class Config {
         return chestLinkStorageType;
     }
 
-    public static List<StorageType> getStorageTypes(){
+    public static List<StorageType<? extends AbstractStorage>> getStorageTypes(){
         return storageTypes;
     }
+
+    public static ConfigStorage getStore(){ return store; }
 
     //TODO This needs improving
     public static OfflinePlayer getOfflinePlayer(String name) {

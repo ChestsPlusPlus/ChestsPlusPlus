@@ -1,9 +1,12 @@
 package com.jamesdpeters.minecraft.chests.serialize;
 
+import com.jamesdpeters.minecraft.chests.TileEntityOpener;
 import org.bukkit.Location;
+import org.bukkit.block.Sign;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -16,6 +19,7 @@ public class LocationInfo implements ConfigurationSerializable {
 
     private Location location, signLocation;
     private ArmorStand itemStand, blockStand, toolItemStand;
+    private TileEntityOpener tileEntityOpener;
 
     @Override
     public Map<String, Object> serialize() {
@@ -38,6 +42,13 @@ public class LocationInfo implements ConfigurationSerializable {
 
     public Location getSignLocation() {
         return signLocation;
+    }
+
+    public Sign getSign(){
+        if(signLocation.getBlock().getState() instanceof Sign){
+            return (Sign) signLocation.getBlock().getState();
+        }
+        return null;
     }
 
     public ArmorStand getBlockStand() {
@@ -68,6 +79,14 @@ public class LocationInfo implements ConfigurationSerializable {
         this.signLocation = signLocation;
     }
 
+    public void setTileEntityOpener(TileEntityOpener tileEntityOpener) {
+        this.tileEntityOpener = tileEntityOpener;
+    }
+
+    public TileEntityOpener getTileEntityOpener() {
+        return tileEntityOpener;
+    }
+
     public static List<LocationInfo> convert(List<Location> locationList){
         List<LocationInfo> locationInfos = new ArrayList<>();
         for (Location location : locationList) {
@@ -78,5 +97,9 @@ public class LocationInfo implements ConfigurationSerializable {
 
     public static Optional<LocationInfo> getLocationInfo(List<LocationInfo> locationInfos, Location location){
         return locationInfos.stream().filter(locationInfo -> locationInfo.getLocation().equals(location)).findFirst();
+    }
+
+    public boolean isInWorld(Player player){
+        return getLocation() != null && player.getWorld().equals(getLocation().getWorld());
     }
 }

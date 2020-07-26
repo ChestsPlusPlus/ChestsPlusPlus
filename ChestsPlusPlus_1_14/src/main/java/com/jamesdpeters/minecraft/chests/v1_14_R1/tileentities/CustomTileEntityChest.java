@@ -9,6 +9,7 @@ import net.minecraft.server.v1_14_R1.SoundCategory;
 import net.minecraft.server.v1_14_R1.SoundEffect;
 import net.minecraft.server.v1_14_R1.SoundEffects;
 import net.minecraft.server.v1_14_R1.TileEntityChest;
+import net.minecraft.server.v1_14_R1.TileEntityTypes;
 import org.bukkit.entity.HumanEntity;
 
 import java.util.List;
@@ -17,6 +18,10 @@ public class CustomTileEntityChest extends TileEntityChest implements TileEntity
 
     private int phantomViewers = 0;
     private List<HumanEntity> viewers;
+
+    public CustomTileEntityChest(TileEntityTypes<?> tileEntityTypes){
+        super(tileEntityTypes);
+    }
 
     @Override
     public List<HumanEntity> getViewers() {
@@ -44,7 +49,8 @@ public class CustomTileEntityChest extends TileEntityChest implements TileEntity
         this.viewers = viewers;
 
         if(phantomViewers > 1 && previousViewers == 0) this.a(SoundEffects.BLOCK_CHEST_OPEN);
-        if(phantomViewers == 0) this.a(SoundEffects.BLOCK_CHEST_CLOSE);
+        if(phantomViewers == 0 && previousViewers != 0) this.a(SoundEffects.BLOCK_CHEST_CLOSE);
+        if(phantomViewers == 0 && previousViewers == 0) return;
 
         onOpen();
     }

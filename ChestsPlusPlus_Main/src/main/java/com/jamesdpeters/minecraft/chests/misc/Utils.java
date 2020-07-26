@@ -5,9 +5,20 @@ import com.jamesdpeters.minecraft.chests.api.ApiSpecific;
 import com.jamesdpeters.minecraft.chests.filters.Filter;
 import com.jamesdpeters.minecraft.chests.filters.HopperFilter;
 import com.jamesdpeters.minecraft.chests.interfaces.VirtualInventoryHolder;
+import com.jamesdpeters.minecraft.chests.serialize.LocationInfo;
 import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorage;
-import org.bukkit.*;
-import org.bukkit.block.*;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.Chunk;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.OfflinePlayer;
+import org.bukkit.Sound;
+import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.Container;
+import org.bukkit.block.Hopper;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
@@ -18,41 +29,39 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.Vector;
 
-import java.io.BufferedReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Utils {
 
-    public static void openChestInventory(Player player, ChestLinkStorage storage, Location openedChestLocation){
+    public static void openChestInventory(Player player, ChestLinkStorage storage, LocationInfo openedChestLocation){
         //Check if all chests should perform open animation.
         if(Settings.isShouldAnimateAllChests()) {
             storage.getLocations().forEach(locationInfo -> {
                 Location location = locationInfo.getLocation();
                 if (location != null) {
-                    containerOpenAnimation(storage.getInventory(), locationInfo.getLocation());
+                    containerAnimation(storage.getInventory(), locationInfo);
                 }
             });
         } else {
-            containerOpenAnimation(storage.getInventory(), openedChestLocation);
+            containerAnimation(storage.getInventory(), openedChestLocation);
         }
         player.openInventory(storage.getInventory());
     }
 
-    private static void containerOpenAnimation(Inventory inventory, Location location){
-        if (location != null && Utils.isLocationChunkLoaded(location)) {
-            Block block = location.getBlock();
+    private static void containerAnimation(Inventory inventory, LocationInfo location){
+        if (location != null && Utils.isLocationChunkLoaded(location.getLocation())) {
+            Block block = location.getLocation().getBlock();
             if (block.getState() instanceof Container) {
                 Container chest = (Container) block.getState();
-                Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN,() -> ApiSpecific.getChestOpener().setLidOpen(inventory, chest, true),1);
+                Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN,() -> {
+                    location.setTileEntityOpener(ApiSpecific.getChestOpener().updateState(inventory, chest, location.getTileEntityOpener()));
+                },1);
             }
         }
     }
@@ -61,20 +70,11 @@ public class Utils {
         storage.getLocations().forEach(locationInfo -> {
             Location location = locationInfo.getLocation();
             if (location != null) {
-                containerCloseAnimation(storage.getInventory(), locationInfo.getLocation());
+                containerAnimation(storage.getInventory(), locationInfo);
             }
         });
     }
 
-    private static void containerCloseAnimation(Inventory inventory, Location location){
-        if (location != null && Utils.isLocationChunkLoaded(location)) {
-            Block block = location.getBlock();
-            if (block.getState() instanceof Container) {
-                Container chest = (Container) block.getState();
-                Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN,() -> ApiSpecific.getChestOpener().setLidOpen(inventory, chest, false),1);
-            }
-        }
-    }
 
     public static void openChestInventory(Player player, Inventory inventory){
         VirtualInventoryHolder holder = (VirtualInventoryHolder) inventory.getHolder();
@@ -261,5 +261,18 @@ public class Utils {
         int chunkZ = location.getBlockZ() >> 4;
         return location.getWorld() != null && location.getWorld().isChunkLoaded(chunkX, chunkZ);
     }
+
+    public static Collection<Entity> getPlayersInViewDistance(Location location){
+        if(location.getWorld() == null) return null;
+        return location.getWorld().getNearbyEntities(location, Bukkit.getViewDistance()*16, 256, Bukkit.getViewDistance()*16, entity -> entity instanceof Player);
+    }
+
+    public static boolean isLocationInViewDistance(Player player, Location location){
+        Location delta = player.getLocation().subtract(location);
+        return (delta.getX() <= Bukkit.getViewDistance()*16) && (delta.getZ() <= Bukkit.getViewDistance()*16);
+    }
+
+
+
 
 }

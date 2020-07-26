@@ -98,7 +98,7 @@ public class InventorySorter {
 
     public static ItemStack getMostCommonItem(Inventory inventory){
         return getItemAmounts(inventory.getContents()).entrySet().stream()
-                .max(Comparator.comparing(Map.Entry::getValue))
+                .max(Map.Entry.comparingByValue())
                 .map(Map.Entry::getKey)
                 .orElse(null);
     }

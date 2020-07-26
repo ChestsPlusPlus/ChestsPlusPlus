@@ -19,7 +19,6 @@ import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Directional;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.entity.ArmorStand;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -28,7 +27,6 @@ import org.bukkit.util.EulerAngle;
 import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -140,12 +138,12 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
 
     private void updateSign(){
         Bukkit.getOnlinePlayers().forEach(player -> {
-            for (LocationInfo locationInfo : locationInfoList) {
-                if (locationInfo.getSignLocation() != null && Utils.isLocationChunkLoaded(locationInfo.getSignLocation())) {
-                    if (displayItem != null) player.sendBlockChange(locationInfo.getSignLocation(), air);
-                    else locationInfo.getSignLocation().getBlock().getState().update();
+            List<LocationInfo> locationInfos = locationInfoList.stream().filter(locationInfo -> locationInfo.isInWorld(player)).collect(Collectors.toList()); // Create a utility method for this
+            locationInfos.forEach(locationInfo -> {
+                if (Utils.isLocationInViewDistance(player, locationInfo.getSignLocation())) {
+                    if(displayItem != null) player.sendBlockChange(locationInfo.getSignLocation(), air);
                 }
-            }
+            });
         });
     }
 
@@ -219,8 +217,10 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
         locationInfo.setSignLocation(signLocation);
         locationInfoList.add(locationInfo);
         if(shouldDisplayArmourStands()){
-            updateSign();
-            updateClient(locationInfo);
+            if(displayItem != null) {
+                updateSign();
+                updateClient(locationInfo);
+            }
         }
     }
 
@@ -380,10 +380,27 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
     /* ARMOR STAND METHODS */
 
     private ItemStack displayItem;
+    private DISPLAY_TYPE displayType;
+
+    private void resetSign(){
+        Bukkit.getOnlinePlayers().forEach(player -> {
+            List<LocationInfo> locationInfos = locationInfoList.stream().filter(locationInfo -> locationInfo.isInWorld(player)).collect(Collectors.toList()); // Create a utility method for this
+            locationInfos.forEach(locationInfo -> {
+                if (Utils.isLocationInViewDistance(player, locationInfo.getSignLocation())) {
+                    if( locationInfo.getSignLocation().getBlock().getState() instanceof Sign) {
+                        Sign sign = (Sign) locationInfo.getSignLocation().getBlock().getState();
+                        player.sendBlockChange(locationInfo.getSignLocation(), sign.getBlockData());
+                        player.sendSignChange(locationInfo.getSignLocation(), sign.getLines());
+                    }
+                }
+            });
+        });
+    }
 
     public void onItemDisplayUpdate(ItemStack newItem){
         if(shouldDisplayArmourStands()) {
-            if (displayItem == null || displayItem.getType().equals(Material.AIR)) {
+            if (newItem == null || newItem.getType().equals(Material.AIR)) {
+                if(displayItem != null) resetSign();
                 Bukkit.getScheduler().cancelTask(signUpdateTask);
                 signUpdateTask = -1;
             } else {
@@ -391,6 +408,7 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
             }
         }
         displayItem = newItem;
+        displayType = DISPLAY_TYPE.getType(displayItem);
         if(shouldDisplayArmourStands()) updateClients();
     }
 
@@ -412,7 +430,22 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
 
     private BlockData air = Material.AIR.createBlockData();
 
-    private void updateClient(LocationInfo location){
+    enum DISPLAY_TYPE {
+        IGNORE,
+        TOOL,
+        BLOCK,
+        ITEM;
+
+        public static DISPLAY_TYPE getType(ItemStack itemStack){
+            if(itemStack == null) return IGNORE;
+            if(ApiSpecific.getMaterialChecker().isIgnored(itemStack)) return IGNORE;
+            if(ApiSpecific.getMaterialChecker().isTool(itemStack)) return TOOL;
+            if(ApiSpecific.getMaterialChecker().isGraphically2D(itemStack)) return ITEM;
+            else return BLOCK;
+        }
+    }
+
+    public void updateClient(LocationInfo location){
         if(location.getLocation() == null || !Utils.isLocationChunkLoaded(location.getLocation())) return;
         World world = location.getLocation().getWorld();
 
@@ -420,21 +453,19 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
             if(location.getSignLocation() == null) return;
                 Block storageBlock = location.getLocation().getBlock();
                 Block anchor = location.getSignLocation().getBlock();
-                BlockFace facing;
-                if(anchor.getBlockData() instanceof Directional){
-                    facing = ((Directional) anchor.getBlockData()).getFacing();
-                } else {
-                    return;
-                }
-                if(displayItem != null && !ApiSpecific.getMaterialChecker().isIgnored(displayItem)) {
 
-                    boolean isBlock = !ApiSpecific.getMaterialChecker().isGraphically2D(displayItem);
-                    boolean isTool = ApiSpecific.getMaterialChecker().isTool(displayItem);
-                    Location standLoc = isTool ? getHeldItemArmorStandLoc(storageBlock,anchor, facing) : getArmorStandLoc(storageBlock, anchor, facing, isBlock);
+                if(displayItem != null && displayType != DISPLAY_TYPE.IGNORE) {
+                    boolean isBlock = displayType == DISPLAY_TYPE.BLOCK;
+                    boolean isTool = displayType == DISPLAY_TYPE.TOOL;
 
                     //Get currently stored armorStand if there isn't one spawn it.
                     ArmorStand stand = isTool ? location.getToolItemStand() : (isBlock ? location.getBlockStand() : location.getItemStand());
                     if(stand == null || !stand.isValid()) {
+                        BlockFace facing;
+                        if(anchor.getBlockData() instanceof Directional){
+                            facing = ((Directional) anchor.getBlockData()).getFacing();
+                        } else return;
+                        Location standLoc = isTool ? getHeldItemArmorStandLoc(storageBlock,anchor, facing) : getArmorStandLoc(storageBlock, anchor, facing, isBlock);
                         stand = createArmorStand(world, standLoc, isBlock, isTool);
                         addArmorStand(isBlock, isTool, location, stand);
                     }
@@ -446,18 +477,18 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
 
                     //Set other armor stand helmet to null.
                     if(isBlock) {
-                        setArmorStandHelmet(location.getToolItemStand(), null);
-                        setArmorStandHelmet(location.getItemStand(), null);
+                        removeArmorStandItem(location.getToolItemStand());
+                        removeArmorStandItem(location.getItemStand());
                     } else {
-                        setArmorStandHelmet(location.getBlockStand(), null);
-                        if(isTool) setArmorStandHelmet(location.getItemStand(), null);
-                        else setArmorStandHelmet(location.getToolItemStand(), null);
+                        removeArmorStandItem(location.getBlockStand());
+                        if(isTool) removeArmorStandItem(location.getItemStand());
+                        else removeArmorStandItem(location.getToolItemStand());
                     }
                 } else {
-                    anchor.getState().update();
-                    setArmorStandHelmet(location.getToolItemStand(), null);
-                    setArmorStandHelmet(location.getItemStand(), null);
-                    setArmorStandHelmet(location.getBlockStand(), null);
+//                    anchor.getState().update();
+                    removeArmorStandItem(location.getToolItemStand());
+                    removeArmorStandItem(location.getItemStand());
+                    removeArmorStandItem(location.getBlockStand());
                 }
         }
 
@@ -526,8 +557,8 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
         return standLoc.subtract(x, y, z);
     }
 
-    private void setArmorStandHelmet(ArmorStand stand, ItemStack helmet){
-        if(stand != null) stand.setItemInHand(helmet);
+    private void removeArmorStandItem(ArmorStand stand){
+        if(stand != null) stand.setItemInHand(null);
     }
 
     private void addArmorStand(boolean isBlock, boolean isTool, LocationInfo location, ArmorStand stand){

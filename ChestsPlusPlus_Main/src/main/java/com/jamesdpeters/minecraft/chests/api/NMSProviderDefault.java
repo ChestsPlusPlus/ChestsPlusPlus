@@ -9,8 +9,9 @@ import org.bukkit.entity.ItemFrame;
 public class NMSProviderDefault implements NMSProvider {
     @Override
     public ChestOpener getChestOpener() {
-        return (storage, chest, open) -> {
+        return (storage, chest, tileEntityOpener) -> {
             //Default to doing nothing.
+            return null;
         };
     }
 
