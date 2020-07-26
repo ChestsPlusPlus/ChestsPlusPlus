@@ -5,8 +5,10 @@ import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorage;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.Chest;
 import org.bukkit.block.DoubleChest;
+import org.bukkit.block.data.Directional;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -42,6 +44,8 @@ public class ChestLinkVerifier extends BukkitRunnable {
                 convertToSingleChest(left.getInventory());
                 convertToSingleChest(right.getInventory());
             }
+        } else {
+            manualCheck(chest);
         }
     }
 
@@ -71,5 +75,37 @@ public class ChestLinkVerifier extends BukkitRunnable {
         ChestLinkStorage rightStorage = Config.getChestLink().getStorage(chestSide2);
 
         return (leftStorage != null) || (rightStorage != null);
+    }
+
+    private void manualCheck(Chest chest){
+        if(chest.getBlockData() instanceof Directional) {
+            Directional directional = (Directional) chest.getBlockData();
+            BlockFace facing = directional.getFacing();
+            BlockFace[] perpendulcarFaces = getPerpendicularFaces(facing);
+            if(perpendulcarFaces == null) return;
+            for (BlockFace perpendicularFace : perpendulcarFaces) {
+                Block toTest = block.getRelative(perpendicularFace);
+                if(toTest.getState() instanceof Chest && Config.getChestLink().getStorage(toTest.getLocation()) != null){
+                    convertToSingleChest(chest.getInventory());
+                    convertToSingleChest(((Chest) toTest.getState()).getInventory());
+                    convertToSingleChest(chest.getInventory());
+                }
+            }
+        }
+    }
+
+    private static final BlockFace[] NS = new BlockFace[]{BlockFace.WEST, BlockFace.EAST};
+    private static final BlockFace[] WE = new BlockFace[]{BlockFace.NORTH, BlockFace.SOUTH};
+
+    private BlockFace[] getPerpendicularFaces(BlockFace face){
+        switch (face){
+            case NORTH:
+            case SOUTH:
+                return NS;
+            case WEST:
+            case EAST:
+                return WE;
+        }
+        return null;
     }
 }

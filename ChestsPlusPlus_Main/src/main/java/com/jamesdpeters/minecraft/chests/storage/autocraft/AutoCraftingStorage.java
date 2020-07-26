@@ -126,6 +126,6 @@ public class AutoCraftingStorage extends AbstractStorage implements Configuratio
     @Override
     public void postConfigLoad() {
         super.postConfigLoad();
-        if(recipeSerializable != null) onItemDisplayUpdate(recipeSerializable.getRecipe().getResult());
+        if(recipeSerializable != null && recipeSerializable.getRecipe() != null) onItemDisplayUpdate(recipeSerializable.getRecipe().getResult());
     }
 }
