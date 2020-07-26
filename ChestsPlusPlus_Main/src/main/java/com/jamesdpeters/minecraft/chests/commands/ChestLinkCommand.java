@@ -70,125 +70,130 @@ public class ChestLinkCommand extends ServerCommand  {
 
         Player player = (Player) sender;
         if(args != null &&  args.length > 0) {
-            switch (OPTIONS.valueOf(args[0].toUpperCase())){
-                case HELP:
-                    for(OPTIONS option : OPTIONS.values()){
-                        if(!option.equals(OPTIONS.HELP)) {
-                            player.sendMessage(ChatColor.RED + option.commandHelp);
-                            player.sendMessage(ChatColor.WHITE + option.description);
+            try {
+                switch (OPTIONS.valueOf(args[0].toUpperCase())) {
+                    case HELP:
+                        for (OPTIONS option : OPTIONS.values()) {
+                            if (!option.equals(OPTIONS.HELP)) {
+                                player.sendMessage(ChatColor.RED + option.commandHelp);
+                                player.sendMessage(ChatColor.WHITE + option.description);
+                            }
                         }
-                    }
-                    return true;
-                case ADD:
-                    if(args.length > 1){
-                        if(sender.hasPermission(Permissions.ADD) && !Settings.isBlacklistedWorld(player.getWorld())) {
-                            Block targetBlock = player.getTargetBlockExact(5);
-                            if (targetBlock != null) Config.getChestLink().createStorage(player,targetBlock,args[1],true);
-                            else Config.getChestLink().getMessages().mustLookAtBlock(player);
-                            return true;
-                        } else {
-                            Messages.NO_PERMISSION(player);
-                            return true;
-                        }
-                    } else {
-                        player.sendMessage(ChatColor.RED+OPTIONS.ADD.commandHelp);
-                        player.sendMessage(ChatColor.RED+OPTIONS.ADD.description);
                         return true;
-                    }
-                case OPEN:
-                    if(args.length > 1){
-                        if(sender.hasPermission(Permissions.OPEN) && sender.hasPermission(Permissions.OPEN_REMOTE) && !Settings.isBlacklistedWorld(player.getWorld())) {
-                            ChestLinkStorage invs;
-                            if(args[1].contains(":")){
-                                invs = Config.getChestLink().getStorage(player,args[1]);
+                    case ADD:
+                        if (args.length > 1) {
+                            if (sender.hasPermission(Permissions.ADD) && !Settings.isBlacklistedWorld(player.getWorld())) {
+                                Block targetBlock = player.getTargetBlockExact(5);
+                                if (targetBlock != null)
+                                    Config.getChestLink().createStorage(player, targetBlock, args[1], true);
+                                else Config.getChestLink().getMessages().mustLookAtBlock(player);
+                                return true;
                             } else {
-                                invs = Config.getChestLink().getStorage(player.getUniqueId(), args[1]);
+                                Messages.NO_PERMISSION(player);
+                                return true;
                             }
-                            if(invs != null) Utils.openChestInventory(player, invs.getInventory());
+                        } else {
+                            player.sendMessage(ChatColor.RED + OPTIONS.ADD.commandHelp);
+                            player.sendMessage(ChatColor.RED + OPTIONS.ADD.description);
+                            return true;
+                        }
+                    case OPEN:
+                        if (args.length > 1) {
+                            if (sender.hasPermission(Permissions.OPEN) && sender.hasPermission(Permissions.OPEN_REMOTE) && !Settings.isBlacklistedWorld(player.getWorld())) {
+                                ChestLinkStorage invs;
+                                if (args[1].contains(":")) {
+                                    invs = Config.getChestLink().getStorage(player, args[1]);
+                                } else {
+                                    invs = Config.getChestLink().getStorage(player.getUniqueId(), args[1]);
+                                }
+                                if (invs != null) Utils.openChestInventory(player, invs.getInventory());
+                                return true;
+                            } else {
+                                Messages.NO_PERMISSION(player);
+                                return true;
+                            }
+                        } else {
+                            player.sendMessage(ChatColor.RED + OPTIONS.OPEN.commandHelp);
+                            player.sendMessage(ChatColor.RED + OPTIONS.OPEN.description);
+                            return true;
+                        }
+                    case MENU:
+                        if (sender.hasPermission(Permissions.MENU) && !Settings.isBlacklistedWorld(player.getWorld())) {
+                            ChestLinkMenu.getMenu(player).open(player);
                             return true;
                         } else {
                             Messages.NO_PERMISSION(player);
                             return true;
                         }
-                    } else {
-                        player.sendMessage(ChatColor.RED+OPTIONS.OPEN.commandHelp);
-                        player.sendMessage(ChatColor.RED+OPTIONS.OPEN.description);
+                    case LIST:
+                        Config.getChestLink().getMessages().listStorageGroups(player);
                         return true;
-                    }
-                case MENU:
-                    if(sender.hasPermission(Permissions.MENU) && !Settings.isBlacklistedWorld(player.getWorld())) {
-                        ChestLinkMenu.getMenu(player).open(player);
-                        return true;
-                    } else {
-                        Messages.NO_PERMISSION(player);
-                        return true;
-                    }
-                case LIST:
-                    Config.getChestLink().getMessages().listStorageGroups(player);
-                    return true;
-                case REMOVE:
-                    if(args.length > 1) {
-                        if (sender.hasPermission(Permissions.REMOVE)) {
-                            Config.getChestLink().removeStorage(player, args[1]);
-                            return true;
+                    case REMOVE:
+                        if (args.length > 1) {
+                            if (sender.hasPermission(Permissions.REMOVE)) {
+                                Config.getChestLink().removeStorage(player, args[1]);
+                                return true;
+                            } else {
+                                Messages.NO_PERMISSION(player);
+                                return true;
+                            }
                         } else {
-                            Messages.NO_PERMISSION(player);
+                            player.sendMessage(ChatColor.RED + OPTIONS.REMOVE.commandHelp);
+                            player.sendMessage(ChatColor.RED + OPTIONS.REMOVE.description);
                             return true;
                         }
-                    } else {
-                        player.sendMessage(ChatColor.RED+OPTIONS.REMOVE.commandHelp);
-                        player.sendMessage(ChatColor.RED+OPTIONS.REMOVE.description);
-                        return true;
+                    case SORT:
+                        if (args.length > 1) {
+                            if (sender.hasPermission(Permissions.SORT)) {
+                                ChestLinkStorage storage = Config.getChestLink().getStorage(player.getUniqueId(), args[1]);
+                                if (storage != null) {
+                                    storage.setSortMethod(Enum.valueOf(SortMethod.class, args[2]));
+                                    storage.sort();
+                                    Messages.SORT(player, storage);
+                                }
+                                return true;
+                            } else {
+                                Messages.NO_PERMISSION(player);
+                                return true;
+                            }
+                        } else {
+                            player.sendMessage(ChatColor.RED + OPTIONS.SORT.commandHelp);
+                            player.sendMessage(ChatColor.RED + OPTIONS.SORT.description);
+                            return true;
+                        }
+                    case MEMBER:
+                        return memberCommand(args, sender);
+                    case SETPUBLIC: {
+                        if (args.length > 2) {
+                            ChestLinkStorage storage = Config.getChestLink().getStorage(player.getUniqueId(), args[1]);
+                            if (storage != null) {
+                                boolean setpublic = Boolean.parseBoolean(args[2]);
+                                storage.setPublic(setpublic);
+                                storage.getStorageType().getMessages().setPublic(player, storage);
+                                return true;
+                            } else {
+                                Bukkit.broadcastMessage("Storage null");
+                            }
+                        } else {
+                            player.sendMessage(ChatColor.RED + OPTIONS.SETPUBLIC.commandHelp);
+                            player.sendMessage(ChatColor.RED + OPTIONS.SETPUBLIC.description);
+                            return true;
+                        }
                     }
-                case SORT:
-                    if(args.length > 1) {
-                        if (sender.hasPermission(Permissions.SORT)) {
-                            ChestLinkStorage storage = Config.getChestLink().getStorage(player.getUniqueId(),args[1]);
-                            if(storage != null) {
-                                storage.setSortMethod(Enum.valueOf(SortMethod.class, args[2]));
-                                storage.sort();
-                                Messages.SORT(player,storage);
+                    case RENAME: {
+                        if (args.length > 2) {
+                            String group = args[1];
+                            String newIdentifier = args[2];
+                            if (!Config.getChestLink().renameStorage(player, group, newIdentifier)) {
+                                player.sendMessage(ChatColor.RED + OPTIONS.RENAME.commandHelp);
+                                player.sendMessage(ChatColor.RED + OPTIONS.RENAME.description);
                             }
                             return true;
-                        } else {
-                            Messages.NO_PERMISSION(player);
-                            return true;
                         }
-                    } else {
-                        player.sendMessage(ChatColor.RED+OPTIONS.SORT.commandHelp);
-                        player.sendMessage(ChatColor.RED+OPTIONS.SORT.description);
-                        return true;
-                    }
-                case MEMBER:
-                   return memberCommand(args, sender);
-                case SETPUBLIC: {
-                    if (args.length > 2) {
-                        ChestLinkStorage storage = Config.getChestLink().getStorage(player.getUniqueId(), args[1]);
-                        if (storage != null) {
-                            boolean setpublic = Boolean.parseBoolean(args[2]);
-                            storage.setPublic(setpublic);
-                            storage.getStorageType().getMessages().setPublic(player, storage);
-                            return true;
-                        } else {
-                            Bukkit.broadcastMessage("Storage null");
-                        }
-                    } else {
-                        player.sendMessage(ChatColor.RED + OPTIONS.SETPUBLIC.commandHelp);
-                        player.sendMessage(ChatColor.RED + OPTIONS.SETPUBLIC.description);
-                        return true;
                     }
                 }
-                case RENAME: {
-                    if(args.length > 2){
-                        String group = args[1];
-                        String newIdentifier = args[2];
-                        if(!Config.getChestLink().renameStorage(player,group,newIdentifier)){
-                            player.sendMessage(ChatColor.RED + OPTIONS.RENAME.commandHelp);
-                            player.sendMessage(ChatColor.RED + OPTIONS.RENAME.description);
-                        }
-                        return true;
-                    }
-                }
+            } catch (IllegalArgumentException exception){
+                return false;
             }
         }
 

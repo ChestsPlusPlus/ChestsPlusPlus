@@ -67,50 +67,52 @@ public class AutoCraftCommand extends ServerCommand  {
 
         Player player = (Player) sender;
         if(args != null &&  args.length > 0) {
-            switch (OPTIONS.valueOf(args[0].toUpperCase())){
-                case HELP:
-                    for(OPTIONS option : OPTIONS.values()){
-                        if(!option.equals(OPTIONS.HELP)) {
-                            player.sendMessage(ChatColor.RED + option.commandHelp);
-                            player.sendMessage(ChatColor.WHITE + option.description);
-                        }
-                    }
-                    return true;
-                case ADD:
-                    if(args.length > 1){
-                        if (player.hasPermission(Permissions.AUTOCRAFT_ADD) && !Settings.isBlacklistedWorld(player.getWorld())) {
-                            Block targetBlock = player.getTargetBlockExact(5);
-                            if (targetBlock != null) Config.getAutoCraft().createStorage(player, targetBlock, args[1],true);
-                            else Config.getAutoCraft().getMessages().mustLookAtBlock(player);
-                        } else {
-                            Messages.NO_PERMISSION(player);
-                        }
-                        return true;
-                    } else {
-                        player.sendMessage(ChatColor.RED+ OPTIONS.ADD.commandHelp);
-                        player.sendMessage(ChatColor.RED+ OPTIONS.ADD.description);
-                        return true;
-                    }
-                case OPEN:
-                    if(args.length > 1){
-                        if(sender.hasPermission(Permissions.AUTOCRAFT_OPEN) && sender.hasPermission(Permissions.AUTOCRAFT_OPEN_REMOTE) && !Settings.isBlacklistedWorld(player.getWorld())) {
-                            AutoCraftingStorage invs;
-                            if(args[1].contains(":")){
-                                invs = Config.getAutoCraft().getStorage(player,args[1]);
-                            } else {
-                                invs = Config.getAutoCraft().getStorage(player.getUniqueId(), args[1]);
+            try {
+                switch (OPTIONS.valueOf(args[0].toUpperCase())) {
+                    case HELP:
+                        for (OPTIONS option : OPTIONS.values()) {
+                            if (!option.equals(OPTIONS.HELP)) {
+                                player.sendMessage(ChatColor.RED + option.commandHelp);
+                                player.sendMessage(ChatColor.WHITE + option.description);
                             }
-                            if(invs != null) player.openInventory(invs.getInventory());
+                        }
+                        return true;
+                    case ADD:
+                        if (args.length > 1) {
+                            if (player.hasPermission(Permissions.AUTOCRAFT_ADD) && !Settings.isBlacklistedWorld(player.getWorld())) {
+                                Block targetBlock = player.getTargetBlockExact(5);
+                                if (targetBlock != null)
+                                    Config.getAutoCraft().createStorage(player, targetBlock, args[1], true);
+                                else Config.getAutoCraft().getMessages().mustLookAtBlock(player);
+                            } else {
+                                Messages.NO_PERMISSION(player);
+                            }
                             return true;
                         } else {
-                            Messages.NO_PERMISSION(player);
+                            player.sendMessage(ChatColor.RED + OPTIONS.ADD.commandHelp);
+                            player.sendMessage(ChatColor.RED + OPTIONS.ADD.description);
                             return true;
                         }
-                    } else {
-                        player.sendMessage(ChatColor.RED+ OPTIONS.OPEN.commandHelp);
-                        player.sendMessage(ChatColor.RED+ OPTIONS.OPEN.description);
-                        return true;
-                    }
+                    case OPEN:
+                        if (args.length > 1) {
+                            if (sender.hasPermission(Permissions.AUTOCRAFT_OPEN) && sender.hasPermission(Permissions.AUTOCRAFT_OPEN_REMOTE) && !Settings.isBlacklistedWorld(player.getWorld())) {
+                                AutoCraftingStorage invs;
+                                if (args[1].contains(":")) {
+                                    invs = Config.getAutoCraft().getStorage(player, args[1]);
+                                } else {
+                                    invs = Config.getAutoCraft().getStorage(player.getUniqueId(), args[1]);
+                                }
+                                if (invs != null) player.openInventory(invs.getInventory());
+                                return true;
+                            } else {
+                                Messages.NO_PERMISSION(player);
+                                return true;
+                            }
+                        } else {
+                            player.sendMessage(ChatColor.RED + OPTIONS.OPEN.commandHelp);
+                            player.sendMessage(ChatColor.RED + OPTIONS.OPEN.description);
+                            return true;
+                        }
 //                case MENU:
 //                    if(sender.hasPermission(Permissions.MENU)) {
 //                        //TODO Add AutoCraft menu.
@@ -121,53 +123,56 @@ public class AutoCraftCommand extends ServerCommand  {
 //                        Messages.NO_PERMISSION(player);
 //                        return true;
 //                    }
-                case LIST:
-                    Config.getAutoCraft().getMessages().listStorageGroups(player);
-                    return true;
-                case REMOVE:
-                    if(args.length > 1) {
-                        if (sender.hasPermission(Permissions.AUTOCRAFT_REMOVE)) {
-                            Config.getAutoCraft().removeStorage(player, args[1]);
-                            return true;
+                    case LIST:
+                        Config.getAutoCraft().getMessages().listStorageGroups(player);
+                        return true;
+                    case REMOVE:
+                        if (args.length > 1) {
+                            if (sender.hasPermission(Permissions.AUTOCRAFT_REMOVE)) {
+                                Config.getAutoCraft().removeStorage(player, args[1]);
+                                return true;
+                            } else {
+                                Messages.NO_PERMISSION(player);
+                                return true;
+                            }
                         } else {
-                            Messages.NO_PERMISSION(player);
+                            player.sendMessage(ChatColor.RED + OPTIONS.REMOVE.commandHelp);
+                            player.sendMessage(ChatColor.RED + OPTIONS.REMOVE.description);
                             return true;
                         }
-                    } else {
-                        player.sendMessage(ChatColor.RED+ OPTIONS.REMOVE.commandHelp);
-                        player.sendMessage(ChatColor.RED+ OPTIONS.REMOVE.description);
-                        return true;
+                    case MEMBER:
+                        return memberCommand(args, sender);
+                    case SETPUBLIC: {
+                        if (args.length > 2) {
+                            AutoCraftingStorage storage = Config.getAutoCraft().getStorage(player.getUniqueId(), args[1]);
+                            if (storage != null) {
+                                boolean setPublic = Boolean.parseBoolean(args[2]);
+                                storage.setPublic(setPublic);
+                                storage.getStorageType().getMessages().setPublic(player, storage);
+                                return true;
+                            } else {
+                                Bukkit.broadcastMessage("Storage null");
+                            }
+                        } else {
+                            player.sendMessage(ChatColor.RED + OPTIONS.SETPUBLIC.commandHelp);
+                            player.sendMessage(ChatColor.RED + OPTIONS.SETPUBLIC.description);
+                            return true;
+                        }
                     }
-                case MEMBER:
-                   return memberCommand(args, sender);
-                case SETPUBLIC: {
-                    if (args.length > 2) {
-                        AutoCraftingStorage storage = Config.getAutoCraft().getStorage(player.getUniqueId(), args[1]);
-                        if (storage != null) {
-                            boolean setPublic = Boolean.parseBoolean(args[2]);
-                            storage.setPublic(setPublic);
-                            storage.getStorageType().getMessages().setPublic(player, storage);
+                    case RENAME: {
+                        if (args.length > 2) {
+                            String group = args[1];
+                            String newIdentifier = args[2];
+                            if (!Config.getAutoCraft().renameStorage(player, group, newIdentifier)) {
+                                player.sendMessage(ChatColor.RED + OPTIONS.RENAME.commandHelp);
+                                player.sendMessage(ChatColor.RED + OPTIONS.RENAME.description);
+                            }
                             return true;
-                        } else {
-                            Bukkit.broadcastMessage("Storage null");
                         }
-                    } else {
-                        player.sendMessage(ChatColor.RED + OPTIONS.SETPUBLIC.commandHelp);
-                        player.sendMessage(ChatColor.RED + OPTIONS.SETPUBLIC.description);
-                        return true;
                     }
                 }
-                case RENAME: {
-                    if(args.length > 2){
-                        String group = args[1];
-                        String newIdentifier = args[2];
-                        if(!Config.getAutoCraft().renameStorage(player,group,newIdentifier)){
-                            player.sendMessage(ChatColor.RED + OPTIONS.RENAME.commandHelp);
-                            player.sendMessage(ChatColor.RED + OPTIONS.RENAME.description);
-                        }
-                        return true;
-                    }
-                }
+            } catch (IllegalArgumentException exception){
+                return false;
             }
         }
 
