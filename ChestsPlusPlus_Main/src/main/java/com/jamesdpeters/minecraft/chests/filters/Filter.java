@@ -33,7 +33,11 @@ public class Filter {
              if(isFilteredByMeta(itemStack)) return Type.REJECT;
              else return Type.ACCEPT;
         }
-        if(isFilteredByMeta(itemStack)) return Type.ACCEPT;
+        if(filterByItemMeta) {
+            if (isFilteredByMeta(itemStack)) return Type.ACCEPT;
+        } else {
+            if (filter.isSimilar(itemStack)) return Type.ACCEPT;
+        }
         return Type.NONE;
     }
 

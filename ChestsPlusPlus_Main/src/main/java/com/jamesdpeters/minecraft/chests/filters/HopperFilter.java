@@ -9,15 +9,19 @@ import org.bukkit.inventory.ItemStack;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class HopperFilter {
 
     public static boolean isInFilter(List<Filter> filters, ItemStack item){
         if(filters == null) return true;
         if(filters.size() == 0) return true;
-        boolean hasAcceptFilter = filters.stream().filter(filter -> filter.getFilteringMethod() == Filter.Type.ACCEPT).anyMatch(filter -> filter.getFilterType(item).equals(Filter.Type.ACCEPT));
+        List<Filter> acceptFilters = filters.stream().filter(filter -> filter.getFilteringMethod() == Filter.Type.ACCEPT).collect(Collectors.toList());
+        boolean hasAcceptFilter = acceptFilters.stream().anyMatch(filter -> filter.getFilterType(item).equals(Filter.Type.ACCEPT));
         boolean isRejected = filters.stream().filter(filter -> filter.getFilteringMethod() == Filter.Type.REJECT).anyMatch(filter -> filter.getFilterType(item).equals(Filter.Type.REJECT));
-        return hasAcceptFilter && !isRejected;
+        if(acceptFilters.size() > 0) return hasAcceptFilter && !isRejected;
+        else return !isRejected;
     }
 
     public static List<Filter> getHopperFilters(Block block){
