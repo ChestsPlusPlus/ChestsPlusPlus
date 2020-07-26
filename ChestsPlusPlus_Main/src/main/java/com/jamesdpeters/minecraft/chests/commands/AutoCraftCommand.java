@@ -93,7 +93,7 @@ public class AutoCraftCommand extends ServerCommand  {
                     }
                 case OPEN:
                     if(args.length > 1){
-                        if(sender.hasPermission(Permissions.AUTOCRAFT_OPEN) && !Settings.isBlacklistedWorld(player.getWorld())) {
+                        if(sender.hasPermission(Permissions.AUTOCRAFT_OPEN) && sender.hasPermission(Permissions.AUTOCRAFT_OPEN_REMOTE) && !Settings.isBlacklistedWorld(player.getWorld())) {
                             AutoCraftingStorage invs;
                             if(args[1].contains(":")){
                                 invs = Config.getAutoCraft().getStorage(player,args[1]);

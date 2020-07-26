@@ -97,7 +97,7 @@ public class ChestLinkCommand extends ServerCommand  {
                     }
                 case OPEN:
                     if(args.length > 1){
-                        if(sender.hasPermission(Permissions.OPEN) && !Settings.isBlacklistedWorld(player.getWorld())) {
+                        if(sender.hasPermission(Permissions.OPEN) && sender.hasPermission(Permissions.OPEN_REMOTE) && !Settings.isBlacklistedWorld(player.getWorld())) {
                             ChestLinkStorage invs;
                             if(args[1].contains(":")){
                                 invs = Config.getChestLink().getStorage(player,args[1]);

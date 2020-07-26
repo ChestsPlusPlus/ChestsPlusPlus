@@ -48,12 +48,14 @@ import org.bukkit.plugin.java.annotation.plugin.author.Author;
         @Command(name = "chests++", desc = "Chests++ Commands.", aliases = {"c++"}, usage = "/chests++ version")})
 @Permission(name = Permissions.ADD, desc = "Gives permission to add ChestLinks!", defaultValue = PermissionDefault.TRUE)
 @Permission(name = Permissions.OPEN, desc = "Gives permission to open ChestLinks!", defaultValue = PermissionDefault.TRUE)
+@Permission(name = Permissions.OPEN_REMOTE, desc = "Gives permission to remotely open ChestLinks!", defaultValue = PermissionDefault.TRUE)
 @Permission(name = Permissions.MENU, desc = "Gives permission to open the ChestLink menu!", defaultValue = PermissionDefault.TRUE)
 @Permission(name = Permissions.REMOVE, desc = "Gives permission to remove a ChestLink!", defaultValue = PermissionDefault.TRUE)
 @Permission(name = Permissions.OPEN_ANY, desc = "Gives permission to open all chests/autocraft stations, for admin use.", defaultValue = PermissionDefault.OP)
 @Permission(name = Permissions.MEMBER, desc = "Gives permission to add/remove a member to/from their chestlink.", defaultValue = PermissionDefault.TRUE)
 @Permission(name = Permissions.SORT, desc = "Gives permission to sort ChestLinks.", defaultValue = PermissionDefault.TRUE)
 @Permission(name = Permissions.AUTOCRAFT_OPEN, desc = "Gives permission to open AutoCrafting stations.", defaultValue = PermissionDefault.TRUE)
+@Permission(name = Permissions.AUTOCRAFT_OPEN_REMOTE, desc = "Gives permission to remotely open AutoCrafting stations.", defaultValue = PermissionDefault.TRUE)
 @Permission(name = Permissions.AUTOCRAFT_ADD, desc = "Gives permission to add AutoCrafting stations.", defaultValue = PermissionDefault.TRUE)
 @Permission(name = Permissions.AUTOCRAFT_REMOVE, desc = "Gives permission to remove AutoCrafting stations.", defaultValue = PermissionDefault.TRUE)
 public class ChestsPlusPlus extends JavaPlugin {
@@ -110,6 +112,7 @@ public class ChestsPlusPlus extends JavaPlugin {
 
         if(Settings.isUpdateCheckEnabled() && !isDev && !isBeta) {
             String SPIGOT_URL = "https://www.spigotmc.org/resources/chests-chest-linking-hopper-filtering-remote-chests-menus.71355/";
+            String BUKKIT_URL = "https://dev.bukkit.org/projects/chests-plus-plus/files";
             UpdateCheck updateChecker = UpdateCheck
                     .of(this)
                     .resourceId(71355)
@@ -120,7 +123,7 @@ public class ChestsPlusPlus extends JavaPlugin {
                                 getLogger().warning("New version of the plugin has been found: " + version);
                                 getLogger().warning("Download at: "+SPIGOT_URL);
                                 Bukkit.broadcastMessage(ChatColor.RED + "[Chests++] New version of the plugin was found: " + version);
-                                Bukkit.broadcastMessage(ChatColor.RED + "[Chests++] Download at: " +ChatColor.WHITE+ SPIGOT_URL);
+                                Bukkit.broadcastMessage(ChatColor.RED + "[Chests++] Download at: " +ChatColor.WHITE+ BUKKIT_URL);
                                 break;
                             case LATEST:
                                 if(!boot) getLogger().info("Plugin is up to date! Thank you for supporting Chests++!");
