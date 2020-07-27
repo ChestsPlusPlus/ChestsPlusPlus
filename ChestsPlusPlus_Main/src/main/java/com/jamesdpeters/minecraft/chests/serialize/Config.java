@@ -81,7 +81,7 @@ public class Config {
     }
 
     public static List<StorageType<? extends AbstractStorage>> getStorageTypes(){
-        return storageTypes;
+        return storageTypes != null ? storageTypes : new ArrayList<>();
     }
 
     public static ConfigStorage getStore(){ return store; }
