@@ -262,12 +262,20 @@ public class Utils {
         return location.getWorld() != null && location.getWorld().isChunkLoaded(chunkX, chunkZ);
     }
 
+    public static boolean isLocationInChunk(Location location, Chunk chunk){
+        int chunkX = location.getBlockX() >> 4;
+        int chunkZ = location.getBlockZ() >> 4;
+        return (chunkX == chunk.getX()) && (chunkZ == chunk.getZ());
+    }
+
     public static Collection<Entity> getPlayersInViewDistance(Location location){
         if(location.getWorld() == null) return null;
         return location.getWorld().getNearbyEntities(location, Bukkit.getViewDistance()*16, 256, Bukkit.getViewDistance()*16, entity -> entity instanceof Player);
     }
 
     public static boolean isLocationInViewDistance(Player player, Location location){
+        if(location == null) return false;
+        if(!player.getWorld().equals(location.getWorld())) return false;
         Location delta = player.getLocation().subtract(location);
         return (delta.getX() <= Bukkit.getViewDistance()*16) && (delta.getZ() <= Bukkit.getViewDistance()*16);
     }

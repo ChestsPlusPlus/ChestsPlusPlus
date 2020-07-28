@@ -140,7 +140,7 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
         Bukkit.getOnlinePlayers().forEach(player -> {
             List<LocationInfo> locationInfos = locationInfoList.stream().filter(locationInfo -> locationInfo.isInWorld(player)).collect(Collectors.toList()); // Create a utility method for this
             locationInfos.forEach(locationInfo -> {
-                if (Utils.isLocationInViewDistance(player, locationInfo.getSignLocation())) {
+                if (Utils.isLocationInViewDistance(player, locationInfo.getSignLocation()) && Utils.isLocationChunkLoaded(locationInfo.getSignLocation())) {
                     if(displayItem != null) player.sendBlockChange(locationInfo.getSignLocation(), air);
                 }
             });
@@ -512,8 +512,6 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
         stand.setCanPickupItems(false);
         EulerAngle angle = isTool ? TOOL_ITEM_POSE : (isBlock ? BLOCK_POSE : STANDARD_ITEM_POSE);
         stand.setRightArmPose(angle);
-
-//        stand.setArms(true);
 
         //Store value of 1 in armour stand to indicate it belongs to this plugin.
         stand.getPersistentDataContainer().set(Values.PluginKey, PersistentDataType.INTEGER, 1);

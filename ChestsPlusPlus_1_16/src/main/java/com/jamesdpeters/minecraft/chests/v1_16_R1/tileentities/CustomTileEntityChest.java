@@ -10,7 +10,6 @@ import net.minecraft.server.v1_16_R1.SoundCategory;
 import net.minecraft.server.v1_16_R1.SoundEffect;
 import net.minecraft.server.v1_16_R1.SoundEffects;
 import net.minecraft.server.v1_16_R1.TileEntityChest;
-import net.minecraft.server.v1_16_R1.TileEntityChestTrapped;
 import net.minecraft.server.v1_16_R1.TileEntityTypes;
 import org.bukkit.entity.HumanEntity;
 
@@ -74,5 +73,12 @@ public class CustomTileEntityChest extends TileEntityChest implements TileEntity
 
     }
 
+    public void startOpen(EntityHuman entityhuman) {
+
+    }
+
+    public void closeContainer(EntityHuman entityhuman) {
+
+    }
 
 }

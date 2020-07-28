@@ -71,4 +71,13 @@ public class CustomTileEntityChest extends TileEntityChest implements TileEntity
         }
 
     }
+
+    public void startOpen(EntityHuman entityhuman) {
+
+    }
+
+    public void closeContainer(EntityHuman entityhuman) {
+
+    }
+
 }

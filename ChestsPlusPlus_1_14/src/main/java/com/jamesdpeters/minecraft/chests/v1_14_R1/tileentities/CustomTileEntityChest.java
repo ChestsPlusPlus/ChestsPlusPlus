@@ -4,6 +4,7 @@ import com.jamesdpeters.minecraft.chests.TileEntityOpener;
 import net.minecraft.server.v1_14_R1.Block;
 import net.minecraft.server.v1_14_R1.BlockChest;
 import net.minecraft.server.v1_14_R1.BlockPropertyChestType;
+import net.minecraft.server.v1_14_R1.EntityHuman;
 import net.minecraft.server.v1_14_R1.EnumDirection;
 import net.minecraft.server.v1_14_R1.SoundCategory;
 import net.minecraft.server.v1_14_R1.SoundEffect;
@@ -69,6 +70,14 @@ public class CustomTileEntityChest extends TileEntityChest implements TileEntity
 
             this.world.playSound(null, d0, d1, d2, soundeffect, SoundCategory.BLOCKS, 0.5F, this.world.random.nextFloat() * 0.1F + 0.9F);
         }
+
+    }
+
+    public void startOpen(EntityHuman entityhuman) {
+
+    }
+
+    public void closeContainer(EntityHuman entityhuman) {
 
     }
 }

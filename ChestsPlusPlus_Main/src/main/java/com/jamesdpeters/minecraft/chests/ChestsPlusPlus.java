@@ -5,6 +5,8 @@ import com.jamesdpeters.minecraft.chests.commands.AutoCraftCommand;
 import com.jamesdpeters.minecraft.chests.commands.ChestLinkCommand;
 import com.jamesdpeters.minecraft.chests.commands.ChestsPlusPlusCommand;
 import com.jamesdpeters.minecraft.chests.crafting.Crafting;
+import com.jamesdpeters.minecraft.chests.lang.LangFile;
+import com.jamesdpeters.minecraft.chests.lang.Message;
 import com.jamesdpeters.minecraft.chests.listeners.StorageListener;
 import com.jamesdpeters.minecraft.chests.listeners.HopperListener;
 import com.jamesdpeters.minecraft.chests.listeners.InventoryListener;
@@ -37,6 +39,9 @@ import org.bukkit.plugin.java.annotation.plugin.ApiVersion;
 import org.bukkit.plugin.java.annotation.plugin.Description;
 import org.bukkit.plugin.java.annotation.plugin.Plugin;
 import org.bukkit.plugin.java.annotation.plugin.author.Author;
+
+import java.io.IOException;
+import java.util.Set;
 
 @Plugin(name = "ChestsPlusPlus", version = BuildConstants.VERSION)
 @ApiVersion(ApiVersion.Target.v1_14)
@@ -81,8 +86,10 @@ public class ChestsPlusPlus extends JavaPlugin {
         Metrics metrics = new Metrics(this, pluginId);
         Stats.addCharts(metrics);
 
-        Settings.initConfig(this);
         PLUGIN = this;
+//        LangFile.createTemplateLangFile();
+        Settings.initConfig(this);
+//        LangFile.loadLangFile(Settings.getLangFileName());
 
         //API initialisation
         API.register(this);
@@ -92,12 +99,6 @@ public class ChestsPlusPlus extends JavaPlugin {
         new ChestLinkCommand().register(this);
         new AutoCraftCommand().register(this);
         new ChestsPlusPlusCommand().register(this);
-
-        //Register event listeners
-        getServer().getPluginManager().registerEvents(new StorageListener(),this);
-        getServer().getPluginManager().registerEvents(new InventoryListener(),this);
-        getServer().getPluginManager().registerEvents(new HopperListener(),this);
-        getServer().getPluginManager().registerEvents(new WorldListener(),this);
 
         //Load storage
         SpigotConfig.load(this);
@@ -142,6 +143,12 @@ public class ChestsPlusPlus extends JavaPlugin {
         Bukkit.getScheduler().scheduleSyncDelayedTask(this, () ->{
             Crafting.load();
             new Config();
+
+            //Register event listeners
+            getServer().getPluginManager().registerEvents(new StorageListener(),this);
+            getServer().getPluginManager().registerEvents(new InventoryListener(),this);
+            getServer().getPluginManager().registerEvents(new HopperListener(),this);
+            getServer().getPluginManager().registerEvents(new WorldListener(),this);
             getLogger().info("Chests++ Successfully Loaded Config and Recipes");
         },1);
     }
