@@ -1,6 +1,7 @@
 package com.jamesdpeters.minecraft.chests.commands;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
+import com.jamesdpeters.minecraft.chests.lang.Message;
 import com.jamesdpeters.minecraft.chests.misc.Messages;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Settings;
@@ -15,7 +16,6 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -24,15 +24,15 @@ import java.util.stream.Stream;
 public class AutoCraftCommand extends ServerCommand  {
 
     private enum OPTIONS {
-        ADD("/autocraft add <group>", "Create/add a Crafting Table to an AutoCraft group"),
-        HELP("/autocraft help","List of commands and their uses!"),
-        LIST("/autocraft list","Lists all AutoCraft groups that you own!"),
-        MEMBER("/autocraft member [add/remove <group> <player>] or [list <group>]","Add, remove or list members of a group"),
+        ADD("/autocraft add <group>", Message.COMMAND_AUTOCRAFT_ADD.getString()),
+        HELP("/autocraft help",Message.COMMAND_HELP.getString()),
+        LIST("/autocraft list",Message.COMMAND_AUTOCRAFT_LIST.getString()),
+        MEMBER("/autocraft member [add/remove <group> <player>] or [list <group>]",Message.COMMAND_MEMBER.getString()),
 //        MENU("/autocraft menu","Open the AutoCraft menu to display all groups!"),
-        OPEN("/autocraft open <Group>","Open the workbench of an AutoCraft group"),
-        REMOVE("/autocraft remove <Group>", "Delete an AutoCraft group and drop all the Crafting Tables!"),
-        RENAME("/autocraft rename <group> <new-name>","Rename an AutoCraft group."),
-        SETPUBLIC("/autocraft setpublic <group> <true/false>", "Set an AutoCraft group to be accessible by anyone.");
+        OPEN("/autocraft open <Group>",Message.COMMAND_AUTOCRAFT_OPEN.getString()),
+        REMOVE("/autocraft remove <Group>", Message.COMMAND_AUTOCRAFT_REMOVE.getString()),
+        RENAME("/autocraft rename <group> <new-name>",Message.COMMAND_AUTOCRAFT_RENAME.getString()),
+        SETPUBLIC("/autocraft setpublic <group> <true/false>", Message.COMMAND_AUTOCRAFT_SETPUBLIC.getString());
 
         String description, commandHelp;
         static List<String> valuesList;

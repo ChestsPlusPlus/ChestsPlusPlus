@@ -97,7 +97,8 @@ public class LangFileProperties {
     }
 
     public static void saveLangFile(Properties properties, File file) throws IOException {
-        properties.store(new FileOutputStream(file),"Chests++ Language File (Version "+ BuildConstants.VERSION+")");
+        properties.store(new FileOutputStream(file),"Chests++ Language File (Version "+ BuildConstants.VERSION+")\n" +
+                "NOTE: This file gets replaced when the plugin launches! If you want to make modifications create a copy first!");
     }
 
     private static File getLangFile(String fileName, boolean create) throws IOException {

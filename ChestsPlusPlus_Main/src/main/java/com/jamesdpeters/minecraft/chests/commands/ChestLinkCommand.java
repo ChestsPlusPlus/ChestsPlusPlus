@@ -2,6 +2,7 @@ package com.jamesdpeters.minecraft.chests.commands;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.inventories.ChestLinkMenu;
+import com.jamesdpeters.minecraft.chests.lang.Message;
 import com.jamesdpeters.minecraft.chests.misc.Messages;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Settings;
@@ -26,16 +27,16 @@ import java.util.stream.Stream;
 public class ChestLinkCommand extends ServerCommand  {
 
     private enum OPTIONS {
-        ADD("/chestlink add <group>", "Create/add a chest to a ChestLink group"),
-        HELP("/chestlink help","List of commands and their uses!"),
-        LIST("/chestlink list","Lists all ChestLinks that you own!"),
-        MEMBER("/chestlink member [add/remove <group> <player>] or [list <group>]","Add, remove or list members of a group"),
-        MENU("/chestlink menu","Open the ChestLink menu to display all groups!"),
-        OPEN("/chestlink open <Group>","Open the inventory of a ChestLink group"),
-        REMOVE("/chestlink remove <Group>", "Delete a ChestLink and drop its inventory at your feet!"),
-        RENAME("/chestlink rename <group> <new-name>","Rename a ChestLink."),
-        SETPUBLIC("/chestlink setpublic <group> <true/false>", "Set a ChestLink to be accessible by anyone."),
-        SORT("/chestlink sort <group> <sort-method>","Set the sorting option for the given ChestLink.");
+        ADD("/chestlink add <group>", Message.COMMAND_CHESTLINK_ADD.getString()),
+        HELP("/chestlink help", Message.COMMAND_HELP.getString()),
+        LIST("/chestlink list", Message.COMMAND_CHESTLINK_LIST.getString()),
+        MEMBER("/chestlink member [add/remove <group> <player>] or [list <group>]", Message.COMMAND_MEMBER.getString()),
+        MENU("/chestlink menu", Message.COMMAND_CHESTLINK_MENU.getString()),
+        OPEN("/chestlink open <Group>", Message.COMMAND_CHESTLINK_OPEN.getString()),
+        REMOVE("/chestlink remove <Group>", Message.COMMAND_CHESTLINK_REMOVE.getString()),
+        RENAME("/chestlink rename <group> <new-name>", Message.COMMAND_CHESTLINK_RENAME.getString()),
+        SETPUBLIC("/chestlink setpublic <group> <true/false>", Message.COMMAND_CHESTLINK_SETPUBLIC.getString()),
+        SORT("/chestlink sort <group> <sort-method>", Message.COMMAND_CHESTLINK_SORT.getString());
 
         String description, commandHelp;
         static List<String> valuesList;

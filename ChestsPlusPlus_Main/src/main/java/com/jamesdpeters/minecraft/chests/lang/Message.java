@@ -39,7 +39,29 @@ public enum Message {
     //AutoCraftMessages
     LIST_OF_AUTOCRAFTERS("List of your AutoCraft Stations:"),
     MUST_LOOK_AT_CRAFTING_TABLE("You must be looking at the Crafting Table you want to AutoCraft with!"),
-    INVALID_AUTOCRAFTER("Invalid AutoCrafter - You must place a sign on any side of a Crafting Table, and it must not already by apart of a group!");
+    INVALID_AUTOCRAFTER("Invalid AutoCrafter - You must place a sign on any side of a Crafting Table, and it must not already by apart of a group!"),
+
+    //Commands
+    COMMAND_MEMBER("Add, remove or list members of a group"),
+    COMMAND_HELP("List of commands and their uses!"),
+
+    //AutoCraft
+    COMMAND_AUTOCRAFT_ADD("Create/add a Crafting Table to an AutoCraft group"),
+    COMMAND_AUTOCRAFT_LIST("Lists all AutoCraft groups that you own!"),
+    COMMAND_AUTOCRAFT_OPEN("Open the workbench of an AutoCraft group"),
+    COMMAND_AUTOCRAFT_REMOVE("Delete an AutoCraft group and drop all the Crafting Tables!"),
+    COMMAND_AUTOCRAFT_RENAME("Rename an AutoCraft group."),
+    COMMAND_AUTOCRAFT_SETPUBLIC("Set an AutoCraft group to be accessible by anyone."),
+
+    //ChestLink
+    COMMAND_CHESTLINK_MENU("Open the ChestLink menu to display all groups!"),
+    COMMAND_CHESTLINK_SORT("Set the sorting option for the given ChestLink."),
+    COMMAND_CHESTLINK_ADD("Create/add a chest to a ChestLink group"),
+    COMMAND_CHESTLINK_LIST("Lists all ChestLinks that you own!"),
+    COMMAND_CHESTLINK_OPEN("Open the inventory of a ChestLink group"),
+    COMMAND_CHESTLINK_REMOVE("Delete a ChestLink and drop its inventory at your feet!"),
+    COMMAND_CHESTLINK_RENAME("Rename a ChestLink."),
+    COMMAND_CHESTLINK_SETPUBLIC("Set a ChestLink to be accessible by anyone.");
 
     String message;
     Message(String defaultMessage){
