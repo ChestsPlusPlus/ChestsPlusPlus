@@ -83,6 +83,7 @@ public class ChestsPlusPlus extends JavaPlugin {
         Stats.addCharts(metrics);
 
         PLUGIN = this;
+        LangFileProperties.moveLangFiles(getFile());
         LangFileProperties.createTemplateLangFile();
         Settings.initConfig(this);
         LangFileProperties.loadLangFile(Settings.getLangFileName());

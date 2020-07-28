@@ -185,6 +185,23 @@
                 <version>3.0.0-M1</version>
             </plugin>
 
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.0.0</version>
+                <executions>
+                    <execution>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <mainClass>com.jamesdpeters.minecraft.chests.lang.LangFileProperties</mainClass>
+                </configuration>
+            </plugin>
+
         </plugins>
 
         <!--Tell maven to enable resource filtering so we can use macros like '${project.version}' inside of our plugin.yml-->

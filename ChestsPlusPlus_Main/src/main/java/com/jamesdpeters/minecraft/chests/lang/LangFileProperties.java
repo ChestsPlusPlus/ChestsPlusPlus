@@ -15,10 +15,15 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.MessageFormat;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class LangFileProperties {
 
@@ -103,7 +108,35 @@ public class LangFileProperties {
         return file;
     }
 
-    public static void main(String[] args) throws IOException, URISyntaxException {
+    public static void moveLangFiles(File jarFile){
+        String directory = "lang";
+        try (JarFile jar = new JarFile(jarFile)) {
+            Enumeration<JarEntry> entries = jar.entries();
+
+            while (entries.hasMoreElements()) {
+                JarEntry entry = entries.nextElement();
+                String name = entry.getName();
+
+                if (!name.startsWith(directory + "/") || entry.isDirectory()) {
+                    continue;
+                }
+
+                ChestsPlusPlus.PLUGIN.saveResource(name, false);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    /*
+    IDE LANGUAGE GENERATOR
+     */
+
+    private final static Logger LOGGER = Logger.getLogger(LangFileProperties.class.getName());
+
+    public static void main(String[] args) {
+        System.setProperty("java.util.logging.SimpleFormatter.format", "%4$s: %5$s %n");
         LangFileProperties fileProperties = new LangFileProperties();
         fileProperties.generateEnglishLanguageFile();
     }
@@ -112,14 +145,24 @@ public class LangFileProperties {
 
     }
 
-    private void generateEnglishLanguageFile() throws IOException, URISyntaxException {
-        System.out.println("Generating English Language File: ");
-        Path projectRoot = Paths.get(getClass().getClassLoader().getResource("").toURI()).getParent().getParent();
-        File langFolder = new File(projectRoot.toString());
-        File langFile = new File(langFolder, "src/main/resources/lang/english.properties");
-        Properties properties = new Properties();
-        serialize(properties);
-        saveLangFile(properties, langFile);
+    private void generateEnglishLanguageFile() {
+        LOGGER.info("Generating English Language File from source");
+        try {
+            Path targetFolder = Paths.get(getClass().getClassLoader().getResource("").toURI());
+            File langSrcFolder = new File(targetFolder.getParent().getParent().toString());
+            File langSrcFile = new File(langSrcFolder, "src/main/resources/lang/english.properties");
+            File langTargetFile = new File(targetFolder.toString(), "lang/english.properties");
+            Properties properties = new Properties();
+            serialize(properties);
+            saveLangFile(properties, langSrcFile);
+            saveLangFile(properties, langTargetFile);
+            LOGGER.info("Saved language file to: "+langSrcFile.getPath());
+            LOGGER.info("Saved language file to: "+langTargetFile.getPath());
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Failed to generate language file!");
+            e.printStackTrace();
+            System.exit(1);
+        }
     }
 
 }
