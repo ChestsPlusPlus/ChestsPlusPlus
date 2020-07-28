@@ -5,8 +5,6 @@ import com.jamesdpeters.minecraft.chests.commands.AutoCraftCommand;
 import com.jamesdpeters.minecraft.chests.commands.ChestLinkCommand;
 import com.jamesdpeters.minecraft.chests.commands.ChestsPlusPlusCommand;
 import com.jamesdpeters.minecraft.chests.crafting.Crafting;
-import com.jamesdpeters.minecraft.chests.lang.LangFile;
-import com.jamesdpeters.minecraft.chests.lang.Message;
 import com.jamesdpeters.minecraft.chests.listeners.StorageListener;
 import com.jamesdpeters.minecraft.chests.listeners.HopperListener;
 import com.jamesdpeters.minecraft.chests.listeners.InventoryListener;
