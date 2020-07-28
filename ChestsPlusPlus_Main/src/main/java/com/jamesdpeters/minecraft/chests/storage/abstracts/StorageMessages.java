@@ -1,5 +1,6 @@
 package com.jamesdpeters.minecraft.chests.storage.abstracts;
 
+import com.jamesdpeters.minecraft.chests.lang.Message;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
@@ -12,61 +13,61 @@ public abstract class StorageMessages {
     public abstract String getStorageName();
 
     public void storageAdded(Player target, String group, String player){
-        target.sendMessage(ChatColor.GREEN+TAG+" Succesfully added "+getStorageName()+" to group: "+ChatColor.WHITE+group+ChatColor.RED+" for "+ChatColor.WHITE+player);
+        target.sendMessage(ChatColor.GREEN+TAG+" "+ Message.STORAGE_ADDED.getString(getStorageName(), ChatColor.WHITE+group+ChatColor.GREEN, ChatColor.WHITE+player));
     }
 
     public void storageRemoved(Player target, String group, String player){
-        target.sendMessage(ChatColor.RED+TAG+" Succesfully removed "+getStorageName()+" from group: "+ChatColor.WHITE+group+ChatColor.RED+" for "+ChatColor.WHITE+player);
+        target.sendMessage(ChatColor.RED+TAG+" "+Message.STORAGE_REMOVED.getString(getStorageName(), ChatColor.WHITE+group+ChatColor.RED, ChatColor.WHITE+player));
     }
 
     public void removedGroup(Player target, String toRemove){
-        target.sendMessage(ChatColor.RED+""+ChatColor.BOLD+TAG+" Succesfully removed group "+toRemove+" from your "+getStorageName()+"'s!");
+        target.sendMessage(ChatColor.RED+""+ChatColor.BOLD+TAG+" "+Message.REMOVED_GROUP.getString(toRemove, getStorageName()));
     }
 
     public void groupDoesntExist(Player target, String toRemove){
-        target.sendMessage(ChatColor.RED+""+ChatColor.BOLD+TAG+" "+toRemove+" isn't a valid "+getStorageName()+" group to remove!");
+        target.sendMessage(ChatColor.RED+""+ChatColor.BOLD+TAG+" "+Message.GROUP_DOESNT_EXIST.getString(toRemove, getStorageName()));
     }
 
     public void foundUnlinkedStorage(Player target, String group){
-        target.sendMessage(ChatColor.GOLD+TAG+" This "+getStorageName()+" wasn't linked to your system! It has been added under the "+group+" group!");
+        target.sendMessage(ChatColor.GOLD+TAG+" "+Message.FOUND_UNLINKED_STORAGE.getString(getStorageName(), group));
     }
 
     public void addedMember(Player target, AbstractStorage storage, String added){
-        target.sendMessage(ChatColor.GREEN+""+ChatColor.BOLD+TAG+" Succesfully added "+ChatColor.WHITE+added+ChatColor.GREEN+" to "+getStorageName()+" group "+ChatColor.WHITE+storage.getIdentifier());
-        target.sendMessage(ChatColor.GREEN+""+ChatColor.BOLD+TAG+" Current Members: "+ Utils.prettyPrintPlayers(ChatColor.GREEN,storage.getMembers()));
+        target.sendMessage(ChatColor.GREEN+""+ChatColor.BOLD+TAG+" "+Message.ADDED_MEMBER.getString(ChatColor.WHITE+added+ChatColor.GREEN, getStorageName(), ChatColor.WHITE+storage.getIdentifier()));
+        target.sendMessage(ChatColor.GREEN+""+ChatColor.BOLD+TAG+" "+Message.CURRENT_MEMBERS.getString(Utils.prettyPrintPlayers(ChatColor.GREEN,storage.getMembers())));
     }
 
     public void addMemberToAll(Player target, OfflinePlayer added){
-        target.sendMessage(ChatColor.GREEN+""+ChatColor.BOLD+TAG+" Succesfully added "+ChatColor.WHITE+added.getName()+ChatColor.GREEN+" to all "+getStorageName()+" groups ");
+        target.sendMessage(ChatColor.GREEN+""+ChatColor.BOLD+TAG+" "+Message.ADDED_MEMBER_TO_ALL.getString(ChatColor.WHITE+added.getName()+ChatColor.GREEN, getStorageName()));
     }
 
     public void unableToAddMember(Player target, String toAdd){
-        target.sendMessage(ChatColor.RED+""+ChatColor.BOLD+TAG+" Unable to add player "+toAdd+" to "+getStorageName()+"!");
+        target.sendMessage(ChatColor.RED+""+ChatColor.BOLD+TAG+" "+Message.UNABLE_TO_ADD_MEMBER_TO_ALL.getString(toAdd, getStorageName()));
     }
 
     public void removedMember(Player target, AbstractStorage storage, String added){
-        target.sendMessage(ChatColor.GREEN+""+ChatColor.BOLD+TAG+" Succesfully removed "+ChatColor.WHITE+added+ChatColor.GREEN+" from "+getStorageName()+" group "+ChatColor.WHITE+storage.getIdentifier());
-        target.sendMessage(ChatColor.GREEN+""+ChatColor.BOLD+TAG+" Current Members: "+ Utils.prettyPrintPlayers(ChatColor.GREEN,storage.getMembers()));
+        target.sendMessage(ChatColor.GREEN+""+ChatColor.BOLD+TAG+" "+Message.REMOVED_MEMBER.getString(ChatColor.WHITE+added+ChatColor.GREEN, getStorageName(), ChatColor.WHITE+storage.getIdentifier()));
+        target.sendMessage(ChatColor.GREEN+""+ChatColor.BOLD+TAG+" "+Message.CURRENT_MEMBERS.getString(Utils.prettyPrintPlayers(ChatColor.GREEN,storage.getMembers())));
     }
 
     public void removeMemberFromAll(Player target, OfflinePlayer added){
-        target.sendMessage(ChatColor.GREEN+""+ChatColor.BOLD+TAG+" Succesfully removed "+ChatColor.WHITE+added.getName()+ChatColor.GREEN+" from all "+getStorageName()+" groups ");
+        target.sendMessage(ChatColor.GREEN+""+ChatColor.BOLD+TAG+" "+Message.REMOVE_MEMBER_FROM_ALL.getString(ChatColor.WHITE+added.getName()+ChatColor.GREEN, getStorageName()));
     }
 
     public void unableToRemoveMember(Player target, String toAdd){
-        target.sendMessage(ChatColor.RED+""+ChatColor.BOLD+TAG+" Unable to remove player "+toAdd+" from "+getStorageName()+"! Were they already removed?");
+        target.sendMessage(ChatColor.RED+""+ChatColor.BOLD+TAG+" "+Message.UNABLE_TO_REMOVE_MEMBER.getString(toAdd, getStorageName()));
     }
 
     public void listMembers(Player target, AbstractStorage storage){
         if(storage.getMembers() != null){
-            target.sendMessage(ChatColor.GREEN+"Members of "+getStorageName()+" group "+ChatColor.WHITE+storage.getIdentifier()+": "+Utils.prettyPrintPlayers(ChatColor.GREEN,storage.getMembers()));
+            target.sendMessage(ChatColor.GREEN+Message.LIST_MEMBERS_OF_GROUP.getString(getStorageName(), ChatColor.WHITE+storage.getIdentifier(), Utils.prettyPrintPlayers(ChatColor.GREEN,storage.getMembers())));
         } else {
-            target.sendMessage(ChatColor.YELLOW+"There are no additional members in the group: "+ChatColor.WHITE+storage.getIdentifier());
+            target.sendMessage(ChatColor.YELLOW+Message.NO_ADDITIONAL_MEMBERS.getString(ChatColor.WHITE+storage.getIdentifier()));
         }
     }
 
     public void setPublic(Player target, AbstractStorage storage){
-        target.sendMessage(ChatColor.GREEN+"Publicity for "+getStorageName()+" group "+storage.getIdentifier()+" is set to: "+ChatColor.WHITE+storage.isPublic());
+        target.sendMessage(ChatColor.GREEN+Message.SET_PUBLICITY.getString(getStorageName(), storage.getIdentifier(), ChatColor.WHITE+""+storage.isPublic()));
     }
 
     public abstract void invalidID(Player target);

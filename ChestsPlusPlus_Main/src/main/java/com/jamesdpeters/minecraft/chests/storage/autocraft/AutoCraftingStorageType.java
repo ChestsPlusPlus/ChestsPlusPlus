@@ -1,5 +1,6 @@
 package com.jamesdpeters.minecraft.chests.storage.autocraft;
 
+import com.jamesdpeters.minecraft.chests.lang.Message;
 import com.jamesdpeters.minecraft.chests.misc.Messages;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Settings;
@@ -127,13 +128,13 @@ public class AutoCraftingStorageType extends StorageType<AutoCraftingStorage> {
 
         @Override
         public void invalidID(Player target) {
-            target.sendMessage(ChatColor.RED+"Invalid AutoCrafter ID! Must not contain a colon ':' unless you are referencing another players group that you are a member off");
+            target.sendMessage(ChatColor.RED+ Message.INVALID_ID.getString(getStorageName()));
             target.sendMessage(ChatColor.RED+"/autocraft add <owner>:<group>");
         }
 
         @Override
         public void listStorageGroups(Player target) {
-            target.sendMessage(ChatColor.GREEN+""+ChatColor.BOLD+"List of your AutoCraft Stations:");
+            target.sendMessage(ChatColor.GREEN+""+ChatColor.BOLD+Message.LIST_OF_AUTOCRAFTERS);
             for(AutoCraftingStorage storage : Config.getAutoCraft().getStorageMap(target.getUniqueId()).values()){
                 if(storage != null){
                     target.sendMessage(ChatColor.GREEN+storage.getIdentifier()+ChatColor.WHITE);
@@ -143,12 +144,12 @@ public class AutoCraftingStorageType extends StorageType<AutoCraftingStorage> {
 
         @Override
         public void mustLookAtBlock(Player player) {
-            player.sendMessage(ChatColor.RED+TAG+" You must be looking at the Crafting Table you want to AutoCraft with!");
+            player.sendMessage(ChatColor.RED+TAG+" "+Message.MUST_LOOK_AT_CRAFTING_TABLE);
         }
 
         @Override
         public void invalidSignPlacement(Player player) {
-            player.sendMessage(ChatColor.GOLD+""+ChatColor.BOLD+TAG+" Invalid AutoCrafter - You must place a sign on any side of a Crafting Table, and it must not already by apart of a group!");
+            player.sendMessage(ChatColor.GOLD+""+ChatColor.BOLD+TAG+" "+Message.INVALID_AUTOCRAFTER);
         }
     }
 }

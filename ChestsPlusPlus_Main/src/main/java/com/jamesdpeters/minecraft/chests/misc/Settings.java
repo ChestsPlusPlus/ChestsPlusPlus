@@ -21,6 +21,7 @@ public class Settings {
     private static String SHOULD_AUTOCRAFT_ARMOUR_STAND = "display_autocraft_armour_stands";
     private static String INVISIBLE_FILTER_ITEM_FRAMES = "set-filter-itemframe-invisible";
     private static String WORLD_BLACKLIST = "world-blacklist";
+    private static String LANG_FILE = "language-file";
 
     private static Settings cf;
     private FileConfiguration configuration;
@@ -36,6 +37,7 @@ public class Settings {
     private static boolean shouldDisplayAutoCraftStand;
     private static boolean filterItemFrameInvisible;
     private static List<String> worldBlacklist;
+    private static String langFileName;
 
     public static void initConfig(Plugin plugin){
         cf = new Settings();
@@ -53,6 +55,7 @@ public class Settings {
         cf.configuration.addDefault(SHOULD_AUTOCRAFT_ARMOUR_STAND,true);
         cf.configuration.addDefault(INVISIBLE_FILTER_ITEM_FRAMES, false);
         cf.configuration.addDefault(WORLD_BLACKLIST, Collections.singletonList(""));
+        cf.configuration.addDefault(LANG_FILE, "default");
 
         cf.configuration.options().copyDefaults(true);
         cf.plugin.saveConfig();
@@ -77,6 +80,7 @@ public class Settings {
         shouldDisplayAutoCraftStand = cf.configuration.getBoolean(SHOULD_AUTOCRAFT_ARMOUR_STAND);
         filterItemFrameInvisible = cf.configuration.getBoolean(INVISIBLE_FILTER_ITEM_FRAMES);
         worldBlacklist = cf.configuration.getStringList(WORLD_BLACKLIST);
+        langFileName = cf.configuration.getString(LANG_FILE);
     }
 
     /**
@@ -104,6 +108,7 @@ public class Settings {
         return filterItemFrameInvisible;
     }
     public static List<String> getWorldBlacklist(){ return worldBlacklist; }
+    public static String getLangFileName(){ return langFileName; }
 
     public static boolean isBlacklistedWorld(World world){
         return worldBlacklist.contains(world.getName());

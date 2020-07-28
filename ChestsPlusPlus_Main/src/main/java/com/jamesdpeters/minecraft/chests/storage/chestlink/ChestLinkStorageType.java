@@ -1,5 +1,6 @@
 package com.jamesdpeters.minecraft.chests.storage.chestlink;
 
+import com.jamesdpeters.minecraft.chests.lang.Message;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Settings;
 import com.jamesdpeters.minecraft.chests.misc.Values;
@@ -128,13 +129,13 @@ public class ChestLinkStorageType extends StorageType<ChestLinkStorage> {
 
         @Override
         public void invalidID(Player target) {
-            target.sendMessage(ChatColor.RED+"Invalid ChestLink ID! Must not contain a colon ':' unless you are referencing another players group that you are a member off");
+            target.sendMessage(ChatColor.RED+ Message.INVALID_ID.getString(getStorageName()));
             target.sendMessage(ChatColor.RED+"/chestlink add <owner>:<group>");
         }
 
         @Override
         public void listStorageGroups(Player target) {
-            target.sendMessage(ChatColor.GREEN+""+ChatColor.BOLD+"List of your ChestLinks:");
+            target.sendMessage(ChatColor.GREEN+""+ChatColor.BOLD+Message.LIST_OF_CHESTLINK);
             for(ChestLinkStorage storage : Config.getChestLink().getStorageMap(target.getUniqueId()).values()){
                 if(storage != null){
                     target.sendMessage(ChatColor.GREEN+storage.getIdentifier()+ChatColor.WHITE+" - "+storage.getTotalItems()+" items");
@@ -144,12 +145,12 @@ public class ChestLinkStorageType extends StorageType<ChestLinkStorage> {
 
         @Override
         public void mustLookAtBlock(Player player) {
-            player.sendMessage(ChatColor.RED+TAG+" You must be looking at the chest you want to ChestLink!");
+            player.sendMessage(ChatColor.RED+TAG+" "+Message.MUST_LOOK_AT_CHEST);
         }
 
         @Override
         public void invalidSignPlacement(Player player) {
-            player.sendMessage(ChatColor.GOLD+""+ChatColor.BOLD+TAG+" Invalid ChestLink - You must place a sign on the front of a chest / you should ensure there is space for a sign on front of the chest!");
+            player.sendMessage(ChatColor.GOLD+""+ChatColor.BOLD+TAG+" "+Message.INVALID_CHESTLINK);
         }
     }
 }

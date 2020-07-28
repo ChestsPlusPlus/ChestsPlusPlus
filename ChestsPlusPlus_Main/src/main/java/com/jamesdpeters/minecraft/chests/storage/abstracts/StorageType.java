@@ -10,7 +10,6 @@ import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.serialize.ConfigStorage;
 import com.jamesdpeters.minecraft.chests.serialize.LocationInfo;
 import com.jamesdpeters.minecraft.chests.storage.StorageUtils;
-import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -22,7 +21,6 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Sign;
-import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.type.WallSign;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockPlaceEvent;
@@ -278,7 +276,7 @@ public abstract class StorageType<T extends AbstractStorage> {
             return false;
         }
         if (map.containsKey(newIdentifier)) {
-            Messages.CANNOT_RENAME_ALREADY_EXISTS(player, newIdentifier);
+            Messages.CANNOT_RENAME_GROUP_ALREADY_EXISTS(player, newIdentifier);
             return false;
         }
         T storage = map.get(oldIdentifier);
