@@ -14,29 +14,26 @@ import java.util.Properties;
 public class LanguageFile extends Properties {
 
     public void store(File file) throws IOException {
-        store0(new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)),false);
+        store0(new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)), false);
     }
 
-    public void storeTemplate(File file) throws IOException {
-        store0(new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)),true);
+    public void storeGenerated(File file) throws IOException {
+        store0(new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)), true);
     }
 
-    private void store0(BufferedWriter bw, boolean template)
+    private void store0(BufferedWriter bw, boolean generated)
             throws IOException
     {
-        writeComments(bw, "# Chests++ Language File (Version " + BuildConstants.VERSION + "))");
-        if(template){
+        if(generated) {
+            writeComments(bw, " Chests++ Language File (Version " + BuildConstants.VERSION + "))");
             writeComments(bw,
-                    "#########################################\n" +
-                    "This is a template file for creating a new lang file!\n" +
-                    "To create a new language file simply create a copy of this file and rename it to your desired choice for example 'español.yml'\n" +
-                    "It should be located in the 'lang' folder, next to template.yml'\n" +
-                    "Then in config.yml 'language-file: default' would be renamed to 'language-file: español'\n" +
-                    "To help contribute to the plugin and provide new language files you can create a pull-request at https://github.com/JamesPeters98/ChestsPlusPlus or join our Discord!\n" +
-                    "##########################################");
-        } else {
-            writeComments(bw, "# NOTE: This file gets replaced when the plugin launches! If you want to make modifications create a copy first!");
+                    " NOTE: This file gets replaced when the plugin launches! If you want to make modifications create a copy first!\n" +
+                            " To create a new language file simply create a copy of this file and rename it to your desired choice for example 'en_US.properties'\n" +
+                            " It should be located in the 'lang' folder\n" +
+                            " Then in config.yml 'language-file: default' would be renamed to 'language-file: en_US'\n" +
+                            " To help contribute to the plugin and provide new language files you can create a pull-request at https://github.com/JamesPeters98/ChestsPlusPlus or join our Discord https://discord.gg/YRs3mP5");
         }
+
         synchronized (this) {
             for (Enumeration<?> e = keys(); e.hasMoreElements();) {
                 String key = (String)e.nextElement();

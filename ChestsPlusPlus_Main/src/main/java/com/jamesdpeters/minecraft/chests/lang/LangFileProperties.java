@@ -1,25 +1,15 @@
 package com.jamesdpeters.minecraft.chests.lang;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
-import com.jamesdpeters.minecraft.chests.maventemplates.BuildConstants;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.configuration.serialization.ConfigurationSerializable;
-import org.bukkit.configuration.serialization.SerializableAs;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Properties;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -48,7 +38,7 @@ public class LangFileProperties {
             //Save the language file after reading to insert any missing values.
             LanguageFile savedProperties = new LanguageFile();
             serialize(savedProperties);
-            if(currentFile != null) saveLangFile(savedProperties,currentFile);
+            if(currentFile != null) savedProperties.store(currentFile);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -73,23 +63,6 @@ public class LangFileProperties {
         Properties properties = new Properties();
         properties.load(new FileInputStream(file));
         return properties;
-    }
-
-
-    /**
-     * This must be called before {@link #loadLangFile(String)} since @{@link Message} is static.
-     */
-    public static void createTemplateLangFile() {
-        try {
-            LanguageFile properties = new LanguageFile();
-            serialize(properties);
-            properties.storeTemplate(getLangFile("template", true));
-        } catch (IOException ignored){
-        }
-    }
-
-    public static void saveLangFile(LanguageFile properties, File file) throws IOException {
-        properties.store(file);
     }
 
     private static File getLangFile(String fileName, boolean create) throws IOException {
@@ -142,12 +115,12 @@ public class LangFileProperties {
         try {
             Path targetFolder = Paths.get(getClass().getClassLoader().getResource("").toURI());
             File langSrcFolder = new File(targetFolder.getParent().getParent().toString());
-            File langSrcFile = new File(langSrcFolder, "src/main/resources/lang/english.properties");
-            File langTargetFile = new File(targetFolder.toString(), "lang/english.properties");
+            File langSrcFile = new File(langSrcFolder, "src/main/resources/lang/en_GB.properties");
+            File langTargetFile = new File(targetFolder.toString(), "lang/en_GB.properties");
             LanguageFile properties = new LanguageFile();
             serialize(properties);
-            saveLangFile(properties, langSrcFile);
-            saveLangFile(properties, langTargetFile);
+            properties.storeGenerated(langSrcFile);
+            properties.storeGenerated(langTargetFile);
             LOGGER.info("Saved language file to: "+langSrcFile.getPath());
             LOGGER.info("Saved language file to: "+langTargetFile.getPath());
         } catch (Exception e) {
