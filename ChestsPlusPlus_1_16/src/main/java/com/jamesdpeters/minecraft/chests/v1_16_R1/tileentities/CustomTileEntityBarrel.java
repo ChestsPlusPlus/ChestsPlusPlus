@@ -61,11 +61,11 @@ public class CustomTileEntityBarrel extends TileEntityBarrel implements TileEnti
         a(iblockdata, false);
     }
 
-    private void a(IBlockData iblockdata, boolean flag) {
+    public void a(IBlockData iblockdata, boolean flag) {
         this.world.setTypeAndData(this.getPosition(), (IBlockData)iblockdata.set(BlockBarrel.b, flag), 3);
     }
 
-    private void a(IBlockData iblockdata, SoundEffect soundeffect) {
+    public void a(IBlockData iblockdata, SoundEffect soundeffect) {
         BaseBlockPosition baseblockposition = ((EnumDirection)iblockdata.get(BlockBarrel.a)).p();
         double d0 = (double)this.position.getX() + 0.5D + (double)baseblockposition.getX() / 2.0D;
         double d1 = (double)this.position.getY() + 0.5D + (double)baseblockposition.getY() / 2.0D;

@@ -40,28 +40,32 @@ import java.util.stream.Stream;
 public class Utils {
 
     public static void openChestInventory(Player player, ChestLinkStorage storage, LocationInfo openedChestLocation){
+        player.openInventory(storage.getInventory());
         //Check if all chests should perform open animation.
         if(Settings.isShouldAnimateAllChests()) {
             storage.getLocations().forEach(locationInfo -> {
                 Location location = locationInfo.getLocation();
                 if (location != null) {
-                    containerAnimation(storage.getInventory(), locationInfo);
+                    containerAnimation(storage.getInventory(), locationInfo, true);
                 }
             });
         } else {
-            containerAnimation(storage.getInventory(), openedChestLocation);
+            containerAnimation(storage.getInventory(), openedChestLocation, true);
         }
-        player.openInventory(storage.getInventory());
     }
 
-    private static void containerAnimation(Inventory inventory, LocationInfo location){
+    private static void containerAnimation(Inventory inventory, LocationInfo location, boolean open){
         if (location != null && Utils.isLocationChunkLoaded(location.getLocation())) {
             Block block = location.getLocation().getBlock();
             if (block.getState() instanceof Container) {
                 Container chest = (Container) block.getState();
+                if(open){
+                    location.setTileEntityOpener(ApiSpecific.getChestOpener().updateState(inventory, chest, location.getTileEntityOpener()));
+                } else {
                 Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN,() -> {
                     location.setTileEntityOpener(ApiSpecific.getChestOpener().updateState(inventory, chest, location.getTileEntityOpener()));
                 },1);
+                }
             }
         }
     }
@@ -70,7 +74,7 @@ public class Utils {
         storage.getLocations().forEach(locationInfo -> {
             Location location = locationInfo.getLocation();
             if (location != null) {
-                containerAnimation(storage.getInventory(), locationInfo);
+                containerAnimation(storage.getInventory(), locationInfo, false);
             }
         });
     }

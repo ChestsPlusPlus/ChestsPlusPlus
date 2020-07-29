@@ -56,7 +56,7 @@ public class CustomTileEntityChest extends TileEntityChest implements TileEntity
         onOpen();
     }
 
-    private void a(SoundEffect soundeffect) {
+    public void a(SoundEffect soundeffect) {
         BlockPropertyChestType blockpropertychesttype = (BlockPropertyChestType)this.getBlock().get(BlockChest.c);
         if (blockpropertychesttype != BlockPropertyChestType.LEFT) {
             double d0 = (double)this.position.getX() + 0.5D;
