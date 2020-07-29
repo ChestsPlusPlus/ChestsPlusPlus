@@ -10,6 +10,7 @@ import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.serialize.ConfigStorage;
 import com.jamesdpeters.minecraft.chests.serialize.LocationInfo;
 import com.jamesdpeters.minecraft.chests.storage.StorageUtils;
+import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -328,9 +329,10 @@ public abstract class StorageType<T extends AbstractStorage> {
             String[] lines = new String[4];
             lines[0] = linkTag;
             lines[1] = Values.identifier(group);
-            if(owner != null) {
-                lines[2] = owner;
-            }
+            lines[3] = "";
+            if(owner != null) lines[2] = owner;
+            else lines[2] = "";
+
             Material airType = toReplace.getType();
             Material wallSign = Material.getMaterial(signMaterial.name().replace("SIGN", "WALL_SIGN"));
             toReplace.setType(wallSign != null ? wallSign : Material.OAK_WALL_SIGN);
