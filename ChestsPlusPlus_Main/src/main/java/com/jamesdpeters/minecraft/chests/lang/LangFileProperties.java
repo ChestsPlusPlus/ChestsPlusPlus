@@ -30,7 +30,7 @@ public class LangFileProperties {
 
     private static File currentFile;
 
-    public static void serialize(Properties properties) {
+    public static void serialize(LanguageFile properties) {
         for (Message value : Message.values()) {
             properties.setProperty(value.toString(),value.getTaggedMessage());
         }
@@ -46,7 +46,7 @@ public class LangFileProperties {
         });
         try {
             //Save the language file after reading to insert any missing values.
-            Properties savedProperties = new Properties();
+            LanguageFile savedProperties = new LanguageFile();
             serialize(savedProperties);
             if(currentFile != null) saveLangFile(savedProperties,currentFile);
         } catch (IOException e) {
@@ -81,25 +81,15 @@ public class LangFileProperties {
      */
     public static void createTemplateLangFile() {
         try {
-            Properties properties = new Properties();
-            String comment =
-                    "#########################################\n" +
-                    "This is a template file for creating a new lang file!\n" +
-                    "To create a new language file simply create a copy of this file and rename it to your desired choice for example 'español.yml'\n" +
-                    "It should be located in the 'lang' folder, next to template.yml'\n" +
-                    "Then in config.yml 'language-file: default' would be renamed to 'language-file: español'\n" +
-                    "To help contribute to the plugin and provide new language files you can create a pull-request at https://github.com/JamesPeters98/ChestsPlusPlus or join our Discord!\n" +
-                    "\n" +
-                    "##########################################";
+            LanguageFile properties = new LanguageFile();
             serialize(properties);
-            properties.store(new FileOutputStream(getLangFile("template", true)), comment);
+            properties.storeTemplate(getLangFile("template", true));
         } catch (IOException ignored){
         }
     }
 
-    public static void saveLangFile(Properties properties, File file) throws IOException {
-        properties.store(new FileOutputStream(file),"Chests++ Language File (Version "+ BuildConstants.VERSION+")\n" +
-                "NOTE: This file gets replaced when the plugin launches! If you want to make modifications create a copy first!");
+    public static void saveLangFile(LanguageFile properties, File file) throws IOException {
+        properties.store(file);
     }
 
     private static File getLangFile(String fileName, boolean create) throws IOException {
@@ -154,7 +144,7 @@ public class LangFileProperties {
             File langSrcFolder = new File(targetFolder.getParent().getParent().toString());
             File langSrcFile = new File(langSrcFolder, "src/main/resources/lang/english.properties");
             File langTargetFile = new File(targetFolder.toString(), "lang/english.properties");
-            Properties properties = new Properties();
+            LanguageFile properties = new LanguageFile();
             serialize(properties);
             saveLangFile(properties, langSrcFile);
             saveLangFile(properties, langTargetFile);
