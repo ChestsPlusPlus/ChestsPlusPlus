@@ -12,6 +12,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.MessageFormat;
@@ -38,7 +39,7 @@ public class LangFileProperties {
     public static void deserialize(Properties properties){
         properties.forEach((key, value) -> {
             try {
-                Message.valueOf((String) key).setMessage((String) value);
+                Message.valueOf((String) key).setMessage(new String(((String) value).getBytes(), StandardCharsets.UTF_8));
             } catch (IllegalArgumentException e) {
                 ChestsPlusPlus.PLUGIN.getLogger().warning(MessageFormat.format("Language file contained invalid messages. Invalid message {0}:{1} has been removed and missing messages have been replaced", key, value));
             }
@@ -122,7 +123,7 @@ public class LangFileProperties {
                     continue;
                 }
 
-                ChestsPlusPlus.PLUGIN.saveResource(name, false);
+                ChestsPlusPlus.PLUGIN.saveResource(name, true);
             }
         } catch (IOException e) {
             e.printStackTrace();
