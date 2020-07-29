@@ -23,7 +23,7 @@ import com.jamesdpeters.minecraft.chests.serialize.LocationInfo;
 import com.jamesdpeters.minecraft.chests.serialize.MaterialSerializer;
 import com.jamesdpeters.minecraft.chests.serialize.RecipeSerializable;
 import com.jamesdpeters.minecraft.chests.serialize.SpigotConfig;
-import com.jamesdpeters.minecraft.chests.versionchecker.UpdateCheck;
+import com.jamesdpeters.minecraft.chests.versionchecker.UpdateChecker;
 import fr.minuskube.inv.InventoryManager;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
@@ -109,44 +109,36 @@ public class ChestsPlusPlus extends JavaPlugin {
         if(isBeta) getLogger().warning("You are currently running a Beta build - update checker disabled! Build: "+BuildConstants.VERSION);
 
         if(Settings.isUpdateCheckEnabled() && !isDev && !isBeta) {
-            String SPIGOT_URL = "https://www.spigotmc.org/resources/chests-chest-linking-hopper-filtering-remote-chests-menus.71355/";
             String BUKKIT_URL = "https://dev.bukkit.org/projects/chests-plus-plus/files";
-            UpdateCheck updateChecker = UpdateCheck
-                    .of(this)
-                    .resourceId(71355)
-                    .currentVersion(getDescription().getVersion())
-                    .handleResponse((versionResponse, version) -> {
-                        switch (versionResponse) {
-                            case FOUND_NEW:
-                                getLogger().warning("New version of the plugin has been found: " + version);
-                                getLogger().warning("Download at: "+SPIGOT_URL);
-                                Bukkit.broadcastMessage(ChatColor.RED + "[Chests++] New version of the plugin was found: " + version);
-                                Bukkit.broadcastMessage(ChatColor.RED + "[Chests++] Download at: " +ChatColor.WHITE+ BUKKIT_URL);
-                                break;
-                            case LATEST:
-                                if(!boot) getLogger().info("Plugin is up to date! Thank you for supporting Chests++!");
-                                break;
-                            case UNAVAILABLE:
-                                Bukkit.broadcastMessage("Unable to perform an update check.");
-                        }
-                        boot = true;
-                    });
-            Bukkit.getScheduler().scheduleSyncRepeatingTask(this, updateChecker::check,0,Settings.getUpdateCheckerPeriodTicks());
+            UpdateChecker.init(this, 71355, UpdateChecker.VERSION_SCHEME_DECIMAL);
+            Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
+                UpdateChecker.get().requestUpdateCheck().whenCompleteAsync((updateResult, throwable) -> {
+                    switch (updateResult.getReason()) {
+                        case NEW_UPDATE:
+                            Bukkit.broadcastMessage(ChatColor.RED + "[Chests++] New version of the plugin was found: " + updateResult.getNewestVersion());
+                            Bukkit.broadcastMessage(ChatColor.RED + "[Chests++] Download at: " + ChatColor.WHITE + BUKKIT_URL);
+                            break;
+                        case UP_TO_DATE:
+                            if (!boot) getLogger().info("Plugin is up to date! Thank you for supporting Chests++!");
+                            break;
+                    }
+                    boot = true;
+                });
+            }, 0, Settings.getUpdateCheckerPeriodTicks());
         }
-
-        getLogger().info("Chests++ enabled!");
 
         //Load storages after load.
         Bukkit.getScheduler().scheduleSyncDelayedTask(this, () ->{
             Crafting.load();
             new Config();
+            getLogger().info("Chests++ Successfully Loaded Config and Recipes");
 
             //Register event listeners
             getServer().getPluginManager().registerEvents(new StorageListener(),this);
             getServer().getPluginManager().registerEvents(new InventoryListener(),this);
             getServer().getPluginManager().registerEvents(new HopperListener(),this);
             getServer().getPluginManager().registerEvents(new WorldListener(),this);
-            getLogger().info("Chests++ Successfully Loaded Config and Recipes");
+            getLogger().info("Chests++ enabled!");
         },1);
     }
 
