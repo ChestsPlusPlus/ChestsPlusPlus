@@ -14,17 +14,18 @@ import java.util.Map;
 @SerializableAs("C++Recipe")
 public class RecipeSerializable implements ConfigurationSerializable {
 
-    private Recipe recipe;
-    private NamespacedKey key;
+    private final Recipe recipe;
+    private final NamespacedKey key;
 
-    public RecipeSerializable(Recipe recipe){
+    public RecipeSerializable(Recipe recipe) {
         this.recipe = recipe;
-        if(recipe instanceof ShapedRecipe) key = ((ShapedRecipe) recipe).getKey();
-        else if(recipe instanceof ShapelessRecipe) key = ((ShapelessRecipe) recipe).getKey();
-        else throw new IllegalArgumentException("Recipe type has not been implemented! "+recipe.getClass().toGenericString());
+        if (recipe instanceof ShapedRecipe) key = ((ShapedRecipe) recipe).getKey();
+        else if (recipe instanceof ShapelessRecipe) key = ((ShapelessRecipe) recipe).getKey();
+        else
+            throw new IllegalArgumentException("Recipe type has not been implemented! " + recipe.getClass().toGenericString());
     }
 
-    public RecipeSerializable(Map<String, Object> map){
+    public RecipeSerializable(Map<String, Object> map) {
         //noinspection deprecation
         key = new NamespacedKey((String) map.get("namespace"), (String) map.get("key"));
         recipe = Crafting.getRecipeByKey(key);
@@ -33,8 +34,8 @@ public class RecipeSerializable implements ConfigurationSerializable {
     @Override
     public Map<String, Object> serialize() {
         LinkedHashMap<String, Object> map = new LinkedHashMap<>();
-        map.put("namespace",key.getNamespace());
-        map.put("key",key.getKey());
+        map.put("namespace", key.getNamespace());
+        map.put("key", key.getKey());
         return map;
     }
 

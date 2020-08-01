@@ -19,13 +19,13 @@ import org.bukkit.inventory.ShapelessRecipe;
 import java.util.Map;
 
 @SerializableAs("AutoCraftingStorage")
-public class AutoCraftingStorage extends AbstractStorage implements ConfigurationSerializable  {
+public class AutoCraftingStorage extends AbstractStorage implements ConfigurationSerializable {
 
     private RecipeSerializable recipeSerializable;
     private String identifier;
     private VirtualCraftingHolder virtualCraftingHolder;
 
-    public AutoCraftingStorage(Map<String, Object> map){
+    public AutoCraftingStorage(Map<String, Object> map) {
         super(map);
     }
 
@@ -34,7 +34,7 @@ public class AutoCraftingStorage extends AbstractStorage implements Configuratio
         return Config.getAutoCraft();
     }
 
-    public AutoCraftingStorage(OfflinePlayer player, String identifier, Location location, Location signLocation){
+    public AutoCraftingStorage(OfflinePlayer player, String identifier, Location location, Location signLocation) {
         super(player, identifier, location, signLocation);
         this.identifier = identifier;
         initInventory();
@@ -42,7 +42,7 @@ public class AutoCraftingStorage extends AbstractStorage implements Configuratio
 
     @Override
     protected void serialize(Map<String, Object> hashMap) {
-        hashMap.put("recipe",recipeSerializable);
+        hashMap.put("recipe", recipeSerializable);
         hashMap.put("identifier", identifier);
     }
 
@@ -58,8 +58,8 @@ public class AutoCraftingStorage extends AbstractStorage implements Configuratio
         return false;
     }
 
-    public void setRecipe(Recipe recipe){
-        if(recipe == null){
+    public void setRecipe(Recipe recipe) {
+        if (recipe == null) {
             recipeSerializable = null;
             return;
         }
@@ -91,10 +91,10 @@ public class AutoCraftingStorage extends AbstractStorage implements Configuratio
     }
 
     @Override
-    protected Inventory initInventory(){
-        if(virtualCraftingHolder == null) virtualCraftingHolder = new VirtualCraftingHolder(this);
+    protected Inventory initInventory() {
+        if (virtualCraftingHolder == null) virtualCraftingHolder = new VirtualCraftingHolder(this);
 
-        if(recipeSerializable != null) {
+        if (recipeSerializable != null) {
             Recipe recipe = recipeSerializable.getRecipe();
 
             if (recipe instanceof ShapelessRecipe) {
@@ -125,6 +125,7 @@ public class AutoCraftingStorage extends AbstractStorage implements Configuratio
     @Override
     public void postConfigLoad() {
         super.postConfigLoad();
-        if(recipeSerializable != null && recipeSerializable.getRecipe() != null) onItemDisplayUpdate(recipeSerializable.getRecipe().getResult());
+        if (recipeSerializable != null && recipeSerializable.getRecipe() != null)
+            onItemDisplayUpdate(recipeSerializable.getRecipe().getResult());
     }
 }

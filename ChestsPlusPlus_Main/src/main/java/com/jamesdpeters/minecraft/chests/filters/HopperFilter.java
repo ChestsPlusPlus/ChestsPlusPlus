@@ -13,33 +13,33 @@ import java.util.stream.Collectors;
 
 public class HopperFilter {
 
-    public static boolean isInFilter(List<Filter> filters, ItemStack item){
-        if(filters == null) return true;
-        if(filters.size() == 0) return true;
+    public static boolean isInFilter(List<Filter> filters, ItemStack item) {
+        if (filters == null) return true;
+        if (filters.size() == 0) return true;
         List<Filter> acceptFilters = filters.stream().filter(filter -> filter.getFilteringMethod() == Filter.Type.ACCEPT).collect(Collectors.toList());
         boolean hasAcceptFilter = acceptFilters.stream().anyMatch(filter -> filter.getFilterType(item).equals(Filter.Type.ACCEPT));
         boolean isRejected = filters.stream().filter(filter -> filter.getFilteringMethod() == Filter.Type.REJECT).anyMatch(filter -> filter.getFilterType(item).equals(Filter.Type.REJECT));
-        if(acceptFilters.size() > 0) return hasAcceptFilter && !isRejected;
+        if (acceptFilters.size() > 0) return hasAcceptFilter && !isRejected;
         else return !isRejected;
     }
 
-    public static List<Filter> getHopperFilters(Block block){
-        Collection<Entity> ent = block.getWorld().getNearbyEntities(block.getLocation(),1.01,1.01,1.01);
+    public static List<Filter> getHopperFilters(Block block) {
+        Collection<Entity> ent = block.getWorld().getNearbyEntities(block.getLocation(), 1.01, 1.01, 1.01);
         List<Filter> filters = new ArrayList<>(ent.size());
-        for(Entity entity : ent){
-            if(entity instanceof ItemFrame){
+        for (Entity entity : ent) {
+            if (entity instanceof ItemFrame) {
                 ItemFrame frame = (ItemFrame) entity;
-                if(frame.getItem().getType().equals(Material.AIR)) continue;
+                if (frame.getItem().getType().equals(Material.AIR)) continue;
                 Block attachedBlock = frame.getLocation().getBlock().getRelative(frame.getAttachedFace());
-                if(block.equals(attachedBlock)){
-                    filters.add(new Filter(frame.getItem(),frame));
+                if (block.equals(attachedBlock)) {
+                    filters.add(new Filter(frame.getItem(), frame));
                 }
             }
         }
         return filters;
     }
 
-    public static boolean isInFilter(Block block, ItemStack itemStack){
-        return isInFilter(getHopperFilters(block),itemStack);
+    public static boolean isInFilter(Block block, ItemStack itemStack) {
+        return isInFilter(getHopperFilters(block), itemStack);
     }
 }

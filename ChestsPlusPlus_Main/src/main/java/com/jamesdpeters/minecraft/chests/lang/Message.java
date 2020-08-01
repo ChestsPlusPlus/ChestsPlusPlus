@@ -64,44 +64,47 @@ public enum Message {
     COMMAND_CHESTLINK_SETPUBLIC("Set a ChestLink to be accessible by anyone.");
 
     String message;
-    Message(String defaultMessage){
+
+    Message(String defaultMessage) {
         this(defaultMessage, new Tag[]{});
     }
 
     Tag[] tags;
-    Message(String defaultMessage, Tag... tags){
+
+    Message(String defaultMessage, Tag... tags) {
         message = defaultMessage;
         this.tags = tags;
     }
 
     /**
      * This can be used to set different messages for different languages.
+     *
      * @param message - the template string for the message.
      */
     public void setMessage(String message) {
         this.message = detagMessage(message, tags);
     }
 
-    public String getTaggedMessage(){
+    public String getTaggedMessage() {
         return tagMessage(message, tags);
     }
 
-    private static String detagMessage(String string, Tag[] tags){
+    private static String detagMessage(String string, Tag[] tags) {
         for (int i = 0; i < tags.length; i++) {
-            string = string.replaceAll("\\{"+tags[i]+"}", "{"+i+"}");
+            string = string.replaceAll("\\{" + tags[i] + "}", "{" + i + "}");
         }
         return string;
     }
 
-    private static String tagMessage(String string, Tag[] tags){
+    private static String tagMessage(String string, Tag[] tags) {
         for (int i = 0; i < tags.length; i++) {
-            String replace = "\\{"+i+"}";
-            string = string.replaceAll(replace, "{"+tags[i]+"}");
+            String replace = "\\{" + i + "}";
+            string = string.replaceAll(replace, "{" + tags[i] + "}");
         }
         return string;
     }
 
-    public String getString(Object... args){
+    public String getString(Object... args) {
         return MessageFormat.format(message, args);
     }
 

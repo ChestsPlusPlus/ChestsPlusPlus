@@ -88,7 +88,7 @@ public class ChestsPlusPlus extends JavaPlugin {
         Stats.addCharts(metrics);
 
         //API initialisation
-        API.register(this);
+        Api.register(this);
         ApiSpecific.init();
 
         //Register commands
@@ -104,10 +104,12 @@ public class ChestsPlusPlus extends JavaPlugin {
 
         boolean isDev = BuildConstants.VERSION.contains("DEV");
         boolean isBeta = BuildConstants.VERSION.contains("BETA");
-        if(isDev) getLogger().warning("You are currently running a Dev build - update checker disabled! Build: "+BuildConstants.VERSION);
-        if(isBeta) getLogger().warning("You are currently running a Beta build - update checker disabled! Build: "+BuildConstants.VERSION);
+        if (isDev)
+            getLogger().warning("You are currently running a Dev build - update checker disabled! Build: " + BuildConstants.VERSION);
+        if (isBeta)
+            getLogger().warning("You are currently running a Beta build - update checker disabled! Build: " + BuildConstants.VERSION);
 
-        if(PluginConfig.IS_UPDATE_CHECKER_ENABLED.get() && !isDev && !isBeta) {
+        if (PluginConfig.IS_UPDATE_CHECKER_ENABLED.get() && !isDev && !isBeta) {
             String BUKKIT_URL = "https://dev.bukkit.org/projects/chests-plus-plus/files";
             UpdateChecker.init(this, 71355, UpdateChecker.VERSION_SCHEME_DECIMAL);
             Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
@@ -123,22 +125,22 @@ public class ChestsPlusPlus extends JavaPlugin {
                     }
                     boot = true;
                 });
-            }, 0, PluginConfig.UPDATE_CHECKER_PERIOD.get()*20);
+            }, 0, PluginConfig.UPDATE_CHECKER_PERIOD.get() * 20);
         }
 
         //Load storages after load.
-        Bukkit.getScheduler().scheduleSyncDelayedTask(this, () ->{
+        Bukkit.getScheduler().scheduleSyncDelayedTask(this, () -> {
             Crafting.load();
             new Config();
             getLogger().info("Chests++ Successfully Loaded Config and Recipes");
 
             //Register event listeners
-            getServer().getPluginManager().registerEvents(new StorageListener(),this);
-            getServer().getPluginManager().registerEvents(new InventoryListener(),this);
-            getServer().getPluginManager().registerEvents(new HopperListener(),this);
-            getServer().getPluginManager().registerEvents(new WorldListener(),this);
+            getServer().getPluginManager().registerEvents(new StorageListener(), this);
+            getServer().getPluginManager().registerEvents(new InventoryListener(), this);
+            getServer().getPluginManager().registerEvents(new HopperListener(), this);
+            getServer().getPluginManager().registerEvents(new WorldListener(), this);
             getLogger().info("Chests++ enabled!");
-        },1);
+        }, 1);
     }
 
     @Override

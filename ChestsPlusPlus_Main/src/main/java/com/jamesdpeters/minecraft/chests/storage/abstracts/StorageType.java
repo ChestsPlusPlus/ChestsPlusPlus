@@ -39,11 +39,11 @@ import java.util.stream.Collectors;
 
 public abstract class StorageType<T extends AbstractStorage> {
 
-    private ConfigStorage store;
-    private StorageUtils<StorageInfo<T>, T> storageUtils;
-    private HashMap<Location, T> storageCache;
+    private final ConfigStorage store;
+    private final StorageUtils<StorageInfo<T>, T> storageUtils;
+    private final HashMap<Location, T> storageCache;
 
-    protected StorageType(ConfigStorage store){
+    protected StorageType(ConfigStorage store) {
         this.store = store;
         storageUtils = new StorageUtils<>(this);
         storageCache = new HashMap<>();
@@ -57,12 +57,13 @@ public abstract class StorageType<T extends AbstractStorage> {
 
     public abstract T createNewStorageInstance(OfflinePlayer player, String inventoryName, Location location, Location signLocation);
 
-    public HashMap<String, HashMap<String, T>> getStorageMap(){
+    public HashMap<String, HashMap<String, T>> getStorageMap() {
         return getStorageMap(store);
     }
 
     /**
      * This is the tag used in Signs such as [ChestLink] or [AutoCraft]
+     *
      * @return String value of the sign tag.
      */
     public abstract String getSignTag();
@@ -70,6 +71,7 @@ public abstract class StorageType<T extends AbstractStorage> {
     /**
      * This method should check if a block type is a valid type for this Storage.
      * E.g A Chest, or Crafting table etc.
+     *
      * @param block - the block being checked
      * @return true if the block is valid.
      */
@@ -77,19 +79,22 @@ public abstract class StorageType<T extends AbstractStorage> {
 
     /**
      * This gets called when a block is removed from the storage system but is still present in the world.
+     *
      * @param block - the block that was removed (Not the sign)
      */
     public abstract void onSignRemoval(Block block);
 
     public abstract boolean hasPermissionToAdd(Player player);
 
-    public void createStorage(Player player, Block block, String identifier, boolean requireSign){
+    public void createStorage(Player player, Block block, String identifier, boolean requireSign) {
         createStorage(player, player, block, identifier, requireSign);
     }
+
     public abstract void createStorage(Player player, OfflinePlayer owner, Block block, String identifier, boolean requireSign);
 
     public abstract void createStorageFacing(Player player, OfflinePlayer owner, Block block, String identifier, BlockFace facing, boolean requireSign);
-    public void createStorageFacing(Player player, Block block, String identifier, BlockFace facing, boolean requireSign){
+
+    public void createStorageFacing(Player player, Block block, String identifier, BlockFace facing, boolean requireSign) {
         createStorageFacing(player, player, block, identifier, facing, requireSign);
     }
 
@@ -118,7 +123,7 @@ public abstract class StorageType<T extends AbstractStorage> {
     STORAGE MAP SECTION
      */
 
-    private HashMap<String, HashMap<String, T>> getMap(){
+    private HashMap<String, HashMap<String, T>> getMap() {
         return getStorageMap(store);
     }
 
@@ -142,19 +147,19 @@ public abstract class StorageType<T extends AbstractStorage> {
         }
     }
 
-    public T getStorage(UUID playerUUID, String identifier){
+    public T getStorage(UUID playerUUID, String identifier) {
         HashMap<String, T> map = getStorageMap(playerUUID);
         return map.getOrDefault(identifier, null);
     }
 
     public T getStorage(Location location) {
         T storage = storageCache.get(location);
-        if(storage != null) return storage;
+        if (storage != null) return storage;
         if (location != null) {
             Block block = location.getBlock();
             if (isValidBlockType(block)) {
                 StorageInfo<T> storageInfo = storageUtils.getStorageInfo(location);
-                if(storageInfo != null){
+                if (storageInfo != null) {
                     return storageInfo.getStorage(location);
                 }
             }
@@ -214,8 +219,9 @@ public abstract class StorageType<T extends AbstractStorage> {
 
     /**
      * Removes a block from the given storage system.
-     * @param storage - @{@link AbstractStorage}
-     * @param location - the @{@link Location} to remove
+     *
+     * @param storage     - @{@link AbstractStorage}
+     * @param location    - the @{@link Location} to remove
      * @param hasPickedUp - true if the player Silk Touched the block.
      * @return
      */
@@ -252,7 +258,7 @@ public abstract class StorageType<T extends AbstractStorage> {
             });
             storage.dropInventory(player.getLocation());
             getStorageMap(player.getUniqueId()).remove(group);
-            getMessages().removedGroup(player,group);
+            getMessages().removedGroup(player, group);
         } else {
             getMessages().groupDoesntExist(player, group);
         }
@@ -289,12 +295,12 @@ public abstract class StorageType<T extends AbstractStorage> {
 
     /* HELPER UTILS */
 
-    protected void placeSign(Block placedAgainst, Block toReplace, BlockFace facing, Player player, OfflinePlayer ownerPlayer, String identifier, String linkTag, boolean requireSign){
-        if(Utils.isAir(toReplace)){
+    protected void placeSign(Block placedAgainst, Block toReplace, BlockFace facing, Player player, OfflinePlayer ownerPlayer, String identifier, String linkTag, boolean requireSign) {
+        if (Utils.isAir(toReplace)) {
             BlockState replacedBlockState = toReplace.getState();
 
             Material signMaterial = Material.OAK_WALL_SIGN;
-            if(player.getGameMode() != GameMode.CREATIVE && requireSign) {
+            if (player.getGameMode() != GameMode.CREATIVE && requireSign) {
                 if (player.getEquipment() != null) {
                     if (!Tag.SIGNS.isTagged(player.getEquipment().getItemInMainHand().getType())) {
                         Messages.MUST_HOLD_SIGN(player);
@@ -309,12 +315,12 @@ public abstract class StorageType<T extends AbstractStorage> {
             }
 
             String uuid, group, owner = null;
-            if(identifier.contains(":")){
+            if (identifier.contains(":")) {
                 String[] args = identifier.split(":");
                 owner = args[0];
                 group = args[1];
                 ownerPlayer = Config.getOfflinePlayer(owner);
-                if(ownerPlayer != null){
+                if (ownerPlayer != null) {
                     uuid = ownerPlayer.getUniqueId().toString();
                 } else {
                     getMessages().invalidID(player);
@@ -329,7 +335,7 @@ public abstract class StorageType<T extends AbstractStorage> {
             lines[0] = linkTag;
             lines[1] = Values.identifier(group);
             lines[3] = "";
-            if(owner != null) lines[2] = owner;
+            if (owner != null) lines[2] = owner;
             else lines[2] = "";
 
             Material airType = toReplace.getType();
@@ -342,45 +348,45 @@ public abstract class StorageType<T extends AbstractStorage> {
             sign.getPersistentDataContainer().set(Values.playerUUID, PersistentDataType.STRING, uuid);
             sign.update();
 
-            BlockPlaceEvent event = new BlockPlaceEvent(sign.getBlock(),replacedBlockState,placedAgainst,new ItemStack(Material.AIR),player,true, EquipmentSlot.HAND);
+            BlockPlaceEvent event = new BlockPlaceEvent(sign.getBlock(), replacedBlockState, placedAgainst, new ItemStack(Material.AIR), player, true, EquipmentSlot.HAND);
             ChestsPlusPlus.PLUGIN.getServer().getPluginManager().callEvent(event);
-            if(event.isCancelled()){
+            if (event.isCancelled()) {
                 sign.setType(airType);
                 return;
             }
 
-            SignChangeEvent signChangeEvent = new SignChangeEvent(sign.getBlock(),player,lines);
+            SignChangeEvent signChangeEvent = new SignChangeEvent(sign.getBlock(), player, lines);
             ChestsPlusPlus.PLUGIN.getServer().getPluginManager().callEvent(signChangeEvent);
         } else {
             getMessages().invalidSignPlacement(player);
         }
     }
 
-    public List<String> getStorageList(Player player, String searchedArg){
+    public List<String> getStorageList(Player player, String searchedArg) {
         return getStorageMap(player.getUniqueId()).values().stream().filter(t -> t.getIdentifier().contains(searchedArg)).map(AbstractStorage::getIdentifier).collect(Collectors.toList());
     }
 
-    public List<String> getOpenableStorageList(Player player, String searchedArg){
+    public List<String> getOpenableStorageList(Player player, String searchedArg) {
         List<String> playerList = getStorageList(player, searchedArg);
-        List<String> memberList = getStorageMemberOf(player).stream().filter(t -> t.getIdentifier().contains(searchedArg)).map(storage -> storage.getOwner().getName()+":"+storage.getIdentifier()).collect(Collectors.toList());
+        List<String> memberList = getStorageMemberOf(player).stream().filter(t -> t.getIdentifier().contains(searchedArg)).map(storage -> storage.getOwner().getName() + ":" + storage.getIdentifier()).collect(Collectors.toList());
         playerList.addAll(memberList);
         return playerList;
     }
 
-    public List<LocationInfo> getViewingDistanceStorages(Player player){
+    public List<LocationInfo> getViewingDistanceStorages(Player player) {
         List<LocationInfo> list = new ArrayList<>();
         getStorageMap(store).values().forEach(map -> map.values().forEach(abstractStorage -> abstractStorage.getLocations().forEach(locationInfo -> {
-            if(Utils.isLocationInViewDistance(player, locationInfo.getSignLocation())){
+            if (Utils.isLocationInViewDistance(player, locationInfo.getSignLocation())) {
                 list.add(locationInfo);
             }
         })));
         return list;
     }
 
-    public List<LocationInfo> getLocationsInChunk(Chunk chunk){
+    public List<LocationInfo> getLocationsInChunk(Chunk chunk) {
         List<LocationInfo> list = new ArrayList<>();
         getStorageMap().values().forEach(map -> map.values().forEach(abstractStorage -> abstractStorage.getLocations().forEach(locationInfo -> {
-            if(locationInfo.getSignLocation().getChunk().equals(chunk)){
+            if (locationInfo.getSignLocation().getChunk().equals(chunk)) {
                 list.add(locationInfo);
             }
         })));
@@ -391,7 +397,7 @@ public abstract class StorageType<T extends AbstractStorage> {
     POST LOAD
      */
 
-    public void onConfigLoad(){
+    public void onConfigLoad() {
         getMap().values().forEach(stringTHashMap -> stringTHashMap.values().forEach(AbstractStorage::postConfigLoad));
     }
 

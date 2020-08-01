@@ -10,9 +10,9 @@ public abstract class ServerCommand implements CommandExecutor, TabCompleter {
     /**
      * @param plugin Registers command to given plugin.
      */
-    public void register(JavaPlugin plugin){
+    public void register(JavaPlugin plugin) {
         PluginCommand command = plugin.getCommand(getCommandName());
-        if(command != null) {
+        if (command != null) {
             command.setExecutor(this);
             command.setTabCompleter(this);
         }

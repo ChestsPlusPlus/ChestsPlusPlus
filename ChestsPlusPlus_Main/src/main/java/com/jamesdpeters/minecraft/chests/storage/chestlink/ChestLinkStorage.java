@@ -39,17 +39,17 @@ public class ChestLinkStorage extends AbstractStorage implements ConfigurationSe
     private String inventoryName;
     private SortMethod sortMethod;
 
-    public ChestLinkStorage(Map<String, Object> map){
+    public ChestLinkStorage(Map<String, Object> map) {
         super(map);
     }
 
-    public ChestLinkStorage(OfflinePlayer player, String group, Location location, Location signLocation){
+    public ChestLinkStorage(OfflinePlayer player, String group, Location location, Location signLocation) {
         super(player, group, location, signLocation);
         this.inventoryName = group;
         this.sortMethod = SortMethod.OFF;
 
         Block block = location.getBlock();
-        if(block.getState() instanceof Container) {
+        if (block.getState() instanceof Container) {
             Container container = (Container) block.getState();
             getInventory().setContents(container.getInventory().getContents());
             container.getInventory().clear();
@@ -60,22 +60,22 @@ public class ChestLinkStorage extends AbstractStorage implements ConfigurationSe
 
     @Override
     protected void serialize(Map<String, Object> hashMap) {
-        hashMap.put("inventoryName",inventoryName);
+        hashMap.put("inventoryName", inventoryName);
         hashMap.put("sortMethod", sortMethod.toString());
     }
 
     @Override
     protected void deserialize(Map<String, Object> map) {
         String tempName = (String) map.get("inventoryName");
-        if(tempName != null) inventoryName = tempName;
+        if (tempName != null) inventoryName = tempName;
 
-        if(map.containsKey("sortMethod")) sortMethod = Enum.valueOf(SortMethod.class, (String) map.get("sortMethod"));
+        if (map.containsKey("sortMethod")) sortMethod = Enum.valueOf(SortMethod.class, (String) map.get("sortMethod"));
         else sortMethod = SortMethod.OFF;
 
         init();
     }
 
-    private void init(){
+    private void init() {
         VirtualChestToHopper chestToHopper = new VirtualChestToHopper(this);
         chestToHopper.start();
     }
@@ -91,8 +91,8 @@ public class ChestLinkStorage extends AbstractStorage implements ConfigurationSe
     }
 
     @Override
-    protected Inventory initInventory(){
-        return Bukkit.createInventory(new VirtualInventoryHolder(this), 54,inventoryName);
+    protected Inventory initInventory() {
+        return Bukkit.createInventory(new VirtualInventoryHolder(this), 54, inventoryName);
     }
 
     @Override
@@ -103,7 +103,7 @@ public class ChestLinkStorage extends AbstractStorage implements ConfigurationSe
     @Override
     public void onStorageAdded(Block block, Player player) {
         //Migrates that chest into InventoryStorage and if full drops it at the chest location.
-        if(block.getState() instanceof Container) {
+        if (block.getState() instanceof Container) {
             Container chest = (Container) block.getState();
             boolean hasOverflow = false;
             for (ItemStack chestItem : chest.getInventory().getContents()) {
@@ -121,22 +121,22 @@ public class ChestLinkStorage extends AbstractStorage implements ConfigurationSe
         }
     }
 
-    public ItemStack getIventoryIcon(Player player){
+    public ItemStack getIventoryIcon(Player player) {
         ItemStack mostCommon = InventorySorter.getMostCommonItem(getInventory());
         ItemStack toReturn;
-        if(mostCommon == null) toReturn = new ItemStack(Material.CHEST);
+        if (mostCommon == null) toReturn = new ItemStack(Material.CHEST);
         else toReturn = mostCommon.clone();
 
         ItemMeta meta = toReturn.getItemMeta();
-        if(meta != null) {
-            String dispName = ChatColor.GREEN + "" + getIdentifier() + ": " +ChatColor.WHITE+ ""+getTotalItems()+" items";
-            if(player.getUniqueId().equals(getPlayerUUID())) meta.setDisplayName(dispName);
-            else meta.setDisplayName(getOwner().getName()+": "+dispName);
+        if (meta != null) {
+            String dispName = ChatColor.GREEN + "" + getIdentifier() + ": " + ChatColor.WHITE + "" + getTotalItems() + " items";
+            if (player.getUniqueId().equals(getPlayerUUID())) meta.setDisplayName(dispName);
+            else meta.setDisplayName(getOwner().getName() + ": " + dispName);
 
-            if(getMembers() != null) {
+            if (getMembers() != null) {
                 List<String> memberNames = new ArrayList<>();
-                if(isPublic()) memberNames.add(ChatColor.WHITE+"Public Chest");
-                memberNames.add(ChatColor.BOLD+""+ChatColor.UNDERLINE+"Members:");
+                if (isPublic()) memberNames.add(ChatColor.WHITE + "Public Chest");
+                memberNames.add(ChatColor.BOLD + "" + ChatColor.UNDERLINE + "Members:");
                 getMembers().forEach(player1 -> memberNames.add(ChatColor.stripColor(player1.getName())));
                 meta.setLore(memberNames);
             }
@@ -149,39 +149,39 @@ public class ChestLinkStorage extends AbstractStorage implements ConfigurationSe
     public ClickableItem getClickableItem(Player player) {
         return ClickableItem.from(getIventoryIcon(player), event -> {
             InventoryHolder inventoryHolder = getInventory().getHolder();
-            if(inventoryHolder instanceof VirtualInventoryHolder){
+            if (inventoryHolder instanceof VirtualInventoryHolder) {
                 ((VirtualInventoryHolder) inventoryHolder).setPreviousInventory(() -> {
                     Bukkit.getScheduler().runTask(ChestsPlusPlus.PLUGIN, () -> ChestLinkMenu.getMenu(player).open(player));
                 });
             }
-            Utils.openChestInventory(player,getInventory());
+            Utils.openChestInventory(player, getInventory());
         });
     }
 
-    public int getTotalItems(){
+    public int getTotalItems() {
         int total = 0;
-        if(getInventory() != null) {
-            for(ItemStack itemStack : getInventory().getContents()){
-                if(itemStack != null) total += itemStack.getAmount();
+        if (getInventory() != null) {
+            for (ItemStack itemStack : getInventory().getContents()) {
+                if (itemStack != null) total += itemStack.getAmount();
             }
         }
         return total;
     }
 
-    public void setSortMethod(SortMethod sortMethod){
+    public void setSortMethod(SortMethod sortMethod) {
         this.sortMethod = sortMethod;
     }
 
-    public SortMethod getSortMethod(){
+    public SortMethod getSortMethod() {
         return sortMethod;
     }
 
-    public void sort(){
+    public void sort() {
         ItemStack[] sortedInventory = InventorySorter.sort(getInventory(), sortMethod);
         getInventory().setContents(sortedInventory);
     }
 
-    public void updateDisplayItem(){
+    public void updateDisplayItem() {
         onItemDisplayUpdate(InventorySorter.getMostCommonItem(getInventory()));
     }
 
@@ -208,13 +208,13 @@ public class ChestLinkStorage extends AbstractStorage implements ConfigurationSe
 
     @Override
     public double getBlockOffset(Block block) {
-        if(block.getState() instanceof Chest) return 0;
-        //Barrel is full block.
+        if (block.getState() instanceof Chest) return 0;
+            //Barrel is full block.
         else return -0.07;
     }
 
     @Override
     public String toString() {
-        return inventoryName+": "+getLocations().toString();
+        return inventoryName + ": " + getLocations().toString();
     }
 }

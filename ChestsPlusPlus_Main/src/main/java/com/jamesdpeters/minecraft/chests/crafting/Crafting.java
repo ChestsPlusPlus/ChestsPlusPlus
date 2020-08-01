@@ -21,30 +21,33 @@ public class Crafting {
     private static List<ShapedRecipe> shapedRecipes;
     private static List<ShapelessRecipe> shapelessRecipes;
 
-    public static void load(){
+    public static void load() {
         shapedRecipes = new ArrayList<>();
         shapelessRecipes = new ArrayList<>();
         Bukkit.recipeIterator().forEachRemaining(recipe -> {
-            if(recipe instanceof ShapedRecipe){ shapedRecipes.add((ShapedRecipe) recipe); }
-            if(recipe instanceof ShapelessRecipe){ shapelessRecipes.add((ShapelessRecipe) recipe); }
+            if (recipe instanceof ShapedRecipe) {
+                shapedRecipes.add((ShapedRecipe) recipe);
+            }
+            if (recipe instanceof ShapelessRecipe) {
+                shapelessRecipes.add((ShapelessRecipe) recipe);
+            }
         });
     }
 
-    public static Recipe getResult(List<ItemStack> craftingTable){
+    public static Recipe getResult(List<ItemStack> craftingTable) {
         Recipe returnRecipe = null;
         Iterator<Recipe> iterator = Bukkit.recipeIterator();
-        while (iterator.hasNext()){
+        while (iterator.hasNext()) {
             Recipe recipe = iterator.next();
-            if(recipe instanceof ShapedRecipe){
+            if (recipe instanceof ShapedRecipe) {
                 ShapedRecipe shapedRecipe = (ShapedRecipe) recipe;
-                if (matchesShaped(shapedRecipe, craftingTable)){
+                if (matchesShaped(shapedRecipe, craftingTable)) {
                     returnRecipe = shapedRecipe;
                     break;
                 }
-            }
-            else if(recipe instanceof ShapelessRecipe){
+            } else if (recipe instanceof ShapelessRecipe) {
                 ShapelessRecipe shapelessRecipe = (ShapelessRecipe) recipe;
-                if (matchesShapeless(shapelessRecipe.getChoiceList(), craftingTable)){
+                if (matchesShapeless(shapelessRecipe.getChoiceList(), craftingTable)) {
                     returnRecipe = shapelessRecipe;
                     break;
                 }
@@ -71,7 +74,7 @@ public class Crafting {
                 return false;
         }
         Set<ItemStack> remainingItems = new HashSet<>(items);
-        return (remainingItems.size() == 1 && (items.contains(new ItemStack(Material.AIR))||items.contains(null)));
+        return (remainingItems.size() == 1 && (items.contains(new ItemStack(Material.AIR)) || items.contains(null)));
     }
 
     private static boolean matchesShaped(ShapedRecipe shape, List<ItemStack> items) {
@@ -79,9 +82,9 @@ public class Crafting {
         return userShapedRecipe.matchesRecipe(shape);
     }
 
-    public static Recipe getRecipeByKey(NamespacedKey key){
+    public static Recipe getRecipeByKey(NamespacedKey key) {
         Optional<ShapelessRecipe> recipe = shapelessRecipes.stream().filter(s -> s.getKey().equals(key)).findFirst();
-        if(recipe.isPresent()) return recipe.get();
+        if (recipe.isPresent()) return recipe.get();
 
         Optional<ShapedRecipe> shapedRecipe = shapedRecipes.stream().filter(s -> s.getKey().equals(key)).findFirst();
         return shapedRecipe.orElse(null);

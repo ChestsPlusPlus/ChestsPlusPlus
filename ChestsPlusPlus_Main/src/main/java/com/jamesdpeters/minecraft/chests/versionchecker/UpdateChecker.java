@@ -130,12 +130,11 @@ public final class UpdateChecker {
      * of UpdateChecker has already been initialized, this method will act similarly to {@link #get()}
      * (which is recommended after initialization).
      *
-     * @param plugin the plugin for which to check updates. Cannot be null
-     * @param pluginID the ID of the plugin as identified in the SpigotMC resource link. For example,
-     * "https://www.spigotmc.org/resources/veinminer.<b>12038</b>/" would expect "12038" as a value. The
-     * value must be greater than 0
+     * @param plugin        the plugin for which to check updates. Cannot be null
+     * @param pluginID      the ID of the plugin as identified in the SpigotMC resource link. For example,
+     *                      "https://www.spigotmc.org/resources/veinminer.<b>12038</b>/" would expect "12038" as a value. The
+     *                      value must be greater than 0
      * @param versionScheme a custom version scheme parser. Cannot be null
-     *
      * @return the UpdateChecker instance
      */
     public static UpdateChecker init(JavaPlugin plugin, int pluginID, VersionScheme versionScheme) {
@@ -151,11 +150,10 @@ public final class UpdateChecker {
      * of UpdateChecker has already been initialized, this method will act similarly to {@link #get()}
      * (which is recommended after initialization).
      *
-     * @param plugin the plugin for which to check updates. Cannot be null
+     * @param plugin   the plugin for which to check updates. Cannot be null
      * @param pluginID the ID of the plugin as identified in the SpigotMC resource link. For example,
-     * "https://www.spigotmc.org/resources/veinminer.<b>12038</b>/" would expect "12038" as a value. The
-     * value must be greater than 0
-     *
+     *                 "https://www.spigotmc.org/resources/veinminer.<b>12038</b>/" would expect "12038" as a value. The
+     *                 value must be greater than 0
      * @return the UpdateChecker instance
      */
     public static UpdateChecker init(JavaPlugin plugin, int pluginID) {
@@ -188,25 +186,24 @@ public final class UpdateChecker {
      * A functional interface to compare two version Strings with similar version schemes.
      */
     @FunctionalInterface
-    public static interface VersionScheme {
+    public interface VersionScheme {
 
         /**
          * Compare two versions and return the higher of the two. If null is returned, it is assumed
          * that at least one of the two versions are unsupported by this version scheme parser.
          *
-         * @param first the first version to check
+         * @param first  the first version to check
          * @param second the second version to check
-         *
          * @return the greater of the two versions. null if unsupported version schemes
          */
-        public String compareVersions(String first, String second);
+        String compareVersions(String first, String second);
 
     }
 
     /**
      * A constant reason for the result of {@link UpdateResult}.
      */
-    public static enum UpdateReason {
+    public enum UpdateReason {
 
         /**
          * A new update is available for download on SpigotMC.
@@ -248,7 +245,7 @@ public final class UpdateChecker {
         /**
          * The plugin is up to date with the version released on SpigotMC's resources section.
          */
-        UP_TO_DATE;
+        UP_TO_DATE
 
     }
 

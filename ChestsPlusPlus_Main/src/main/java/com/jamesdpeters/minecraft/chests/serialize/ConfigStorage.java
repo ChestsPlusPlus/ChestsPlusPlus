@@ -19,13 +19,13 @@ public class ConfigStorage implements ConfigurationSerializable {
     @Override
     public Map<String, Object> serialize() {
         LinkedHashMap<String, Object> hashMap = new LinkedHashMap<>();
-        hashMap.put("chests",chests);
-        hashMap.put("autocraftingtables",autocraftingtables);
+        hashMap.put("chests", chests);
+        hashMap.put("autocraftingtables", autocraftingtables);
         return hashMap;
     }
 
     @SuppressWarnings("unchecked")
-    public ConfigStorage(Map<String, Object> map){
+    public ConfigStorage(Map<String, Object> map) {
         //Legacy handling
 
 
@@ -34,16 +34,17 @@ public class ConfigStorage implements ConfigurationSerializable {
 //        }
 
         autocraftingtables = (HashMap<String, HashMap<String, AutoCraftingStorage>>) map.get("autocraftingtables");
-        if(autocraftingtables == null) autocraftingtables = new HashMap<>();
+        if (autocraftingtables == null) autocraftingtables = new HashMap<>();
         validate();
     }
 
-    private void validate(){
-        if(chests != null) chests.forEach((s, invMap) -> invMap.values().removeIf(Objects::isNull));
-        if(autocraftingtables != null) autocraftingtables.forEach((s, craftMap) -> craftMap.values().removeIf(Objects::isNull));
+    private void validate() {
+        if (chests != null) chests.forEach((s, invMap) -> invMap.values().removeIf(Objects::isNull));
+        if (autocraftingtables != null)
+            autocraftingtables.forEach((s, craftMap) -> craftMap.values().removeIf(Objects::isNull));
     }
 
-    public ConfigStorage(){
+    public ConfigStorage() {
         chests = new HashMap<>();
         autocraftingtables = new HashMap<>();
     }

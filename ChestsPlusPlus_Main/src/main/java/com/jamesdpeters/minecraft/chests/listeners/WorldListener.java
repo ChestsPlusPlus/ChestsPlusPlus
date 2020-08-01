@@ -15,33 +15,33 @@ public class WorldListener implements Listener {
     private static boolean justSaved = false;
 
     @EventHandler
-    public void onWorldSave(WorldSaveEvent event){
-        if(!justSaved){
+    public void onWorldSave(WorldSaveEvent event) {
+        if (!justSaved) {
             Config.saveASync();
             justSaved = true;
-            new BukkitRunnable(){
+            new BukkitRunnable() {
                 @Override
                 public void run() {
                     justSaved = false;
                 }
-            }.runTaskLater(ChestsPlusPlus.PLUGIN,20);
+            }.runTaskLater(ChestsPlusPlus.PLUGIN, 20);
         }
     }
 
     @EventHandler
-    public void onWorldLoad(WorldLoadEvent event){
+    public void onWorldLoad(WorldLoadEvent event) {
         Utils.removeEntities(event.getWorld());
     }
 
     @EventHandler
-    public void onChunkLoad(ChunkLoadEvent event){
-        if(!event.isNewChunk()){
+    public void onChunkLoad(ChunkLoadEvent event) {
+        if (!event.isNewChunk()) {
             Utils.fixEntities(event.getChunk());
             Config.getStorageTypes().forEach(storageType -> {
                 storageType.getStorageMap().values().forEach(stringHashMap -> {
                     stringHashMap.values().forEach(o -> {
                         o.getLocations().forEach(locationInfo -> {
-                            if(locationInfo != null && locationInfo.getSignLocation() != null && Utils.isLocationInChunk(locationInfo.getSignLocation(),event.getChunk())) {
+                            if (locationInfo != null && locationInfo.getSignLocation() != null && Utils.isLocationInChunk(locationInfo.getSignLocation(), event.getChunk())) {
                                 o.updateClient(locationInfo);
                             }
                         });

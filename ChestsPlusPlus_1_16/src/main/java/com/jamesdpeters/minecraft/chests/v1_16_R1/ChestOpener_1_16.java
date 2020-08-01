@@ -1,6 +1,6 @@
 package com.jamesdpeters.minecraft.chests.v1_16_R1;
 
-import com.jamesdpeters.minecraft.chests.API;
+import com.jamesdpeters.minecraft.chests.Api;
 import com.jamesdpeters.minecraft.chests.ChestOpener;
 import com.jamesdpeters.minecraft.chests.TileEntityOpener;
 import com.jamesdpeters.minecraft.chests.v1_16_R1.tileentities.CustomTileEntityBarrel;
@@ -13,7 +13,6 @@ import net.minecraft.server.v1_16_R1.TileEntityChestTrapped;
 import net.minecraft.server.v1_16_R1.TileEntityTypes;
 import net.minecraft.server.v1_16_R1.World;
 import org.bukkit.Bukkit;
-import org.bukkit.block.Chest;
 import org.bukkit.block.Container;
 import org.bukkit.block.Lidded;
 import org.bukkit.craftbukkit.v1_16_R1.CraftWorld;
@@ -42,7 +41,7 @@ public class ChestOpener_1_16 implements ChestOpener {
 
         if(tileEntityOpener != null) {
             TileEntityOpener opener = tileEntityOpener;
-            Bukkit.getScheduler().scheduleSyncDelayedTask(API.getPlugin(), ()-> opener.setViewers(inventory.getViewers()),1);
+            Bukkit.getScheduler().scheduleSyncDelayedTask(Api.getPlugin(), ()-> opener.setViewers(inventory.getViewers()),1);
             return tileEntityOpener;
         } else {
             CraftContainer craftContainer = (CraftContainer) container;
@@ -55,7 +54,7 @@ public class ChestOpener_1_16 implements ChestOpener {
             if (tileEntity instanceof TileEntityOpener) {
                 tileEntityOpener = (TileEntityOpener) tileEntity;
                 TileEntityOpener opener = tileEntityOpener;
-                Bukkit.getScheduler().scheduleSyncDelayedTask(API.getPlugin(), ()-> opener.setViewers(inventory.getViewers()),1);
+                Bukkit.getScheduler().scheduleSyncDelayedTask(Api.getPlugin(), ()-> opener.setViewers(inventory.getViewers()),1);
                 return tileEntityOpener;
             } else {
                 //If not set the new tile entity and set the viewers.
@@ -76,7 +75,7 @@ public class ChestOpener_1_16 implements ChestOpener {
     private <T extends TileEntity & TileEntityOpener> void setTileEnt(World world, BlockPosition position, T tileEntOpener, List<HumanEntity> viewers){
         world.removeTileEntity(position);
         world.setTileEntity(position, tileEntOpener);
-        Bukkit.getScheduler().scheduleSyncDelayedTask(API.getPlugin(), ()-> tileEntOpener.setViewers(viewers),1);
+        Bukkit.getScheduler().scheduleSyncDelayedTask(Api.getPlugin(), ()-> tileEntOpener.setViewers(viewers),1);
     }
 
     private boolean hasLiddedAPI(){

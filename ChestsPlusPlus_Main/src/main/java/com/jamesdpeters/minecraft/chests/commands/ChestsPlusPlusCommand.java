@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class ChestsPlusPlusCommand extends ServerCommand  {
+public class ChestsPlusPlusCommand extends ServerCommand {
 
     private enum OPTIONS {
         VERSION("/chestsplusplus version", "Display the current version of the plugin."),
@@ -26,7 +26,7 @@ public class ChestsPlusPlusCommand extends ServerCommand  {
             valuesList = Stream.of(OPTIONS.values()).map(OPTIONS::toString).collect(Collectors.toList());
         }
 
-        OPTIONS( String commandHelp, String description){
+        OPTIONS(String commandHelp, String description) {
             this.commandHelp = commandHelp;
             this.description = description;
         }
@@ -45,13 +45,13 @@ public class ChestsPlusPlusCommand extends ServerCommand  {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if(args != null &&  args.length > 0) {
-            switch (OPTIONS.valueOf(args[0].toUpperCase())){
+        if (args != null && args.length > 0) {
+            switch (OPTIONS.valueOf(args[0].toUpperCase())) {
                 case VERSION:
-                    sender.sendMessage("ChestsPlusPlus Version: "+ BuildConstants.VERSION);
-                    sender.sendMessage("Server Version: "+ Bukkit.getVersion());
-                    sender.sendMessage("CraftBukkit Version: "+ Bukkit.getBukkitVersion());
-                    sender.sendMessage("Detected API Version: "+ ApiSpecific.getApiVersion());
+                    sender.sendMessage("ChestsPlusPlus Version: " + BuildConstants.VERSION);
+                    sender.sendMessage("Server Version: " + Bukkit.getVersion());
+                    sender.sendMessage("CraftBukkit Version: " + Bukkit.getBukkitVersion());
+                    sender.sendMessage("Detected API Version: " + ApiSpecific.getApiVersion());
                     return true;
 
                 case RELOAD:
@@ -59,7 +59,7 @@ public class ChestsPlusPlusCommand extends ServerCommand  {
                     return true;
 
                 default:
-                    for(ChestsPlusPlusCommand.OPTIONS option : ChestsPlusPlusCommand.OPTIONS.values()){
+                    for (ChestsPlusPlusCommand.OPTIONS option : ChestsPlusPlusCommand.OPTIONS.values()) {
                         sender.sendMessage(ChatColor.RED + option.commandHelp);
                         sender.sendMessage(ChatColor.WHITE + option.description);
                     }
@@ -71,26 +71,29 @@ public class ChestsPlusPlusCommand extends ServerCommand  {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        if((sender instanceof Player)) {
+        if ((sender instanceof Player)) {
             if (args.length == 1) {
                 return OPTIONS.valuesList;
             }
-            if(args.length == 2) {
+            if (args.length == 2) {
                 try {
                     switch (OPTIONS.valueOf(args[0].toUpperCase())) {
 
                     }
-                } catch (IllegalArgumentException ignored) { }
+                } catch (IllegalArgumentException ignored) {
+                }
             }
-            if(args.length == 3) {
+            if (args.length == 3) {
                 try {
 
-                } catch (IllegalArgumentException ignored) { }
+                } catch (IllegalArgumentException ignored) {
+                }
             }
-            if(args.length == 4) {
+            if (args.length == 4) {
                 try {
 
-                } catch (IllegalArgumentException ignored) { }
+                } catch (IllegalArgumentException ignored) {
+                }
             }
         }
         return null;

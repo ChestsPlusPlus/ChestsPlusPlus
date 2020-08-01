@@ -14,27 +14,27 @@ import java.util.UUID;
 
 public class StorageInfo<T extends AbstractStorage> {
 
-    private String group;
-    private OfflinePlayer player;
+    private final String group;
+    private final OfflinePlayer player;
     private T storage;
 
-    public StorageInfo(String playerUUID, String group, StorageType<T> storageType, Sign sign){
-        this(UUID.fromString(playerUUID),group, storageType, sign);
+    public StorageInfo(String playerUUID, String group, StorageType<T> storageType, Sign sign) {
+        this(UUID.fromString(playerUUID), group, storageType, sign);
     }
 
-    public StorageInfo(UUID playerUUID, String group, StorageType<T> storageType, Sign sign){
+    public StorageInfo(UUID playerUUID, String group, StorageType<T> storageType, Sign sign) {
         this.group = group;
         this.player = Bukkit.getOfflinePlayer(playerUUID);
-        this.storage = storageType.getStorage(playerUUID,group);
-        if(storage == null){
-            if(sign.getBlockData() instanceof Directional) {
+        this.storage = storageType.getStorage(playerUUID, group);
+        if (storage == null) {
+            if (sign.getBlockData() instanceof Directional) {
                 Directional directional = (Directional) sign.getBlockData();
                 BlockFace storageFace = directional.getFacing().getOppositeFace();
                 Block storageBlock = sign.getBlock().getRelative(storageFace);
                 Player player = Bukkit.getPlayer(playerUUID);
-                if(player != null) {
+                if (player != null) {
                     boolean added = storageType.add(player, group, storageBlock.getLocation(), sign.getLocation(), this.player);
-                    if(added) {
+                    if (added) {
                         this.storage = storageType.getStorage(playerUUID, group);
 //                        storageType.getMessages().foundUnlinkedStorage(player,group);
                     }
@@ -54,14 +54,15 @@ public class StorageInfo<T extends AbstractStorage> {
     /**
      * Get the AutoCraftingStorage for this Sign and check if the given location is apart of the system if not
      * add it.
+     *
      * @return @{@link AutoCraftingStorage}
      */
     public T getStorage(Location location) {
-        if(storage == null) return null;
-        if(!storage.containsLocation(location)){
+        if (storage == null) return null;
+        if (!storage.containsLocation(location)) {
             storage.addLocation(location, storage.getSignLocation(location));
             Player player = storage.getOwner().getPlayer();
-            if(player != null) storage.getStorageType().getMessages().foundUnlinkedStorage(player,getGroup());
+            if (player != null) storage.getStorageType().getMessages().foundUnlinkedStorage(player, getGroup());
         }
         return storage;
     }

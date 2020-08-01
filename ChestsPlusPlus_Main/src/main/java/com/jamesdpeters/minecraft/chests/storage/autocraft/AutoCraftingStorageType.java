@@ -63,9 +63,9 @@ public class AutoCraftingStorageType extends StorageType<AutoCraftingStorage> {
 
     @Override
     public void createStorage(Player player, OfflinePlayer owner, Block block, String identifier, boolean requireSign) {
-        if(isValidBlockType(block)){
+        if (isValidBlockType(block)) {
             BlockFace facing = Utils.getBlockFace(player);
-            if(facing != null) {
+            if (facing != null) {
                 createStorageFacing(player, owner, block, identifier, facing, requireSign);
             }
         }
@@ -73,27 +73,27 @@ public class AutoCraftingStorageType extends StorageType<AutoCraftingStorage> {
 
     @Override
     public void createStorageFacing(Player player, OfflinePlayer owner, Block block, String identifier, BlockFace facing, boolean requireSign) {
-        if(Utils.isSideFace(facing)) {
+        if (Utils.isSideFace(facing)) {
             Block toReplace = block.getRelative(facing);
             StorageInfo info = getStorageUtils().getStorageInfo(block.getLocation());
-            if(info != null){
-                Messages.ALREADY_PART_OF_GROUP(player,"Crafting Table");
+            if (info != null) {
+                Messages.ALREADY_PART_OF_GROUP(player, "Crafting Table");
                 return;
             }
-            placeSign(block, toReplace, facing, player, owner, identifier, Values.AutoCraftTag,requireSign);
+            placeSign(block, toReplace, facing, player, owner, identifier, Values.AutoCraftTag, requireSign);
         }
     }
 
     @Override
     public BlockFace onStoragePlacedBlockFace(Player player, Block placed) {
-        return Utils.getNearestBlockFace(player,placed.getLocation());
+        return Utils.getNearestBlockFace(player, placed.getLocation());
     }
 
     @Override
     public BlockFace getStorageFacing(Block block) {
-        for(BlockFace face : blockfaces){
+        for (BlockFace face : blockfaces) {
             Block sign = block.getRelative(face);
-            if(sign.getState() instanceof Sign) {
+            if (sign.getState() instanceof Sign) {
                 StorageInfo<AutoCraftingStorage> info = Config.getAutoCraft().getStorageUtils().getStorageInfo((Sign) sign.getState());
                 if (info != null) return face;
             }
@@ -116,7 +116,7 @@ public class AutoCraftingStorageType extends StorageType<AutoCraftingStorage> {
         return messages;
     }
 
-    private static AutoCraftMessages messages = new AutoCraftMessages();
+    private static final AutoCraftMessages messages = new AutoCraftMessages();
 
     private static class AutoCraftMessages extends StorageMessages {
 
@@ -127,28 +127,28 @@ public class AutoCraftingStorageType extends StorageType<AutoCraftingStorage> {
 
         @Override
         public void invalidID(Player target) {
-            target.sendMessage(ChatColor.RED+ Message.INVALID_ID.getString(getStorageName()));
-            target.sendMessage(ChatColor.RED+"/autocraft add <owner>:<group>");
+            target.sendMessage(ChatColor.RED + Message.INVALID_ID.getString(getStorageName()));
+            target.sendMessage(ChatColor.RED + "/autocraft add <owner>:<group>");
         }
 
         @Override
         public void listStorageGroups(Player target) {
-            target.sendMessage(ChatColor.GREEN+""+ChatColor.BOLD+Message.LIST_OF_AUTOCRAFTERS);
-            for(AutoCraftingStorage storage : Config.getAutoCraft().getStorageMap(target.getUniqueId()).values()){
-                if(storage != null){
-                    target.sendMessage(ChatColor.GREEN+storage.getIdentifier()+ChatColor.WHITE);
+            target.sendMessage(ChatColor.GREEN + "" + ChatColor.BOLD + Message.LIST_OF_AUTOCRAFTERS);
+            for (AutoCraftingStorage storage : Config.getAutoCraft().getStorageMap(target.getUniqueId()).values()) {
+                if (storage != null) {
+                    target.sendMessage(ChatColor.GREEN + storage.getIdentifier() + ChatColor.WHITE);
                 }
             }
         }
 
         @Override
         public void mustLookAtBlock(Player player) {
-            player.sendMessage(ChatColor.RED+TAG+" "+Message.MUST_LOOK_AT_CRAFTING_TABLE);
+            player.sendMessage(ChatColor.RED + TAG + " " + Message.MUST_LOOK_AT_CRAFTING_TABLE);
         }
 
         @Override
         public void invalidSignPlacement(Player player) {
-            player.sendMessage(ChatColor.GOLD+""+ChatColor.BOLD+TAG+" "+Message.INVALID_AUTOCRAFTER);
+            player.sendMessage(ChatColor.GOLD + "" + ChatColor.BOLD + TAG + " " + Message.INVALID_AUTOCRAFTER);
         }
     }
 }

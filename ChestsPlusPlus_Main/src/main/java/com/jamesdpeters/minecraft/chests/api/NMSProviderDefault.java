@@ -11,7 +11,7 @@ public class NMSProviderDefault implements NMSProvider {
     //Latest version at time of build is 1.16
     NMSProviderImpl provider1_16;
 
-    public NMSProviderDefault(){
+    public NMSProviderDefault() {
         provider1_16 = new NMSProviderImpl();
     }
 

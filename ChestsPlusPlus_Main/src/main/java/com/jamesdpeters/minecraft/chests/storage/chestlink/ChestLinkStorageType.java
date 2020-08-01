@@ -47,7 +47,7 @@ public class ChestLinkStorageType extends StorageType<ChestLinkStorage> {
 
     @Override
     public void onSignRemoval(Block block) {
-        if(block.getState() instanceof Container){
+        if (block.getState() instanceof Container) {
             ((Container) block.getState()).getInventory().clear();
         }
     }
@@ -59,30 +59,30 @@ public class ChestLinkStorageType extends StorageType<ChestLinkStorage> {
 
     @Override
     public void createStorage(Player player, OfflinePlayer owner, Block block, String identifier, boolean requireSign) {
-        if(block.getState() instanceof Chest) {
+        if (block.getState() instanceof Chest) {
             new ChestLinkVerifier(block).withDelay(0).check();
         }
         createStorageForBlock(player, owner, block, identifier, requireSign);
     }
 
-    private void createStorageForBlock(Player player, OfflinePlayer owner, Block block, String identifier, boolean requireSign){
-        if(block.getBlockData() instanceof Directional) {
+    private void createStorageForBlock(Player player, OfflinePlayer owner, Block block, String identifier, boolean requireSign) {
+        if (block.getBlockData() instanceof Directional) {
             Directional chest = (Directional) block.getBlockData();
             BlockFace facing = chest.getFacing();
             Block toReplace = block.getRelative(facing);
-            placeSign(block,toReplace,facing,player,owner,identifier,Values.ChestLinkTag, requireSign);
+            placeSign(block, toReplace, facing, player, owner, identifier, Values.ChestLinkTag, requireSign);
         }
     }
 
     @Override
     public void createStorageFacing(Player player, OfflinePlayer owner, Block block, String identifier, BlockFace facing, boolean requireSign) {
         //Chests already get placed facing in the correct direction.
-        createStorage(player,owner,block,identifier,requireSign);
+        createStorage(player, owner, block, identifier, requireSign);
     }
 
     @Override
     public BlockFace onStoragePlacedBlockFace(Player player, Block placed) {
-        if(placed.getBlockData() instanceof Directional){
+        if (placed.getBlockData() instanceof Directional) {
             return ((Directional) placed.getBlockData()).getFacing();
         }
         return null;
@@ -96,7 +96,7 @@ public class ChestLinkStorageType extends StorageType<ChestLinkStorage> {
 
     @Override
     public BlockFace getStorageFacing(Block block) {
-        if(block.getBlockData() instanceof Directional) {
+        if (block.getBlockData() instanceof Directional) {
             Directional chest = (Directional) block.getBlockData();
             return chest.getFacing();
         }
@@ -110,7 +110,7 @@ public class ChestLinkStorageType extends StorageType<ChestLinkStorage> {
 
     @Override
     public void validate(Block block) {
-        if(block.getState() instanceof Chest) new ChestLinkVerifier(block).withDelay(0).check();
+        if (block.getState() instanceof Chest) new ChestLinkVerifier(block).withDelay(0).check();
     }
 
     @Override
@@ -118,7 +118,7 @@ public class ChestLinkStorageType extends StorageType<ChestLinkStorage> {
         return messages;
     }
 
-    private static ChestLinkMessages messages = new ChestLinkMessages();
+    private static final ChestLinkMessages messages = new ChestLinkMessages();
 
     private static class ChestLinkMessages extends StorageMessages {
 
@@ -129,28 +129,28 @@ public class ChestLinkStorageType extends StorageType<ChestLinkStorage> {
 
         @Override
         public void invalidID(Player target) {
-            target.sendMessage(ChatColor.RED+ Message.INVALID_ID.getString(getStorageName()));
-            target.sendMessage(ChatColor.RED+"/chestlink add <owner>:<group>");
+            target.sendMessage(ChatColor.RED + Message.INVALID_ID.getString(getStorageName()));
+            target.sendMessage(ChatColor.RED + "/chestlink add <owner>:<group>");
         }
 
         @Override
         public void listStorageGroups(Player target) {
-            target.sendMessage(ChatColor.GREEN+""+ChatColor.BOLD+Message.LIST_OF_CHESTLINK);
-            for(ChestLinkStorage storage : Config.getChestLink().getStorageMap(target.getUniqueId()).values()){
-                if(storage != null){
-                    target.sendMessage(ChatColor.GREEN+storage.getIdentifier()+ChatColor.WHITE+" - "+storage.getTotalItems()+" items");
+            target.sendMessage(ChatColor.GREEN + "" + ChatColor.BOLD + Message.LIST_OF_CHESTLINK);
+            for (ChestLinkStorage storage : Config.getChestLink().getStorageMap(target.getUniqueId()).values()) {
+                if (storage != null) {
+                    target.sendMessage(ChatColor.GREEN + storage.getIdentifier() + ChatColor.WHITE + " - " + storage.getTotalItems() + " items");
                 }
             }
         }
 
         @Override
         public void mustLookAtBlock(Player player) {
-            player.sendMessage(ChatColor.RED+TAG+" "+Message.MUST_LOOK_AT_CHEST);
+            player.sendMessage(ChatColor.RED + TAG + " " + Message.MUST_LOOK_AT_CHEST);
         }
 
         @Override
         public void invalidSignPlacement(Player player) {
-            player.sendMessage(ChatColor.GOLD+""+ChatColor.BOLD+TAG+" "+Message.INVALID_CHESTLINK);
+            player.sendMessage(ChatColor.GOLD + "" + ChatColor.BOLD + TAG + " " + Message.INVALID_CHESTLINK);
         }
     }
 }

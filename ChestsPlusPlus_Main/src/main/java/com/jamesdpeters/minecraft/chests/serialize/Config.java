@@ -25,7 +25,7 @@ public class Config {
     private static ConfigStorage store;
     private static FileConfiguration config;
 
-    private static String saveName = "/data/storage.yml";
+    private static final String saveName = "/data/storage.yml";
 
     /* ALL STORAGE TYPES */
     private static ChestLinkStorageType chestLinkStorageType;
@@ -39,7 +39,7 @@ public class Config {
 
         try {
             config = YamlConfiguration.loadConfiguration(getStorageFile());
-        } catch (IllegalArgumentException | IOException e){
+        } catch (IllegalArgumentException | IOException e) {
             ChestsPlusPlus.PLUGIN.getLogger().severe("Config was null or couldn't be read!");
             config = new YamlConfiguration();
         }
@@ -70,7 +70,7 @@ public class Config {
         }
     }
 
-    public static void saveASync(){
+    public static void saveASync() {
         Bukkit.getScheduler().runTaskAsynchronously(ChestsPlusPlus.PLUGIN, Config::save);
     }
 
@@ -82,11 +82,13 @@ public class Config {
         return chestLinkStorageType;
     }
 
-    public static List<StorageType<? extends AbstractStorage>> getStorageTypes(){
+    public static List<StorageType<? extends AbstractStorage>> getStorageTypes() {
         return storageTypes != null ? storageTypes : new ArrayList<>();
     }
 
-    public static ConfigStorage getStore(){ return store; }
+    public static ConfigStorage getStore() {
+        return store;
+    }
 
     //TODO This needs improving
     public static OfflinePlayer getOfflinePlayer(String name) {
@@ -101,23 +103,23 @@ public class Config {
         File pluginDataFolder = ChestsPlusPlus.PLUGIN.getDataFolder();
         File file = new File(pluginDataFolder, saveName);
         file.getParentFile().mkdirs();
-        if(!file.exists()) file.createNewFile();
+        if (!file.exists()) file.createNewFile();
         return file;
     }
 
-    private File getLegacyFile(){
+    private File getLegacyFile() {
         return new File("chests.yml");
     }
 
-    private void legacyConverter(){
+    private void legacyConverter() {
         File legacyFile = getLegacyFile();
-        if(!legacyFile.exists()) return;
+        if (!legacyFile.exists()) return;
         ChestsPlusPlus.PLUGIN.getLogger().info("Found a Legacy config! Converting to new data-format and moving to: /plugins/ChestsPlusPlus/data/storage.yml");
         ChestsPlusPlus.PLUGIN.getLogger().info("If you are having issues with data-loss the plugin may not have permissions to delete the legacy file 'chests.yml'");
 
         try {
             Path path = Paths.get(legacyFile.toURI());
-            String content = new String(Files.readAllBytes(path),Charsets.UTF_8);
+            String content = new String(Files.readAllBytes(path), Charsets.UTF_8);
             content = legacyContentConverter(content);
             Files.write(getStorageFile().toPath(), content.getBytes(Charsets.UTF_8));
             legacyFile.createNewFile();
@@ -127,17 +129,17 @@ public class Config {
         }
     }
 
-    private String legacyContentConverter(String content){
+    private String legacyContentConverter(String content) {
         content = content.replaceAll("==: LinkedChest", "==: ConfigStorage");
         content = content.replaceAll("==: com.jamesdpeters.minecraft.chests.storage.InventoryStorage", "==: ChestLinkStorage");
         content = content.replaceAll("==: com.jamesdpeters.minecraft.chests.serialize.InventoryStorage", "==: ChestLinkStorage");
         return content;
     }
 
-    private void configConverter(){
+    private void configConverter() {
         try {
             Path path = Paths.get(getStorageFile().toURI());
-            String content = new String(Files.readAllBytes(path),Charsets.UTF_8);
+            String content = new String(Files.readAllBytes(path), Charsets.UTF_8);
             content = content.replaceAll("==: Recipe", "==: C++Recipe");
             Files.write(getStorageFile().toPath(), content.getBytes(Charsets.UTF_8));
         } catch (IOException e) {

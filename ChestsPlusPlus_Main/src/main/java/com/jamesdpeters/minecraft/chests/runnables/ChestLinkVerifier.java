@@ -15,18 +15,18 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 public class ChestLinkVerifier extends BukkitRunnable {
 
-    private Block block;
+    private final Block block;
     private int delay = 1;
 
-    public ChestLinkVerifier(Block block){
+    public ChestLinkVerifier(Block block) {
         this.block = block;
     }
 
-    public void check(){
-        runTaskLater(ChestsPlusPlus.PLUGIN,delay);
+    public void check() {
+        runTaskLater(ChestsPlusPlus.PLUGIN, delay);
     }
 
-    public ChestLinkVerifier withDelay(int delay){
+    public ChestLinkVerifier withDelay(int delay) {
         this.delay = delay;
         return this;
     }
@@ -35,11 +35,11 @@ public class ChestLinkVerifier extends BukkitRunnable {
     public void run() {
         Chest chest = (Chest) block.getState();
 
-        if(chest.getInventory().getHolder() instanceof DoubleChest) {
+        if (chest.getInventory().getHolder() instanceof DoubleChest) {
             DoubleChest doubleChest = (DoubleChest) chest.getInventory().getHolder();
             InventoryHolder right = doubleChest.getRightSide();
             InventoryHolder left = doubleChest.getLeftSide();
-            if(isChestLinked(doubleChest) && left != null && right != null) {
+            if (isChestLinked(doubleChest) && left != null && right != null) {
                 convertToSingleChest(right.getInventory());
                 convertToSingleChest(left.getInventory());
                 convertToSingleChest(right.getInventory());
@@ -51,10 +51,11 @@ public class ChestLinkVerifier extends BukkitRunnable {
 
     /**
      * Converts the block associated with this inventory into a Single Chest.
+     *
      * @param inventory
      */
-    private void convertToSingleChest(Inventory inventory){
-        if(inventory != null) {
+    private void convertToSingleChest(Inventory inventory) {
+        if (inventory != null) {
             org.bukkit.block.data.type.Chest blockData = (org.bukkit.block.data.type.Chest) inventory.getLocation().getBlock().getBlockData();
             blockData.setType(org.bukkit.block.data.type.Chest.Type.SINGLE);
             inventory.getLocation().getBlock().setBlockData(blockData);
@@ -63,10 +64,11 @@ public class ChestLinkVerifier extends BukkitRunnable {
 
     /**
      * Checks if either side of a @{@link DoubleChest} has been added to a ChestLink
+     *
      * @param chest - the double chest being tested.
      * @return true if either side has been added to a ChestLink.
      */
-    private boolean isChestLinked(DoubleChest chest){
+    private boolean isChestLinked(DoubleChest chest) {
         Location chestSide1 = block.getLocation();
         Location diff = chest.getLocation().clone().subtract(chestSide1).multiply(2);
         Location chestSide2 = chestSide1.clone().add(diff);
@@ -77,15 +79,15 @@ public class ChestLinkVerifier extends BukkitRunnable {
         return (leftStorage != null) || (rightStorage != null);
     }
 
-    private void manualCheck(Chest chest){
-        if(chest.getBlockData() instanceof Directional) {
+    private void manualCheck(Chest chest) {
+        if (chest.getBlockData() instanceof Directional) {
             Directional directional = (Directional) chest.getBlockData();
             BlockFace facing = directional.getFacing();
             BlockFace[] perpendulcarFaces = getPerpendicularFaces(facing);
-            if(perpendulcarFaces == null) return;
+            if (perpendulcarFaces == null) return;
             for (BlockFace perpendicularFace : perpendulcarFaces) {
                 Block toTest = block.getRelative(perpendicularFace);
-                if(toTest.getState() instanceof Chest && Config.getChestLink().getStorage(toTest.getLocation()) != null){
+                if (toTest.getState() instanceof Chest && Config.getChestLink().getStorage(toTest.getLocation()) != null) {
                     convertToSingleChest(chest.getInventory());
                     convertToSingleChest(((Chest) toTest.getState()).getInventory());
                     convertToSingleChest(chest.getInventory());
@@ -97,8 +99,8 @@ public class ChestLinkVerifier extends BukkitRunnable {
     private static final BlockFace[] NS = new BlockFace[]{BlockFace.WEST, BlockFace.EAST};
     private static final BlockFace[] WE = new BlockFace[]{BlockFace.NORTH, BlockFace.SOUTH};
 
-    private BlockFace[] getPerpendicularFaces(BlockFace face){
-        switch (face){
+    private BlockFace[] getPerpendicularFaces(BlockFace face) {
+        switch (face) {
             case NORTH:
             case SOUTH:
                 return NS;

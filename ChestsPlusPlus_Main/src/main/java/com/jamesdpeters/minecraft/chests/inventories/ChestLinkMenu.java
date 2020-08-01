@@ -22,25 +22,25 @@ public class ChestLinkMenu implements InventoryProvider {
 
     public static HashMap<Player, SmartInventory> menus;
 
-    private Collection<ChestLinkStorage> storages;
-    private SmartInventory menu;
+    private final Collection<ChestLinkStorage> storages;
+    private final SmartInventory menu;
 
-    private ChestLinkMenu(Player player){
+    private ChestLinkMenu(Player player) {
         this.storages = Config.getChestLink().getStorageMap(player.getUniqueId()).values();
         menu = SmartInventory.builder()
                 .id("chestLinkMenu")
                 .title("Inventory Storage")
                 .provider(this)
                 .manager(ChestsPlusPlus.INVENTORY_MANAGER)
-                .size(6,9)
+                .size(6, 9)
                 .build();
         //menu.setInsertable(true);
     }
 
-    public static SmartInventory getMenu(Player player){
-        if(menus == null) menus = new HashMap<>();
+    public static SmartInventory getMenu(Player player) {
+        if (menus == null) menus = new HashMap<>();
 
-        if(menus.containsKey(player)){
+        if (menus.containsKey(player)) {
             return menus.get(player);
         } else {
             menus.put(player, new ChestLinkMenu(player).getMenu());
@@ -53,12 +53,12 @@ public class ChestLinkMenu implements InventoryProvider {
         Pagination pagination = contents.pagination();
 
         List<ClickableItem> itemList = new ArrayList<>();
-        for(ChestLinkStorage storage : storages){
+        for (ChestLinkStorage storage : storages) {
             ClickableItem item = storage.getClickableItem(player);
             itemList.add(item);
         }
         List<ChestLinkStorage> memberOfStorage = Config.getChestLink().getStorageMemberOf(player);
-        for(ChestLinkStorage storage : memberOfStorage){
+        for (ChestLinkStorage storage : memberOfStorage) {
             ClickableItem item = storage.getClickableItem(player);
             itemList.add(item);
         }
@@ -66,14 +66,14 @@ public class ChestLinkMenu implements InventoryProvider {
         pagination.setItems(itemList.toArray(new ClickableItem[0]));
         pagination.setItemsPerPage(28);
 
-        contents.fillBorders(ClickableItem.empty(Utils.getNamedItem(new ItemStack(Material.GRAY_STAINED_GLASS_PANE)," ")));
-        for(ClickableItem item : pagination.getPageItems()){
+        contents.fillBorders(ClickableItem.empty(Utils.getNamedItem(new ItemStack(Material.GRAY_STAINED_GLASS_PANE), " ")));
+        for (ClickableItem item : pagination.getPageItems()) {
             contents.add(item);
         }
 
-        contents.set(5, 2, ClickableItem.from(Utils.getNamedItem(new ItemStack(Material.ARROW),"Previous"),
+        contents.set(5, 2, ClickableItem.from(Utils.getNamedItem(new ItemStack(Material.ARROW), "Previous"),
                 e -> menu.open(player, pagination.previous().getPage())));
-        contents.set(5, 6, ClickableItem.from(Utils.getNamedItem(new ItemStack(Material.ARROW),"Next"),
+        contents.set(5, 6, ClickableItem.from(Utils.getNamedItem(new ItemStack(Material.ARROW), "Next"),
                 e -> menu.open(player, pagination.next().getPage())));
     }
 

@@ -20,11 +20,11 @@ public class LangFileProperties {
 
     public static void serialize(LanguageFile properties) {
         for (Message value : Message.values()) {
-            properties.setProperty(value.toString(),value.getTaggedMessage());
+            properties.setProperty(value.toString(), value.getTaggedMessage());
         }
     }
 
-    public static void deserialize(Properties properties){
+    public static void deserialize(Properties properties) {
         properties.forEach((key, value) -> {
             try {
                 String val = new String(((String) value).getBytes());
@@ -37,24 +37,24 @@ public class LangFileProperties {
             //Save the language file after reading to insert any missing values.
             LanguageFile savedProperties = new LanguageFile();
             serialize(savedProperties);
-            if(currentFile != null) savedProperties.store(currentFile);
+            if (currentFile != null) savedProperties.store(currentFile);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public static void loadLangFile(String fileName){
-        if(fileName.equals("default")){
+    public static void loadLangFile(String fileName) {
+        if (fileName.equals("default")) {
             ChestsPlusPlus.PLUGIN.getLogger().info("Loaded default language file");
             return;
         }
         try {
-            currentFile = getLangFile(fileName,false);
+            currentFile = getLangFile(fileName, false);
             LanguageFile properties = loadProperties(currentFile);
             deserialize(properties);
-            ChestsPlusPlus.PLUGIN.getLogger().info("Loaded '"+fileName+"' language file");
+            ChestsPlusPlus.PLUGIN.getLogger().info("Loaded '" + fileName + "' language file");
         } catch (IOException e) {
-            ChestsPlusPlus.PLUGIN.getLogger().warning("Failed to load language file: "+fileName+". It should be located in "+ChestsPlusPlus.PLUGIN.getDataFolder().getPath()+"/lang/");
+            ChestsPlusPlus.PLUGIN.getLogger().warning("Failed to load language file: " + fileName + ". It should be located in " + ChestsPlusPlus.PLUGIN.getDataFolder().getPath() + "/lang/");
         }
     }
 
@@ -67,9 +67,9 @@ public class LangFileProperties {
 
     private static File getLangFile(String fileName, boolean create) throws IOException {
         File pluginDataFolder = ChestsPlusPlus.PLUGIN.getDataFolder();
-        File file = new File(pluginDataFolder, "lang/"+fileName+".properties");
+        File file = new File(pluginDataFolder, "lang/" + fileName + ".properties");
         file.getParentFile().mkdirs();
-        if(create && !file.exists()) file.createNewFile();
+        if (create && !file.exists()) file.createNewFile();
         return file;
     }
 
@@ -85,7 +85,7 @@ public class LangFileProperties {
         fileProperties.generateEnglishLanguageFile();
     }
 
-    private LangFileProperties(){
+    private LangFileProperties() {
 
     }
 
@@ -100,8 +100,8 @@ public class LangFileProperties {
             serialize(properties);
             properties.storeGenerated(langSrcFile);
             properties.storeGenerated(langTargetFile);
-            LOGGER.info("Saved language file to: "+langSrcFile.getPath());
-            LOGGER.info("Saved language file to: "+langTargetFile.getPath());
+            LOGGER.info("Saved language file to: " + langSrcFile.getPath());
+            LOGGER.info("Saved language file to: " + langTargetFile.getPath());
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Failed to generate language file!");
             e.printStackTrace();

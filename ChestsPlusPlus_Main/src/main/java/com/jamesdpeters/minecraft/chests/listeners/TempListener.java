@@ -7,15 +7,15 @@ import org.bukkit.plugin.Plugin;
 
 public class TempListener implements Listener {
 
-    public TempListener(){
+    public TempListener() {
         this(ChestsPlusPlus.PLUGIN);
     }
 
-    public TempListener(Plugin plugin){
-        plugin.getServer().getPluginManager().registerEvents(this,plugin);
+    public TempListener(Plugin plugin) {
+        plugin.getServer().getPluginManager().registerEvents(this, plugin);
     }
 
-    public void done(){
+    public void done() {
         HandlerList.unregisterAll(this);
     }
 

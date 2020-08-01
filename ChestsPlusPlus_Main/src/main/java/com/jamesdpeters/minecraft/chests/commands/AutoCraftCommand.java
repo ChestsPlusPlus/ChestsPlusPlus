@@ -20,17 +20,16 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class AutoCraftCommand extends ServerCommand  {
+public class AutoCraftCommand extends ServerCommand {
 
     private enum OPTIONS {
         ADD("/autocraft add <group>", Message.COMMAND_AUTOCRAFT_ADD.getString()),
-        HELP("/autocraft help",Message.COMMAND_HELP.getString()),
-        LIST("/autocraft list",Message.COMMAND_AUTOCRAFT_LIST.getString()),
-        MEMBER("/autocraft member [add/remove <group> <player>] or [list <group>]",Message.COMMAND_MEMBER.getString()),
-//        MENU("/autocraft menu","Open the AutoCraft menu to display all groups!"),
-        OPEN("/autocraft open <Group>",Message.COMMAND_AUTOCRAFT_OPEN.getString()),
+        HELP("/autocraft help", Message.COMMAND_HELP.getString()),
+        LIST("/autocraft list", Message.COMMAND_AUTOCRAFT_LIST.getString()),
+        MEMBER("/autocraft member [add/remove <group> <player>] or [list <group>]", Message.COMMAND_MEMBER.getString()),
+        OPEN("/autocraft open <Group>", Message.COMMAND_AUTOCRAFT_OPEN.getString()),
         REMOVE("/autocraft remove <Group>", Message.COMMAND_AUTOCRAFT_REMOVE.getString()),
-        RENAME("/autocraft rename <group> <new-name>",Message.COMMAND_AUTOCRAFT_RENAME.getString()),
+        RENAME("/autocraft rename <group> <new-name>", Message.COMMAND_AUTOCRAFT_RENAME.getString()),
         SETPUBLIC("/autocraft setpublic <group> <true/false>", Message.COMMAND_AUTOCRAFT_SETPUBLIC.getString());
 
         String description, commandHelp;
@@ -40,7 +39,7 @@ public class AutoCraftCommand extends ServerCommand  {
             valuesList = Stream.of(OPTIONS.values()).map(OPTIONS::toString).collect(Collectors.toList());
         }
 
-        OPTIONS( String commandHelp, String description){
+        OPTIONS(String commandHelp, String description) {
             this.commandHelp = commandHelp;
             this.description = description;
         }
@@ -59,13 +58,13 @@ public class AutoCraftCommand extends ServerCommand  {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if(!(sender instanceof Player)){
+        if (!(sender instanceof Player)) {
             sender.sendMessage("Only a player can use this command");
             return false;
         }
 
         Player player = (Player) sender;
-        if(args != null &&  args.length > 0) {
+        if (args != null && args.length > 0) {
             try {
                 switch (OPTIONS.valueOf(args[0].toUpperCase())) {
                     case HELP:
@@ -170,7 +169,7 @@ public class AutoCraftCommand extends ServerCommand  {
                         }
                     }
                 }
-            } catch (IllegalArgumentException exception){
+            } catch (IllegalArgumentException exception) {
                 return false;
             }
         }
@@ -180,13 +179,13 @@ public class AutoCraftCommand extends ServerCommand  {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        if((sender instanceof Player)) {
+        if ((sender instanceof Player)) {
             Player player = (Player) sender;
 
             if (args.length == 1) {
                 return OPTIONS.valuesList;
             }
-            if(args.length == 2) {
+            if (args.length == 2) {
                 try {
                     switch (OPTIONS.valueOf(args[0].toUpperCase())) {
                         case ADD:
@@ -196,38 +195,42 @@ public class AutoCraftCommand extends ServerCommand  {
                         case RENAME:
                             return Config.getAutoCraft().getStorageList(player, args[1]);
                         case MEMBER:
-                            return Stream.of("add","remove","list","add-to-all","remove-from-all").filter(s -> s.contains(args[1])).collect(Collectors.toList());
+                            return Stream.of("add", "remove", "list", "add-to-all", "remove-from-all").filter(s -> s.contains(args[1])).collect(Collectors.toList());
                     }
-                } catch (IllegalArgumentException ignored) { }
+                } catch (IllegalArgumentException ignored) {
+                }
             }
-            if(args.length == 3) {
+            if (args.length == 3) {
                 try {
                     switch (OPTIONS.valueOf(args[0].toUpperCase())) {
                         case MEMBER:
-                            if(args[1].equals("add-to-all")) return Utils.filterList(Utils.getAllPlayers(), args[2]);
-                            if(args[1].equals("remove-from-all")) return Utils.filterList(Utils.getAllPlayers(), args[2]);
+                            if (args[1].equals("add-to-all")) return Utils.filterList(Utils.getAllPlayers(), args[2]);
+                            if (args[1].equals("remove-from-all"))
+                                return Utils.filterList(Utils.getAllPlayers(), args[2]);
                             return Config.getAutoCraft().getStorageList(player, args[2]);
                     }
-                } catch (IllegalArgumentException ignored) { }
+                } catch (IllegalArgumentException ignored) {
+                }
             }
-            if(args.length == 4) {
+            if (args.length == 4) {
                 try {
                     switch (OPTIONS.valueOf(args[0].toUpperCase())) {
                         case MEMBER:
                             return Utils.filterList(Utils.getAllPlayers(), args[3]);
                     }
-                } catch (IllegalArgumentException ignored) { }
+                } catch (IllegalArgumentException ignored) {
+                }
             }
             return Collections.singletonList("");
         }
         return null;
     }
 
-    private static boolean memberCommand(String[] args, CommandSender sender){
+    private static boolean memberCommand(String[] args, CommandSender sender) {
         Player player = (Player) sender;
-        if(args.length > 3){
-            if(sender.hasPermission(Permissions.MEMBER)){
-                if(args[1].equals("add")) {
+        if (args.length > 3) {
+            if (sender.hasPermission(Permissions.MEMBER)) {
+                if (args[1].equals("add")) {
                     Bukkit.getScheduler().runTaskAsynchronously(ChestsPlusPlus.PLUGIN, () -> {
                         OfflinePlayer toAdd = Bukkit.getOfflinePlayer(args[3]);
                         AutoCraftingStorage storage = Config.getAutoCraft().getStorage(player.getUniqueId(), args[2]);
@@ -235,7 +238,7 @@ public class AutoCraftCommand extends ServerCommand  {
                             storage.getStorageType().getMessages().addedMember(player, storage, args[3]);
                         else Config.getAutoCraft().getMessages().unableToAddMember(player, args[3]);
                     });
-                } else if(args[1].equals("remove")){
+                } else if (args[1].equals("remove")) {
                     Bukkit.getScheduler().runTaskAsynchronously(ChestsPlusPlus.PLUGIN, () -> {
                         OfflinePlayer toAdd = Bukkit.getOfflinePlayer(args[3]);
                         AutoCraftingStorage storage = Config.getAutoCraft().getStorage(player.getUniqueId(), args[2]);
@@ -244,29 +247,29 @@ public class AutoCraftCommand extends ServerCommand  {
                         else Config.getAutoCraft().getMessages().unableToRemoveMember(player, args[3]);
                     });
                 } else {
-                    player.sendMessage(ChatColor.RED+ OPTIONS.MEMBER.commandHelp);
-                    player.sendMessage(ChatColor.RED+ OPTIONS.MEMBER.description);
+                    player.sendMessage(ChatColor.RED + OPTIONS.MEMBER.commandHelp);
+                    player.sendMessage(ChatColor.RED + OPTIONS.MEMBER.description);
                 }
             } else {
                 Messages.NO_PERMISSION(player);
             }
             return true;
-        } else if(args.length > 2){
-            if(sender.hasPermission(Permissions.MEMBER)){
-                if(args[1].equals("list")) {
+        } else if (args.length > 2) {
+            if (sender.hasPermission(Permissions.MEMBER)) {
+                if (args[1].equals("list")) {
                     AutoCraftingStorage storage = Config.getAutoCraft().getStorage(player.getUniqueId(), args[2]);
-                    if(storage != null){
+                    if (storage != null) {
                         storage.getStorageType().getMessages().listMembers(player, storage);
                         return true;
                     }
-                } else if(args[1].equals("add-to-all")){
+                } else if (args[1].equals("add-to-all")) {
                     Bukkit.getScheduler().runTaskAsynchronously(ChestsPlusPlus.PLUGIN, () -> {
                         OfflinePlayer toAdd = Bukkit.getOfflinePlayer(args[2]);
                         Config.getAutoCraft().getStorageMap(player.getUniqueId()).forEach((s, storage) -> storage.addMember(toAdd));
                         Config.getAutoCraft().getMessages().addMemberToAll(player, toAdd);
                     });
                     return true;
-                } else if(args[1].equals("remove-from-all")) {
+                } else if (args[1].equals("remove-from-all")) {
                     Bukkit.getScheduler().runTaskAsynchronously(ChestsPlusPlus.PLUGIN, () -> {
                         OfflinePlayer toAdd = Bukkit.getOfflinePlayer(args[2]);
                         Config.getAutoCraft().getStorageMap(player.getUniqueId()).forEach((s, storage) -> storage.removeMember(toAdd));
@@ -276,8 +279,8 @@ public class AutoCraftCommand extends ServerCommand  {
                 }
             }
         } else {
-            player.sendMessage(ChatColor.RED+ OPTIONS.MEMBER.commandHelp);
-            player.sendMessage(ChatColor.RED+ OPTIONS.MEMBER.description);
+            player.sendMessage(ChatColor.RED + OPTIONS.MEMBER.commandHelp);
+            player.sendMessage(ChatColor.RED + OPTIONS.MEMBER.description);
             return true;
         }
         return false;

@@ -15,44 +15,45 @@ import org.bukkit.scheduler.BukkitTask;
 
 public class VirtualChestToHopper extends BukkitRunnable {
 
-    private ChestLinkStorage storage;
+    private final ChestLinkStorage storage;
     private BukkitTask task;
 
-    public VirtualChestToHopper(ChestLinkStorage storage){
+    public VirtualChestToHopper(ChestLinkStorage storage) {
         this.storage = storage;
     }
 
-    public void start(){
-        task = runTaskTimer(ChestsPlusPlus.PLUGIN,1,8);
+    public void start() {
+        task = runTaskTimer(ChestsPlusPlus.PLUGIN, 1, 8);
     }
 
-    public void stop(){
+    public void stop() {
         task.cancel();
     }
 
     @Override
     public void run() {
-        for(LocationInfo location : storage.getLocations()) {
-            if(location != null) {
+        for (LocationInfo location : storage.getLocations()) {
+            if (location != null) {
                 if (location.getLocation() != null) {
-                    if(!PluginConfig.SHOULD_RUN_HOPPERS_UNLOADED_CHUNKS.get() && !Utils.isLocationChunkLoaded(location.getLocation())) continue;
+                    if (!PluginConfig.SHOULD_RUN_HOPPERS_UNLOADED_CHUNKS.get() && !Utils.isLocationChunkLoaded(location.getLocation()))
+                        continue;
                     Location below = location.getLocation().clone().subtract(0, 1, 0);
                     if (below.getBlock().getState() instanceof Hopper) {
                         Hopper hopper = (Hopper) below.getBlock().getState();
                         if (below.getBlock().isBlockIndirectlyPowered() || below.getBlock().isBlockPowered()) {
                             continue;
                         }
-                        if (move(hopper.getLocation(), hopper.getInventory(), storage.getInventory())){
+                        if (move(hopper.getLocation(), hopper.getInventory(), storage.getInventory())) {
                             storage.updateDisplayItem();
                         }
-                        if(storage.getInventory().getViewers().size() > 0) storage.sort();
+                        if (storage.getInventory().getViewers().size() > 0) storage.sort();
                     }
                 }
             }
         }
     }
 
-    public static boolean move(Location targetLocation, Inventory source, Inventory target){
+    public static boolean move(Location targetLocation, Inventory source, Inventory target) {
         int hopperAmount = SpigotConfig.getWorldSettings(targetLocation.getWorld()).getHopperAmount();
         return Utils.hopperMove(source, hopperAmount, target, HopperFilter.getHopperFilters(targetLocation.getBlock()));
     }

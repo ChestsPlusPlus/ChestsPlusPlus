@@ -31,11 +31,11 @@ public class HopperListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onHopperMoveEvent(InventoryMoveItemEvent event) {
         //TO HOPPER
-        if(event.getDestination().getHolder() instanceof Hopper){
-            if(event.getDestination().getLocation() != null){
-                if(event.getDestination().getLocation().getBlock().isBlockPowered()) return;
+        if (event.getDestination().getHolder() instanceof Hopper) {
+            if (event.getDestination().getLocation() != null) {
+                if (event.getDestination().getLocation().getBlock().isBlockPowered()) return;
             }
-            if(!event.isCancelled()) Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN, ()-> {
+            if (!event.isCancelled()) Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN, () -> {
                 VirtualChestToHopper.move(event.getDestination().getLocation(), event.getSource(), event.getDestination());
             }, 1);
             event.setCancelled(true);
@@ -43,23 +43,24 @@ public class HopperListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.HIGH)
-    public void fromHopper(InventoryMoveItemEvent event){
+    public void fromHopper(InventoryMoveItemEvent event) {
         //FROM HOPPER
         if (event.getInitiator().getHolder() instanceof Hopper) {
             Location location = event.getDestination().getLocation();
             ChestLinkStorage storage = Config.getChestLink().getStorage(location);
             if (storage != null) {
-                if(!event.isCancelled()) {
+                if (!event.isCancelled()) {
                     event.setCancelled(true);
                     new BukkitRunnable() {
                         @Override
                         public void run() {
-                            if(location != null) {
+                            if (location != null) {
                                 int hopperAmount = SpigotConfig.getWorldSettings(location.getWorld()).getHopperAmount();
                                 if (Utils.hopperMove(event.getSource(), hopperAmount, storage.getInventory())) {
                                     storage.updateDisplayItem();
                                 }
-                                if (event.getDestination().getHolder() != null) event.getDestination().getHolder().getInventory().clear();
+                                if (event.getDestination().getHolder() != null)
+                                    event.getDestination().getHolder().getInventory().clear();
                                 if (storage.getInventory().getViewers().size() > 0) storage.sort();
                             }
                         }
@@ -70,35 +71,35 @@ public class HopperListener implements Listener {
     }
 
     @EventHandler
-    public void onHopperPickup(InventoryPickupItemEvent event){
-        if(event.getInventory().getHolder() instanceof Hopper){
+    public void onHopperPickup(InventoryPickupItemEvent event) {
+        if (event.getInventory().getHolder() instanceof Hopper) {
             event.setCancelled(!HopperFilter.isInFilter(event.getInventory().getLocation().getBlock(), event.getItem().getItemStack()));
         }
     }
 
     @EventHandler
-    public void itemFrameInteract(PlayerInteractEntityEvent event){
-        if(event.isCancelled()) return;
-        if(event.getRightClicked().getType().equals(EntityType.ITEM_FRAME)){
+    public void itemFrameInteract(PlayerInteractEntityEvent event) {
+        if (event.isCancelled()) return;
+        if (event.getRightClicked().getType().equals(EntityType.ITEM_FRAME)) {
             ItemFrame itemFrame = (ItemFrame) event.getRightClicked();
             Block attachedBlock = itemFrame.getLocation().getBlock().getRelative(itemFrame.getAttachedFace());
-            if(!(attachedBlock.getState() instanceof Hopper)) return;
+            if (!(attachedBlock.getState() instanceof Hopper)) return;
             Rotation rotation = itemFrame.getRotation();
 
             //Set ItemFrame invisible based on config.
             ApiSpecific.getNmsProvider().setItemFrameVisible(itemFrame, !PluginConfig.INVISIBLE_FILTER_ITEM_FRAMES.get());
 
             //ItemFrame event acts weird, it returns the values of the itemframe *before* the event. So we have to calculate what the next state will be.
-            if(!itemFrame.getItem().getType().equals(Material.AIR)) rotation = rotation.rotateClockwise();
+            if (!itemFrame.getItem().getType().equals(Material.AIR)) rotation = rotation.rotateClockwise();
 
-            if(rotation.equals(Rotation.FLIPPED)){
-                event.getPlayer().sendMessage(ChatColor.AQUA+"ItemFrame now filters all types of this item! e.g Enchanted Books.");
-            } else if(rotation.equals(Rotation.NONE)) {
-                event.getPlayer().sendMessage(ChatColor.GREEN+"ItemFrame is in default filtering mode. Rotate Item Frame to change mode!");
-            } else if(rotation.equals(Rotation.CLOCKWISE)) {
-                event.getPlayer().sendMessage(ChatColor.DARK_RED+"ItemFrame now prevents this item from being accepted in the hopper!");
-            } else if(rotation.equals(Rotation.COUNTER_CLOCKWISE)) {
-                event.getPlayer().sendMessage(ChatColor.GOLD+"ItemFrame now prevents all types of this item from being accepted in the hopper! e.g Enchanted Books.");
+            if (rotation.equals(Rotation.FLIPPED)) {
+                event.getPlayer().sendMessage(ChatColor.AQUA + "ItemFrame now filters all types of this item! e.g Enchanted Books.");
+            } else if (rotation.equals(Rotation.NONE)) {
+                event.getPlayer().sendMessage(ChatColor.GREEN + "ItemFrame is in default filtering mode. Rotate Item Frame to change mode!");
+            } else if (rotation.equals(Rotation.CLOCKWISE)) {
+                event.getPlayer().sendMessage(ChatColor.DARK_RED + "ItemFrame now prevents this item from being accepted in the hopper!");
+            } else if (rotation.equals(Rotation.COUNTER_CLOCKWISE)) {
+                event.getPlayer().sendMessage(ChatColor.GOLD + "ItemFrame now prevents all types of this item from being accepted in the hopper! e.g Enchanted Books.");
             }
         }
     }

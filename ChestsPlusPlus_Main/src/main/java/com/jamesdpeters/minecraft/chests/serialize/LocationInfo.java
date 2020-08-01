@@ -17,7 +17,8 @@ import java.util.Optional;
 @SerializableAs("LocationInfo")
 public class LocationInfo implements ConfigurationSerializable {
 
-    private Location location, signLocation;
+    private final Location location;
+    private Location signLocation;
     private ArmorStand itemStand, blockStand, toolItemStand;
     private TileEntityOpener tileEntityOpener;
 
@@ -28,11 +29,11 @@ public class LocationInfo implements ConfigurationSerializable {
         return map;
     }
 
-    public LocationInfo(Map<String, Object> map){
+    public LocationInfo(Map<String, Object> map) {
         location = (Location) map.get("Location");
     }
 
-    public LocationInfo(Location location){
+    public LocationInfo(Location location) {
         this.location = location;
     }
 
@@ -44,8 +45,8 @@ public class LocationInfo implements ConfigurationSerializable {
         return signLocation;
     }
 
-    public Sign getSign(){
-        if(signLocation.getBlock().getState() instanceof Sign){
+    public Sign getSign() {
+        if (signLocation.getBlock().getState() instanceof Sign) {
             return (Sign) signLocation.getBlock().getState();
         }
         return null;
@@ -87,7 +88,7 @@ public class LocationInfo implements ConfigurationSerializable {
         return tileEntityOpener;
     }
 
-    public static List<LocationInfo> convert(List<Location> locationList){
+    public static List<LocationInfo> convert(List<Location> locationList) {
         List<LocationInfo> locationInfos = new ArrayList<>();
         for (Location location : locationList) {
             locationInfos.add(new LocationInfo(location));
@@ -95,11 +96,11 @@ public class LocationInfo implements ConfigurationSerializable {
         return locationInfos;
     }
 
-    public static Optional<LocationInfo> getLocationInfo(List<LocationInfo> locationInfos, Location location){
+    public static Optional<LocationInfo> getLocationInfo(List<LocationInfo> locationInfos, Location location) {
         return locationInfos.stream().filter(locationInfo -> locationInfo.getLocation().equals(location)).findFirst();
     }
 
-    public boolean isInWorld(Player player){
+    public boolean isInWorld(Player player) {
         return getLocation() != null && player.getWorld().equals(getLocation().getWorld());
     }
 }

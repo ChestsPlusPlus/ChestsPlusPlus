@@ -13,9 +13,9 @@ public class VirtualInventoryHolder implements InventoryHolder {
 
     private Runnable openPreviousInventory;
     private boolean isPrevInvRunning = false;
-    private HashMap<UUID, Boolean> remoteOpened;
+    private final HashMap<UUID, Boolean> remoteOpened;
 
-    public VirtualInventoryHolder(ChestLinkStorage storage){
+    public VirtualInventoryHolder(ChestLinkStorage storage) {
         this.storage = storage;
         remoteOpened = new HashMap<>();
     }
@@ -25,11 +25,11 @@ public class VirtualInventoryHolder implements InventoryHolder {
         return storage.getInventory();
     }
 
-    public ChestLinkStorage getStorage(){
+    public ChestLinkStorage getStorage() {
         return storage;
     }
 
-    public void setPreviousInventory(Runnable runnable){
+    public void setPreviousInventory(Runnable runnable) {
         openPreviousInventory = runnable;
         isPrevInvRunning = false;
     }
@@ -37,12 +37,12 @@ public class VirtualInventoryHolder implements InventoryHolder {
     /**
      * @return true if previous inventory existed.
      */
-    public boolean openPreviousInventory(){
-        if(isPrevInvRunning){
+    public boolean openPreviousInventory() {
+        if (isPrevInvRunning) {
             isPrevInvRunning = false;
             return false;
         }
-        if(openPreviousInventory != null){
+        if (openPreviousInventory != null) {
             isPrevInvRunning = true;
             openPreviousInventory.run();
             openPreviousInventory = null;
@@ -53,20 +53,22 @@ public class VirtualInventoryHolder implements InventoryHolder {
 
     /**
      * Called when a player remotely opens this inventory.
+     *
      * @param uuid - the players uuid.
      */
-    public void onPlayerRemoteOpened(UUID uuid){
-        remoteOpened.put(uuid,true);
+    public void onPlayerRemoteOpened(UUID uuid) {
+        remoteOpened.put(uuid, true);
     }
 
     /**
      * Checks if the player remotely opened this inventory, if so returns true and sets their remoteOpen to false.
+     *
      * @param uuid
      * @return
      */
-    public boolean didPlayerRemoteOpen(UUID uuid){
-        if(remoteOpened.getOrDefault(uuid,false)){
-            remoteOpened.put(uuid,false);
+    public boolean didPlayerRemoteOpen(UUID uuid) {
+        if (remoteOpened.getOrDefault(uuid, false)) {
+            remoteOpened.put(uuid, false);
             return true;
         }
         return false;

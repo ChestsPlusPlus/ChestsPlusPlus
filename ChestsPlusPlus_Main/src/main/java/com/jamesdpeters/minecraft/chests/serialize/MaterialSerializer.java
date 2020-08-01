@@ -8,22 +8,22 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 @SerializableAs("Material")
-public class MaterialSerializer implements ConfigurationSerializable  {
+public class MaterialSerializer implements ConfigurationSerializable {
 
-    private Material material;
+    private final Material material;
 
-    public MaterialSerializer(Material material){
+    public MaterialSerializer(Material material) {
         this.material = material;
     }
 
     @Override
     public Map<String, Object> serialize() {
-        LinkedHashMap<String,Object> map = new LinkedHashMap<>();
-        map.put("Material",material.name());
+        LinkedHashMap<String, Object> map = new LinkedHashMap<>();
+        map.put("Material", material.name());
         return map;
     }
 
-    public MaterialSerializer(Map<String, Object> map){
+    public MaterialSerializer(Map<String, Object> map) {
         String matName = (String) map.get("Material");
         material = Material.getMaterial(matName);
     }

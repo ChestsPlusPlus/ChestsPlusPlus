@@ -28,12 +28,12 @@ import org.bukkit.inventory.ItemStack;
 public class InventoryListener implements Listener {
 
     @EventHandler(priority = EventPriority.LOWEST)
-    public void onInventoryPlayerUpdate(InventoryClickEvent event){
+    public void onInventoryPlayerUpdate(InventoryClickEvent event) {
         inventoryUpdate(event);
     }
 
-    @EventHandler (priority = EventPriority.LOWEST)
-    public void onInventoryOpen(InventoryOpenEvent event){
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onInventoryOpen(InventoryOpenEvent event) {
         try {
             if (event.getPlayer() instanceof Player) {
                 if (event.getInventory().getLocation() != null) {
@@ -50,9 +50,9 @@ public class InventoryListener implements Listener {
                         //If no Inventory Storage here check for AutoCraft
                         AutoCraftingStorage craftingStorage = Config.getAutoCraft().getStorage(event.getInventory().getLocation());
 
-                        if(craftingStorage != null){
+                        if (craftingStorage != null) {
                             event.setCancelled(true);
-                            if(event.getPlayer().hasPermission(Permissions.AUTOCRAFT_OPEN) && craftingStorage.hasPermission((Player) event.getPlayer())) {
+                            if (event.getPlayer().hasPermission(Permissions.AUTOCRAFT_OPEN) && craftingStorage.hasPermission((Player) event.getPlayer())) {
                                 event.getPlayer().openInventory(craftingStorage.getInventory());
                                 craftingStorage.getVirtualCraftingHolder().startAnimation();
                             }
@@ -60,11 +60,12 @@ public class InventoryListener implements Listener {
                     }
                 }
             }
-        } catch (NullPointerException ignore){} //Essentials does something weird with enderchests - shit fix but works :)
+        } catch (NullPointerException ignore) {
+        } //Essentials does something weird with enderchests - shit fix but works :)
     }
 
     @EventHandler
-    public void onInventoryClose(InventoryCloseEvent event){
+    public void onInventoryClose(InventoryCloseEvent event) {
         try {
             InventoryHolder holder = event.getInventory().getHolder();
             if (holder instanceof VirtualInventoryHolder) {
@@ -77,26 +78,27 @@ public class InventoryListener implements Listener {
                 Utils.closeStorageInventory(vHolder.getStorage());
                 vHolder.getStorage().onItemDisplayUpdate(InventorySorter.getMostCommonItem(event.getInventory()));
             }
-            if(holder instanceof VirtualCraftingHolder){
+            if (holder instanceof VirtualCraftingHolder) {
                 ((VirtualCraftingHolder) holder).stopAnimation();
             }
-        } catch (NullPointerException ignore){} //Essentials does something weird with enderchests - shit fix but works :)
+        } catch (NullPointerException ignore) {
+        } //Essentials does something weird with enderchests - shit fix but works :)
     }
 
-    public void inventoryUpdate(InventoryInteractEvent event){
+    public void inventoryUpdate(InventoryInteractEvent event) {
         InventoryHolder holder = event.getInventory().getHolder();
-        if(holder instanceof VirtualInventoryHolder){
+        if (holder instanceof VirtualInventoryHolder) {
             VirtualInventoryHolder vHolder = (VirtualInventoryHolder) holder;
             Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN, () -> {
                 vHolder.getStorage().sort();
                 vHolder.getStorage().onItemDisplayUpdate(InventorySorter.getMostCommonItem(event.getInventory()));
-            },1);
+            }, 1);
         }
 
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
-    public void onInventoryPlayerUpdate(InventoryDragEvent event){
+    public void onInventoryPlayerUpdate(InventoryDragEvent event) {
         inventoryUpdate(event);
         craftingUpdate(event);
     }
@@ -104,26 +106,26 @@ public class InventoryListener implements Listener {
 
     //CRAFTING
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void inventoryDragEvent(InventoryDragEvent event){
+    public void inventoryDragEvent(InventoryDragEvent event) {
         Inventory inventory = event.getInventory();
-        if(inventory.getHolder() instanceof VirtualCraftingHolder){
+        if (inventory.getHolder() instanceof VirtualCraftingHolder) {
             Player p = (Player) event.getWhoClicked();
-            for(int slot : event.getRawSlots()) {
-                if(slot >= p.getOpenInventory().getTopInventory().getSize())
+            for (int slot : event.getRawSlots()) {
+                if (slot >= p.getOpenInventory().getTopInventory().getSize())
                     continue;
 
-                setCraftingItem(event.getInventory(),slot,event.getOldCursor());
+                setCraftingItem(event.getInventory(), slot, event.getOldCursor());
                 event.setCancelled(true);
             }
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onCraftingPlayerUpdate(InventoryClickEvent event){
+    public void onCraftingPlayerUpdate(InventoryClickEvent event) {
         Player player = (Player) event.getWhoClicked();
 
-        if(event.getView().getTopInventory().getHolder() instanceof VirtualCraftingHolder){
-            if(event.getAction() == InventoryAction.COLLECT_TO_CURSOR ||
+        if (event.getView().getTopInventory().getHolder() instanceof VirtualCraftingHolder) {
+            if (event.getAction() == InventoryAction.COLLECT_TO_CURSOR ||
                     event.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY ||
                     event.getAction() == InventoryAction.NOTHING) {
                 event.setCancelled(true);
@@ -131,10 +133,10 @@ public class InventoryListener implements Listener {
                 return;
             }
 
-            if(event.getClickedInventory() == player.getOpenInventory().getTopInventory()){
-                if(event.getSlot() == 0) event.setCancelled(true);
-                if(event.getSlot() >= 1 && event.getSlot() <= 9){
-                    setCraftingItem(event.getInventory(),event.getSlot(),event.getCursor());
+            if (event.getClickedInventory() == player.getOpenInventory().getTopInventory()) {
+                if (event.getSlot() == 0) event.setCancelled(true);
+                if (event.getSlot() >= 1 && event.getSlot() <= 9) {
+                    setCraftingItem(event.getInventory(), event.getSlot(), event.getCursor());
                     event.setCancelled(true);
                     craftingUpdate(event);
                 }
@@ -142,23 +144,22 @@ public class InventoryListener implements Listener {
         }
     }
 
-    private void setCraftingItem(Inventory inventory, int slot, ItemStack cursor){
+    private void setCraftingItem(Inventory inventory, int slot, ItemStack cursor) {
         ItemStack clone = null;
-        if(cursor != null){
+        if (cursor != null) {
             clone = cursor.clone();
             clone.setAmount(1);
         }
-        inventory.setItem(slot,clone);
+        inventory.setItem(slot, clone);
     }
 
-    private void craftingUpdate(InventoryInteractEvent event){
+    private void craftingUpdate(InventoryInteractEvent event) {
         InventoryHolder holder = event.getInventory().getHolder();
-        if(holder instanceof VirtualCraftingHolder){
-            Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN, (((VirtualCraftingHolder) holder).setUpdatingRecipe(true))::updateCrafting,1);
-            Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN, (((VirtualCraftingHolder) holder))::forceUpdateInventory,1);
+        if (holder instanceof VirtualCraftingHolder) {
+            Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN, (((VirtualCraftingHolder) holder).setUpdatingRecipe(true))::updateCrafting, 1);
+            Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN, (((VirtualCraftingHolder) holder))::forceUpdateInventory, 1);
         }
     }
-
 
 
 }
