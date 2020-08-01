@@ -1,6 +1,7 @@
 package com.jamesdpeters.minecraft.chests.storage.chestlink;
 
 import com.jamesdpeters.minecraft.chests.lang.Message;
+import com.jamesdpeters.minecraft.chests.misc.Messages;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.misc.Values;
@@ -9,6 +10,7 @@ import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.serialize.ConfigStorage;
 import com.jamesdpeters.minecraft.chests.storage.abstracts.StorageMessages;
 import com.jamesdpeters.minecraft.chests.storage.abstracts.StorageType;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
@@ -19,6 +21,8 @@ import org.bukkit.block.Chest;
 import org.bukkit.block.Container;
 import org.bukkit.block.data.Directional;
 import org.bukkit.entity.Player;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.player.PlayerInteractEvent;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -116,6 +120,24 @@ public class ChestLinkStorageType extends StorageType<ChestLinkStorage> {
     @Override
     public StorageMessages getMessages() {
         return messages;
+    }
+
+    @Override
+    public void onBlockRightClick(PlayerInteractEvent event) {
+            // ChestLink Check
+            if (event.getClickedBlock() != null && isValidBlockType(event.getClickedBlock())) {
+                Location location = event.getClickedBlock().getLocation();
+                ChestLinkStorage storage = getStorage(location);
+                if (storage != null) {
+                    event.setCancelled(true);
+                    if (event.getPlayer().hasPermission(Permissions.OPEN) && storage.hasPermission(event.getPlayer())) {
+                        storage.getInventory().getViewers().remove(event.getPlayer());
+                        Utils.openChestInventory(event.getPlayer(), storage, storage.getLocationInfo(location));
+                    } else {
+                        Messages.NO_PERMISSION(event.getPlayer());
+                    }
+                }
+            }
     }
 
     private static final ChestLinkMessages messages = new ChestLinkMessages();

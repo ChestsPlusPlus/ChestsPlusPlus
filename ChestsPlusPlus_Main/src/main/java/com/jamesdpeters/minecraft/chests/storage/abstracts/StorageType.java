@@ -23,8 +23,12 @@ import org.bukkit.block.BlockState;
 import org.bukkit.block.Sign;
 import org.bukkit.block.data.type.WallSign;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.SignChangeEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
@@ -37,7 +41,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-public abstract class StorageType<T extends AbstractStorage> {
+public abstract class StorageType<T extends AbstractStorage> implements Listener {
 
     private final ConfigStorage store;
     private final StorageUtils<StorageInfo<T>, T> storageUtils;
@@ -119,6 +123,15 @@ public abstract class StorageType<T extends AbstractStorage> {
 
     public abstract StorageMessages getMessages();
 
+    @EventHandler
+    public void playerInteractEvent(PlayerInteractEvent event){
+        if (event.getAction() == Action.RIGHT_CLICK_BLOCK && !event.getPlayer().isSneaking()) {
+            onBlockRightClick(event);
+        }
+    }
+
+    public abstract void onBlockRightClick(PlayerInteractEvent event);
+
     /*
     STORAGE MAP SECTION
      */
@@ -160,7 +173,9 @@ public abstract class StorageType<T extends AbstractStorage> {
             if (isValidBlockType(block)) {
                 StorageInfo<T> storageInfo = storageUtils.getStorageInfo(location);
                 if (storageInfo != null) {
-                    return storageInfo.getStorage(location);
+                    storage = storageInfo.getStorage(location);
+                    storageCache.put(location, storage);
+                    return storage;
                 }
             }
         }

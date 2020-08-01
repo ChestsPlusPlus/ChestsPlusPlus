@@ -139,6 +139,7 @@ public class ChestsPlusPlus extends JavaPlugin {
             getServer().getPluginManager().registerEvents(new InventoryListener(), this);
             getServer().getPluginManager().registerEvents(new HopperListener(), this);
             getServer().getPluginManager().registerEvents(new WorldListener(), this);
+            Config.getStorageTypes().forEach(storageType -> getServer().getPluginManager().registerEvents(storageType, this));
             getLogger().info("Chests++ enabled!");
         }, 1);
     }

@@ -160,7 +160,7 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
         init();
     }
 
-    public abstract StorageType getStorageType();
+    public abstract StorageType<?> getStorageType();
 
     /**
      * @return true if this storage should store the inventory to disk.
@@ -502,7 +502,7 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
                     else removeArmorStandItem(location.getToolItemStand());
                 }
             } else {
-//                    anchor.getState().update();
+                anchor.getState().update();
                 removeArmorStandItem(location.getToolItemStand());
                 removeArmorStandItem(location.getItemStand());
                 removeArmorStandItem(location.getBlockStand());

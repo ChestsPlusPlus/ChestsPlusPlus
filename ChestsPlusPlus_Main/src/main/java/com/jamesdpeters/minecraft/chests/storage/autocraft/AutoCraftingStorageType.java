@@ -10,6 +10,7 @@ import com.jamesdpeters.minecraft.chests.serialize.ConfigStorage;
 import com.jamesdpeters.minecraft.chests.storage.abstracts.StorageInfo;
 import com.jamesdpeters.minecraft.chests.storage.abstracts.StorageMessages;
 import com.jamesdpeters.minecraft.chests.storage.abstracts.StorageType;
+import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorage;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -18,6 +19,8 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.player.PlayerInteractEvent;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -114,6 +117,22 @@ public class AutoCraftingStorageType extends StorageType<AutoCraftingStorage> {
     @Override
     public StorageMessages getMessages() {
         return messages;
+    }
+
+    @Override
+    public void onBlockRightClick(PlayerInteractEvent event) {
+            // AutoCraft Check
+            if (event.getClickedBlock() != null && isValidBlockType(event.getClickedBlock())) {
+                Location location = event.getClickedBlock().getLocation();
+                AutoCraftingStorage storage = getStorage(location);
+                if (storage != null) {
+                    event.setCancelled(true);
+                    if (event.getPlayer().hasPermission(Permissions.AUTOCRAFT_OPEN) && storage.hasPermission(event.getPlayer())) {
+                        event.getPlayer().openInventory(storage.getInventory());
+                        storage.getVirtualCraftingHolder().startAnimation();
+                    }
+                }
+            }
     }
 
     private static final AutoCraftMessages messages = new AutoCraftMessages();

@@ -11,16 +11,19 @@ import com.jamesdpeters.minecraft.chests.sort.InventorySorter;
 import com.jamesdpeters.minecraft.chests.storage.autocraft.AutoCraftingStorage;
 import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorage;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryInteractEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
@@ -30,38 +33,6 @@ public class InventoryListener implements Listener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onInventoryPlayerUpdate(InventoryClickEvent event) {
         inventoryUpdate(event);
-    }
-
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onInventoryOpen(InventoryOpenEvent event) {
-        try {
-            if (event.getPlayer() instanceof Player) {
-                if (event.getInventory().getLocation() != null) {
-                    ChestLinkStorage storage = Config.getChestLink().getStorage(event.getInventory().getLocation());
-                    if (storage != null) {
-                        event.setCancelled(true);
-                        if (event.getPlayer().hasPermission(Permissions.OPEN) && storage.hasPermission((Player) event.getPlayer())) {
-                            storage.getInventory().getViewers().remove(event.getPlayer());
-                            Utils.openChestInventory((Player) event.getPlayer(), storage, storage.getLocationInfo(event.getInventory().getLocation()));
-                        } else {
-                            Messages.NO_PERMISSION((Player) event.getPlayer());
-                        }
-                    } else {
-                        //If no Inventory Storage here check for AutoCraft
-                        AutoCraftingStorage craftingStorage = Config.getAutoCraft().getStorage(event.getInventory().getLocation());
-
-                        if (craftingStorage != null) {
-                            event.setCancelled(true);
-                            if (event.getPlayer().hasPermission(Permissions.AUTOCRAFT_OPEN) && craftingStorage.hasPermission((Player) event.getPlayer())) {
-                                event.getPlayer().openInventory(craftingStorage.getInventory());
-                                craftingStorage.getVirtualCraftingHolder().startAnimation();
-                            }
-                        }
-                    }
-                }
-            }
-        } catch (NullPointerException ignore) {
-        } //Essentials does something weird with enderchests - shit fix but works :)
     }
 
     @EventHandler
@@ -102,7 +73,6 @@ public class InventoryListener implements Listener {
         inventoryUpdate(event);
         craftingUpdate(event);
     }
-
 
     //CRAFTING
     @EventHandler(priority = EventPriority.HIGHEST)
