@@ -43,6 +43,7 @@ public class Filter {
     private boolean isFilteredByMeta(ItemStack itemStack) {
         if (filter.isSimilar(itemStack)) return true;
         if (filterByItemMeta) {
+            if (ItemTypeUtil.isSimilarTag(filter, itemStack)) return true;
             return filter.getType().equals(itemStack.getType());
         }
         return false;
