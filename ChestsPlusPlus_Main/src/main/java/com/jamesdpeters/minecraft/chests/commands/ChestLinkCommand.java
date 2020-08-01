@@ -5,7 +5,6 @@ import com.jamesdpeters.minecraft.chests.inventories.ChestLinkMenu;
 import com.jamesdpeters.minecraft.chests.lang.Message;
 import com.jamesdpeters.minecraft.chests.misc.Messages;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
-import com.jamesdpeters.minecraft.chests.misc.Settings;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorage;
@@ -18,7 +17,6 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -83,7 +81,7 @@ public class ChestLinkCommand extends ServerCommand  {
                         return true;
                     case ADD:
                         if (args.length > 1) {
-                            if (sender.hasPermission(Permissions.ADD) && !Settings.isBlacklistedWorld(player.getWorld())) {
+                            if (sender.hasPermission(Permissions.ADD) && !Utils.isBlacklistedWorld(player.getWorld())) {
                                 Block targetBlock = player.getTargetBlockExact(5);
                                 if (targetBlock != null)
                                     Config.getChestLink().createStorage(player, targetBlock, args[1], true);
@@ -100,7 +98,7 @@ public class ChestLinkCommand extends ServerCommand  {
                         }
                     case OPEN:
                         if (args.length > 1) {
-                            if (sender.hasPermission(Permissions.OPEN) && sender.hasPermission(Permissions.OPEN_REMOTE) && !Settings.isBlacklistedWorld(player.getWorld())) {
+                            if (sender.hasPermission(Permissions.OPEN) && sender.hasPermission(Permissions.OPEN_REMOTE) && !Utils.isBlacklistedWorld(player.getWorld())) {
                                 ChestLinkStorage invs;
                                 if (args[1].contains(":")) {
                                     invs = Config.getChestLink().getStorage(player, args[1]);
@@ -119,7 +117,7 @@ public class ChestLinkCommand extends ServerCommand  {
                             return true;
                         }
                     case MENU:
-                        if (sender.hasPermission(Permissions.MENU) && !Settings.isBlacklistedWorld(player.getWorld())) {
+                        if (sender.hasPermission(Permissions.MENU) && !Utils.isBlacklistedWorld(player.getWorld())) {
                             ChestLinkMenu.getMenu(player).open(player);
                             return true;
                         } else {

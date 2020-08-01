@@ -14,11 +14,11 @@ import java.util.Properties;
 public class LanguageFile extends Properties {
 
     public void store(File file) throws IOException {
-        store0(new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)), false);
+        store0(new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), "8859_1")), false);
     }
 
     public void storeGenerated(File file) throws IOException {
-        store0(new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)), true);
+        store0(new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file),"8859_1")), true);
     }
 
     private void store0(BufferedWriter bw, boolean generated)

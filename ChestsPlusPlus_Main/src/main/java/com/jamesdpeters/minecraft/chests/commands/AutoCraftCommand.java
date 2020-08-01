@@ -4,7 +4,6 @@ import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.lang.Message;
 import com.jamesdpeters.minecraft.chests.misc.Messages;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
-import com.jamesdpeters.minecraft.chests.misc.Settings;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.storage.autocraft.AutoCraftingStorage;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
@@ -79,7 +78,7 @@ public class AutoCraftCommand extends ServerCommand  {
                         return true;
                     case ADD:
                         if (args.length > 1) {
-                            if (player.hasPermission(Permissions.AUTOCRAFT_ADD) && !Settings.isBlacklistedWorld(player.getWorld())) {
+                            if (player.hasPermission(Permissions.AUTOCRAFT_ADD) && !Utils.isBlacklistedWorld(player.getWorld())) {
                                 Block targetBlock = player.getTargetBlockExact(5);
                                 if (targetBlock != null)
                                     Config.getAutoCraft().createStorage(player, targetBlock, args[1], true);
@@ -95,7 +94,7 @@ public class AutoCraftCommand extends ServerCommand  {
                         }
                     case OPEN:
                         if (args.length > 1) {
-                            if (sender.hasPermission(Permissions.AUTOCRAFT_OPEN) && sender.hasPermission(Permissions.AUTOCRAFT_OPEN_REMOTE) && !Settings.isBlacklistedWorld(player.getWorld())) {
+                            if (sender.hasPermission(Permissions.AUTOCRAFT_OPEN) && sender.hasPermission(Permissions.AUTOCRAFT_OPEN_REMOTE) && !Utils.isBlacklistedWorld(player.getWorld())) {
                                 AutoCraftingStorage invs;
                                 if (args[1].contains(":")) {
                                     invs = Config.getAutoCraft().getStorage(player, args[1]);

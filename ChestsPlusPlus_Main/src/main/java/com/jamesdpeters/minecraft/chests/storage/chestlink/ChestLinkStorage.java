@@ -4,7 +4,7 @@ import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.interfaces.VirtualInventoryHolder;
 import com.jamesdpeters.minecraft.chests.inventories.ChestLinkMenu;
 import com.jamesdpeters.minecraft.chests.misc.Messages;
-import com.jamesdpeters.minecraft.chests.misc.Settings;
+import com.jamesdpeters.minecraft.chests.serialize.PluginConfig;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.runnables.VirtualChestToHopper;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
@@ -17,14 +17,12 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.block.Barrel;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
 import org.bukkit.block.Container;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
-import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
@@ -193,7 +191,7 @@ public class ChestLinkStorage extends AbstractStorage implements ConfigurationSe
 
     @Override
     public boolean shouldDisplayArmourStands() {
-        return Settings.isShouldDisplayChestLinkStand();
+        return PluginConfig.DISPLAY_CHESTLINK_ARMOUR_STAND.get();
     }
 
     @Override

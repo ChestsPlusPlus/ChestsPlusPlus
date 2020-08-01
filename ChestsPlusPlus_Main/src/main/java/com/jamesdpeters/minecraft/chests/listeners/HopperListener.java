@@ -3,7 +3,8 @@ package com.jamesdpeters.minecraft.chests.listeners;
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.api.ApiSpecific;
 import com.jamesdpeters.minecraft.chests.filters.HopperFilter;
-import com.jamesdpeters.minecraft.chests.misc.Settings;
+import com.jamesdpeters.minecraft.chests.runnables.VirtualChestToHopper;
+import com.jamesdpeters.minecraft.chests.serialize.PluginConfig;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorage;
@@ -17,14 +18,9 @@ import org.bukkit.block.Block;
 import org.bukkit.block.Hopper;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.ItemFrame;
-import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.EntityDeathEvent;
-import org.bukkit.event.entity.EntityEvent;
-import org.bukkit.event.entity.EntityInteractEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
@@ -39,7 +35,10 @@ public class HopperListener implements Listener {
             if(event.getDestination().getLocation() != null){
                 if(event.getDestination().getLocation().getBlock().isBlockPowered()) return;
             }
-            event.setCancelled(!HopperFilter.isInFilter(event.getDestination().getLocation().getBlock(),event.getItem()));
+            if(!event.isCancelled()) Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN, ()-> {
+                VirtualChestToHopper.move(event.getDestination().getLocation(), event.getSource(), event.getDestination());
+            }, 1);
+            event.setCancelled(true);
         }
     }
 
@@ -57,7 +56,7 @@ public class HopperListener implements Listener {
                         public void run() {
                             if(location != null) {
                                 int hopperAmount = SpigotConfig.getWorldSettings(location.getWorld()).getHopperAmount();
-                                if (Utils.moveToOtherInventory(event.getSource(), hopperAmount, storage.getInventory())) {
+                                if (Utils.hopperMove(event.getSource(), hopperAmount, storage.getInventory())) {
                                     storage.updateDisplayItem();
                                 }
                                 if (event.getDestination().getHolder() != null) event.getDestination().getHolder().getInventory().clear();
@@ -87,7 +86,7 @@ public class HopperListener implements Listener {
             Rotation rotation = itemFrame.getRotation();
 
             //Set ItemFrame invisible based on config.
-            ApiSpecific.getNmsProvider().setItemFrameVisible(itemFrame, !Settings.isFilterItemFrameInvisible());
+            ApiSpecific.getNmsProvider().setItemFrameVisible(itemFrame, !PluginConfig.INVISIBLE_FILTER_ITEM_FRAMES.get());
 
             //ItemFrame event acts weird, it returns the values of the itemframe *before* the event. So we have to calculate what the next state will be.
             if(!itemFrame.getItem().getType().equals(Material.AIR)) rotation = rotation.rotateClockwise();

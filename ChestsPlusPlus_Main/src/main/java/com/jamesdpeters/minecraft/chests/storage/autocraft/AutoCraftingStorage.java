@@ -1,7 +1,7 @@
 package com.jamesdpeters.minecraft.chests.storage.autocraft;
 
 import com.jamesdpeters.minecraft.chests.interfaces.VirtualCraftingHolder;
-import com.jamesdpeters.minecraft.chests.misc.Settings;
+import com.jamesdpeters.minecraft.chests.serialize.PluginConfig;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.serialize.RecipeSerializable;
 import com.jamesdpeters.minecraft.chests.storage.abstracts.AbstractStorage;
@@ -12,7 +12,6 @@ import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.ShapelessRecipe;
@@ -74,7 +73,7 @@ public class AutoCraftingStorage extends AbstractStorage implements Configuratio
 
     @Override
     public boolean shouldDisplayArmourStands() {
-        return Settings.isShouldDisplayAutoCraftStand();
+        return PluginConfig.DISPLAY_AUTOCRAFT_ARMOUR_STAND.get();
     }
 
     @Override

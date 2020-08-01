@@ -3,14 +3,13 @@ package com.jamesdpeters.minecraft.chests.storage.abstracts;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.misc.Messages;
-import com.jamesdpeters.minecraft.chests.misc.Settings;
+import com.jamesdpeters.minecraft.chests.serialize.PluginConfig;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.misc.Values;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.serialize.ConfigStorage;
 import com.jamesdpeters.minecraft.chests.serialize.LocationInfo;
 import com.jamesdpeters.minecraft.chests.storage.StorageUtils;
-import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -207,8 +206,8 @@ public abstract class StorageType<T extends AbstractStorage> {
     }
 
     public boolean isAtLimit(OfflinePlayer player) {
-        if (Settings.isLimitChests()) {
-            return getStorageMap(player.getUniqueId()).size() >= Settings.getLimitChestsAmount();
+        if (PluginConfig.SHOULD_LIMIT_CHESTS.get()) {
+            return getStorageMap(player.getUniqueId()).size() >= PluginConfig.LIMIT_CHESTS_AMOUNT.get();
         }
         return false;
     }

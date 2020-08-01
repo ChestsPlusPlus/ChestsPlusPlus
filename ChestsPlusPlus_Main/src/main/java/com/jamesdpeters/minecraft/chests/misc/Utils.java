@@ -5,6 +5,7 @@ import com.jamesdpeters.minecraft.chests.api.ApiSpecific;
 import com.jamesdpeters.minecraft.chests.filters.Filter;
 import com.jamesdpeters.minecraft.chests.filters.HopperFilter;
 import com.jamesdpeters.minecraft.chests.interfaces.VirtualInventoryHolder;
+import com.jamesdpeters.minecraft.chests.serialize.PluginConfig;
 import com.jamesdpeters.minecraft.chests.serialize.LocationInfo;
 import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorage;
 import org.bukkit.Bukkit;
@@ -22,6 +23,7 @@ import org.bukkit.block.Hopper;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -29,11 +31,16 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.Vector;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -42,7 +49,7 @@ public class Utils {
     public static void openChestInventory(Player player, ChestLinkStorage storage, LocationInfo openedChestLocation){
         player.openInventory(storage.getInventory());
         //Check if all chests should perform open animation.
-        if(Settings.isShouldAnimateAllChests()) {
+        if(PluginConfig.SHOULD_ANIMATE_ALL_CHESTS.get()) {
             storage.getLocations().forEach(locationInfo -> {
                 Location location = locationInfo.getLocation();
                 if (location != null) {
@@ -107,7 +114,7 @@ public class Utils {
         return null;
     }
 
-    public static boolean moveToOtherInventory(Inventory from, int amount, Inventory to, List<Filter> filters){
+    public static boolean hopperMove(Inventory from, int amount, Inventory to, List<Filter> filters){
         ItemStack removed = removeStackFromInventory(from,amount,filters);
         if(removed != null) {
             HashMap<Integer, ItemStack> leftOvers = to.addItem(removed);
@@ -120,8 +127,8 @@ public class Utils {
         return false;
     }
 
-    public static boolean moveToOtherInventory(Inventory from, int amount, Inventory to) {
-        return moveToOtherInventory(from,amount,to,null);
+    public static boolean hopperMove(Inventory from, int amount, Inventory to) {
+        return hopperMove(from,amount,to,null);
     }
 
     public static ItemStack getNamedItem(ItemStack item, String name){
@@ -245,7 +252,7 @@ public class Utils {
         entityStream.filter(entity ->
                 (entity instanceof ItemFrame
                         && entity.getLocation().getBlock().getRelative(((ItemFrame) entity).getAttachedFace()).getState() instanceof Hopper))
-                .forEach(entity -> ApiSpecific.getNmsProvider().setItemFrameVisible((ItemFrame) entity, !Settings.isFilterItemFrameInvisible()));
+                .forEach(entity -> ApiSpecific.getNmsProvider().setItemFrameVisible((ItemFrame) entity, !PluginConfig.INVISIBLE_FILTER_ITEM_FRAMES.get()));
     }
 
     public static List<String> filterList(List<String> list, String phrase){
@@ -284,7 +291,26 @@ public class Utils {
         return (delta.getX() <= Bukkit.getViewDistance()*16) && (delta.getZ() <= Bukkit.getViewDistance()*16);
     }
 
+    public static boolean isBlacklistedWorld(World world){
+        return PluginConfig.WORLD_BLACKLIST.get().contains(world.getName());
+    }
 
+    public static void copyFromResources(File jarFile, String directory){
+        try (JarFile jar = new JarFile(jarFile)) {
+            Enumeration<JarEntry> entries = jar.entries();
 
+            while (entries.hasMoreElements()) {
+                JarEntry entry = entries.nextElement();
+                String name = entry.getName();
 
+                if (!name.startsWith(directory + "/") || entry.isDirectory()) {
+                    continue;
+                }
+
+                ChestsPlusPlus.PLUGIN.saveResource(name, true);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }

@@ -12,7 +12,7 @@ import com.jamesdpeters.minecraft.chests.listeners.InventoryListener;
 import com.jamesdpeters.minecraft.chests.listeners.WorldListener;
 import com.jamesdpeters.minecraft.chests.maventemplates.BuildConstants;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
-import com.jamesdpeters.minecraft.chests.misc.Settings;
+import com.jamesdpeters.minecraft.chests.serialize.PluginConfig;
 import com.jamesdpeters.minecraft.chests.misc.Stats;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.storage.autocraft.AutoCraftingStorage;
@@ -80,12 +80,12 @@ public class ChestsPlusPlus extends JavaPlugin {
     public void onEnable() {
         int pluginId = 7166;
         Metrics metrics = new Metrics(this, pluginId);
-        Stats.addCharts(metrics);
 
         PLUGIN = this;
-        LangFileProperties.moveLangFiles(getFile());
-        Settings.initConfig(this);
-        LangFileProperties.loadLangFile(Settings.getLangFileName());
+        Utils.copyFromResources(getFile(), "lang");
+        PluginConfig.load(this);
+        LangFileProperties.loadLangFile(PluginConfig.LANG_FILE.get());
+        Stats.addCharts(metrics);
 
         //API initialisation
         API.register(this);
@@ -107,7 +107,7 @@ public class ChestsPlusPlus extends JavaPlugin {
         if(isDev) getLogger().warning("You are currently running a Dev build - update checker disabled! Build: "+BuildConstants.VERSION);
         if(isBeta) getLogger().warning("You are currently running a Beta build - update checker disabled! Build: "+BuildConstants.VERSION);
 
-        if(Settings.isUpdateCheckEnabled() && !isDev && !isBeta) {
+        if(PluginConfig.IS_UPDATE_CHECKER_ENABLED.get() && !isDev && !isBeta) {
             String BUKKIT_URL = "https://dev.bukkit.org/projects/chests-plus-plus/files";
             UpdateChecker.init(this, 71355, UpdateChecker.VERSION_SCHEME_DECIMAL);
             Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
@@ -123,7 +123,7 @@ public class ChestsPlusPlus extends JavaPlugin {
                     }
                     boot = true;
                 });
-            }, 0, Settings.getUpdateCheckerPeriodTicks());
+            }, 0, PluginConfig.UPDATE_CHECKER_PERIOD.get()*20);
         }
 
         //Load storages after load.
@@ -145,8 +145,8 @@ public class ChestsPlusPlus extends JavaPlugin {
     public void onDisable() {
         super.onDisable();
         Config.save();
-        //Remove entities that could have been left behind from bad save files/crashes etc.
-        Utils.fixEntities();
+//        //Remove entities that could have been left behind from bad save files/crashes etc.
+//        Utils.fixEntities();
     }
 
 }

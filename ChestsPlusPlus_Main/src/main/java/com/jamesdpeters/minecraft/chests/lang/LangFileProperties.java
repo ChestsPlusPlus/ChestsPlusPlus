@@ -73,27 +73,6 @@ public class LangFileProperties {
         return file;
     }
 
-    public static void moveLangFiles(File jarFile){
-        String directory = "lang";
-        try (JarFile jar = new JarFile(jarFile)) {
-            Enumeration<JarEntry> entries = jar.entries();
-
-            while (entries.hasMoreElements()) {
-                JarEntry entry = entries.nextElement();
-                String name = entry.getName();
-
-                if (!name.startsWith(directory + "/") || entry.isDirectory()) {
-                    continue;
-                }
-
-                ChestsPlusPlus.PLUGIN.saveResource(name, true);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-
     /*
     IDE LANGUAGE GENERATOR
      */

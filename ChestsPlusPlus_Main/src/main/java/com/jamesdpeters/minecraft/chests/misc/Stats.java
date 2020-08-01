@@ -1,5 +1,6 @@
 package com.jamesdpeters.minecraft.chests.misc;
 
+import com.jamesdpeters.minecraft.chests.serialize.PluginConfig;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import org.bstats.bukkit.Metrics;
 
@@ -17,8 +18,10 @@ public class Stats {
         }));
 
         metrics.addCustomChart(new Metrics.SimplePie("update_checker_setting", () -> {
-            if(Settings.isUpdateCheckEnabled()) return "enabled";
+            if(PluginConfig.IS_UPDATE_CHECKER_ENABLED.get()) return "enabled";
             else return "disabled";
         }));
+
+        metrics.addCustomChart(new Metrics.SimplePie("language-file", PluginConfig.LANG_FILE::get));
     }
 }
