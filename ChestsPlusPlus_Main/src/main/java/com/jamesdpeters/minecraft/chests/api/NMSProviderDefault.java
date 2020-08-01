@@ -3,13 +3,8 @@ package com.jamesdpeters.minecraft.chests.api;
 import com.jamesdpeters.minecraft.chests.ChestOpener;
 import com.jamesdpeters.minecraft.chests.MaterialChecker;
 import com.jamesdpeters.minecraft.chests.NMSProvider;
-import com.jamesdpeters.minecraft.chests.TileEntityOpener;
-import com.jamesdpeters.minecraft.chests.v1_16_R1.ChestOpener_1_16;
-import com.jamesdpeters.minecraft.chests.v1_16_R1.MaterialChecker_1_16;
 import com.jamesdpeters.minecraft.chests.v1_16_R1.NMSProviderImpl;
-import org.bukkit.block.Container;
 import org.bukkit.entity.ItemFrame;
-import org.bukkit.inventory.Inventory;
 
 public class NMSProviderDefault implements NMSProvider {
 

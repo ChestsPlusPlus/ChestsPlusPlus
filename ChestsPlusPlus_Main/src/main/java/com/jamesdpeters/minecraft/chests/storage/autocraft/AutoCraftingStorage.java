@@ -1,8 +1,8 @@
 package com.jamesdpeters.minecraft.chests.storage.autocraft;
 
 import com.jamesdpeters.minecraft.chests.interfaces.VirtualCraftingHolder;
-import com.jamesdpeters.minecraft.chests.serialize.PluginConfig;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
+import com.jamesdpeters.minecraft.chests.serialize.PluginConfig;
 import com.jamesdpeters.minecraft.chests.serialize.RecipeSerializable;
 import com.jamesdpeters.minecraft.chests.storage.abstracts.AbstractStorage;
 import org.bukkit.Location;

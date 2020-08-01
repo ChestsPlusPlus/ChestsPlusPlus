@@ -3,9 +3,9 @@ package com.jamesdpeters.minecraft.chests.serialize;
 import com.google.common.base.Charsets;
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.storage.abstracts.AbstractStorage;
+import com.jamesdpeters.minecraft.chests.storage.abstracts.StorageType;
 import com.jamesdpeters.minecraft.chests.storage.autocraft.AutoCraftingStorageType;
 import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorageType;
-import com.jamesdpeters.minecraft.chests.storage.abstracts.StorageType;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -16,7 +16,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 public class Config {
 

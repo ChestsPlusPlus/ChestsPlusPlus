@@ -2,8 +2,8 @@ package com.jamesdpeters.minecraft.chests.api;
 
 import com.jamesdpeters.minecraft.chests.API;
 import com.jamesdpeters.minecraft.chests.ChestOpener;
-import com.jamesdpeters.minecraft.chests.NMSProvider;
 import com.jamesdpeters.minecraft.chests.MaterialChecker;
+import com.jamesdpeters.minecraft.chests.NMSProvider;
 import org.bukkit.Bukkit;
 
 
