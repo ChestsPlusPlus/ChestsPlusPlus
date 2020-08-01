@@ -5,6 +5,8 @@ import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -29,7 +31,8 @@ public class LangFileProperties {
     public static void deserialize(Properties properties){
         properties.forEach((key, value) -> {
             try {
-                Message.valueOf((String) key).setMessage(new String(((String) value).getBytes(), StandardCharsets.UTF_8));
+                String val = new String(((String) value).getBytes());
+                Message.valueOf((String) key).setMessage(val);
             } catch (IllegalArgumentException e) {
                 ChestsPlusPlus.PLUGIN.getLogger().warning(MessageFormat.format("Language file contained invalid messages. Invalid message {0}:{1} has been removed and missing messages have been replaced", key, value));
             }
@@ -51,7 +54,7 @@ public class LangFileProperties {
         }
         try {
             currentFile = getLangFile(fileName,false);
-            Properties properties = loadProperties(currentFile);
+            LanguageFile properties = loadProperties(currentFile);
             deserialize(properties);
             ChestsPlusPlus.PLUGIN.getLogger().info("Loaded '"+fileName+"' language file");
         } catch (IOException e) {
@@ -59,9 +62,10 @@ public class LangFileProperties {
         }
     }
 
-    private static Properties loadProperties(File file) throws IOException {
-        Properties properties = new Properties();
-        properties.load(new FileInputStream(file));
+    private static LanguageFile loadProperties(File file) throws IOException {
+        LanguageFile properties = new LanguageFile();
+        FileInputStream input = new FileInputStream(file);
+        properties.load(new InputStreamReader(input, StandardCharsets.UTF_8));
         return properties;
     }
 

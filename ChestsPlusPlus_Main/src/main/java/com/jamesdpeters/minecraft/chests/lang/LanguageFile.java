@@ -14,11 +14,11 @@ import java.util.Properties;
 public class LanguageFile extends Properties {
 
     public void store(File file) throws IOException {
-        store0(new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), "8859_1")), false);
+        store0(new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)), false);
     }
 
     public void storeGenerated(File file) throws IOException {
-        store0(new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file),"8859_1")), true);
+        store0(new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)), true);
     }
 
     private void store0(BufferedWriter bw, boolean generated)
@@ -38,11 +38,11 @@ public class LanguageFile extends Properties {
             for (Enumeration<?> e = keys(); e.hasMoreElements();) {
                 String key = (String)e.nextElement();
                 String val = (String)get(key);
-                key = saveConvert(key, true, true);
+                key = saveConvert(key, true, false);
                 /* No need to escape embedded and trailing spaces for value, hence
                  * pass false to flag.
                  */
-                val = saveConvert(val, false, true);
+                val = saveConvert(val, false, false);
                 bw.write(key + "=" + val);
                 bw.newLine();
             }

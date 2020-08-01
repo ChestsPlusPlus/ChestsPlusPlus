@@ -17,7 +17,7 @@ import java.util.Optional;
  * Or added in a separate class, any initialisation of a @{@link Value} or @{@link ListValue} automatically gets added
  * to the config.
  *
- * @Author James Peters - JamesPeters98
+ * @author James Peters - JamesPeters98
  */
 public class PluginConfig {
 
@@ -129,6 +129,11 @@ public class PluginConfig {
             this.type = type;
         }
 
+        /**
+         * @param path the key that represents this value.
+         * @param type the @{@link Class} that represents this value
+         * @param defaultValue the default value to be inserted into the @{@link org.bukkit.configuration.Configuration}
+         */
         public Value(String path, Class<T> type, T defaultValue){
             this(null, path, type, defaultValue);
         }
