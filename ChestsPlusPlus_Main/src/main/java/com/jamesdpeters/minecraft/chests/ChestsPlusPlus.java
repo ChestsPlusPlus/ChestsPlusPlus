@@ -102,14 +102,7 @@ public class ChestsPlusPlus extends JavaPlugin {
         INVENTORY_MANAGER = new InventoryManager(this);
         INVENTORY_MANAGER.init();
 
-        boolean isDev = BuildConstants.VERSION.contains("DEV");
-        boolean isBeta = BuildConstants.VERSION.contains("BETA");
-        if (isDev)
-            getLogger().warning("You are currently running a Dev build - update checker disabled! Build: " + BuildConstants.VERSION);
-        if (isBeta)
-            getLogger().warning("You are currently running a Beta build - update checker disabled! Build: " + BuildConstants.VERSION);
-
-        if (PluginConfig.IS_UPDATE_CHECKER_ENABLED.get() && !isDev && !isBeta) {
+        if (PluginConfig.IS_UPDATE_CHECKER_ENABLED.get()) {
             String BUKKIT_URL = "https://dev.bukkit.org/projects/chests-plus-plus/files";
             UpdateChecker.init(this, 71355, UpdateChecker.VERSION_SCHEME_DECIMAL);
             Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {

@@ -6,7 +6,7 @@
 
     <groupId>com.jamesdpeters.minecraft.chests</groupId>
     <artifactId>ChestsPlusPlus-Master</artifactId>
-    <version>2.3-Dev</version>
+    <version>2.3-Beta</version>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
