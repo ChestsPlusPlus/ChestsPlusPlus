@@ -61,7 +61,13 @@ public enum Message {
     COMMAND_CHESTLINK_OPEN("Open the inventory of a ChestLink group"),
     COMMAND_CHESTLINK_REMOVE("Delete a ChestLink and drop its inventory at your feet!"),
     COMMAND_CHESTLINK_RENAME("Rename a ChestLink."),
-    COMMAND_CHESTLINK_SETPUBLIC("Set a ChestLink to be accessible by anyone.");
+    COMMAND_CHESTLINK_SETPUBLIC("Set a ChestLink to be accessible by anyone."),
+
+    //ItemFrame Filters
+    ITEM_FRAME_FILTER_DEFAULT("ItemFrame is in default filtering mode. Rotate Item Frame to change mode!"),
+    ITEM_FRAME_FILTER_ALL_TYPES("ItemFrame now filters all types of this item! e.g Enchanted Books."),
+    ITEM_FRAME_FILTER_DENY("ItemFrame now prevents this item from being accepted in the hopper!"),
+    ITEM_FRAME_FILTER_DENY_ALL_TYPES("ItemFrame now prevents all types of this item from being accepted in the hopper! e.g Enchanted Books.");
 
     String message;
 
