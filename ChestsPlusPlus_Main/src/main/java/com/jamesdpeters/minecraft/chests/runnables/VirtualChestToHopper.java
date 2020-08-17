@@ -43,7 +43,7 @@ public class VirtualChestToHopper extends BukkitRunnable {
                         if (below.getBlock().isBlockIndirectlyPowered() || below.getBlock().isBlockPowered()) {
                             continue;
                         }
-                        if (move(hopper.getLocation(), hopper.getInventory(), storage.getInventory())) {
+                        if (move(hopper.getLocation(), storage.getInventory(), hopper.getInventory())) {
                             storage.updateDisplayItem();
                         }
                         if (storage.getInventory().getViewers().size() > 0) storage.sort();
