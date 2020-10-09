@@ -23,8 +23,10 @@ public class Api {
         try {
             return (NMSProvider) Class.forName(nmsProvider).newInstance();
         } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-            plugin.getLogger().warning("A valid server implementation wasn't found for: " + nmsVersion);
-            plugin.getLogger().warning("You may be running an outdated version of the plugin or it needs to be updated to the latest version!");
+            plugin.getLogger().warning("Loading latest material list from 1.16. If you are running a version later" +
+                    "than this some visual errors may occur on Armour stand displays.");
+//            plugin.getLogger().warning("A valid server implementation wasn't found for: " + nmsVersion);
+//            plugin.getLogger().warning("You may be running an outdated version of the plugin or it needs to be updated to the latest version!");
             return null;
         }
     }
