@@ -25,81 +25,47 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class HopperListener implements Listener {
 
-    private static List<Location> hoppersTicked;
-
-    static {
-        hoppersTicked = new ArrayList<>();
-    }
-
-    private static void setHopperTicked(Location hopper){
-        hoppersTicked.add(hopper);
-        Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN, () -> {
-            hoppersTicked.remove(hopper);
-        },1);
-    }
-
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onHopperMoveEvent(InventoryMoveItemEvent event) {
         //TO HOPPER
-        if (event.getDestination().getHolder() instanceof Hopper) {
-            Location hopperLoc = event.getDestination().getLocation();
-            if (hopperLoc != null) {
-                if (hopperLoc.getBlock().isBlockPowered()) return;
+        if(event.getDestination().getHolder() instanceof Hopper){
+            if(event.getDestination().getLocation() != null){
+                if(event.getDestination().getLocation().getBlock().isBlockPowered()) return;
             }
-            if (!event.isCancelled()) {
-                event.setCancelled(true);
-
-                // If Hopper has just ticked return - This is needed since cancelling the Event causes Spigot to check
-                // all other slots whereas Paper doesn't.
-                if (hoppersTicked.contains(hopperLoc)) return;
-
-                // If hopper is pulling from hopper ignore since two events get called!
-                if ((event.getInitiator() == event.getDestination()) && hopperLoc != null) {
-                    setHopperTicked(hopperLoc);
-
-                    // Move the items in the next tick - since the InventoryMoveItemEvent places the moved item back
-                    // into the source inventory when the event is cancelled.
-                    Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN, () -> {
-                        // Moves the item to the destination inventory and if an item was moved updates the hoppers.
-                        if (VirtualChestToHopper.move(hopperLoc, event.getSource(), event.getDestination())) {
-                            // Updates the state of the destination inventory to fix comparator bug.
-                            hopperLoc.getBlock().getState().update(true, true);
-                            // Updates the state of the source inventory
-                            Location sourceHopperLoc = event.getSource().getLocation();
-                            if (sourceHopperLoc != null) sourceHopperLoc.getBlock().getState().update();
-                        }
-                    });
-                }
-            }
+            event.setCancelled(!HopperFilter.isInFilter(event.getDestination().getLocation().getBlock(),event.getItem()));
         }
     }
 
     @EventHandler(priority = EventPriority.HIGH)
-    public void fromHopper(InventoryMoveItemEvent event) {
+    public void fromHopper(InventoryMoveItemEvent event){
         //FROM HOPPER
         if (event.getInitiator().getHolder() instanceof Hopper) {
             Location location = event.getDestination().getLocation();
             ChestLinkStorage storage = Config.getChestLink().getStorage(location);
             if (storage != null) {
-                if (!event.isCancelled()) {
+                if(!event.isCancelled()) {
                     event.setCancelled(true);
-                    Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN, () -> {
-                        if (location != null) {
-                            int hopperAmount = SpigotConfig.getWorldSettings(location.getWorld()).getHopperAmount();
-                            if (Utils.hopperMove(event.getSource(), hopperAmount, storage.getInventory())) {
-                                storage.updateDisplayItem();
+                    new BukkitRunnable() {
+                        @Override
+                        public void run() {
+                            if(location != null) {
+                                int hopperAmount = SpigotConfig.getWorldSettings(location.getWorld()).getHopperAmount();
+                                if (Utils.hopperMove(event.getSource(), hopperAmount, storage.getInventory())) {
+                                    storage.updateDisplayItem();
+                                }
+                                if (event.getDestination().getHolder() != null) event.getDestination().getHolder().getInventory().clear();
+                                if (storage.getInventory().getViewers().size() > 0) storage.sort();
                             }
-                            if (event.getDestination().getHolder() != null)
-                                event.getDestination().getHolder().getInventory().clear();
-                            if (storage.getInventory().getViewers().size() > 0) storage.sort();
                         }
-                    },1);
+                    }.runTaskLater(ChestsPlusPlus.PLUGIN, 1);
                 }
             }
         }
