@@ -28,6 +28,7 @@ import fr.minuskube.inv.InventoryManager;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Chunk;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.permissions.PermissionDefault;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -126,6 +127,9 @@ public class ChestsPlusPlus extends JavaPlugin {
             Crafting.load();
             new Config();
             getLogger().info("Chests++ Successfully Loaded Config and Recipes");
+
+            // Remove armour stands if disabled
+            Utils.fixEntities();
 
             //Register event listeners
             getServer().getPluginManager().registerEvents(new StorageListener(), this);
