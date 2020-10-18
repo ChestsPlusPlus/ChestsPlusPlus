@@ -14,4 +14,7 @@ public class Permissions {
     public static final String AUTOCRAFT_OPEN_REMOTE = "chestlink.autocraft.remote-open";
     public static final String AUTOCRAFT_ADD = "chestlink.autocraft.add";
     public static final String AUTOCRAFT_REMOVE = "chestlink.autocraft.remove";
+    public static final String PARTY_CREATE = "chestslink.party.create";
+    public static final String PARTY_INVITE = "chestlink.party.invite";
+    public static final String PARTY_ACCEPT_INVITE = "chestlink.party.accept_invite";
 }

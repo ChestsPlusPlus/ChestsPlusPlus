@@ -1,6 +1,7 @@
 package com.jamesdpeters.minecraft.chests.lang;
 
 public enum Tag {
+    PARTY_NAME,
     STORAGE_IDENTIFIER,
     SORT_METHOD,
     PLAYER_NAME,

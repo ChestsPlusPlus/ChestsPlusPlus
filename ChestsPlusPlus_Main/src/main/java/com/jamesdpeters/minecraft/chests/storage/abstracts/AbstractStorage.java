@@ -5,6 +5,7 @@ import com.jamesdpeters.minecraft.chests.api.ApiSpecific;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.misc.Values;
+import com.jamesdpeters.minecraft.chests.party.PlayerPartyStorage;
 import com.jamesdpeters.minecraft.chests.serialize.LocationInfo;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -350,6 +351,7 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
     public boolean hasPermission(OfflinePlayer player) {
         if (isPublic) return true;
         if (player.getUniqueId().equals(playerUUID)) return true;
+        if (PlayerPartyStorage.doPlayersShareParty(getOwner(), player)) return true;
         if (members != null) {
             for (String uuid : members) {
                 if (player.getUniqueId().toString().equals(uuid)) return true;

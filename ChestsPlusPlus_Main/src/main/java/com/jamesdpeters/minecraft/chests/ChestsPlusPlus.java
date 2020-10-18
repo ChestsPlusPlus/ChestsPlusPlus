@@ -14,6 +14,8 @@ import com.jamesdpeters.minecraft.chests.maventemplates.BuildConstants;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Stats;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
+import com.jamesdpeters.minecraft.chests.party.PlayerParty;
+import com.jamesdpeters.minecraft.chests.party.PlayerPartyStorage;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.serialize.ConfigStorage;
 import com.jamesdpeters.minecraft.chests.serialize.LocationInfo;
@@ -60,6 +62,9 @@ import org.bukkit.plugin.java.annotation.plugin.author.Author;
 @Permission(name = Permissions.AUTOCRAFT_OPEN_REMOTE, desc = "Gives permission to remotely open AutoCrafting stations.", defaultValue = PermissionDefault.TRUE)
 @Permission(name = Permissions.AUTOCRAFT_ADD, desc = "Gives permission to add AutoCrafting stations.", defaultValue = PermissionDefault.TRUE)
 @Permission(name = Permissions.AUTOCRAFT_REMOVE, desc = "Gives permission to remove AutoCrafting stations.", defaultValue = PermissionDefault.TRUE)
+@Permission(name = Permissions.PARTY_CREATE, desc = "Gives permission to create Chests++ parties.", defaultValue = PermissionDefault.TRUE)
+@Permission(name = Permissions.PARTY_ACCEPT_INVITE, desc = "Gives permission to accept Chests++ party invites.", defaultValue = PermissionDefault.TRUE)
+@Permission(name = Permissions.PARTY_INVITE, desc = "Gives permission to invite players to Chests++ parties.", defaultValue = PermissionDefault.TRUE)
 public class ChestsPlusPlus extends JavaPlugin {
 
     public static JavaPlugin PLUGIN;
@@ -73,6 +78,8 @@ public class ChestsPlusPlus extends JavaPlugin {
         ConfigurationSerialization.registerClass(AutoCraftingStorage.class, "AutoCraftingStorage");
         ConfigurationSerialization.registerClass(RecipeSerializable.class, "Recipe");
         ConfigurationSerialization.registerClass(LocationInfo.class, "LocationInfo");
+        ConfigurationSerialization.registerClass(PlayerPartyStorage.class, "PlayerPartyStorage");
+        ConfigurationSerialization.registerClass(PlayerParty.class, "PlayerParty");
 
     }
 
@@ -122,14 +129,14 @@ public class ChestsPlusPlus extends JavaPlugin {
             }, 0, PluginConfig.UPDATE_CHECKER_PERIOD.get() * 20);
         }
 
+        // Remove armour stands if disabled
+        Utils.fixEntities();
+
         //Load storages after load.
         Bukkit.getScheduler().scheduleSyncDelayedTask(this, () -> {
             Crafting.load();
             new Config();
             getLogger().info("Chests++ Successfully Loaded Config and Recipes");
-
-            // Remove armour stands if disabled
-            Utils.fixEntities();
 
             //Register event listeners
             getServer().getPluginManager().registerEvents(new StorageListener(), this);

@@ -1,8 +1,11 @@
 package com.jamesdpeters.minecraft.chests.lang;
 
+import org.bukkit.ChatColor;
+
 import java.text.MessageFormat;
 
 public enum Message {
+
     //Messages.java
     CHEST_HAD_OVERFLOW("Chest item's wouldn't all fit into ChestLink!"),
     MUST_HOLD_SIGN("You must be holding a sign to do that!"),
@@ -67,7 +70,18 @@ public enum Message {
     ITEM_FRAME_FILTER_DEFAULT("ItemFrame is in default filtering mode. Rotate Item Frame to change mode!"),
     ITEM_FRAME_FILTER_ALL_TYPES("ItemFrame now filters all types of this item! e.g Enchanted Books."),
     ITEM_FRAME_FILTER_DENY("ItemFrame now prevents this item from being accepted in the hopper!"),
-    ITEM_FRAME_FILTER_DENY_ALL_TYPES("ItemFrame now prevents all types of this item from being accepted in the hopper! e.g Enchanted Books.");
+    ITEM_FRAME_FILTER_DENY_ALL_TYPES("ItemFrame now prevents all types of this item from being accepted in the hopper! e.g Enchanted Books."),
+
+    //Party
+    PARTY_CREATED("Party {0} has been created!", Tag.PARTY_NAME),
+    PARTY_DELETED("Party {0} has been deleted!", Tag.PARTY_NAME),
+    PARTY_ALREADY_EXISTS("Party {0} already exists, unable to create it!", Tag.PARTY_NAME),
+    PARTY_DOESNT_EXIST("The party {0} doesn't exist!", Tag.PARTY_NAME),
+    PARTY_INVITE("You have been invited to join {0}''s party: {1}", Tag.PLAYER_NAME, Tag.PARTY_NAME),
+    PARTY_INVITE_OWNER("You have invited {0} to join your party: {1}", Tag.PLAYER_NAME, Tag.PARTY_NAME),
+    PARTY_JOINED("You have joined {0}''s party: {1}", Tag.PLAYER_NAME, Tag.PARTY_NAME),
+    PARTY_NO_INVITE("You currently have no pending party invites!"),
+    PARTY_ACCEPT_INVITE("Use "+ ChatColor.GREEN+ChatColor.BOLD+"/chestsplusplus party accept-invite"+ChatColor.RESET+" or "+ ChatColor.GREEN+ChatColor.BOLD+"'/c++ party accept-invite'"+ChatColor.RESET+" to accept the invite!");
 
     String message;
 

@@ -20,10 +20,11 @@ import java.util.List;
 
 public class ChestLinkMenu implements InventoryProvider {
 
-    public static HashMap<Player, SmartInventory> menus;
+    public static HashMap<Player, ChestLinkMenu> menus;
 
     private final Collection<ChestLinkStorage> storages;
     private final SmartInventory menu;
+    private int lastPage; // Store the last page the player was on.
 
     private ChestLinkMenu(Player player) {
         this.storages = Config.getChestLink().getStorageMap(player.getUniqueId()).values();
@@ -34,16 +35,17 @@ public class ChestLinkMenu implements InventoryProvider {
                 .manager(ChestsPlusPlus.INVENTORY_MANAGER)
                 .size(6, 9)
                 .build();
+        lastPage = 0;
         //menu.setInsertable(true);
     }
 
-    public static SmartInventory getMenu(Player player) {
+    public static ChestLinkMenu getMenu(Player player) {
         if (menus == null) menus = new HashMap<>();
 
         if (menus.containsKey(player)) {
             return menus.get(player);
         } else {
-            menus.put(player, new ChestLinkMenu(player).getMenu());
+            menus.put(player, new ChestLinkMenu(player));
             return menus.get(player);
         }
     }
@@ -72,9 +74,23 @@ public class ChestLinkMenu implements InventoryProvider {
         }
 
         contents.set(5, 2, ClickableItem.from(Utils.getNamedItem(new ItemStack(Material.ARROW), "Previous"),
-                e -> menu.open(player, pagination.previous().getPage())));
+                e -> {
+                    lastPage = pagination.previous().getPage();
+                    menu.open(player, lastPage);
+                }));
         contents.set(5, 6, ClickableItem.from(Utils.getNamedItem(new ItemStack(Material.ARROW), "Next"),
-                e -> menu.open(player, pagination.next().getPage())));
+                e -> {
+                    lastPage = pagination.next().getPage();
+                    menu.open(player, lastPage);
+                }));
+    }
+
+    public void openLastPage(Player player){
+        menu.open(player, lastPage);
+    }
+
+    public void open(Player player){
+        menu.open(player);
     }
 
     @Override

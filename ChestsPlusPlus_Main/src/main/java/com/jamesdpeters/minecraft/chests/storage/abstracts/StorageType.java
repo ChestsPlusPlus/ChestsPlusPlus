@@ -5,6 +5,7 @@ import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.misc.Messages;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.misc.Values;
+import com.jamesdpeters.minecraft.chests.party.PartyUtils;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.serialize.ConfigStorage;
 import com.jamesdpeters.minecraft.chests.serialize.LocationInfo;
@@ -142,6 +143,8 @@ public abstract class StorageType<T extends AbstractStorage> implements Listener
 
     public List<T> getStorageMemberOf(Player player) {
         return getMap().entrySet().stream().flatMap(map -> map.getValue().values().stream().filter(storage -> {
+            if (PartyUtils.getPlayerPartyStorage(storage.getOwner()).getOwnedPartiesCollection().stream().anyMatch(party -> party.isMember(player))) return true; // Uses party to match.
+
             if (storage.isPublic()) return false;
             if (storage.getOwner().getUniqueId().equals(player.getUniqueId())) return false;
             if (storage.getMembers() == null) return false;
@@ -243,6 +246,7 @@ public abstract class StorageType<T extends AbstractStorage> implements Listener
     public T removeBlock(T storage, Location location, boolean hasPickedUp) {
         if (storage != null) {
             storage.removeLocation(location);
+            storageCache.remove(location);
             if (storage.getLocationsSize() == 0 && !hasPickedUp) {
                 storage.dropInventory(location);
                 getStorageMap(storage.getOwner().getUniqueId()).remove(storage.getIdentifier());
