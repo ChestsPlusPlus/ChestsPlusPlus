@@ -40,6 +40,11 @@
             <id>sytm-nexus</id>
             <url>https://repo.sytm.de/repository/maven-hosted/</url>
         </repository>
+
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
     </repositories>
 
     <dependencies>
@@ -73,6 +78,12 @@
             <groupId>fr.minuskube.inv</groupId>
             <artifactId>smart-invs</artifactId>
             <version>1.3.0-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.WesJD.AnvilGUI</groupId>
+            <artifactId>anvilgui</artifactId>
+            <version>f227dcbf2f</version>
         </dependency>
 
         <dependency>
@@ -127,6 +138,7 @@
                     <artifactSet>
                         <includes>
                             <include>fr.minuskube.inv*:*</include>
+                            <include>com.github.WesJD.AnvilGUI*:*</include>
                             <include>org.bstats*:*</include>
                             <include>com.jamesdpeters.minecraft.chests</include>
                         </includes>
@@ -139,6 +151,10 @@
                         </relocation>
                         <relocation>
                             <pattern>fr.minuskube.inv</pattern>
+                            <shadedPattern>com.jamesdpeters.minecraft.chests</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>com.github.WesJD.AnvilGUI</pattern>
                             <shadedPattern>com.jamesdpeters.minecraft.chests</shadedPattern>
                         </relocation>
                     </relocations>

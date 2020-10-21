@@ -71,6 +71,12 @@ public class PlayerParty implements ConfigurationSerializable {
         return members;
     }
 
+    public List<OfflinePlayer> getAllPlayers() {
+        List<OfflinePlayer> players = new ArrayList<>(members);
+        players.add(0, owner);
+        return players;
+    }
+
     public void addMember(OfflinePlayer player) {
         if (members == null){
             members = new ArrayList<>();

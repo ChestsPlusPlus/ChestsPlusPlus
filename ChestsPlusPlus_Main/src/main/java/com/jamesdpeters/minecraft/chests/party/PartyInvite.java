@@ -21,7 +21,8 @@ public class PartyInvite {
         Player onlinePlayer = player.getPlayer();
         if(onlinePlayer != null) {
             onlinePlayer.sendMessage(ChatColor.GREEN+Message.PARTY_INVITE.getString(ChatColor.WHITE+player.getName()+ChatColor.GREEN, ChatColor.WHITE+party.getPartyName()+ChatColor.GREEN));
-            onlinePlayer.sendMessage(Message.PARTY_ACCEPT_INVITE.getString());
+            String tellraw = "tellraw @p {\"text\":\""+Message.PARTY_ACCEPT_INVITE.getString()+"\",\"clickEvent\":{\"action\":\"run_command\",\"value\":\"/c++ party view-invites\"}}";
+            onlinePlayer.performCommand(tellraw);
         }
         Player onlineOwner = owner.getPlayer();
         if (onlineOwner != null){
@@ -39,5 +40,15 @@ public class PartyInvite {
             }
             pending = false;
         }
+    }
+
+    public void rejectInvite(){
+        if (pending) {
+            pending = false;
+        }
+    }
+
+    public PlayerParty getParty() {
+        return party;
     }
 }

@@ -13,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 @SerializableAs("PlayerPartyStorage")
 public class PlayerPartyStorage implements ConfigurationSerializable {
@@ -63,6 +64,10 @@ public class PlayerPartyStorage implements ConfigurationSerializable {
         return ownedParties;
     }
 
+    public List<PlayerParty> getOwnedPartiesList() {
+        return new ArrayList<>(ownedParties.values());
+    }
+
     public Collection<PlayerParty> getOwnedPartiesCollection() {
         return ownedParties.values();
     }
@@ -71,5 +76,34 @@ public class PlayerPartyStorage implements ConfigurationSerializable {
         List<String> strings = new ArrayList<>();
         ownedParties.values().forEach(party -> strings.add(party.getPartyName()));
         return strings;
+    }
+
+    /**
+     * Returns a List of Parties this player is a member of, not including their owned parties.
+     * @return
+     */
+    public List<PlayerParty> getPartiesMemberOf() {
+        // Create list containing all owned parties
+        List<PlayerParty> parties = new ArrayList<>();
+
+        Config.getStore().parties.values().forEach(playerPartyStorage -> {
+            playerPartyStorage.getOwnedPartiesCollection().forEach(party -> {
+                if (party.isMember(getOwner())) parties.add(party);
+            });
+        });
+
+        return parties;
+    }
+
+    /**
+     * Returns ALL parties this player is a member of;.
+     * @return
+     */
+    public List<PlayerParty> getAllParties() {
+        // Create list containing all owned parties
+        List<PlayerParty> parties = getPartiesMemberOf();
+        parties.addAll(getOwnedPartiesCollection());
+
+        return parties;
     }
 }

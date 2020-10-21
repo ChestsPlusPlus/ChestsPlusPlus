@@ -2,14 +2,13 @@ package com.jamesdpeters.minecraft.chests.commands;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.api.ApiSpecific;
-import com.jamesdpeters.minecraft.chests.inventories.PartyMenu;
+import com.jamesdpeters.minecraft.chests.menus.PartyMenu;
 import com.jamesdpeters.minecraft.chests.lang.Message;
 import com.jamesdpeters.minecraft.chests.maventemplates.BuildConstants;
 import com.jamesdpeters.minecraft.chests.misc.Messages;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.party.PartyUtils;
-import com.jamesdpeters.minecraft.chests.serialize.Config;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -25,7 +24,6 @@ public class ChestsPlusPlusCommand extends ServerCommand {
     private enum OPTIONS {
         VERSION("/chestsplusplus version", "Display the current version of the plugin."),
         PARTY("/chestsplusplus party <create/delete/invite/remove-member/list>", "Create, delete or manage members of your party"),
-        PARTY_MENU("/chestsplusplus party <create/delete/invite/remove-member/list>", "Create, delete or manage members of your party"),
         RELOAD("/chestsplusplus reload", "Reloads the plugin.");
 
         String description, commandHelp;
@@ -72,71 +70,34 @@ public class ChestsPlusPlusCommand extends ServerCommand {
                     ChestsPlusPlus.PLUGIN.onEnable();
                     return true;
 
-                case PARTY_MENU:
-                    PartyMenu.getMenu(player).getMenu().open(player);
-                    return true;
-
                 case PARTY:
                     if (args.length > 1) {
-                        if (sender.hasPermission(Permissions.PARTY_ACCEPT_INVITE)) {
-                            if (args[1].toLowerCase().equals("accept-invite")) {
-                                PartyUtils.acceptInvite(player);
-                                return true;
-                            }
-                        } else {
-                            Messages.NO_PERMISSION(player);
-                            return true;
+                        switch (args[1].toLowerCase()) {
+                            case "menu":
+                                PartyMenu.getMenu(player).getMenu().open(player);
+                                break;
+                            case "create":
+                                PartyMenu.getMenu(player).create(player);
+                                break;
+                            case "invite":
+                                PartyMenu.getMenu(player).invite(player);
+                                break;
+                            case "remove-member":
+                                PartyMenu.getMenu(player).removePlayer(player);
+                                break;
+                            case "list":
+                                PartyMenu.getMenu(player).listParties(player);
+                                break;
+                            case "delete":
+                                PartyMenu.getMenu(player).deleteParty(player);
+                                break;
+                            case "view-invites":
+                                PartyMenu.getMenu(player).partyInvites(player);
+                                break;
+                            default:
+                                return false;
                         }
-                        if (args[1].toLowerCase().equals("list")) {
-                            // TODO Print list of owned parties.
-                            return true;
-                        }
-                    }
-                    if (args.length > 2) {
-                        if(sender.hasPermission(Permissions.PARTY_CREATE)){
-                            if (args[1].toLowerCase().equals("create")){
-                                String partyName = args[2];
-                                boolean result = PartyUtils.createParty(player, partyName);
-                                if (result){
-                                    sender.sendMessage(ChatColor.GREEN+Message.PARTY_CREATED.getString(ChatColor.WHITE+partyName+ChatColor.GREEN));
-                                } else {
-                                    sender.sendMessage(ChatColor.RED+Message.PARTY_ALREADY_EXISTS.getString(ChatColor.WHITE+partyName+ChatColor.RED));
-                                }
-                                return true;
-                            }
-                            if (args[1].toLowerCase().equals("delete")){
-                                String partyName = args[2];
-                                boolean result = PartyUtils.deleteParty(player, partyName);
-                                if (result){
-                                    sender.sendMessage(ChatColor.GREEN+Message.PARTY_DELETED.getString(ChatColor.WHITE+partyName+ChatColor.GREEN));
-                                } else {
-                                    sender.sendMessage(ChatColor.RED+Message.PARTY_DOESNT_EXIST.getString(ChatColor.WHITE+partyName+ChatColor.RED));
-                                }
-                                return true;
-                            }
-                        } else {
-                            Messages.NO_PERMISSION(player);
-                            return true;
-                        }
-                        if (args.length > 3) {
-                            if (sender.hasPermission(Permissions.PARTY_INVITE)) {
-                                if (args[1].toLowerCase().equals("invite")) {
-                                    String partyName = args[2];
-                                    String playerToInvite = args[3];
-                                    PartyUtils.invitePlayer(player, Bukkit.getOfflinePlayer(playerToInvite), partyName);
-                                    return true;
-                                }
-                            } else {
-                                Messages.NO_PERMISSION(player);
-                                return true;
-                            }
-                            if (args[1].toLowerCase().equals("remove-member")) {
-                                String partyName = args[2];
-                                String playerToInvite = args[3];
-                                PartyUtils.removePlayer(player, Bukkit.getOfflinePlayer(playerToInvite), partyName);
-                                return true;
-                            }
-                        }
+                        return true;
                     }
 
                 default:
@@ -161,7 +122,7 @@ public class ChestsPlusPlusCommand extends ServerCommand {
                 try {
                     switch (OPTIONS.valueOf(args[0].toUpperCase())) {
                         case PARTY:
-                            return Stream.of("create", "invite", "delete", "remove-member", "accept-invite", "list").filter(s -> s.contains(args[1])).collect(Collectors.toList());
+                            return Stream.of("menu", "create", "invite", "delete", "remove-member", "view-invites", "list").filter(s -> s.contains(args[1])).collect(Collectors.toList());
                     }
                 } catch (IllegalArgumentException ignored) {
                 }

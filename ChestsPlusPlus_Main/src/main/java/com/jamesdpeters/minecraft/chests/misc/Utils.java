@@ -20,11 +20,13 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Container;
 import org.bukkit.block.Hopper;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -129,15 +131,6 @@ public class Utils {
 
     public static boolean hopperMove(Inventory from, int amount, Inventory to) {
         return hopperMove(from, amount, to, null);
-    }
-
-    public static ItemStack getNamedItem(ItemStack item, String name) {
-        ItemMeta meta = item.getItemMeta();
-        if (meta != null) {
-            meta.setDisplayName(name);
-            item.setItemMeta(meta);
-        }
-        return item;
     }
 
     public static List<String> getOnlinePlayers() {
@@ -312,5 +305,15 @@ public class Utils {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public static List<OfflinePlayer> getOnlinePlayersNotInList(List<OfflinePlayer> players) {
+        List<OfflinePlayer> list = new ArrayList<>();
+        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+            if (!players.contains(onlinePlayer)){
+                list.add(onlinePlayer);
+            }
+        }
+        return list;
     }
 }

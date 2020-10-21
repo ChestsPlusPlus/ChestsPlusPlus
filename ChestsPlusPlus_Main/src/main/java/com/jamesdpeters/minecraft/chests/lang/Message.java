@@ -81,7 +81,7 @@ public enum Message {
     PARTY_INVITE_OWNER("You have invited {0} to join your party: {1}", Tag.PLAYER_NAME, Tag.PARTY_NAME),
     PARTY_JOINED("You have joined {0}''s party: {1}", Tag.PLAYER_NAME, Tag.PARTY_NAME),
     PARTY_NO_INVITE("You currently have no pending party invites!"),
-    PARTY_ACCEPT_INVITE("Use "+ ChatColor.GREEN+ChatColor.BOLD+"/chestsplusplus party accept-invite"+ChatColor.RESET+" or "+ ChatColor.GREEN+ChatColor.BOLD+"'/c++ party accept-invite'"+ChatColor.RESET+" to accept the invite!");
+    PARTY_ACCEPT_INVITE("Click Here to accept the invite!");
 
     String message;
 

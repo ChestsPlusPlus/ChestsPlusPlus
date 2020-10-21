@@ -6,7 +6,10 @@ import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 
 public class PartyUtils {
@@ -16,8 +19,19 @@ public class PartyUtils {
         PARTY_CREATED
     }
 
-    // Stores the last party invite sent to this player.
-    private static HashMap<UUID, PartyInvite> latestPartyInvite = new HashMap<>();
+    // Stores party invites sent to this player.
+    // Only stored in memory
+    private static final HashMap<UUID, List<PartyInvite>> partyInvites = new HashMap<>();
+
+    public static boolean hasInvites(OfflinePlayer player) {
+        List<PartyInvite> invites = partyInvites.get(player.getUniqueId());
+        if (invites == null) return false;
+        return invites.size() > 0;
+    }
+
+    public static List<PartyInvite> getPartyInvites(OfflinePlayer player) {
+        return partyInvites.computeIfAbsent(player.getUniqueId(), k -> new ArrayList<>());
+    }
 
     /**
      * Invites a player to the owners given party. The last pending invite is overwritten.
@@ -37,9 +51,17 @@ public class PartyUtils {
             return;
         }
 
-        PartyInvite invite = new PartyInvite(owner, playerToInvite, storage.getOwnedParties().get(partyName));
-        latestPartyInvite.put(playerToInvite.getUniqueId(), invite);
+        invitePlayer(party, playerToInvite);
+    }
 
+    private static void addPlayerInvite(OfflinePlayer player, PartyInvite invite) {
+        List<PartyInvite> invites = partyInvites.computeIfAbsent(player.getUniqueId(), k -> new ArrayList<>());
+        invites.add(invite);
+    }
+
+    public static void invitePlayer(PlayerParty party, OfflinePlayer playerToInvite) {
+        PartyInvite invite = new PartyInvite(party.getOwner(), playerToInvite, party);
+        addPlayerInvite(playerToInvite, invite);
         invite.sendInvite();
     }
 
@@ -62,24 +84,27 @@ public class PartyUtils {
      * Accepts the current pending invite for this player.
      * @param player
      */
-    public static void acceptInvite(OfflinePlayer player){
-        PartyInvite invite = latestPartyInvite.get(player.getUniqueId());
-        if (invite == null) {
-            Player onlinePlayer = player.getPlayer();
-            if (onlinePlayer != null) {
-                onlinePlayer.sendMessage(Message.PARTY_NO_INVITE.getString());
-            }
-            return;
+    public static void acceptInvite(OfflinePlayer player, PartyInvite invite){
+        List<PartyInvite> invites = partyInvites.get(player.getUniqueId());
+        if (invite != null) {
+            invite.acceptInvite();
+            invites.remove(invite);
         }
-        invite.acceptInvite();
-        latestPartyInvite.remove(player.getUniqueId());
+    }
+
+    public static void rejectInvite(OfflinePlayer player, PartyInvite invite) {
+        List<PartyInvite> invites = partyInvites.get(player.getUniqueId());
+        if (invite != null) {
+            invite.rejectInvite();
+            invites.remove(invite);
+        }
     }
 
     /**
      * Creates a party.
      * @param owner
      * @param partyName
-     * @return
+     * @return false if party already exists.
      */
     public static boolean createParty(OfflinePlayer owner, String partyName){
         PlayerPartyStorage storage = getPlayerPartyStorage(owner);
@@ -111,6 +136,10 @@ public class PartyUtils {
         // Remove party
         storage.getOwnedParties().remove(partyName);
         return true;
+    }
+
+    public static boolean deleteParty(PlayerParty party){
+        return deleteParty(party.getOwner(), party.getPartyName());
     }
 
     public static PlayerPartyStorage getPlayerPartyStorage(OfflinePlayer owner) {

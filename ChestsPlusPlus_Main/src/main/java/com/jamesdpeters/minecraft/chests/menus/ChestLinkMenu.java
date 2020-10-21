@@ -1,6 +1,7 @@
-package com.jamesdpeters.minecraft.chests.inventories;
+package com.jamesdpeters.minecraft.chests.menus;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
+import com.jamesdpeters.minecraft.chests.misc.ItemBuilder;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorage;
@@ -68,17 +69,21 @@ public class ChestLinkMenu implements InventoryProvider {
         pagination.setItems(itemList.toArray(new ClickableItem[0]));
         pagination.setItemsPerPage(28);
 
-        contents.fillBorders(ClickableItem.empty(Utils.getNamedItem(new ItemStack(Material.GRAY_STAINED_GLASS_PANE), " ")));
+        ItemStack border = ItemBuilder.getInstance(Material.GRAY_STAINED_GLASS_PANE).setName(" ").get();
+        contents.fillBorders(ClickableItem.empty(border));
         for (ClickableItem item : pagination.getPageItems()) {
             contents.add(item);
         }
 
-        contents.set(5, 2, ClickableItem.from(Utils.getNamedItem(new ItemStack(Material.ARROW), "Previous"),
+        ItemStack previous = ItemBuilder.getInstance(Material.ARROW).setName("Previous").get();
+        contents.set(5, 2, ClickableItem.from(previous,
                 e -> {
                     lastPage = pagination.previous().getPage();
                     menu.open(player, lastPage);
                 }));
-        contents.set(5, 6, ClickableItem.from(Utils.getNamedItem(new ItemStack(Material.ARROW), "Next"),
+
+        ItemStack next = ItemBuilder.getInstance(Material.ARROW).setName("Next").get();
+        contents.set(5, 6, ClickableItem.from(next,
                 e -> {
                     lastPage = pagination.next().getPage();
                     menu.open(player, lastPage);
