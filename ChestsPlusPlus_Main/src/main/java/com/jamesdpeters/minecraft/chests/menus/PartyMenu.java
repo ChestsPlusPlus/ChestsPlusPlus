@@ -130,7 +130,7 @@ public class PartyMenu implements InventoryProvider {
      */
 
     public void create(Player player) {
-        TextInputUI.getInput(player, "Enter a Party Name", (p, partyName) -> {
+        TextInputUI.getInput(player, Message.PARTY_ENTER_NAME.getString(), (p, partyName) -> {
             boolean result = PartyUtils.createParty(player, partyName);
             if (result){
                 player.sendMessage(ChatColor.GREEN+ Message.PARTY_CREATED.getString(ChatColor.WHITE+partyName+ChatColor.GREEN));
@@ -138,7 +138,7 @@ public class PartyMenu implements InventoryProvider {
                 return AnvilGUI.Response.close();
             } else {
                 player.sendMessage(ChatColor.RED+Message.PARTY_ALREADY_EXISTS.getString(ChatColor.WHITE+partyName+ChatColor.RED));
-                return AnvilGUI.Response.text("Already exists!");
+                return AnvilGUI.Response.text(Message.ALREADY_EXISTS_ANVIL.getString());
             }
         });
     }
@@ -147,7 +147,7 @@ public class PartyMenu implements InventoryProvider {
         PartySelectorMenu.open(player, getMenu(), PartySelectorMenu.Type.OWNED, (party, menu) -> {
             List<OfflinePlayer> inviteablePlayers = Utils.getOnlinePlayersNotInList(party.getMembers());
             inviteablePlayers.remove(party.getOwner());
-            PlayerSelectorMenu.open(player, "Choose a player to invite!", menu, inviteablePlayers, (player1, itemStack) -> itemStack, (playerToInvite, menu2) -> {
+            PlayerSelectorMenu.open(player, Message.PARTY_INVITE_PLAYER.getString(), menu, inviteablePlayers, (player1, itemStack) -> itemStack, (playerToInvite, menu2) -> {
                 PartyUtils.invitePlayer(party, playerToInvite);
                 getMenu().open(player);
             });
@@ -156,8 +156,8 @@ public class PartyMenu implements InventoryProvider {
 
     public void removePlayer(Player player) {
         PartySelectorMenu.open(player, getMenu(),  PartySelectorMenu.Type.OWNED, (party, menu) -> {
-            PlayerSelectorMenu.open(player, "Choose a player to remove!", menu, party.getMembers(), (player1, itemStack) -> itemStack, (selectedPlayer, menu2) -> {
-                AcceptDialogMenu.open(player, "Remove player \""+selectedPlayer.getName()+"\"?", "Yes", "No", aBoolean -> {
+            PlayerSelectorMenu.open(player, Message.PARTY_REMOVE_PLAYER.getString(), menu, party.getMembers(), (player1, itemStack) -> itemStack, (selectedPlayer, menu2) -> {
+                AcceptDialogMenu.open(player, Message.PARTY_REMOVE_PLAYER_DIALOG.getString(selectedPlayer.getName()), Message.YES.getString(), Message.NO.getString(), aBoolean -> {
                     if (aBoolean) {
                         party.removeMember(selectedPlayer);
                     }
@@ -169,10 +169,10 @@ public class PartyMenu implements InventoryProvider {
 
     public void listParties(Player player) {
         PartySelectorMenu.open(player, getMenu(),  PartySelectorMenu.Type.ALL, (party, smartInventory) -> {
-            PlayerSelectorMenu.open(player, party.getPartyName()+" members", smartInventory, party.getAllPlayers(),
+            PlayerSelectorMenu.open(player, Message.PARTY_MEMBERS.getString(party.getPartyName()), smartInventory, party.getAllPlayers(),
                     // Change player head to enchanted if owner.
                     (offlinePlayer, itemStack) -> {
-                        if (party.getOwner().getUniqueId().equals(offlinePlayer.getUniqueId())) return ItemBuilder.fromInstance(itemStack).addLore("Owner").get();
+                        if (party.getOwner().getUniqueId().equals(offlinePlayer.getUniqueId())) return ItemBuilder.fromInstance(itemStack).addLore(Message.PARTY_OWNER.getString()).get();
                         return itemStack;
                     } ,
                     (playerSelected, smartInventory1) -> {
@@ -183,7 +183,7 @@ public class PartyMenu implements InventoryProvider {
 
     public void deleteParty(Player player) {
         PartySelectorMenu.open(player, getMenu(),  PartySelectorMenu.Type.OWNED, (party, smartInventory) -> {
-                AcceptDialogMenu.open(player, "Delete Party \""+party.getPartyName()+"\"?", "Yes", "No", aBoolean -> {
+                AcceptDialogMenu.open(player, Message.PARTY_DELETE.getString(party.getPartyName()), Message.YES.getString(), Message.NO.getString(), aBoolean -> {
                     // If user accepts
                     if (aBoolean) {
                         boolean result = PartyUtils.deleteParty(party);
@@ -204,7 +204,7 @@ public class PartyMenu implements InventoryProvider {
 
     public void partyInvites(Player player) {
         InvitesMenu.open(player, getMenu(), (invite, smartInventory) -> {
-            AcceptDialogMenu.open(player, "Join "+invite.getParty().getOwner().getName()+"'s party \""+invite.getParty().getPartyName()+"\"", "Yes", "No", aBoolean -> {
+            AcceptDialogMenu.open(player, Message.PARTY_JOIN.getString(invite.getParty().getOwner().getName(), invite.getParty().getPartyName()),  Message.YES.getString(), Message.NO.getString(), aBoolean -> {
                 if (aBoolean) {
                     PartyUtils.acceptInvite(player, invite);
                     getMenu().open(player);
@@ -218,7 +218,7 @@ public class PartyMenu implements InventoryProvider {
 
     public void leaveParty(Player player) {
         PartySelectorMenu.open(player, getMenu(), PartySelectorMenu.Type.MEMBER_OF, (party, smartInventory) -> {
-            AcceptDialogMenu.open(player, "Leave party: "+party.getPartyName()+"?", "Yes", "No", aBoolean -> {
+            AcceptDialogMenu.open(player, Message.PARTY_LEAVE.getString(party.getPartyName()), Message.YES.getString(), Message.NO.getString(), aBoolean -> {
                 if (aBoolean) {
                     party.removeMember(player);
                 }

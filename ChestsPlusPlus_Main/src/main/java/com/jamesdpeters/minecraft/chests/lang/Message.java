@@ -79,7 +79,23 @@ public enum Message {
     PARTY_INVITE_OWNER("You have invited {0} to join your party: {1}", Tag.PLAYER_NAME, Tag.PARTY_NAME),
     PARTY_JOINED("You have joined {0}''s party: {1}", Tag.PLAYER_NAME, Tag.PARTY_NAME),
     PARTY_NO_INVITE("You currently have no pending party invites!"),
-    PARTY_ACCEPT_INVITE("Click Here to accept the invite!");
+    PARTY_ACCEPT_INVITE("Click Here to accept the invite!"),
+
+    PARTY_ENTER_NAME("Enter a Party Name"),
+    ALREADY_EXISTS_ANVIL("Already exists!"),
+    PARTY_INVITE_PLAYER("Choose a player to invite!"),
+    PARTY_REMOVE_PLAYER("Choose a player to remove!"),
+    PARTY_REMOVE_PLAYER_DIALOG("Remove player \"{0}\" ?", Tag.PLAYER_NAME),
+    PARTY_MEMBERS("{0} members", Tag.PARTY_NAME),
+    PARTY_OWNER("Owner"),
+    PARTY_DELETE("Delete party \"{0}\"?", Tag.PARTY_NAME),
+    PARTY_JOIN("Join {0}'s party \"{1}\"", Tag.PLAYER_NAME, Tag.PARTY_NAME),
+    PARTY_LEAVE("Leave party: {0}?", Tag.PARTY_NAME),
+
+    YES("Yes"),
+    NO("No"),
+
+    ;
 
     String message;
 
