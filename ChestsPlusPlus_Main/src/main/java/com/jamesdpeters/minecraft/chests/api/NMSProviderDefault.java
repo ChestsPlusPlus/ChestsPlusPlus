@@ -1,6 +1,7 @@
 package com.jamesdpeters.minecraft.chests.api;
 
 import com.jamesdpeters.minecraft.chests.ChestOpener;
+import com.jamesdpeters.minecraft.chests.CraftingProvider;
 import com.jamesdpeters.minecraft.chests.MaterialChecker;
 import com.jamesdpeters.minecraft.chests.NMSProvider;
 import com.jamesdpeters.minecraft.chests.v1_16_R1.NMSProviderImpl;
@@ -25,6 +26,12 @@ public class NMSProviderDefault implements NMSProvider {
     public MaterialChecker getMaterialChecker() {
         //Return the current latest MaterialChecker when an newer server implementation is found.
         return provider1_16.getMaterialChecker();
+    }
+
+    @Override
+    public CraftingProvider getCraftingProvider() {
+        // TODO
+        return null;
     }
 
     @Override

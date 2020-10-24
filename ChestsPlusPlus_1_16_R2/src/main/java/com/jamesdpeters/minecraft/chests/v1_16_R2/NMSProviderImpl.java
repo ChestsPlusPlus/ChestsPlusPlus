@@ -1,4 +1,4 @@
-package com.jamesdpeters.minecraft.chests.v1_16_R1;
+package com.jamesdpeters.minecraft.chests.v1_16_R2;
 
 import com.jamesdpeters.minecraft.chests.ChestOpener;
 import com.jamesdpeters.minecraft.chests.CraftingProvider;
@@ -27,7 +27,7 @@ public class NMSProviderImpl implements NMSProvider {
 
     @Override
     public MaterialChecker getMaterialChecker() {
-        return new MaterialChecker_1_16();
+        return new MaterialChecker_1_16_R2();
     }
 
     @Override

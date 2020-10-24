@@ -1,6 +1,7 @@
 package com.jamesdpeters.minecraft.chests.interfaces;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
+import com.jamesdpeters.minecraft.chests.api.ApiSpecific;
 import com.jamesdpeters.minecraft.chests.crafting.Crafting;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
@@ -99,9 +100,22 @@ public class VirtualCraftingHolder implements InventoryHolder {
         setHasCompleteRecipe();
     }
 
-    public void setCrafting(Recipe recipe) {
+    public void setCrafting(Recipe recipe, List<ItemStack> matrix) {
         if (recipe instanceof ShapedRecipe) setCrafting((ShapedRecipe) recipe);
-        if (recipe instanceof ShapelessRecipe) setCrafting((ShapelessRecipe) recipe);
+        else if (recipe instanceof ShapelessRecipe) setCrafting((ShapelessRecipe) recipe);
+        else {
+            // For ComplexRecipes or other implementations just use the result and original matrix for choices.
+            result = ApiSpecific.getNmsProvider().getCraftingProvider().craft(Bukkit.getWorlds().get(0), matrix);
+            for (int i = 0; i < matrix.size(); i++) {
+                ItemStack item = matrix.get(i);
+                if (item != null) {
+                    recipeChoices[i] = new ItemStack[]{item};
+                } else {
+                    recipeChoices[i] = null;
+                }
+            }
+            setHasCompleteRecipe();
+        }
     }
 
     private void setHasCompleteRecipe() {
@@ -117,17 +131,20 @@ public class VirtualCraftingHolder implements InventoryHolder {
     }
 
     public void updateCrafting() {
-        List<ItemStack> craftingMatrix = new ArrayList<>(Arrays.asList(inventory.getContents()));
-        if (craftingMatrix.get(0) != null) craftingMatrix.remove(0);
-        Recipe recipe = Crafting.getResult(craftingMatrix);
-        getStorage().setRecipe(recipe);
+        List<ItemStack> crafting = new ArrayList<>(Arrays.asList(inventory.getContents()));
+        crafting.remove(0);
+
+        Recipe recipe = Crafting.getRecipe(crafting);
+        getStorage().setRecipe(recipe, crafting); // Only store the crafting matrix if the recipe is valid
         resetChoices();
+
         if (recipe != null) {
-            setCrafting(recipe);
+            setCrafting(recipe, crafting);
             playSound(Sound.BLOCK_NOTE_BLOCK_CHIME, 0.5f, 1f);
         } else {
             stopCraftingItems();
         }
+
         isUpdatingRecipe = false;
         updateGUI();
         storage.onItemDisplayUpdate(result);
@@ -276,9 +293,105 @@ public class VirtualCraftingHolder implements InventoryHolder {
         return inventory;
     }
 
+    private int getRecipeChoiceAmount()  {
+        int max = 0;
+        for (ItemStack[] recipeChoice : recipeChoices) {
+            if (recipeChoice != null && recipeChoice.length > max){
+                max = recipeChoice.length;
+            }
+        }
+        return max;
+    }
+
+    /**
+     * Finds a valid recipe matrix for the currently selected recipe.
+     * Removes the items from the inventories provided.
+     * @param inventories
+     * @return a valid recipe matrix selected from the inventories provided.
+     */
+    private List<ItemStack> getRecipeMatrix(List<Inventory> inventories) {
+
+        // Loop through recipe choice array to find recipeChoice index.
+        int recipeChoicesAmount = getRecipeChoiceAmount();
+//        Bukkit.broadcastMessage("Recipe choices: "+recipeChoicesAmount);
+
+        for (int recipeChoiceIndex = 0; recipeChoiceIndex < recipeChoicesAmount; recipeChoiceIndex++) {
+
+            // Store each item selected for the recipe.
+            // This is used to retrieve the actual result taking into account meta data, such as repairing items.
+            List<ItemStack> tempRecipe = Utils.createAirList(9);
+            int recipeIndex = 0;
+
+            // Need a new copy of the inventories to test for each recipe choice.
+            List<Inventory> tempInvs = Utils.copyInventoryList(inventories);
+
+//            Bukkit.broadcastMessage("Recipe choices in loop: "+ Arrays.deepToString(recipeChoices));
+
+            // Loops over each slot of the matrix
+            for (ItemStack[] choices : recipeChoices) {
+
+                // If there's no recipe choice at this index skip and set the matrix pos to null
+                if (choices == null){
+                    tempRecipe.set(recipeIndex, null);
+                    recipeIndex++;
+
+                } else { // Otherwise check for a valid item for this recipe choice.
+
+                    // Select the current recipeChoice
+                    ItemStack choice = choices[recipeChoiceIndex];
+
+                    boolean foundMatch = false;
+                    for (Inventory tempInv : tempInvs) {
+                        int index = tempInv.first(choice.getType());
+
+                        if (index != -1) {
+                            ItemStack item = tempInv.getItem(index);
+
+                            if (item != null) {
+                                // If a valid item has been found in one of the inventories.
+                                ItemStack selectedItem = item.clone();
+
+                                item.setAmount(item.getAmount() - 1);
+                                tempInv.setItem(index, item);
+
+                                selectedItem.setAmount(1);
+                                tempRecipe.set(recipeIndex, selectedItem);
+
+                                recipeIndex++;
+                                foundMatch = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    //If no match found
+                    if (!foundMatch) {
+                        break;
+                    }
+                }
+
+                // Completed the matrix
+                if ((recipeIndex >= recipeChoices.length)) {
+
+                    // Move temp invs to input invs.
+                    for (int i = 0; i < tempInvs.size(); i++) {
+                        moveTempInv(tempInvs.get(i), inventories.get(i));
+                    }
+
+                    return tempRecipe;
+                }
+
+            }
+
+        }
+        return null;
+    }
+
     private boolean craftItem(List<Inventory> inputs, Inventory output) {
         boolean sameInv = false;
         Inventory sameInventory = null;
+
+        // Create a copy of the real inventories and decide if any of the inputs match the output.
         List<Inventory> tempInvs = new ArrayList<>();
 
         for (Inventory inv : inputs) {
@@ -290,31 +403,17 @@ public class VirtualCraftingHolder implements InventoryHolder {
             }
         }
 
-        for (ItemStack[] choices : recipeChoices) {
-            if (choices == null) continue;
-            boolean foundMatch = false;
-            for (ItemStack choice : choices) {
-                for (Inventory tempInv : tempInvs) {
-                    int index = tempInv.first(choice.getType());
-                    if (index != -1) {
-                        ItemStack item = tempInv.getItem(index);
-                        if (item != null) {
-                            item.setAmount(item.getAmount() - 1);
-                            tempInv.setItem(index, item);
-                            foundMatch = true;
-                            break;
-                        }
-                    }
-                }
-            }
-            //If no match
-            if (!foundMatch) return false;
-        }
+        List<ItemStack> recipe = getRecipeMatrix(tempInvs);
+        // null recipe means no recipe was found from the inventories.
+        if (recipe == null) return false;
+
+        // Use NMS to get the real result considering meta data etc.
+        ItemStack realResult = Crafting.craft(recipe);
 
         //If we reach here there are enough materials so check for space in the Hopper and update inventory.
         //Check if output and input are the same inventory to avoid duplication.
         Inventory tempOutput = sameInv ? sameInventory : Utils.copyInventory(output);
-        HashMap map = tempOutput.addItem(result.clone());
+        HashMap<Integer, ItemStack> map = tempOutput.addItem(realResult);
 
         //If result fits into output copy over the temporary inventories.
         if (map.isEmpty()) {

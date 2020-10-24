@@ -8,7 +8,7 @@ MAVEN_DIR="$HOME/.m2"
 CRAFTBUKKIT="${MAVEN_DIR}/repository/org/bukkit/craftbukkit"
 
 #Versions
-array=("1.16.1" "1.15.2" "1.14.4")
+array=("1.16.3" "1.16.1" "1.15.2" "1.14.4")
 
 #Download BuildTools jar
 curl -s -o BuildTools.jar https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar

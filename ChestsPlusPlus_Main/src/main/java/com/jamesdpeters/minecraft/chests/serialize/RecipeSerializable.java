@@ -1,41 +1,62 @@
 package com.jamesdpeters.minecraft.chests.serialize;
 
+import com.jamesdpeters.minecraft.chests.api.ApiSpecific;
 import com.jamesdpeters.minecraft.chests.crafting.Crafting;
+import org.bukkit.Bukkit;
+import org.bukkit.Keyed;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.SerializableAs;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.ShapelessRecipe;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 @SerializableAs("C++Recipe")
 public class RecipeSerializable implements ConfigurationSerializable {
 
-    private final Recipe recipe;
-    private final NamespacedKey key;
+    private Recipe recipe;
+    private NamespacedKey namespacedKey;
 
-    public RecipeSerializable(Recipe recipe) {
+    // Store items used for ComplexRecipes
+    private List<ItemStack> items;
+
+    public RecipeSerializable(Recipe recipe, List<ItemStack> items) {
         this.recipe = recipe;
-        if (recipe instanceof ShapedRecipe) key = ((ShapedRecipe) recipe).getKey();
-        else if (recipe instanceof ShapelessRecipe) key = ((ShapelessRecipe) recipe).getKey();
-        else
-            throw new IllegalArgumentException("Recipe type has not been implemented! " + recipe.getClass().toGenericString());
+        this.items = items;
+        if (recipe instanceof Keyed){
+            namespacedKey = ((Keyed) recipe).getKey();
+        }
     }
 
     public RecipeSerializable(Map<String, Object> map) {
+        Object obj = map.get("items");
+        if (obj != null) {
+            //noinspection unchecked
+            items = (List<ItemStack>) obj;
+        }
+
         //noinspection deprecation
-        key = new NamespacedKey((String) map.get("namespace"), (String) map.get("key"));
-        recipe = Crafting.getRecipeByKey(key);
+        namespacedKey = new NamespacedKey((String) map.get("namespace"), (String) map.get("key"));
+        recipe = Crafting.getRecipeByKey(namespacedKey);
+
+        if (recipe == null) {
+            recipe = ApiSpecific.getNmsProvider().getCraftingProvider().getRecipe(Bukkit.getWorlds().get(0), items);
+        }
     }
 
     @Override
     public Map<String, Object> serialize() {
         LinkedHashMap<String, Object> map = new LinkedHashMap<>();
-        map.put("namespace", key.getNamespace());
-        map.put("key", key.getKey());
+        map.put("namespace", namespacedKey.getNamespace());
+        map.put("key", namespacedKey.getKey());
+        if (!(recipe instanceof ShapedRecipe || recipe instanceof ShapelessRecipe)) {
+            map.put("items", items);
+        }
         return map;
     }
 
@@ -43,7 +64,11 @@ public class RecipeSerializable implements ConfigurationSerializable {
         return recipe;
     }
 
-    public NamespacedKey getKey() {
-        return key;
+    public NamespacedKey getNamespacedKey() {
+        return namespacedKey;
+    }
+
+    public List<ItemStack> getItems() {
+        return items;
     }
 }

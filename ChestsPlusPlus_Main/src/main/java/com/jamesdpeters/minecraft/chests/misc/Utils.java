@@ -20,15 +20,12 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Container;
 import org.bukkit.block.Hopper;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.Vector;
 
@@ -200,6 +197,24 @@ public class Utils {
         }
         tempInv.setContents(inventory.getContents());
         return tempInv;
+    }
+
+    public static List<Inventory> copyInventoryList(List<Inventory> inventories) {
+        List<Inventory> tempInvs = new ArrayList<>();
+        for (Inventory inv : inventories) {
+            Inventory tempInv = Utils.copyInventory(inv);
+            tempInvs.add(tempInv);
+        }
+        return tempInvs;
+    }
+
+    public static List<ItemStack> createAirList(int size) {
+        List<ItemStack> itemStacks = new ArrayList<>();
+        ItemStack AIR = new ItemStack(Material.AIR);
+        for (int i = 0; i < size; i++) {
+            itemStacks.add(AIR);
+        }
+        return itemStacks;
     }
 
     /**

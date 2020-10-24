@@ -1,5 +1,6 @@
 package com.jamesdpeters.minecraft.chests.crafting;
 
+import com.jamesdpeters.minecraft.chests.api.ApiSpecific;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -11,7 +12,6 @@ import org.bukkit.inventory.ShapelessRecipe;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -34,26 +34,12 @@ public class Crafting {
         });
     }
 
-    public static Recipe getResult(List<ItemStack> craftingTable) {
-        Recipe returnRecipe = null;
-        Iterator<Recipe> iterator = Bukkit.recipeIterator();
-        while (iterator.hasNext()) {
-            Recipe recipe = iterator.next();
-            if (recipe instanceof ShapedRecipe) {
-                ShapedRecipe shapedRecipe = (ShapedRecipe) recipe;
-                if (matchesShaped(shapedRecipe, craftingTable)) {
-                    returnRecipe = shapedRecipe;
-                    break;
-                }
-            } else if (recipe instanceof ShapelessRecipe) {
-                ShapelessRecipe shapelessRecipe = (ShapelessRecipe) recipe;
-                if (matchesShapeless(shapelessRecipe.getChoiceList(), craftingTable)) {
-                    returnRecipe = shapelessRecipe;
-                    break;
-                }
-            }
-        }
-        return returnRecipe;
+    public static Recipe getRecipe(List<ItemStack> craftingTable) {
+        return ApiSpecific.getNmsProvider().getCraftingProvider().getRecipe(Bukkit.getWorlds().get(0), craftingTable);
+    }
+
+    public static ItemStack craft(List<ItemStack> recipe) {
+        return ApiSpecific.getNmsProvider().getCraftingProvider().craft(Bukkit.getWorlds().get(0), recipe);
     }
 
     private static boolean matchesShapeless(List<RecipeChoice> choice, List<ItemStack> items) {

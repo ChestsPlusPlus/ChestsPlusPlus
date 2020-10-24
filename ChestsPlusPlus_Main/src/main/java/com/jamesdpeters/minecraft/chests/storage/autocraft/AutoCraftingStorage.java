@@ -12,10 +12,12 @@ import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.ShapelessRecipe;
 
+import java.util.List;
 import java.util.Map;
 
 @SerializableAs("AutoCraftingStorage")
@@ -58,12 +60,12 @@ public class AutoCraftingStorage extends AbstractStorage implements Configuratio
         return false;
     }
 
-    public void setRecipe(Recipe recipe) {
+    public void setRecipe(Recipe recipe, List<ItemStack> items) {
         if (recipe == null) {
             recipeSerializable = null;
             return;
         }
-        recipeSerializable = new RecipeSerializable(recipe);
+        recipeSerializable = new RecipeSerializable(recipe, items);
     }
 
     @Override
@@ -100,8 +102,11 @@ public class AutoCraftingStorage extends AbstractStorage implements Configuratio
             if (recipe instanceof ShapelessRecipe) {
                 virtualCraftingHolder.setCrafting((ShapelessRecipe) recipe);
             }
-            if (recipe instanceof ShapedRecipe) {
+            else if (recipe instanceof ShapedRecipe) {
                 virtualCraftingHolder.setCrafting((ShapedRecipe) recipe);
+            }
+            else {
+                virtualCraftingHolder.setCrafting(recipe, recipeSerializable.getItems());
             }
         } else {
             virtualCraftingHolder.resetChoices();
