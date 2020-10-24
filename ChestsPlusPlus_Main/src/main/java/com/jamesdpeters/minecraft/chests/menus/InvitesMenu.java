@@ -2,10 +2,8 @@ package com.jamesdpeters.minecraft.chests.menus;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.misc.ItemBuilder;
-import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.party.PartyInvite;
 import com.jamesdpeters.minecraft.chests.party.PartyUtils;
-import com.jamesdpeters.minecraft.chests.party.PlayerParty;
 import fr.minuskube.inv.ClickableItem;
 import fr.minuskube.inv.SmartInventory;
 import fr.minuskube.inv.content.InventoryContents;

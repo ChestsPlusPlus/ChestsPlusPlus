@@ -2,7 +2,6 @@ package com.jamesdpeters.minecraft.chests.menus;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.misc.ItemBuilder;
-import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.party.PartyUtils;
 import com.jamesdpeters.minecraft.chests.party.PlayerParty;
 import fr.minuskube.inv.ClickableItem;
@@ -14,12 +13,10 @@ import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.SkullMeta;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 public class PartySelectorMenu implements InventoryProvider {
 

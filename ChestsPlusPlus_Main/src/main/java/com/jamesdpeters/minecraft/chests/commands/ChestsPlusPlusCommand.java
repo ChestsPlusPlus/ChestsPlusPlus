@@ -2,11 +2,8 @@ package com.jamesdpeters.minecraft.chests.commands;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.api.ApiSpecific;
-import com.jamesdpeters.minecraft.chests.menus.PartyMenu;
-import com.jamesdpeters.minecraft.chests.lang.Message;
 import com.jamesdpeters.minecraft.chests.maventemplates.BuildConstants;
-import com.jamesdpeters.minecraft.chests.misc.Messages;
-import com.jamesdpeters.minecraft.chests.misc.Permissions;
+import com.jamesdpeters.minecraft.chests.menus.PartyMenu;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.party.PartyUtils;
 import org.bukkit.Bukkit;

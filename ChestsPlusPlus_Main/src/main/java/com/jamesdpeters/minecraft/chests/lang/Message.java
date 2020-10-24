@@ -1,7 +1,5 @@
 package com.jamesdpeters.minecraft.chests.lang;
 
-import org.bukkit.ChatColor;
-
 import java.text.MessageFormat;
 
 public enum Message {

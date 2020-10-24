@@ -1,8 +1,8 @@
 package com.jamesdpeters.minecraft.chests.commands;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
-import com.jamesdpeters.minecraft.chests.menus.ChestLinkMenu;
 import com.jamesdpeters.minecraft.chests.lang.Message;
+import com.jamesdpeters.minecraft.chests.menus.ChestLinkMenu;
 import com.jamesdpeters.minecraft.chests.misc.Messages;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
