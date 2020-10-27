@@ -20,7 +20,7 @@ public class ChestsPlusPlusCommand extends ServerCommand {
 
     private enum OPTIONS {
         VERSION("/chestsplusplus version", "Display the current version of the plugin."),
-        PARTY("/chestsplusplus party <create/delete/invite/remove-member/list>", "Create, delete or manage members of your party"),
+        PARTY("/chestsplusplus party", "Open the party menu to create, add, remove and invite parties and players."),
         RELOAD("/chestsplusplus reload", "Reloads the plugin.");
 
         String description, commandHelp;
@@ -68,34 +68,8 @@ public class ChestsPlusPlusCommand extends ServerCommand {
                     return true;
 
                 case PARTY:
-                    if (args.length > 1) {
-                        switch (args[1].toLowerCase()) {
-                            case "menu":
-                                PartyMenu.getMenu(player).getMenu().open(player);
-                                break;
-                            case "create":
-                                PartyMenu.getMenu(player).create(player);
-                                break;
-                            case "invite":
-                                PartyMenu.getMenu(player).invite(player);
-                                break;
-                            case "remove-member":
-                                PartyMenu.getMenu(player).removePlayer(player);
-                                break;
-                            case "list":
-                                PartyMenu.getMenu(player).listParties(player);
-                                break;
-                            case "delete":
-                                PartyMenu.getMenu(player).deleteParty(player);
-                                break;
-                            case "view-invites":
-                                PartyMenu.getMenu(player).partyInvites(player);
-                                break;
-                            default:
-                                return false;
-                        }
-                        return true;
-                    }
+                    PartyMenu.getMenu(player).getMenu().open(player);
+                    return true;
 
                 default:
                     for (ChestsPlusPlusCommand.OPTIONS option : ChestsPlusPlusCommand.OPTIONS.values()) {

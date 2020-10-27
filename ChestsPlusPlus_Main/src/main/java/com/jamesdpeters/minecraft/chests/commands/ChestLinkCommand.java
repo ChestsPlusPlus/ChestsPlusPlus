@@ -3,6 +3,7 @@ package com.jamesdpeters.minecraft.chests.commands;
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.lang.Message;
 import com.jamesdpeters.minecraft.chests.menus.ChestLinkMenu;
+import com.jamesdpeters.minecraft.chests.menus.PartyMenu;
 import com.jamesdpeters.minecraft.chests.misc.Messages;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
@@ -31,6 +32,7 @@ public class ChestLinkCommand extends ServerCommand {
         MEMBER("/chestlink member [add/remove <group> <player>] or [list <group>]", Message.COMMAND_MEMBER.getString()),
         MENU("/chestlink menu", Message.COMMAND_CHESTLINK_MENU.getString()),
         OPEN("/chestlink open <Group>", Message.COMMAND_CHESTLINK_OPEN.getString()),
+        PARTY("/chestlink party", Message.COMMAND_PARTY.getString()),
         REMOVE("/chestlink remove <Group>", Message.COMMAND_CHESTLINK_REMOVE.getString()),
         RENAME("/chestlink rename <group> <new-name>", Message.COMMAND_CHESTLINK_RENAME.getString()),
         SETPUBLIC("/chestlink setpublic <group> <true/false>", Message.COMMAND_CHESTLINK_SETPUBLIC.getString()),
@@ -190,6 +192,9 @@ public class ChestLinkCommand extends ServerCommand {
                             return true;
                         }
                     }
+                    case PARTY:
+                        PartyMenu.getMenu(player).getMenu().open(player);
+                        return true;
                 }
             } catch (IllegalArgumentException exception) {
                 return false;

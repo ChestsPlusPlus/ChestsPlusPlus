@@ -45,6 +45,7 @@ public enum Message {
     //Commands
     COMMAND_MEMBER("Add, remove or list members of a group"),
     COMMAND_HELP("List of commands and their uses!"),
+    COMMAND_PARTY("Open the party menu, to allow other players to access all your Chests and AutoCrafters."),
 
     //AutoCraft
     COMMAND_AUTOCRAFT_ADD("Create/add a Crafting Table to an AutoCraft group"),

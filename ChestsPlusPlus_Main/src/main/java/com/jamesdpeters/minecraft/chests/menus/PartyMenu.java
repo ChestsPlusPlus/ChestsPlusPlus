@@ -3,6 +3,8 @@ package com.jamesdpeters.minecraft.chests.menus;
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.lang.Message;
 import com.jamesdpeters.minecraft.chests.misc.ItemBuilder;
+import com.jamesdpeters.minecraft.chests.misc.Messages;
+import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.party.PartyUtils;
 import fr.minuskube.inv.ClickableItem;
@@ -130,6 +132,10 @@ public class PartyMenu implements InventoryProvider {
      */
 
     public void create(Player player) {
+        if (!player.hasPermission(Permissions.PARTY_CREATE)){
+            Messages.NO_PERMISSION(player);
+            return;
+        }
         TextInputUI.getInput(player, Message.PARTY_ENTER_NAME.getString(), (p, partyName) -> {
             boolean result = PartyUtils.createParty(player, partyName);
             if (result){
@@ -144,6 +150,10 @@ public class PartyMenu implements InventoryProvider {
     }
 
     public void invite(Player player) {
+        if (!player.hasPermission(Permissions.PARTY_INVITE)){
+            Messages.NO_PERMISSION(player);
+            return;
+        }
         PartySelectorMenu.open(player, getMenu(), PartySelectorMenu.Type.OWNED, (party, menu) -> {
             List<OfflinePlayer> inviteablePlayers = Utils.getOnlinePlayersNotInList(party.getMembers());
             inviteablePlayers.remove(party.getOwner());
@@ -203,6 +213,10 @@ public class PartyMenu implements InventoryProvider {
     }
 
     public void partyInvites(Player player) {
+        if (!player.hasPermission(Permissions.PARTY_ACCEPT_INVITE)){
+            Messages.NO_PERMISSION(player);
+            return;
+        }
         InvitesMenu.open(player, getMenu(), (invite, smartInventory) -> {
             AcceptDialogMenu.open(player, Message.PARTY_JOIN.getString(invite.getParty().getOwner().getName(), invite.getParty().getPartyName()),  Message.YES.getString(), Message.NO.getString(), aBoolean -> {
                 if (aBoolean) {

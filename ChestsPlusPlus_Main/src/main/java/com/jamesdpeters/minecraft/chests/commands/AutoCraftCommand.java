@@ -2,6 +2,7 @@ package com.jamesdpeters.minecraft.chests.commands;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.lang.Message;
+import com.jamesdpeters.minecraft.chests.menus.PartyMenu;
 import com.jamesdpeters.minecraft.chests.misc.Messages;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
@@ -28,6 +29,7 @@ public class AutoCraftCommand extends ServerCommand {
         LIST("/autocraft list", Message.COMMAND_AUTOCRAFT_LIST.getString()),
         MEMBER("/autocraft member [add/remove <group> <player>] or [list <group>]", Message.COMMAND_MEMBER.getString()),
         OPEN("/autocraft open <Group>", Message.COMMAND_AUTOCRAFT_OPEN.getString()),
+        PARTY("/autocraft party", Message.COMMAND_PARTY.getString()),
         REMOVE("/autocraft remove <Group>", Message.COMMAND_AUTOCRAFT_REMOVE.getString()),
         RENAME("/autocraft rename <group> <new-name>", Message.COMMAND_AUTOCRAFT_RENAME.getString()),
         SETPUBLIC("/autocraft setpublic <group> <true/false>", Message.COMMAND_AUTOCRAFT_SETPUBLIC.getString());
@@ -168,6 +170,9 @@ public class AutoCraftCommand extends ServerCommand {
                             return true;
                         }
                     }
+                    case PARTY:
+                        PartyMenu.getMenu(player).getMenu().open(player);
+                        return true;
                 }
             } catch (IllegalArgumentException exception) {
                 return false;
