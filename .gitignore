@@ -7,3 +7,4 @@ target/
 .DS_Store
 ChestsPlusPlus.iml
 *.iml
+POEditorImport/src/main/java/com/jamesdpeters/poeditor/POEapi.java

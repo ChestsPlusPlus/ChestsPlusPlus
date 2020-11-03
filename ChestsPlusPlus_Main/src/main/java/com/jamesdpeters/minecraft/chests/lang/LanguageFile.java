@@ -8,10 +8,27 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Properties;
 
 public class LanguageFile extends Properties {
+
+    List<String> additionalComments = new ArrayList<>();
+
+    public void addComment(String comment) {
+        this.additionalComments.add(comment);
+    }
+
+    @Override
+    public synchronized Enumeration<Object> keys() {
+        ArrayList<Object> result = Collections.list(super.keys());
+        result.sort(Comparator.comparing(Object::toString));
+        return Collections.enumeration(result);
+    }
 
     public void store(File file) throws IOException {
         store0(new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)), false);
@@ -24,13 +41,17 @@ public class LanguageFile extends Properties {
     private void store0(BufferedWriter bw, boolean generated)
             throws IOException {
         if (generated) {
-            writeComments(bw, " Chests++ Language File (Version " + BuildConstants.VERSION + "))");
+            writeComments(bw, " Chests++ Language File (Version " + BuildConstants.VERSION + ")");
             writeComments(bw,
                     " NOTE: This file gets replaced when the plugin launches! If you want to make modifications create a copy first!\n" +
                             " To create a new language file simply create a copy of this file and rename it to your desired choice for example 'en_US.properties'\n" +
                             " It should be located in the 'lang' folder\n" +
                             " Then in config.yml 'language-file: default' would be renamed to 'language-file: en_US'\n" +
                             " To help contribute to the plugin and provide new language files you can create a pull-request at https://github.com/JamesPeters98/ChestsPlusPlus or join our Discord https://discord.gg/YRs3mP5");
+
+            for (String additionalComment : additionalComments) {
+                writeComments(bw, additionalComment);
+            }
         }
 
         synchronized (this) {
@@ -42,7 +63,7 @@ public class LanguageFile extends Properties {
                  * pass false to flag.
                  */
                 val = saveConvert(val, false, false);
-                bw.write(key + "=" + val);
+                bw.write(key + " = " + val);
                 bw.newLine();
             }
         }
