@@ -21,6 +21,8 @@ If your server is using this plugin let me know so I can feature it!
   - Displays the most common item in a chest on the front of it!
   - Build cool auto smelting/sorting systems!
   - Remotely open chests with a nice menu system!
+  - Party system with a UI to share all your ChestLinks & AutoCrafters with other players!
+  - Language support
   
 ## How to Create Linked Chests:
   - Add a Chest using **/chestlink add** <**group**>  or simply write the ChestLink format on a sign placed on a Chest!
@@ -50,6 +52,7 @@ If your server is using this plugin let me know so I can feature it!
     1. 0° Default - The Hopper will only accept this item. (Note multiple filters can be used on a hopper.)
     2. 45° Rejection Mode - The Hopper will prevent this item from being accepted but will accept other items.
     3. 90° Type-Acceptance - The Hopper will accept items that are of the same type, e.g Enchanted Books, Enchanted weapons, Potions etc.
+        (NEW - This now includes woods, logs, fences, doors and lots of other groups of similar items)
     4. 135° Type-Rejection - The Hopper will reject all items that would normally be accepted in the filter above, so similar types are rejected. 
     
     ![](https://i.imgur.com/DU1rlxq.png)
@@ -66,6 +69,24 @@ If your server is using this plugin let me know so I can feature it!
 
 ![Inventory Menu](https://i.imgur.com/StpFBYm.png)
 
+## Party UI
+### How to create a party
+![Create a party](https://i.imgur.com/LLkq1ew.png)
+![Anvil UI](https://i.imgur.com/6XrRKZ0.png)
+
+### How invite a player to a party
+![Invite menu](https://i.imgur.com/HtMrRkM.png)
+![Party select](https://i.imgur.com/VG0GZNG.png)
+![Player select](https://i.imgur.com/zcZKg6E.png)
+
+### How to accept an invite
+
+![chat message](https://i.imgur.com/6Rzc2gv.png)
+![party invites](https://i.imgur.com/oW1NkG0.png)
+![accept invite](https://i.imgur.com/EyN45J9.png)
+
+
+
 ## Commands:
   #### ChestLink Commands - **/chestlink** or **/cl** are accepted.
   
@@ -80,6 +101,7 @@ If your server is using this plugin let me know so I can feature it!
   - /chestlink setpublic <group> <true/false> "Set a ChestLink to be accessible by anyone."
   - /chestlink rename <group> <new-name> "Rename a ChestLink."
   - /chestlink sort <group> <sort-method> "Set the sorting option for the given ChestLink."
+  - /chestlink party "Open the party menu, to allow other players to access all your Chests and AutoCrafters."
   
     #### AutoCraft Commands - **/autocraft** or **/ac** are accepted.
 
@@ -92,6 +114,11 @@ If your server is using this plugin let me know so I can feature it!
   - /autocraft member [add-to-all/remove-from-all] "Add/Remove a player to all of your AutoCraft groups"
   - /autocraft setpublic <group> <true/false> "Set an AutoCraft group to be accessible by anyone."
   - /autocraft rename <group> <new-name> ""Rename an AutoCraft group."
+  - /autocraft party "Open the party menu, to allow other players to access all your Chests and AutoCrafters."
+  
+  #### ChestsPlusPlus Commands - **/chestsplusplus** or **/c++** are accepted.
+  - /chestsplusplus party "Open the party menu, to allow other players to access all your Chests and AutoCrafters."
+  - /chestsplusplus version
   
 ## Spotlights:
 
@@ -165,6 +192,24 @@ default: true
 ```yaml
 chestlink.autocraft.remove:
 Gives permission to remove AutoCraft Stations!
+default: true
+```
+
+```yaml
+chestlink.party.create:
+"Gives permission to create Chests++ parties."
+default: true
+```
+
+```yaml
+chestlink.party.invite:
+"Gives permission to invite players to Chests++ parties."
+default: true
+```
+
+```yaml
+chestlink.party.accept_invite:
+"Gives permission to accept Chests++ party invites."
 default: true
 ```
  
