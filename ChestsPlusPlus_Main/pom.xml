@@ -83,7 +83,7 @@
         <dependency>
             <groupId>com.github.WesJD.AnvilGUI</groupId>
             <artifactId>anvilgui</artifactId>
-            <version>f227dcbf2f</version>
+            <version>master-SNAPSHOT</version>
         </dependency>
 
         <dependency>
