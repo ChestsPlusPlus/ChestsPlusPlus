@@ -69,6 +69,24 @@ If your server is using this plugin let me know so I can feature it!
 
 ![Inventory Menu](https://i.imgur.com/StpFBYm.png)
 
+## Party UI
+### How to create a party
+![Create a party](https://i.imgur.com/LLkq1ew.png)
+![Anvil UI](https://i.imgur.com/6XrRKZ0.png)
+
+### How invite a player to a party
+![Invite menu](https://i.imgur.com/HtMrRkM.png)
+![Party select](https://i.imgur.com/VG0GZNG.png)
+![Player select](https://i.imgur.com/zcZKg6E.png)
+
+### How to accept an invite
+
+![chat message](https://i.imgur.com/6Rzc2gv.png)
+![party invites](https://i.imgur.com/oW1NkG0.png)
+![accept invite](https://i.imgur.com/EyN45J9.png)
+
+
+
 ## Commands:
   #### ChestLink Commands - **/chestlink** or **/cl** are accepted.
   
