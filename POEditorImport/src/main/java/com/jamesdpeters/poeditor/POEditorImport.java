@@ -40,6 +40,8 @@ public class POEditorImport {
     }
 
     public static void saveTermsToFile(Language language, POETerms poeTerms) throws IOException, URISyntaxException {
+        System.out.println("Updating language: "+language.getName()+" Complete: "+language.getPercentage()+"%");
+
         File langSrcFile = new File( "ChestsPlusPlus_Main/src/main/resources/lang/"+language.getFullCode()+".properties");
         LanguageFile lang = new LanguageFile();
         lang.addComment(" -------- ");
@@ -50,7 +52,6 @@ public class POEditorImport {
         poeTerms.getResult().getTerms().sort(Comparator.comparing(Term::getTerm));
 
         for (Term term : poeTerms.getResult().getTerms()) {
-            System.out.println(term.getTerm() + " = " + term.getTranslation().getContent());
             lang.setProperty(term.getTerm(), term.getTranslation().getContent());
         }
 
