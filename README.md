@@ -1,6 +1,6 @@
 # ChestsPlusPlus [![Build Status](https://travis-ci.com/JamesPeters98/ChestsPlusPlus.svg?branch=master)](https://travis-ci.com/JamesPeters98/ChestsPlusPlus) 
 
-<a href="https://www.buymeacoffee.com/jamespeters"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=&slug=jamespeters&button_colour=FF5F5F&font_colour=ffffff&font_family=Cookie&outline_colour=000000&coffee_colour=FFDD00"></a>
+<a href="https://www.buymeacoffee.com/jamespeters"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=🍺&slug=jamespeters&button_colour=FF5F5F&font_colour=ffffff&font_family=Cookie&outline_colour=000000&coffee_colour=FFDD00"></a>
 
 Minecraft Spigot mod that enhances chests and hoppers, with ChestLinks, Auto-Crafting and Hopper filters!
 
