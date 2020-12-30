@@ -19,7 +19,7 @@ public class NMSProviderImpl implements NMSProvider {
 
     @Override
     public CraftingProvider getCraftingProvider() {
-        return null;
+        return new Crafting();
     }
 
     @Override
