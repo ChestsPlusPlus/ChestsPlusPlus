@@ -8,6 +8,8 @@ import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.storage.abstracts.AbstractStorage;
 import com.jamesdpeters.minecraft.chests.storage.abstracts.StorageInfo;
 import com.jamesdpeters.minecraft.chests.storage.abstracts.StorageType;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -28,12 +30,11 @@ import org.bukkit.event.block.BlockPistonExtendEvent;
 import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.SignChangeEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
-
-import java.util.UUID;
-import java.util.stream.Collectors;
+import org.jetbrains.annotations.Nullable;
 
 public class StorageListener implements Listener {
 
@@ -47,11 +48,11 @@ public class StorageListener implements Listener {
                         if (event.getBlockPlaced().getLocation().equals(signChangeEvent.getBlock().getLocation())) {
                             Sign sign = (Sign) signChangeEvent.getBlock().getState();
 
-                            for (StorageType storageType : Config.getStorageTypes().stream().filter(storageType -> storageType.isValidBlockType(event.getBlockAgainst())).collect(Collectors.toList())) {
+                            for (StorageType<? extends AbstractStorage> storageType : Config.getStorageTypes().stream().filter(storageType -> storageType.isValidBlockType(event.getBlockAgainst())).collect(Collectors.toList())) {
                                 if (storageType.hasPermissionToAdd(event.getPlayer())) {
                                     Location signLocation = event.getBlockPlaced().getLocation();
                                     if (storageType.getStorageUtils().isValidSignPosition(signLocation)) {
-                                        StorageInfo info = storageType.getStorageUtils().getStorageInfo(sign, signChangeEvent.getLines(), event.getPlayer().getUniqueId());
+                                        StorageInfo<? extends AbstractStorage> info = storageType.getStorageUtils().getStorageInfo(sign, signChangeEvent.getLines(), event.getPlayer().getUniqueId());
                                         if (info != null) {
                                             if (!storageType.add(event.getPlayer(), info.getGroup(), event.getBlockAgainst().getLocation(), event.getBlockPlaced().getLocation(), info.getPlayer())) {
                                                 sign.getBlock().breakNaturally();
@@ -60,7 +61,7 @@ public class StorageListener implements Listener {
                                             }
                                             storageType.validate(event.getBlockAgainst());
                                             storageType.getMessages().storageAdded(event.getPlayer(), signChangeEvent.getLine(1), info.getPlayer().getName());
-                                            signChange(sign, signChangeEvent, info.getPlayer(), event.getPlayer());
+                                            signChange(sign, signChangeEvent, info.getPlayer());
                                         }
                                     } else {
                                         storageType.getMessages().invalidSignPlacement(event.getPlayer());
@@ -77,7 +78,7 @@ public class StorageListener implements Listener {
         }
     }
 
-    private void signChange(Sign sign, SignChangeEvent signChangeEvent, OfflinePlayer addedPlayer, Player player) {
+    private void signChange(Sign sign, SignChangeEvent signChangeEvent, OfflinePlayer addedPlayer) {
         setLine(sign, signChangeEvent, 0, ChatColor.RED + ChatColor.stripColor(signChangeEvent.getLine(0)));
         setLine(sign, signChangeEvent, 1, ChatColor.GREEN + ChatColor.stripColor(signChangeEvent.getLine(1)));
         setLine(sign, signChangeEvent, 2, ChatColor.BOLD + ChatColor.stripColor(addedPlayer.getName()));
@@ -97,7 +98,7 @@ public class StorageListener implements Listener {
 
                 Config.getStorageTypes().forEach(storageType -> {
                     if (storageType.isValidBlockType(block)) {
-                        StorageInfo info = storageType.getStorageUtils().getStorageInfo(sign, sign.getLines());
+                        StorageInfo<? extends AbstractStorage> info = storageType.getStorageUtils().getStorageInfo(sign, sign.getLines());
                         if (info != null) {
                             storageType.removeBlock(info.getPlayer(), info.getGroup(), block.getLocation());
                             storageType.onSignRemoval(block);
@@ -111,7 +112,7 @@ public class StorageListener implements Listener {
 
     @EventHandler
     public void onChestPlace(BlockPlaceEvent event) {
-        for (StorageType storageType : Config.getStorageTypes()) {
+        for (StorageType<? extends AbstractStorage> storageType : Config.getStorageTypes()) {
             if (storageType.isValidBlockType(event.getBlockPlaced())) {
                 ItemMeta itemMeta = event.getItemInHand().getItemMeta();
                 if (itemMeta != null) {
@@ -146,23 +147,33 @@ public class StorageListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onChestBreak(BlockBreakEvent event) {
-        if (event.isCancelled()) return;
-        for (StorageType storageType : Config.getStorageTypes()) {
-            if (storageType.isValidBlockType(event.getBlock())) {
+        event.setCancelled(blockBreakEvent(event.getBlock(), event.getPlayer()));
+    }
+
+    @EventHandler
+    public void onBlockTNT(EntityExplodeEvent event){
+        event.blockList().forEach(block -> blockBreakEvent(block,null));
+    }
+
+    public boolean blockBreakEvent(Block block, @Nullable Player player){
+        boolean isCancelled = false;
+        for (StorageType<? extends AbstractStorage> storageType : Config.getStorageTypes()) {
+            if (storageType.isValidBlockType(block)) {
                 boolean hasPickedUp = false;
-                ItemStack mainHand = event.getPlayer().getInventory().getItemInMainHand();
-                if (mainHand.containsEnchantment(Enchantment.SILK_TOUCH)) {
-                    hasPickedUp = true;
+                if(player != null) {
+                    ItemStack mainHand = player.getInventory().getItemInMainHand();
+                    if (mainHand.containsEnchantment(Enchantment.SILK_TOUCH)) {
+                        hasPickedUp = true;
+                    }
                 }
-                AbstractStorage storage = storageType.removeBlock(event.getBlock().getLocation(), hasPickedUp);
+                AbstractStorage storage = storageType.removeBlock(block.getLocation(), hasPickedUp);
                 if (storage != null) {
                     if (hasPickedUp) {
-                        event.setCancelled(true);
-                        Block storageBlock = event.getBlock();
-                        Location signLoc = storage.getSignLocation(storageBlock.getLocation());
+                        isCancelled = true;
+                        Location signLoc = storage.getSignLocation(block.getLocation());
 
                         //Custom dropped Chest
-                        ItemStack customChest = new ItemStack(storageBlock.getType(), 1);
+                        ItemStack customChest = new ItemStack(block.getType(), 1);
                         ItemMeta itemMeta = customChest.getItemMeta();
                         if (itemMeta != null) {
                             itemMeta.setDisplayName(ChatColor.AQUA + "" + storageType.getSignTag() + " " + storage.getIdentifier());
@@ -170,23 +181,24 @@ public class StorageListener implements Listener {
                             itemMeta.getPersistentDataContainer().set(Values.storageID, PersistentDataType.STRING, storage.getIdentifier());
                         }
                         customChest.setItemMeta(itemMeta);
-                        storageBlock.getWorld().dropItemNaturally(storageBlock.getLocation(), customChest);
+                        block.getWorld().dropItemNaturally(block.getLocation(), customChest);
 
                         if (signLoc != null) signLoc.getBlock().setType(Material.AIR);
-                        storageBlock.setType(Material.AIR);
+                        block.setType(Material.AIR);
 
                     } else {
-                        storageType.getMessages().storageRemoved(event.getPlayer(), storage.getIdentifier(), storage.getOwner().getName());
+                        if (player != null) storageType.getMessages().storageRemoved(player, storage.getIdentifier(), storage.getOwner().getName());
                     }
                 }
             }
         }
+        return isCancelled;
     }
 
     @EventHandler
     public void onPistonMove(BlockPistonExtendEvent event) {
         event.getBlocks().forEach(block -> {
-            for (StorageType storageType : Config.getStorageTypes()) {
+            for (StorageType<? extends AbstractStorage> storageType : Config.getStorageTypes()) {
                 if (storageType.isValidBlockType(block)) {
                     Location blockLoc = block.getLocation();
                     AbstractStorage storage = storageType.getStorage(blockLoc);
@@ -199,7 +211,7 @@ public class StorageListener implements Listener {
     @EventHandler
     public void onPistonRetract(BlockPistonRetractEvent event) {
         event.getBlocks().forEach(block -> {
-            for (StorageType storageType : Config.getStorageTypes()) {
+            for (StorageType<? extends AbstractStorage> storageType : Config.getStorageTypes()) {
                 if (storageType.isValidBlockType(block)) {
                     Location blockLoc = block.getLocation();
                     AbstractStorage storage = storageType.getStorage(blockLoc);
