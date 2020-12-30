@@ -59,6 +59,8 @@ public class ItemTypeUtil {
         tags.add(Tag.ITEMS_MUSIC_DISCS);
         tags.add(Tag.ITEMS_COALS);
         tags.add(Tag.ITEMS_ARROWS);
+
+        tags.add(ExtraTag.DYES);
     }
 
     public static boolean isSimilarTag(ItemStack is1, ItemStack is2){

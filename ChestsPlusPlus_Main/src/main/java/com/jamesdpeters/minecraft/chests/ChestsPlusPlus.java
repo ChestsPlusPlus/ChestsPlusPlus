@@ -1,5 +1,6 @@
 package com.jamesdpeters.minecraft.chests;
 
+import co.aikar.commands.PaperCommandManager;
 import com.jamesdpeters.minecraft.chests.api.ApiSpecific;
 import com.jamesdpeters.minecraft.chests.commands.AutoCraftCommand;
 import com.jamesdpeters.minecraft.chests.commands.ChestLinkCommand;
@@ -98,10 +99,31 @@ public class ChestsPlusPlus extends JavaPlugin {
         Api.register(this);
         ApiSpecific.init();
 
+        PaperCommandManager manager = new PaperCommandManager(this);
+        manager.registerCommand(new ChestLinkCommand());
+        manager.registerCommand(new AutoCraftCommand());
+        manager.registerCommand(new ChestsPlusPlusCommand());
+
         //Register commands
-        new ChestLinkCommand().register(this);
-        new AutoCraftCommand().register(this);
-        new ChestsPlusPlusCommand().register(this);
+//        new ChestLinkCommand().register(this);
+//        new AutoCraftCommand().register(this);
+//        new ChestsPlusPlusCommand().register(this);
+
+//        SimpleCommandMap commandMap = new SimpleCommandMap(getServer());
+        // Check for disabled aliases
+//        PluginConfig.DISABLED_ALIASES.get().forEach(alias -> {
+//            getDescription().getCommands().forEach((commandName, map) -> {
+//                PluginCommand command = getCommand(commandName);
+//                List<String> aliases = command.getAliases();
+//                // Check if command contains the alias before removing.
+//                if(aliases.contains(alias)) {
+//                    System.out.println("Removed command? : "+command.unregister(commandMap));
+//                    aliases.remove(alias);
+//                    command.setAliases(aliases);
+//                    command.register(commandMap);
+//                }
+//            });
+//        });
 
         //Load storage
         SpigotConfig.load(this);

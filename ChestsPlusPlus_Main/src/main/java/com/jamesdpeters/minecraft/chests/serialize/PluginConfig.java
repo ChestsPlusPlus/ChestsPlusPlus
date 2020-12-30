@@ -5,6 +5,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.Plugin;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -38,6 +39,9 @@ public class PluginConfig {
     public final static Value<Boolean> INVISIBLE_FILTER_ITEM_FRAMES = new Value<>("set-filter-itemframe-invisible", Boolean.class, false);
     public final static ListValue<String> WORLD_BLACKLIST = new ListValue<>("world-blacklist", String.class, Collections.singletonList(""));
     public final static Value<String> LANG_FILE = new Value<>("language-file", String.class, "default");
+
+    public final static ListValue<String> DISABLED_ALIASES = new ListValue<>("disabled-aliases", String.class, Arrays.asList("#cl", "#ac"));
+
 
     /**
      * Loads this @{@link Plugin}'s Config and adds default values if they don't exist.
