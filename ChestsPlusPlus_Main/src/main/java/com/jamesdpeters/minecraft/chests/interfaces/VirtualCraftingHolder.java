@@ -8,6 +8,11 @@ import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.serialize.LocationInfo;
 import com.jamesdpeters.minecraft.chests.storage.autocraft.AutoCraftingStorage;
 import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorage;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -26,11 +31,6 @@ import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.ShapelessRecipe;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
 
 public class VirtualCraftingHolder implements InventoryHolder {
 
@@ -393,6 +393,9 @@ public class VirtualCraftingHolder implements InventoryHolder {
 
         // Create a copy of the real inventories and decide if any of the inputs match the output.
         List<Inventory> tempInvs = new ArrayList<>();
+
+        // Remove duplicate inventories from list.
+        inputs = inputs.stream().distinct().collect(Collectors.toList());
 
         for (Inventory inv : inputs) {
             Inventory tempInv = Utils.copyInventory(inv);

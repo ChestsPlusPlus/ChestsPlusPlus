@@ -1,20 +1,15 @@
 package com.jamesdpeters.minecraft.chests.crafting;
 
 import com.jamesdpeters.minecraft.chests.api.ApiSpecific;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
-import org.bukkit.inventory.RecipeChoice;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.ShapelessRecipe;
-
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 
 public class Crafting {
 
@@ -40,32 +35,6 @@ public class Crafting {
 
     public static ItemStack craft(List<ItemStack> recipe) {
         return ApiSpecific.getNmsProvider().getCraftingProvider().craft(Bukkit.getWorlds().get(0), recipe);
-    }
-
-    private static boolean matchesShapeless(List<RecipeChoice> choice, List<ItemStack> items) {
-        items = new ArrayList<>(items);
-        for (RecipeChoice c : choice) {
-            boolean match = false;
-            for (int i = 0; i < items.size(); i++) {
-                ItemStack item = items.get(i);
-                if (item == null || item.getType() == Material.AIR)
-                    continue;
-                if (c.test(item)) {
-                    match = true;
-                    items.remove(i);
-                    break;
-                }
-            }
-            if (!match)
-                return false;
-        }
-        Set<ItemStack> remainingItems = new HashSet<>(items);
-        return (remainingItems.size() == 1 && (items.contains(new ItemStack(Material.AIR)) || items.contains(null)));
-    }
-
-    private static boolean matchesShaped(ShapedRecipe shape, List<ItemStack> items) {
-        UserShapedRecipe userShapedRecipe = new UserShapedRecipe(items);
-        return userShapedRecipe.matchesRecipe(shape);
     }
 
     public static Recipe getRecipeByKey(NamespacedKey key) {
