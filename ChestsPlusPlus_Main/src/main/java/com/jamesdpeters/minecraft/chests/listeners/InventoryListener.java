@@ -6,15 +6,12 @@ import com.jamesdpeters.minecraft.chests.interfaces.VirtualInventoryHolder;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.sort.InventorySorter;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.InventoryAction;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryCloseEvent;
-import org.bukkit.event.inventory.InventoryDragEvent;
-import org.bukkit.event.inventory.InventoryInteractEvent;
+import org.bukkit.event.inventory.*;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
@@ -119,6 +116,14 @@ public class InventoryListener implements Listener {
         if (holder instanceof VirtualCraftingHolder) {
             Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN, (((VirtualCraftingHolder) holder).setUpdatingRecipe(true))::updateCrafting, 1);
             Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN, (((VirtualCraftingHolder) holder))::forceUpdateInventory, 1);
+        }
+    }
+
+    @EventHandler
+    public void craftEvent(PrepareItemCraftEvent event){
+        if (event.getRecipe() == null) return;
+        if (event.getRecipe().getResult().getType() == Material.DIAMOND_BLOCK){
+            event.getInventory().setResult(null);
         }
     }
 

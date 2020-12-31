@@ -1,9 +1,6 @@
 package com.jamesdpeters.minecraft.chests.api;
 
-import com.jamesdpeters.minecraft.chests.ChestOpener;
-import com.jamesdpeters.minecraft.chests.CraftingProvider;
-import com.jamesdpeters.minecraft.chests.MaterialChecker;
-import com.jamesdpeters.minecraft.chests.NMSProvider;
+import com.jamesdpeters.minecraft.chests.*;
 import com.jamesdpeters.minecraft.chests.v1_16_R1.NMSProviderImpl;
 import org.bukkit.entity.ItemFrame;
 
@@ -31,6 +28,11 @@ public class NMSProviderDefault implements NMSProvider {
     @Override
     public CraftingProvider getCraftingProvider() {
         // TODO
+        return null;
+    }
+
+    @Override
+    public NPCProvider getNPCProvider() {
         return null;
     }
 

@@ -15,7 +15,7 @@ public class Api {
         return plugin;
     }
 
-    public static NMSProvider getNMSProvider() {
+    public static NMSProvider setupNMSProvider() {
         String packageName = NMSProvider.class.getPackage().getName();
         String nmsVersion = Bukkit.getServer().getClass().getPackage().getName().split("\\.")[3];
         String nmsProvider = packageName + "." + nmsVersion + ".NMSProviderImpl";

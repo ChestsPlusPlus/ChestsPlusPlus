@@ -14,7 +14,7 @@ public class ApiSpecific {
     private static NMSProvider nmsProvider;
 
     public static void init() {
-        nmsProvider = Api.getNMSProvider();
+        nmsProvider = Api.setupNMSProvider();
         if (nmsProvider == null) nmsProvider = new NMSProviderDefault();
         materialChecker = nmsProvider.getMaterialChecker();
         chestOpener = nmsProvider.getChestOpener();
