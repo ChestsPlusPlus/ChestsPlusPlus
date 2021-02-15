@@ -12,6 +12,7 @@ import com.jamesdpeters.minecraft.chests.listeners.StorageListener;
 import com.jamesdpeters.minecraft.chests.listeners.WorldListener;
 import com.jamesdpeters.minecraft.chests.maventemplates.BuildConstants;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
+import com.jamesdpeters.minecraft.chests.misc.ServerType;
 import com.jamesdpeters.minecraft.chests.misc.Stats;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.party.PlayerParty;
@@ -104,6 +105,7 @@ public class ChestsPlusPlus extends JavaPlugin {
         new ChestsPlusPlusCommand().register(this);
 
         //Load storage
+        ServerType.init();
         SpigotConfig.load(this);
 
         INVENTORY_MANAGER = new InventoryManager(this);

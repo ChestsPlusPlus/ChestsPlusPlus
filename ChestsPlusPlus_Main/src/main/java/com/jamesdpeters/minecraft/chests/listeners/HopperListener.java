@@ -4,6 +4,7 @@ import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.api.ApiSpecific;
 import com.jamesdpeters.minecraft.chests.filters.HopperFilter;
 import com.jamesdpeters.minecraft.chests.lang.Message;
+import com.jamesdpeters.minecraft.chests.misc.ServerType;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.serialize.PluginConfig;
@@ -23,6 +24,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 
 public class HopperListener implements Listener {
@@ -35,6 +37,28 @@ public class HopperListener implements Listener {
                 if(event.getDestination().getLocation().getBlock().isBlockPowered()) return;
             }
             event.setCancelled(!HopperFilter.isInFilter(event.getDestination().getLocation().getBlock(),event.getItem()));
+
+            // Item shouldn't be allowed
+            if (event.isCancelled() && ServerType.getType() == ServerType.Type.PAPER) {
+                int index = event.getSource().first(event.getItem());
+
+                ItemStack item;
+                // Loop until next item is found, if no item found return.
+                while ((item = event.getSource().getItem(++index)) == null) {
+                    if (index >= event.getSource().getSize() - 1)
+                        return;
+                }
+
+                InventoryMoveItemEvent newEvent =
+                        new InventoryMoveItemEvent(event.getSource(), item, event.getDestination(), true);
+                Bukkit.getPluginManager().callEvent(newEvent);
+
+                if (!newEvent.isCancelled()) {
+                    int hopperAmount = SpigotConfig.getWorldSettings(event.getSource().getLocation()).getHopperAmount();
+                    Utils.hopperMove(event.getSource(), item, hopperAmount, event.getDestination());
+                }
+            }
+
         }
     }
 

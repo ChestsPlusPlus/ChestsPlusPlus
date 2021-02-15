@@ -130,6 +130,22 @@ public class Utils {
         return hopperMove(from, amount, to, null);
     }
 
+    public static boolean hopperMove(Inventory from, ItemStack stack, int amount, Inventory to) {
+        if (stack != null) {
+            ItemStack toRemove = stack.clone();
+            toRemove.setAmount(Math.min(stack.getAmount(), amount));
+            stack.setAmount(stack.getAmount() - toRemove.getAmount());
+
+            HashMap<Integer, ItemStack> leftOvers = to.addItem(toRemove);
+            for (ItemStack leftOver : leftOvers.values()) {
+                from.addItem(leftOver);
+                if (toRemove.equals(leftOver)) return false;
+            }
+            return true;
+        }
+        return false;
+    }
+
     public static List<String> getOnlinePlayers() {
         return getPlayersAsNameList(Bukkit.getOnlinePlayers());
     }

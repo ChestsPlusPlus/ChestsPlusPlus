@@ -6,7 +6,6 @@ import com.jamesdpeters.minecraft.chests.interfaces.VirtualInventoryHolder;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.sort.InventorySorter;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -118,14 +117,5 @@ public class InventoryListener implements Listener {
             Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN, (((VirtualCraftingHolder) holder))::forceUpdateInventory, 1);
         }
     }
-
-    @EventHandler
-    public void craftEvent(PrepareItemCraftEvent event){
-        if (event.getRecipe() == null) return;
-        if (event.getRecipe().getResult().getType() == Material.DIAMOND_BLOCK){
-            event.getInventory().setResult(null);
-        }
-    }
-
 
 }
