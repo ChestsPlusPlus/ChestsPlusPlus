@@ -7,10 +7,10 @@ import java.util.function.BiFunction;
 
 public class TextInputUI {
 
-
     public static void getInput(Player player, String title, BiFunction<Player, String, AnvilGUI.Response> responseBiFunction) {
         new AnvilGUI.Builder()
                 .onComplete(responseBiFunction)
+                .text("Enter Name")
                 .title(title)
                 .plugin(ChestsPlusPlus.PLUGIN)
                 .open(player);

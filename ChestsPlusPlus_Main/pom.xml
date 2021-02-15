@@ -45,6 +45,11 @@
             <id>jitpack.io</id>
             <url>https://jitpack.io</url>
         </repository>
+
+        <repository>
+            <id>codemc-snapshots</id>
+            <url>https://repo.codemc.io/repository/maven-snapshots/</url>
+        </repository>
     </repositories>
 
     <dependencies>
@@ -81,9 +86,9 @@
         </dependency>
 
         <dependency>
-            <groupId>com.github.WesJD.AnvilGUI</groupId>
+            <groupId>net.wesjd</groupId>
             <artifactId>anvilgui</artifactId>
-            <version>master-SNAPSHOT</version>
+            <version>1.4.0-SNAPSHOT</version>
         </dependency>
 
         <dependency>
@@ -162,7 +167,7 @@
                     <artifactSet>
                         <includes>
                             <include>fr.minuskube.inv*:*</include>
-                            <include>com.github.WesJD.AnvilGUI*:*</include>
+                            <include>net.wesjd:anvilgui*</include>
                             <include>org.bstats*:*</include>
                             <include>com.jamesdpeters.minecraft.chests</include>
                         </includes>
@@ -177,10 +182,10 @@
                             <pattern>fr.minuskube.inv</pattern>
                             <shadedPattern>com.jamesdpeters.minecraft.chests</shadedPattern>
                         </relocation>
-                        <relocation>
-                            <pattern>com.github.WesJD.AnvilGUI</pattern>
-                            <shadedPattern>com.jamesdpeters.minecraft.chests</shadedPattern>
-                        </relocation>
+<!--                        <relocation>-->
+<!--                            <pattern>net.wesjd.anvilgui</pattern>-->
+<!--                            <shadedPattern>com.jamesdpeters.minecraft.chests</shadedPattern>-->
+<!--                        </relocation>-->
                     </relocations>
                 </configuration>
 
