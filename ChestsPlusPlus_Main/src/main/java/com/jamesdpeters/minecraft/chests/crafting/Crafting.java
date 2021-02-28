@@ -1,15 +1,17 @@
 package com.jamesdpeters.minecraft.chests.crafting;
 
+import com.jamesdpeters.minecraft.chests.CraftingResult;
 import com.jamesdpeters.minecraft.chests.api.ApiSpecific;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.ShapelessRecipe;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 public class Crafting {
 
@@ -33,7 +35,7 @@ public class Crafting {
         return ApiSpecific.getNmsProvider().getCraftingProvider().getRecipe(Bukkit.getWorlds().get(0), craftingTable);
     }
 
-    public static ItemStack craft(List<ItemStack> recipe) {
+    public static CraftingResult craft(List<ItemStack> recipe) {
         return ApiSpecific.getNmsProvider().getCraftingProvider().craft(Bukkit.getWorlds().get(0), recipe);
     }
 

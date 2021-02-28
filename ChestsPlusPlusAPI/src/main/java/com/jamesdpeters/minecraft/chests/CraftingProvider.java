@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface CraftingProvider {
 
-    ItemStack craft(World world, List<ItemStack> items);
+    CraftingResult craft(World world, List<ItemStack> items);
 
     Recipe getRecipe(World world, List<ItemStack> items);
 }

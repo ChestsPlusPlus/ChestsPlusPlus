@@ -1,10 +1,12 @@
 package com.jamesdpeters.minecraft.chests.v1_16_R1;
 
 import com.jamesdpeters.minecraft.chests.CraftingProvider;
+import com.jamesdpeters.minecraft.chests.CraftingResult;
 import net.minecraft.server.v1_16_R1.Container;
 import net.minecraft.server.v1_16_R1.EntityHuman;
 import net.minecraft.server.v1_16_R1.IRecipe;
 import net.minecraft.server.v1_16_R1.InventoryCrafting;
+import net.minecraft.server.v1_16_R1.Item;
 import net.minecraft.server.v1_16_R1.RecipeCrafting;
 import net.minecraft.server.v1_16_R1.Recipes;
 import org.bukkit.Bukkit;
@@ -18,11 +20,12 @@ import org.bukkit.inventory.Recipe;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class Crafting implements CraftingProvider {
 
     @Override
-    public ItemStack craft(World world, List<ItemStack> items) {
+    public CraftingResult craft(World world, List<ItemStack> items) {
         Container container = new Container(null, -1) {
             @Override
             public InventoryView getBukkitView() {
@@ -52,7 +55,18 @@ public class Crafting implements CraftingProvider {
             itemstack = recipeCrafting.a(crafting);
         }
 
-        return CraftItemStack.asBukkitCopy(itemstack);
+        CraftingResult result = new CraftingResult();
+        result.setResult(CraftItemStack.asBukkitCopy(itemstack));
+
+        List<ItemStack> matrixResult = crafting.getContents().stream()
+                .map(itemStack -> {
+                    Item remainingItem = itemStack.getItem().getCraftingRemainingItem();
+                    return remainingItem != null ? CraftItemStack.asBukkitCopy(remainingItem.r()) : null;
+                }).collect(Collectors.toList());
+
+        result.setMatrixResult(matrixResult);
+
+        return result;
     }
 
     @Override

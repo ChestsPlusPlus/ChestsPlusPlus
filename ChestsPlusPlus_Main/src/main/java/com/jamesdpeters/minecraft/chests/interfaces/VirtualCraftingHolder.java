@@ -1,6 +1,8 @@
 package com.jamesdpeters.minecraft.chests.interfaces;
 
+import com.google.common.collect.Maps;
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
+import com.jamesdpeters.minecraft.chests.CraftingResult;
 import com.jamesdpeters.minecraft.chests.api.ApiSpecific;
 import com.jamesdpeters.minecraft.chests.crafting.Crafting;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
@@ -18,7 +20,13 @@ import org.bukkit.block.Hopper;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
-import org.bukkit.inventory.*;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.Recipe;
+import org.bukkit.inventory.RecipeChoice;
+import org.bukkit.inventory.ShapedRecipe;
+import org.bukkit.inventory.ShapelessRecipe;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -26,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class VirtualCraftingHolder implements InventoryHolder {
@@ -101,7 +110,7 @@ public class VirtualCraftingHolder implements InventoryHolder {
         else if (recipe instanceof ShapelessRecipe) setCrafting((ShapelessRecipe) recipe);
         else {
             // For ComplexRecipes or other implementations just use the result and original matrix for choices.
-            result = ApiSpecific.getNmsProvider().getCraftingProvider().craft(Bukkit.getWorlds().get(0), matrix);
+            result = ApiSpecific.getNmsProvider().getCraftingProvider().craft(Bukkit.getWorlds().get(0), matrix).getResult();
             for (int i = 0; i < matrix.size(); i++) {
                 ItemStack item = matrix.get(i);
                 if (item != null) {
@@ -347,6 +356,7 @@ public class VirtualCraftingHolder implements InventoryHolder {
                                 // If a valid item has been found in one of the inventories.
                                 ItemStack selectedItem = item.clone();
 
+//                                if (selectedItem.getType())
                                 item.setAmount(item.getAmount() - 1);
                                 tempInv.setItem(index, item);
 
@@ -407,10 +417,10 @@ public class VirtualCraftingHolder implements InventoryHolder {
         if (recipe == null) return false;
 
         // Use NMS to get the real result considering meta data etc.
-        ItemStack realResult = Crafting.craft(recipe);
+        CraftingResult craftingResult = Crafting.craft(recipe);
 
         Recipe recipeActual = Crafting.getRecipe(recipe);
-        CraftingInventoryImpl craftingInventoryImpl = new CraftingInventoryImpl(craftingInventory, realResult, recipe, recipeActual);
+        CraftingInventoryImpl craftingInventoryImpl = new CraftingInventoryImpl(craftingInventory, craftingResult.getResult(), recipe, recipeActual);
         InventoryViewImpl inventoryView = new InventoryViewImpl(craftingInventory, output, ApiSpecific.getNmsProvider().getNPCProvider().createHumanEntity());
         PrepareItemCraftEvent itemCraftEvent = new PrepareItemCraftEvent(craftingInventoryImpl, inventoryView, false);
         Bukkit.getPluginManager().callEvent(itemCraftEvent);
@@ -422,8 +432,14 @@ public class VirtualCraftingHolder implements InventoryHolder {
         Inventory tempOutput = sameInv ? sameInventory : Utils.copyInventory(output);
         HashMap<Integer, ItemStack> map = tempOutput.addItem(craftingInventoryImpl.result);
 
+        // Add any leftover items from the recipe e.g buckets.
+        HashMap<Integer, ItemStack> craftingMatrixLeftOvers =
+                craftingResult.getMatrixResult().isEmpty()
+                        ? Maps.newHashMap()
+                        : tempOutput.addItem(craftingResult.getMatrixResult().stream().filter(Objects::nonNull).toArray(ItemStack[]::new));
+
         //If result fits into output copy over the temporary inventories.
-        if (map.isEmpty()) {
+        if (map.isEmpty() && craftingMatrixLeftOvers.isEmpty()) {
             for (int i = 0; i < tempInvs.size(); i++) {
                 moveTempInv(tempInvs.get(i), inputs.get(i));
             }
