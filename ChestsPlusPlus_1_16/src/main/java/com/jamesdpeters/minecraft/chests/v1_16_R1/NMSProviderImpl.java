@@ -1,7 +1,6 @@
 package com.jamesdpeters.minecraft.chests.v1_16_R1;
 
 import com.jamesdpeters.minecraft.chests.*;
-import com.jamesdpeters.minecraft.chests.v1_14_R1.NPC;
 import org.bukkit.block.Lidded;
 import org.bukkit.entity.ItemFrame;
 

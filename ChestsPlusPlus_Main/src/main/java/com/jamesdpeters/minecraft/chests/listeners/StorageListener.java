@@ -8,8 +8,6 @@ import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.storage.abstracts.AbstractStorage;
 import com.jamesdpeters.minecraft.chests.storage.abstracts.StorageInfo;
 import com.jamesdpeters.minecraft.chests.storage.abstracts.StorageType;
-import java.util.UUID;
-import java.util.stream.Collectors;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -35,6 +33,9 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class StorageListener implements Listener {
 
@@ -147,6 +148,7 @@ public class StorageListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onChestBreak(BlockBreakEvent event) {
+        if (event.isCancelled()) return;
         event.setCancelled(blockBreakEvent(event.getBlock(), event.getPlayer()));
     }
 
