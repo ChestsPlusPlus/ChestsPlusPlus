@@ -35,6 +35,8 @@ public class HopperListener implements Listener {
         //TO HOPPER
         if(event.getDestination().getHolder() instanceof Hopper){
             if(event.getDestination().getLocation() != null){
+                // If the event is cancelled by other plugin
+                if(event.isCancelled()) return;
                 if(event.getDestination().getLocation().getBlock().isBlockPowered()) return;
             }
             event.setCancelled(!HopperFilter.isInFilter(event.getDestination().getLocation().getBlock(),event.getItem()));
