@@ -10,7 +10,6 @@ import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.serialize.PluginConfig;
 import com.jamesdpeters.minecraft.chests.serialize.SpigotConfig;
 import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorage;
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -28,6 +27,8 @@ import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.util.function.Function;
+
 public class HopperListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -39,26 +40,28 @@ public class HopperListener implements Listener {
                 if(event.isCancelled()) return;
                 if(event.getDestination().getLocation().getBlock().isBlockPowered()) return;
             }
-            event.setCancelled(!HopperFilter.isInFilter(event.getDestination().getLocation().getBlock(),event.getItem()));
+
+            Function<ItemStack, Boolean> isFilteredItem = (itemStack ->
+                    HopperFilter.isInFilter(event.getDestination().getLocation().getBlock(), itemStack));
+
+            event.setCancelled(!isFilteredItem.apply(event.getItem()));
 
             // Item shouldn't be allowed
             if (event.isCancelled() && ServerType.getType() == ServerType.Type.PAPER) {
                 int index = event.getSource().first(event.getItem());
+                int hopperAmount = SpigotConfig.getWorldSettings(event.getSource().getLocation()).getHopperAmount();
 
-                ItemStack item;
-                // Loop until next item is found, if no item found return.
-                while ((item = event.getSource().getItem(++index)) == null) {
-                    if (index >= event.getSource().getSize() - 1)
+                // Loop over the inventory until next item is found, if no item found return.
+                while (true) {
+                    ItemStack item = event.getSource().getItem(index++);
+
+                    if (index >= event.getSource().getSize())
                         return;
-                }
 
-                InventoryMoveItemEvent newEvent =
-                        new InventoryMoveItemEvent(event.getSource(), item, event.getDestination(), true);
-                Bukkit.getPluginManager().callEvent(newEvent);
-
-                if (!newEvent.isCancelled()) {
-                    int hopperAmount = SpigotConfig.getWorldSettings(event.getSource().getLocation()).getHopperAmount();
-                    Utils.hopperMove(event.getSource(), item, hopperAmount, event.getDestination());
+                    if (isFilteredItem.apply(item)) {
+                        Utils.hopperMove(event.getSource(), item, hopperAmount, event.getDestination());
+                        return;
+                    }
                 }
             }
 

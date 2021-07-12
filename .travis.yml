@@ -2,7 +2,10 @@ language: java
 
 before_install:
 - cd BuildTools
-- bash build.sh
+- jdk_switcher use openjdk8
+- bash build-pre1.17.sh
+- jdk_switcher use openjdk16
+- bash build-1.17+.sh
 - cd ../
 
 install:

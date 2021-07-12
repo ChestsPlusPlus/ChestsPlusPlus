@@ -6,11 +6,12 @@
 
     <groupId>com.jamesdpeters.minecraft.chests</groupId>
     <artifactId>ChestsPlusPlus-Master</artifactId>
-    <version>2.4.1-Release</version>
+    <version>2.5-Beta</version>
 
     <properties>
-        <maven.compiler.source>8</maven.compiler.source>
-        <maven.compiler.target>8</maven.compiler.target>
+        <maven.compiler.target>16</maven.compiler.target>
+        <maven.compiler.source>16</maven.compiler.source>
+        <maven.compiler.verbose>true</maven.compiler.verbose>
     </properties>
 
     <scm>
@@ -52,6 +53,13 @@
         </repository>
     </repositories>
 
+    <pluginRepositories>
+        <pluginRepository>
+            <id>maven-snapshots</id>
+            <url>https://repository.apache.org/content/repositories/snapshots/</url>
+        </pluginRepository>
+    </pluginRepositories>
+
     <dependencies>
         <dependency>
             <groupId>org.spigotmc</groupId>
@@ -88,13 +96,21 @@
         <dependency>
             <groupId>net.wesjd</groupId>
             <artifactId>anvilgui</artifactId>
-            <version>1.4.0-SNAPSHOT</version>
+            <version>1.5.1-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>org.bstats</groupId>
             <artifactId>bstats-bukkit</artifactId>
             <version>1.7</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.jamesdpeters.minecraft.chests</groupId>
+            <artifactId>ChestsPlusPlus_1_17_R1</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <type>jar</type>
+            <scope>compile</scope>
         </dependency>
 
         <dependency>
@@ -147,7 +163,7 @@
         <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
-            <version>RELEASE</version>
+            <version>18.0.0</version>
             <scope>compile</scope>
         </dependency>
 
@@ -155,7 +171,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.18</version>
+            <version>1.18.20</version>
             <scope>provided</scope>
         </dependency>
 
@@ -171,7 +187,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.1.0</version>
+                <version>3.3.0-SNAPSHOT</version>
                 <configuration>
                     <artifactSet>
                         <includes>
@@ -255,6 +271,8 @@
                     <mainClass>com.jamesdpeters.minecraft.chests.lang.LangFileProperties</mainClass>
                 </configuration>
             </plugin>
+
+
 
         </plugins>
 
