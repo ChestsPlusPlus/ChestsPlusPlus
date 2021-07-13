@@ -3,7 +3,7 @@ dist: trusty
 
 before_install:
 - cd BuildTools
-#- bash build-pre1.17.sh
+- bash build-pre1.17.sh
 - wget https://github.com/sormuras/bach/raw/master/install-jdk.sh
 - chmod +x $TRAVIS_BUILD_DIR/BuildTools/install-jdk.sh
 - export JAVA_HOME=$HOME/openjdk16
