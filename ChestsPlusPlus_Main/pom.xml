@@ -11,7 +11,6 @@
     <properties>
         <maven.compiler.target>16</maven.compiler.target>
         <maven.compiler.source>16</maven.compiler.source>
-        <maven.compiler.verbose>true</maven.compiler.verbose>
     </properties>
 
     <scm>
@@ -81,16 +80,11 @@
             <version>1.2.3-SNAPSHOT</version>
         </dependency>
 
-<!--        <dependency>-->
-<!--            <groupId>fr.minuskube.inv</groupId>-->
-<!--            <artifactId>smart-invs</artifactId>-->
-<!--            <version>1.2.7</version>-->
-<!--        </dependency>-->
-
+        <!-- 1.3.0 Branch commit 746622a67a -->
         <dependency>
-            <groupId>fr.minuskube.inv</groupId>
-            <artifactId>smart-invs</artifactId>
-            <version>1.3.0-SNAPSHOT</version>
+            <groupId>com.github.MinusKube</groupId>
+            <artifactId>SmartInvs</artifactId>
+            <version>746622a67a</version>
         </dependency>
 
         <dependency>
