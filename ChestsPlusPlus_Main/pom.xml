@@ -186,6 +186,7 @@
                     <artifactSet>
                         <includes>
                             <include>fr.minuskube.inv*:*</include>
+                            <include>com.github.MinusKube*:*</include>
                             <include>net.wesjd:anvilgui*</include>
                             <include>org.bstats*:*</include>
                             <include>com.jamesdpeters.minecraft.chests</include>
