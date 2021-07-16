@@ -69,9 +69,6 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
      */
     @SuppressWarnings("unchecked")
     public AbstractStorage(Map<String, Object> map) {
-        //Pass map through
-        deserialize(map);
-
         //This reformats the previous method of location storage to the newer version.
         List<Location> locations = (ArrayList<Location>) map.get("locations");
         if (locations != null) {
@@ -101,11 +98,15 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
             }
         }
 
+        //Pass map through
+        deserialize(map);
+
         inventory = initInventory();
         if (storeInventory()) {
             ItemStack[] itemStacks = ((ArrayList<ItemStack>) map.get("inventory")).toArray(new ItemStack[0]);
             inventory.setContents(itemStacks);
         }
+
     }
 
     @Override

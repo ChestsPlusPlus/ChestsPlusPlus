@@ -110,7 +110,7 @@ public class VirtualCraftingHolder implements InventoryHolder {
         else if (recipe instanceof ShapelessRecipe) setCrafting((ShapelessRecipe) recipe);
         else {
             // For ComplexRecipes or other implementations just use the result and original matrix for choices.
-            result = ApiSpecific.getNmsProvider().getCraftingProvider().craft(Bukkit.getWorlds().get(0), matrix).getResult();
+            result = ApiSpecific.getNmsProvider().getCraftingProvider().craft(storage.getOwner().getPlayer(), Bukkit.getWorlds().get(0), matrix).getResult();
             for (int i = 0; i < matrix.size(); i++) {
                 ItemStack item = matrix.get(i);
                 if (item != null) {
@@ -139,7 +139,7 @@ public class VirtualCraftingHolder implements InventoryHolder {
         List<ItemStack> crafting = new ArrayList<>(Arrays.asList(inventory.getContents()));
         crafting.remove(0);
 
-        Recipe recipe = Crafting.getRecipe(crafting);
+        Recipe recipe = Crafting.getRecipe(storage.getOwner().getPlayer(), crafting);
         getStorage().setRecipe(recipe, crafting); // Only store the crafting matrix if the recipe is valid
         resetChoices();
 
@@ -417,9 +417,9 @@ public class VirtualCraftingHolder implements InventoryHolder {
         if (recipe == null) return false;
 
         // Use NMS to get the real result considering meta data etc.
-        CraftingResult craftingResult = Crafting.craft(recipe);
+        CraftingResult craftingResult = Crafting.craft(storage.getOwner().getPlayer(), recipe);
 
-        Recipe recipeActual = Crafting.getRecipe(recipe);
+        Recipe recipeActual = Crafting.getRecipe(storage.getOwner().getPlayer(), recipe);
         CraftingInventoryImpl craftingInventoryImpl = new CraftingInventoryImpl(craftingInventory, craftingResult.getResult(), recipe, recipeActual);
         InventoryViewImpl inventoryView = new InventoryViewImpl(craftingInventory, output, ApiSpecific.getNmsProvider().getNPCProvider().createHumanEntity());
         PrepareItemCraftEvent itemCraftEvent = new PrepareItemCraftEvent(craftingInventoryImpl, inventoryView, false);

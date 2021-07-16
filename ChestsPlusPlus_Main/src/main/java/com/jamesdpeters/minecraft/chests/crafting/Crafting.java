@@ -4,6 +4,7 @@ import com.jamesdpeters.minecraft.chests.CraftingResult;
 import com.jamesdpeters.minecraft.chests.api.ApiSpecific;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.ShapedRecipe;
@@ -31,12 +32,12 @@ public class Crafting {
         });
     }
 
-    public static Recipe getRecipe(List<ItemStack> craftingTable) {
-        return ApiSpecific.getNmsProvider().getCraftingProvider().getRecipe(Bukkit.getWorlds().get(0), craftingTable);
+    public static Recipe getRecipe(Player player, List<ItemStack> craftingTable) {
+        return ApiSpecific.getNmsProvider().getCraftingProvider().getRecipe(player, Bukkit.getWorlds().get(0), craftingTable);
     }
 
-    public static CraftingResult craft(List<ItemStack> recipe) {
-        return ApiSpecific.getNmsProvider().getCraftingProvider().craft(Bukkit.getWorlds().get(0), recipe);
+    public static CraftingResult craft(Player player, List<ItemStack> recipe) {
+        return ApiSpecific.getNmsProvider().getCraftingProvider().craft(player, Bukkit.getWorlds().get(0), recipe);
     }
 
     public static Recipe getRecipeByKey(NamespacedKey key) {

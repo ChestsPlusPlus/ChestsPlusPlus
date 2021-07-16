@@ -55,6 +55,9 @@ public class HopperListener implements Listener {
                 while (true) {
                     ItemStack item = event.getSource().getItem(index++);
 
+                    if (item == null)
+                        continue;
+
                     if (index >= event.getSource().getSize())
                         return;
 

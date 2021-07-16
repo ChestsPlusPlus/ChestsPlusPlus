@@ -14,6 +14,7 @@ import org.bukkit.World;
 import org.bukkit.craftbukkit.v1_16_R2.CraftServer;
 import org.bukkit.craftbukkit.v1_16_R2.CraftWorld;
 import org.bukkit.craftbukkit.v1_16_R2.inventory.CraftItemStack;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
@@ -25,7 +26,7 @@ import java.util.stream.Collectors;
 public class Crafting implements CraftingProvider {
 
     @Override
-    public CraftingResult craft(World world, List<ItemStack> items) {
+    public CraftingResult craft(Player player, World world, List<ItemStack> items) {
         Container container = new Container(null, -1) {
             @Override
             public InventoryView getBukkitView() {
@@ -70,7 +71,7 @@ public class Crafting implements CraftingProvider {
     }
 
     @Override
-    public Recipe getRecipe(World world, List<ItemStack> items) {
+    public Recipe getRecipe(Player player, World world, List<ItemStack> items) {
         Container container = new Container(null, -1) {
             @Override
             public InventoryView getBukkitView() {

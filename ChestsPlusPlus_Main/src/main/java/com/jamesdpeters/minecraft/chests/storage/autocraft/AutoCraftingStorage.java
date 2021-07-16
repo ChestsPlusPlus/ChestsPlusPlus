@@ -51,6 +51,7 @@ public class AutoCraftingStorage extends AbstractStorage implements Configuratio
     @Override
     protected void deserialize(Map<String, Object> map) {
         recipeSerializable = (RecipeSerializable) map.get("recipe");
+        recipeSerializable.updateRecipe(getOwner().getPlayer());
         identifier = (String) map.get("identifier");
         initInventory();
     }

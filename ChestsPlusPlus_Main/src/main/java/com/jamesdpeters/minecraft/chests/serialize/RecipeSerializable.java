@@ -7,6 +7,7 @@ import org.bukkit.Keyed;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.SerializableAs;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.ShapedRecipe;
@@ -43,9 +44,11 @@ public class RecipeSerializable implements ConfigurationSerializable {
         //noinspection deprecation
         namespacedKey = new NamespacedKey((String) map.get("namespace"), (String) map.get("key"));
         recipe = Crafting.getRecipeByKey(namespacedKey);
+    }
 
+    public void updateRecipe(Player player) {
         if (recipe == null) {
-            recipe = ApiSpecific.getNmsProvider().getCraftingProvider().getRecipe(Bukkit.getWorlds().get(0), items);
+            recipe = ApiSpecific.getNmsProvider().getCraftingProvider().getRecipe(player, Bukkit.getWorlds().get(0), items);
         }
     }
 
