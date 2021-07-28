@@ -15,6 +15,7 @@
     </properties>
 
     <modules>
+        <module>ChestsPlusPlus-Database</module>
         <module>ChestsPlusPlusAPI</module>
         <module>ChestsPlusPlus_1_17_R1</module>
         <module>ChestsPlusPlus_1_16_R3</module>

@@ -5,6 +5,7 @@ import com.jamesdpeters.minecraft.chests.commands.AutoCraftCommand;
 import com.jamesdpeters.minecraft.chests.commands.ChestLinkCommand;
 import com.jamesdpeters.minecraft.chests.commands.ChestsPlusPlusCommand;
 import com.jamesdpeters.minecraft.chests.crafting.Crafting;
+import com.jamesdpeters.minecraft.chests.database.DBUtil;
 import com.jamesdpeters.minecraft.chests.lang.LangFileProperties;
 import com.jamesdpeters.minecraft.chests.listeners.HopperListener;
 import com.jamesdpeters.minecraft.chests.listeners.InventoryListener;
@@ -27,6 +28,7 @@ import com.jamesdpeters.minecraft.chests.serialize.SpigotConfig;
 import com.jamesdpeters.minecraft.chests.storage.autocraft.AutoCraftingStorage;
 import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorage;
 import com.jamesdpeters.minecraft.chests.versionchecker.UpdateChecker;
+import com.jamesdpeters.minecraft.database.hibernate.HibernateUtil;
 import fr.minuskube.inv.InventoryManager;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
@@ -41,6 +43,8 @@ import org.bukkit.plugin.java.annotation.plugin.ApiVersion;
 import org.bukkit.plugin.java.annotation.plugin.Description;
 import org.bukkit.plugin.java.annotation.plugin.Plugin;
 import org.bukkit.plugin.java.annotation.plugin.author.Author;
+
+import java.util.UUID;
 
 @Plugin(name = "ChestsPlusPlus", version = BuildConstants.VERSION)
 @ApiVersion(ApiVersion.Target.v1_14)
@@ -83,7 +87,6 @@ public class ChestsPlusPlus extends JavaPlugin {
 
     }
 
-    @SuppressWarnings("ConstantConditions")
     @Override
     public void onEnable() {
         int pluginId = 7166;
@@ -133,6 +136,20 @@ public class ChestsPlusPlus extends JavaPlugin {
         // Remove armour stands if disabled
         Utils.fixEntities();
 
+        DBUtil.init();
+        var playerDb = DBUtil.PLAYER;
+        var partyDb = DBUtil.PARTIES;
+
+        var test = playerDb.findPlayer(UUID.fromString("e0e93eb6-2ca4-4ac2-803f-684ce0b69b2c"));
+        getLogger().info("Original parties: "+test.getOwnedParties());
+
+        var party = partyDb.findParty(test, "Test Party 2");
+        party = party == null ? partyDb.createParty(test, "Test Party 2") : party;
+
+        getLogger().info("Found party: "+party);
+        getLogger().info("Players parties: "+test.getOwnedParties());
+
+
         //Load storages after load.
         Bukkit.getScheduler().scheduleSyncDelayedTask(this, () -> {
             Crafting.load();
@@ -153,6 +170,7 @@ public class ChestsPlusPlus extends JavaPlugin {
     public void onDisable() {
         super.onDisable();
         Config.save();
+        HibernateUtil.close();
 //        //Remove entities that could have been left behind from bad save files/crashes etc.
 //        Utils.fixEntities();
     }
