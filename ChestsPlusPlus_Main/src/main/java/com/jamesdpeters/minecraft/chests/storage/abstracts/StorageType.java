@@ -11,6 +11,7 @@ import com.jamesdpeters.minecraft.chests.serialize.ConfigStorage;
 import com.jamesdpeters.minecraft.chests.serialize.LocationInfo;
 import com.jamesdpeters.minecraft.chests.serialize.PluginConfig;
 import com.jamesdpeters.minecraft.chests.storage.StorageUtils;
+import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -27,6 +28,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -269,10 +271,14 @@ public abstract class StorageType<T extends AbstractStorage> implements Listener
     public void removeStorage(Player player, String group) {
         T storage = getStorage(player.getUniqueId(), group);
         if (storage != null) {
-            storage.getLocations().forEach(location -> {
+            var locations = new ArrayList<>(storage.getLocations());
+            locations.forEach(location -> {
                 if (location != null) {
                     Block block = location.getLocation().getBlock();
-                    block.breakNaturally();
+                    BlockBreakEvent bbe = new BlockBreakEvent(block, player);
+                    Bukkit.getPluginManager().callEvent(bbe);
+                    if (!bbe.isCancelled())
+                        block.breakNaturally();
                 }
             });
             storage.dropInventory(player.getLocation());
