@@ -3,6 +3,8 @@ package com.jamesdpeters.minecraft.chests;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 
+import java.lang.reflect.InvocationTargetException;
+
 public class Api {
 
     private static Plugin plugin;
@@ -21,13 +23,11 @@ public class Api {
         String nmsProvider = packageName + "." + nmsVersion + ".NMSProviderImpl";
         plugin.getLogger().info("Found API version: " + nmsVersion);
         try {
-            return (NMSProvider) Class.forName(nmsProvider).newInstance();
-        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-            plugin.getLogger().warning("A valid server implementation wasn't found for: " + nmsVersion);
-            plugin.getLogger().warning("You may be running an outdated version of the plugin or it needs to be updated to the latest version!");
-
-            // Currently depends on NMS for any Crafting abilities
-            throw new RuntimeException("Currently no NMS version support for "+nmsVersion);
+            return (NMSProvider) Class.forName(nmsProvider).getDeclaredConstructor().newInstance();
+        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | NoSuchMethodException | InvocationTargetException e) {
+            // Plugin now doesn't depend on NMS after 1.17.
+            // So NMSProviderDefault is used for all versions 1.17+
+            return null;
         }
     }
 }

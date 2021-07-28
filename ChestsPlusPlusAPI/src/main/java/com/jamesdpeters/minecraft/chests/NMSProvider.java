@@ -6,7 +6,6 @@ public interface NMSProvider {
     ChestOpener getChestOpener();
     MaterialChecker getMaterialChecker();
     CraftingProvider getCraftingProvider();
-    NPCProvider getNPCProvider();
 
     void setItemFrameVisible(ItemFrame itemFrame, boolean visible);
 }

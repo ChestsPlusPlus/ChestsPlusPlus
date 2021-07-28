@@ -17,7 +17,6 @@ import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.ShapelessRecipe;
 
-import java.util.List;
 import java.util.Map;
 
 @SerializableAs("AutoCraftingStorage")
@@ -61,7 +60,7 @@ public class AutoCraftingStorage extends AbstractStorage implements Configuratio
         return false;
     }
 
-    public void setRecipe(Recipe recipe, List<ItemStack> items) {
+    public void setRecipe(Recipe recipe, ItemStack[] items) {
         if (recipe == null) {
             recipeSerializable = null;
             return;

@@ -33,11 +33,6 @@ public class NMSProviderImpl implements NMSProvider {
     }
 
     @Override
-    public NPCProvider getNPCProvider() {
-        return new NPC();
-    }
-
-    @Override
     public void setItemFrameVisible(ItemFrame itemFrame, boolean visible) {
         itemFrame.setVisible(visible);
     }

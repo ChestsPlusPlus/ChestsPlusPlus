@@ -1,6 +1,9 @@
-package com.jamesdpeters.minecraft.chests.v1_17_R1;
+package com.jamesdpeters.minecraft.chests.latest;
 
-import com.jamesdpeters.minecraft.chests.*;
+import com.jamesdpeters.minecraft.chests.ChestOpener;
+import com.jamesdpeters.minecraft.chests.CraftingProvider;
+import com.jamesdpeters.minecraft.chests.MaterialChecker;
+import com.jamesdpeters.minecraft.chests.NMSProvider;
 import org.bukkit.block.Lidded;
 import org.bukkit.entity.ItemFrame;
 
@@ -9,13 +12,11 @@ public class NMSProviderImpl implements NMSProvider {
     @Override
     public ChestOpener getChestOpener() {
         return (inventory, container, tileEntityOpener) -> {
-            if(hasLiddedAPI()){
-                if(container instanceof Lidded){
-                    if(inventory.getViewers().size() > 0){
-                        ((Lidded) container).open();
-                    } else {
-                        ((Lidded) container).close();
-                    }
+            if(container instanceof Lidded){
+                if(inventory.getViewers().size() > 0){
+                    ((Lidded) container).open();
+                } else {
+                    ((Lidded) container).close();
                 }
             }
             return null;
@@ -33,16 +34,8 @@ public class NMSProviderImpl implements NMSProvider {
     }
 
     @Override
-    public NPCProvider getNPCProvider() {
-        return new NPC();
-    }
-
-    @Override
     public void setItemFrameVisible(ItemFrame itemFrame, boolean visible) {
         itemFrame.setVisible(visible);
     }
 
-    private boolean hasLiddedAPI(){
-        return true;
-    }
 }

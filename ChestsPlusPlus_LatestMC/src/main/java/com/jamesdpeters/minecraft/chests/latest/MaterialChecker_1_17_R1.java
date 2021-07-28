@@ -1,4 +1,4 @@
-package com.jamesdpeters.minecraft.chests.v1_17_R1;
+package com.jamesdpeters.minecraft.chests.latest;
 
 import com.jamesdpeters.minecraft.chests.MaterialChecker;
 import com.jamesdpeters.minecraft.chests.v1_16_R1.MaterialChecker_1_16;

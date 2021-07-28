@@ -224,11 +224,11 @@ public class Utils {
         return tempInvs;
     }
 
-    public static List<ItemStack> createAirList(int size) {
-        List<ItemStack> itemStacks = new ArrayList<>();
+    public static ItemStack[] createAirList(int size) {
+        ItemStack[] itemStacks = new ItemStack[size];
         ItemStack AIR = new ItemStack(Material.AIR);
         for (int i = 0; i < size; i++) {
-            itemStacks.add(AIR);
+            itemStacks[i] = AIR;
         }
         return itemStacks;
     }
