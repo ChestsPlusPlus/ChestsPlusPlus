@@ -3,75 +3,67 @@ package com.jamesdpeters.minecraft.chests.v1_14_R1;
 import com.jamesdpeters.minecraft.chests.CraftingProvider;
 import com.jamesdpeters.minecraft.chests.CraftingResult;
 import net.minecraft.server.v1_14_R1.Container;
+import net.minecraft.server.v1_14_R1.ContainerWorkbench;
 import net.minecraft.server.v1_14_R1.EntityHuman;
 import net.minecraft.server.v1_14_R1.IRecipe;
+import net.minecraft.server.v1_14_R1.InventoryCraftResult;
 import net.minecraft.server.v1_14_R1.InventoryCrafting;
 import net.minecraft.server.v1_14_R1.Item;
 import net.minecraft.server.v1_14_R1.RecipeCrafting;
+import net.minecraft.server.v1_14_R1.RecipeRepair;
 import net.minecraft.server.v1_14_R1.Recipes;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.craftbukkit.v1_14_R1.CraftServer;
 import org.bukkit.craftbukkit.v1_14_R1.CraftWorld;
+import org.bukkit.craftbukkit.v1_14_R1.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_14_R1.event.CraftEventFactory;
+import org.bukkit.craftbukkit.v1_14_R1.inventory.CraftInventoryCrafting;
+import org.bukkit.craftbukkit.v1_14_R1.inventory.CraftInventoryView;
 import org.bukkit.craftbukkit.v1_14_R1.inventory.CraftItemStack;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 
-import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 public class Crafting implements CraftingProvider {
 
     @Override
-    public CraftingResult craft(Player player, World world, List<ItemStack> items) {
-        Container container = new Container(null, -1) {
-            @Override
-            public InventoryView getBukkitView() {
-                return null;
-            }
-
-            @Override
-            public boolean canUse(EntityHuman entityHuman) {
-                return false;
-            }
-        };
-
-        InventoryCrafting crafting = new InventoryCrafting(container, 3, 3);
-
-        for (int i = 0; i < items.size(); i++) {
-            crafting.setItem(i, CraftItemStack.asNMSCopy(items.get(i)));
-        }
-
-        CraftServer server = (CraftServer) Bukkit.getServer();
+    public CraftingResult craft(Player player, World world, ItemStack[] items) {
         CraftWorld craftWorld = (CraftWorld) world;
-        Optional<RecipeCrafting> optional = server.getServer().getCraftingManager().craft(Recipes.CRAFTING, crafting, craftWorld.getHandle());
+        CraftPlayer craftPlayer = (CraftPlayer) player;
+        ContainerWorkbench workbench = new ContainerWorkbench(-1, craftPlayer.getHandle().inventory);
+
+        CraftInventoryView view = workbench.getBukkitView();
+        CraftInventoryCrafting craftInventoryCrafting = (CraftInventoryCrafting) view.getTopInventory();
+        InventoryCrafting inventoryCrafting = (InventoryCrafting) craftInventoryCrafting.getMatrixInventory();
+        InventoryCraftResult resultInventory = (InventoryCraftResult) craftInventoryCrafting.getResultInventory();
+
+        Optional<RecipeCrafting> recipe = getNMSRecipe(items, inventoryCrafting, craftWorld);
 
         net.minecraft.server.v1_14_R1.ItemStack itemstack = net.minecraft.server.v1_14_R1.ItemStack.a;
 
-        if (optional.isPresent()) {
-            RecipeCrafting recipeCrafting = optional.get();
-            itemstack = recipeCrafting.a(crafting);
+        if (recipe.isPresent()) {
+            RecipeCrafting recipeCrafting = recipe.get();
+            if (resultInventory.a(craftWorld.getHandle(), craftPlayer.getHandle(), recipeCrafting)) {
+                itemstack = recipeCrafting.a(inventoryCrafting);
+            }
         }
 
-        CraftingResult result = new CraftingResult();
-        result.setResult(CraftItemStack.asBukkitCopy(itemstack));
+        net.minecraft.server.v1_14_R1.ItemStack result = CraftEventFactory.callPreCraftEvent(inventoryCrafting, resultInventory, itemstack, view, recipe.orElse(null) instanceof RecipeRepair);
 
-        List<ItemStack> matrixResult = crafting.getContents().stream()
-                .map(itemStack -> {
-                    Item remainingItem = itemStack.getItem().n();
-                    return remainingItem != null ? CraftItemStack.asBukkitCopy(new net.minecraft.server.v1_14_R1.ItemStack(remainingItem)) : null;
-                }).collect(Collectors.toList());
+        for(int i = 0; i < items.length; ++i) {
+            Item remaining = inventoryCrafting.getContents().get(i).getItem().n();
+            items[i] = remaining != null ? CraftItemStack.asBukkitCopy(new net.minecraft.server.v1_14_R1.ItemStack(remaining)) : null;
+        }
 
-        result.setMatrixResult(matrixResult);
-
-        return result;
+        return new CraftingResult(CraftItemStack.asBukkitCopy(result), items);
     }
 
     @Override
-    public Recipe getRecipe(Player player, World world, List<ItemStack> items) {
+    public Recipe getRecipe(Player player, World world, ItemStack[] items) {
         Container container = new Container(null, -1) {
             @Override
             public InventoryView getBukkitView() {
@@ -86,9 +78,9 @@ public class Crafting implements CraftingProvider {
 
         InventoryCrafting crafting = new InventoryCrafting(container, 3, 3);
 
-        for (int i = 0; i < items.size(); i++) {
+        for (int i = 0; i < items.length; i++) {
             if(i >= 9) break; // ItemList cant contain more than 9 items.
-            crafting.setItem(i, CraftItemStack.asNMSCopy(items.get(i)));
+            crafting.setItem(i, CraftItemStack.asNMSCopy(items[i]));
         }
 
         CraftServer server = (CraftServer) Bukkit.getServer();
@@ -96,6 +88,14 @@ public class Crafting implements CraftingProvider {
         Optional<RecipeCrafting> optional = server.getServer().getCraftingManager().craft(Recipes.CRAFTING, crafting, craftWorld.getHandle());
 
         return optional.map(IRecipe::toBukkitRecipe).orElse(null);
+    }
 
+    private Optional<RecipeCrafting> getNMSRecipe(ItemStack[] craftingMatrix, InventoryCrafting inventoryCrafting, CraftWorld world) {
+        for(int i = 0; i < craftingMatrix.length; ++i) {
+            inventoryCrafting.setItem(i, CraftItemStack.asNMSCopy(craftingMatrix[i]));
+        }
+
+        CraftServer server = (CraftServer) Bukkit.getServer();
+        return server.getServer().getCraftingManager().craft(Recipes.CRAFTING, inventoryCrafting, world.getHandle());
     }
 }

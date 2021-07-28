@@ -9,7 +9,7 @@ before_install:
 - export JAVA_HOME=$HOME/openjdk16
 - $TRAVIS_BUILD_DIR/BuildTools/install-jdk.sh -F 16 --target $JAVA_HOME
 - export PATH=$JAVA_HOME/bin:$PATH
-- bash build-1.17+.sh
+#- bash build-1.17+.sh
 - cd ../
 
 install:

@@ -1,44 +1,39 @@
 package com.jamesdpeters.minecraft.chests.api;
 
 import com.jamesdpeters.minecraft.chests.*;
-import com.jamesdpeters.minecraft.chests.v1_16_R1.NMSProviderImpl;
+import com.jamesdpeters.minecraft.chests.latest.NMSProviderImpl;
 import org.bukkit.entity.ItemFrame;
 
 public class NMSProviderDefault implements NMSProvider {
 
-    //Latest version at time of build is 1.16
-    NMSProviderImpl provider1_16;
+    //Latest version at time of build is 1.17
+    //All new versions should be able to run with the default provided after 1.17
+    NMSProviderImpl defaultProvider;
 
     public NMSProviderDefault() {
-        provider1_16 = new NMSProviderImpl();
+        defaultProvider = new NMSProviderImpl();
     }
 
     @Override
     public ChestOpener getChestOpener() {
         //1.16 ChestOpener contains lidded API!
-        return provider1_16.getChestOpener();
+        return defaultProvider.getChestOpener();
     }
 
     @Override
     public MaterialChecker getMaterialChecker() {
         //Return the current latest MaterialChecker when an newer server implementation is found.
-        return provider1_16.getMaterialChecker();
+        return defaultProvider.getMaterialChecker();
     }
 
     @Override
     public CraftingProvider getCraftingProvider() {
-        // TODO
-        return null;
-    }
-
-    @Override
-    public NPCProvider getNPCProvider() {
-        return null;
+        return defaultProvider.getCraftingProvider();
     }
 
     @Override
     public void setItemFrameVisible(ItemFrame itemFrame, boolean visible) {
         //Not supported in Bukkit api 1.14.
-        provider1_16.setItemFrameVisible(itemFrame, visible);
+        defaultProvider.setItemFrameVisible(itemFrame, visible);
     }
 }

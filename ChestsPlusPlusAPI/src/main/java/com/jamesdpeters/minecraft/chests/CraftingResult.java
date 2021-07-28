@@ -2,17 +2,22 @@ package com.jamesdpeters.minecraft.chests;
 
 import org.bukkit.inventory.ItemStack;
 
-import java.util.List;
-
 public class CraftingResult {
     ItemStack result;
-    List<ItemStack> matrixResult;
+    ItemStack[] matrixResult;
 
-    public List<ItemStack> getMatrixResult() {
+    public CraftingResult(ItemStack result, ItemStack[] matrixResult) {
+        this.result = result;
+        this.matrixResult = matrixResult;
+    }
+
+    public CraftingResult() {}
+
+    public ItemStack[] getMatrixResult() {
         return matrixResult;
     }
 
-    public void setMatrixResult(List<ItemStack> matrixResult) {
+    public void setMatrixResult(ItemStack[] matrixResult) {
         this.matrixResult = matrixResult;
     }
 

@@ -24,9 +24,9 @@ public class RecipeSerializable implements ConfigurationSerializable {
     private NamespacedKey namespacedKey;
 
     // Store items used for ComplexRecipes
-    private List<ItemStack> items;
+    private ItemStack[] items;
 
-    public RecipeSerializable(Recipe recipe, List<ItemStack> items) {
+    public RecipeSerializable(Recipe recipe, ItemStack[] items) {
         this.recipe = recipe;
         this.items = items;
         if (recipe instanceof Keyed){
@@ -38,7 +38,7 @@ public class RecipeSerializable implements ConfigurationSerializable {
         Object obj = map.get("items");
         if (obj != null) {
             //noinspection unchecked
-            items = (List<ItemStack>) obj;
+            items = (ItemStack[]) obj;
         }
 
         //noinspection deprecation
@@ -71,7 +71,7 @@ public class RecipeSerializable implements ConfigurationSerializable {
         return namespacedKey;
     }
 
-    public List<ItemStack> getItems() {
+    public ItemStack[] getItems() {
         return items;
     }
 }
