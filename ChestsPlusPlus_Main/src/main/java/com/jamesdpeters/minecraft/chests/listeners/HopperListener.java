@@ -53,13 +53,15 @@ public class HopperListener implements Listener {
 
                 // Loop over the inventory until next item is found, if no item found return.
                 while (true) {
+                    if (index >= event.getSource().getSize()) {
+                        return;
+                    }
+
                     ItemStack item = event.getSource().getItem(index++);
 
-                    if (item == null)
+                    if (item == null) {
                         continue;
-
-                    if (index >= event.getSource().getSize())
-                        return;
+                    }
 
                     if (isFilteredItem.apply(item)) {
                         Utils.hopperMove(event.getSource(), item, hopperAmount, event.getDestination());
@@ -67,7 +69,6 @@ public class HopperListener implements Listener {
                     }
                 }
             }
-
         }
     }
 
