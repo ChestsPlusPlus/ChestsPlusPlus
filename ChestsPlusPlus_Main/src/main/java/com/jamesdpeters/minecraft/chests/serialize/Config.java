@@ -119,9 +119,9 @@ public class Config {
 
         try {
             Path path = Paths.get(legacyFile.toURI());
-            String content = new String(Files.readAllBytes(path), Charsets.UTF_8);
+            String content = Files.readString(path, Charsets.UTF_8);
             content = legacyContentConverter(content);
-            Files.write(getStorageFile().toPath(), content.getBytes(Charsets.UTF_8));
+            Files.writeString(getStorageFile().toPath(), content, Charsets.UTF_8);
             legacyFile.createNewFile();
             legacyFile.delete();
         } catch (IOException e) {
@@ -139,9 +139,9 @@ public class Config {
     private void configConverter() {
         try {
             Path path = Paths.get(getStorageFile().toURI());
-            String content = new String(Files.readAllBytes(path), Charsets.UTF_8);
+            String content = Files.readString(path, Charsets.UTF_8);
             content = content.replaceAll("==: Recipe", "==: C++Recipe");
-            Files.write(getStorageFile().toPath(), content.getBytes(Charsets.UTF_8));
+            Files.writeString(getStorageFile().toPath(), content, Charsets.UTF_8);
         } catch (IOException e) {
             e.printStackTrace();
         }

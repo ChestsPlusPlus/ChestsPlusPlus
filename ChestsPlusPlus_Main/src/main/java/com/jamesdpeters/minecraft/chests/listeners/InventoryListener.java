@@ -48,8 +48,7 @@ public class InventoryListener implements Listener {
 
     public void inventoryUpdate(InventoryInteractEvent event) {
         InventoryHolder holder = event.getInventory().getHolder();
-        if (holder instanceof VirtualInventoryHolder) {
-            VirtualInventoryHolder vHolder = (VirtualInventoryHolder) holder;
+        if (holder instanceof VirtualInventoryHolder vHolder) {
             Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN, () -> {
                 vHolder.getStorage().sort();
                 vHolder.getStorage().onItemDisplayUpdate(InventorySorter.getMostCommonItem(event.getInventory()));

@@ -38,8 +38,7 @@ public class VirtualChestToHopper extends BukkitRunnable {
                     if (!PluginConfig.SHOULD_RUN_HOPPERS_UNLOADED_CHUNKS.get() && !Utils.isLocationChunkLoaded(location.getLocation()))
                         continue;
                     Location below = location.getLocation().clone().subtract(0, 1, 0);
-                    if (below.getBlock().getState() instanceof Hopper) {
-                        Hopper hopper = (Hopper) below.getBlock().getState();
+                    if (below.getBlock().getState() instanceof Hopper hopper) {
                         if (below.getBlock().isBlockIndirectlyPowered() || below.getBlock().isBlockPowered()) {
                             continue;
                         }

@@ -114,20 +114,18 @@ public class ChestsPlusPlus extends JavaPlugin {
         if (PluginConfig.IS_UPDATE_CHECKER_ENABLED.get()) {
             String BUKKIT_URL = "https://dev.bukkit.org/projects/chests-plus-plus/files";
             UpdateChecker.init(this, 71355, UpdateChecker.VERSION_SCHEME_DECIMAL);
-            Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
-                UpdateChecker.get().requestUpdateCheck().whenCompleteAsync((updateResult, throwable) -> {
-                    switch (updateResult.getReason()) {
-                        case NEW_UPDATE:
-                            Bukkit.broadcastMessage(ChatColor.RED + "[Chests++] New version of the plugin was found: " + updateResult.getNewestVersion());
-                            Bukkit.broadcastMessage(ChatColor.RED + "[Chests++] Download at: " + ChatColor.WHITE + BUKKIT_URL);
-                            break;
-                        case UP_TO_DATE:
-                            if (!boot) getLogger().info("Plugin is up to date! Thank you for supporting Chests++!");
-                            break;
-                    }
-                    boot = true;
-                });
-            }, 0, PluginConfig.UPDATE_CHECKER_PERIOD.get() * 20);
+            Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> UpdateChecker.get().requestUpdateCheck().whenCompleteAsync((updateResult, throwable) -> {
+                switch (updateResult.getReason()) {
+                    case NEW_UPDATE:
+                        Bukkit.broadcastMessage(ChatColor.RED + "[Chests++] New version of the plugin was found: " + updateResult.getNewestVersion());
+                        Bukkit.broadcastMessage(ChatColor.RED + "[Chests++] Download at: " + ChatColor.WHITE + BUKKIT_URL);
+                        break;
+                    case UP_TO_DATE:
+                        if (!boot) getLogger().info("Plugin is up to date! Thank you for supporting Chests++!");
+                        break;
+                }
+                boot = true;
+            }), 0, PluginConfig.UPDATE_CHECKER_PERIOD.get() * 20);
         }
 
         // Remove armour stands if disabled

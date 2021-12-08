@@ -62,8 +62,7 @@ public class Utils {
     private static void containerAnimation(Inventory inventory, LocationInfo location, boolean open) {
         if (location != null && Utils.isLocationChunkLoaded(location.getLocation())) {
             Block block = location.getLocation().getBlock();
-            if (block.getState() instanceof Container) {
-                Container chest = (Container) block.getState();
+            if (block.getState() instanceof Container chest) {
                 if (open) {
                     location.setTileEntityOpener(ApiSpecific.getChestOpener().updateState(inventory, chest, location.getTileEntityOpener()));
                 } else {

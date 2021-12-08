@@ -74,8 +74,7 @@ public class VirtualCraftingHolder implements InventoryHolder {
         List<RecipeChoice> choiceList = shapelessRecipe.getChoiceList();
         for (int i = 0; i < choiceList.size(); i++) {
             RecipeChoice recipeChoice = choiceList.get(i);
-            if (recipeChoice instanceof RecipeChoice.MaterialChoice) {
-                RecipeChoice.MaterialChoice materialChoice = (RecipeChoice.MaterialChoice) recipeChoice;
+            if (recipeChoice instanceof RecipeChoice.MaterialChoice materialChoice) {
                 ItemStack[] choices = materialChoice.getChoices().stream().map(ItemStack::new).toArray(ItemStack[]::new);
                 recipeChoices[i] = choices;
             }
@@ -90,8 +89,7 @@ public class VirtualCraftingHolder implements InventoryHolder {
             int col = 0;
             for (char c : r.toCharArray()) {
                 RecipeChoice recipeChoice = recipe.getChoiceMap().get(c);
-                if (recipeChoice instanceof RecipeChoice.MaterialChoice) {
-                    RecipeChoice.MaterialChoice materialChoice = (RecipeChoice.MaterialChoice) recipeChoice;
+                if (recipeChoice instanceof RecipeChoice.MaterialChoice materialChoice) {
                     ItemStack[] choices = materialChoice.getChoices().stream().map(ItemStack::new).toArray(ItemStack[]::new);
                     int i = (row * 3) + col;
                     recipeChoices[i] = choices;
@@ -242,8 +240,7 @@ public class VirtualCraftingHolder implements InventoryHolder {
 
             Inventory output;
 
-            if (blockBelow.getState() instanceof Hopper) {
-                Hopper hopper = (Hopper) blockBelow.getState();
+            if (blockBelow.getState() instanceof Hopper hopper) {
                 if (blockBelow.isBlockPowered() || blockBelow.isBlockIndirectlyPowered()) {
                     continue; //If hopper is powered no crafting should happen.
                 }

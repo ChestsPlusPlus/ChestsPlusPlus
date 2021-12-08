@@ -287,8 +287,7 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
             BlockFace face = getStorageType().getStorageFacing(block);
             if (face != null) {
                 Block signBlock = block.getRelative(face);
-                if (signBlock.getState() instanceof Sign) {
-                    Sign sign = (Sign) signBlock.getState();
+                if (signBlock.getState() instanceof Sign sign) {
                     sign.setLine(1, ChatColor.GREEN + ChatColor.stripColor("[" + newName + "]"));
                     sign.update();
                 }
@@ -407,8 +406,7 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
             List<LocationInfo> locationInfos = locationInfoList.stream().filter(locationInfo -> locationInfo.isInWorld(player)).collect(Collectors.toList()); // Create a utility method for this
             locationInfos.forEach(locationInfo -> {
                 if (Utils.isLocationInViewDistance(player, locationInfo.getSignLocation())) {
-                    if (locationInfo.getSignLocation().getBlock().getState() instanceof Sign) {
-                        Sign sign = (Sign) locationInfo.getSignLocation().getBlock().getState();
+                    if (locationInfo.getSignLocation().getBlock().getState() instanceof Sign sign) {
                         player.sendBlockChange(locationInfo.getSignLocation(), sign.getBlockData());
                         player.sendSignChange(locationInfo.getSignLocation(), sign.getLines());
                     }

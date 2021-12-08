@@ -68,8 +68,7 @@ public class ChestLinkStorageType extends StorageType<ChestLinkStorage> {
     }
 
     private void createStorageForBlock(Player player, OfflinePlayer owner, Block block, String identifier, boolean requireSign) {
-        if (block.getBlockData() instanceof Directional) {
-            Directional chest = (Directional) block.getBlockData();
+        if (block.getBlockData() instanceof Directional chest) {
             BlockFace facing = chest.getFacing();
             Block toReplace = block.getRelative(facing);
             placeSign(block, toReplace, facing, player, owner, identifier, Values.ChestLinkTag, requireSign);
@@ -98,8 +97,7 @@ public class ChestLinkStorageType extends StorageType<ChestLinkStorage> {
 
     @Override
     public BlockFace getStorageFacing(Block block) {
-        if (block.getBlockData() instanceof Directional) {
-            Directional chest = (Directional) block.getBlockData();
+        if (block.getBlockData() instanceof Directional chest) {
             return chest.getFacing();
         }
         return null;

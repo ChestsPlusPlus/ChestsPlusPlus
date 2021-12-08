@@ -43,11 +43,13 @@ public class LanguageFile extends Properties {
         if (generated) {
             writeComments(bw, " Chests++ Language File (Version " + BuildConstants.VERSION + ")");
             writeComments(bw,
-                    " NOTE: This file gets replaced when the plugin launches! If you want to make modifications create a copy first!\n" +
-                            " To create a new language file simply create a copy of this file and rename it to your desired choice for example 'en_US.properties'\n" +
-                            " It should be located in the 'lang' folder\n" +
-                            " Then in config.yml 'language-file: default' would be renamed to 'language-file: en_US'\n" +
-                            " To help contribute to the plugin and provide new language files you can create a pull-request at https://github.com/JamesPeters98/ChestsPlusPlus or join our Discord https://discord.gg/YRs3mP5");
+                    """ 
+                        NOTE: This file gets replaced when the plugin launches! If you want to make modifications create a copy first!
+                        To create a new language file simply create a copy of this file and rename it to your desired choice for example 'en_US.properties'
+                        It should be located in the 'lang' folder
+                        Then in config.yml 'language-file: default' would be renamed to 'language-file: en_US'
+                        To help contribute to the plugin and provide new language files you can create a pull-request at https://github.com/JamesPeters98/ChestsPlusPlus or join our Discord https://discord.gg/YRs3mP5
+                        """.indent(1));
 
             for (String additionalComment : additionalComments) {
                 writeComments(bw, additionalComment);

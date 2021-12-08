@@ -49,11 +49,10 @@ public class ChestsPlusPlusCommand extends ServerCommand {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender instanceof Player)) {
+        if (!(sender instanceof Player player)) {
             sender.sendMessage("Only a player can use this command");
             return false;
         }
-        Player player = (Player) sender;
         if (args != null && args.length > 0) {
             switch (OPTIONS.valueOf(args[0].toUpperCase())) {
                 case VERSION:
@@ -84,8 +83,7 @@ public class ChestsPlusPlusCommand extends ServerCommand {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        if ((sender instanceof Player)) {
-            Player player = (Player) sender;
+        if ((sender instanceof Player player)) {
             if (args.length == 1) {
                 return OPTIONS.valuesList;
             }
@@ -101,7 +99,7 @@ public class ChestsPlusPlusCommand extends ServerCommand {
             if (args.length == 3) {
                 try {
                     switch (OPTIONS.valueOf(args[0].toUpperCase())) {
-                        case PARTY: {
+                        case PARTY -> {
                             String arg = args[1];
                             if (arg.equals("delete") || arg.equals("invite") || arg.equals("remove-member")) {
                                 List<String> strings = PartyUtils.getPlayerPartyStorage(player).getOwnedPartiesAsStrings();
@@ -115,7 +113,7 @@ public class ChestsPlusPlusCommand extends ServerCommand {
             if (args.length == 4) {
                 try {
                     switch (OPTIONS.valueOf(args[0].toUpperCase())) {
-                        case PARTY: {
+                        case PARTY -> {
                             String arg = args[2];
                             if (arg.equals("invite") || arg.equals("remove-member")) {
                                 return Utils.filterList(Utils.getAllPlayers(), args[3]);

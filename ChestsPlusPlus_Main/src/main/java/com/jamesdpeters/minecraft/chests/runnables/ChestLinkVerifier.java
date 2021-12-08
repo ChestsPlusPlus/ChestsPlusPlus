@@ -35,8 +35,7 @@ public class ChestLinkVerifier extends BukkitRunnable {
     public void run() {
         Chest chest = (Chest) block.getState();
 
-        if (chest.getInventory().getHolder() instanceof DoubleChest) {
-            DoubleChest doubleChest = (DoubleChest) chest.getInventory().getHolder();
+        if (chest.getInventory().getHolder() instanceof DoubleChest doubleChest) {
             InventoryHolder right = doubleChest.getRightSide();
             InventoryHolder left = doubleChest.getLeftSide();
             if (isChestLinked(doubleChest) && left != null && right != null) {
@@ -80,8 +79,7 @@ public class ChestLinkVerifier extends BukkitRunnable {
     }
 
     private void manualCheck(Chest chest) {
-        if (chest.getBlockData() instanceof Directional) {
-            Directional directional = (Directional) chest.getBlockData();
+        if (chest.getBlockData() instanceof Directional directional) {
             BlockFace facing = directional.getFacing();
             BlockFace[] perpendulcarFaces = getPerpendicularFaces(facing);
             if (perpendulcarFaces == null) return;
@@ -100,14 +98,10 @@ public class ChestLinkVerifier extends BukkitRunnable {
     private static final BlockFace[] WE = new BlockFace[]{BlockFace.NORTH, BlockFace.SOUTH};
 
     private BlockFace[] getPerpendicularFaces(BlockFace face) {
-        switch (face) {
-            case NORTH:
-            case SOUTH:
-                return NS;
-            case WEST:
-            case EAST:
-                return WE;
-        }
-        return null;
+        return switch (face) {
+            case NORTH, SOUTH -> NS;
+            case WEST, EAST -> WE;
+            default -> null;
+        };
     }
 }

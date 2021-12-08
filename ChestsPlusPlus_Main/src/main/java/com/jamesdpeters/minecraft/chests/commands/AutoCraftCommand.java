@@ -60,12 +60,11 @@ public class AutoCraftCommand extends ServerCommand {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender instanceof Player)) {
+        if (!(sender instanceof Player player)) {
             sender.sendMessage("Only a player can use this command");
             return false;
         }
 
-        Player player = (Player) sender;
         if (args != null && args.length > 0) {
             try {
                 switch (OPTIONS.valueOf(args[0].toUpperCase())) {
@@ -184,8 +183,7 @@ public class AutoCraftCommand extends ServerCommand {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        if ((sender instanceof Player)) {
-            Player player = (Player) sender;
+        if ((sender instanceof Player player)) {
 
             if (args.length == 1) {
                 return OPTIONS.valuesList;
@@ -208,11 +206,12 @@ public class AutoCraftCommand extends ServerCommand {
             if (args.length == 3) {
                 try {
                     switch (OPTIONS.valueOf(args[0].toUpperCase())) {
-                        case MEMBER:
+                        case MEMBER -> {
                             if (args[1].equals("add-to-all")) return Utils.filterList(Utils.getAllPlayers(), args[2]);
                             if (args[1].equals("remove-from-all"))
                                 return Utils.filterList(Utils.getAllPlayers(), args[2]);
                             return Config.getAutoCraft().getStorageList(player, args[2]);
+                        }
                     }
                 } catch (IllegalArgumentException ignored) {
                 }

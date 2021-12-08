@@ -98,13 +98,12 @@ public class UserShapedRecipe {
 
     private Map<Character, Character> flipShape(String[] shape) {
         Map<Character, Character> map = new HashMap<>();
-        for (int i = 0; i < shape.length; i++) {
+        for (String s : shape) {
             StringBuilder input = new StringBuilder();
-            String row = shape[i];
-            String reverse = input.append(row).reverse().toString();
-            char[] originalChars = row.toCharArray();
+            String reverse = input.append(s).reverse().toString();
+            char[] originalChars = s.toCharArray();
             char[] reverseChars = reverse.toCharArray();
-            for (int c = 0; c < row.length(); c++) {
+            for (int c = 0; c < s.length(); c++) {
                 map.put(originalChars[c], reverseChars[c]);
             }
         }
