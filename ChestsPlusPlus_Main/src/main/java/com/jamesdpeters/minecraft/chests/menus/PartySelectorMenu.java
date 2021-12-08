@@ -1,9 +1,9 @@
 package com.jamesdpeters.minecraft.chests.menus;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
+import com.jamesdpeters.minecraft.chests.database.DBUtil;
+import com.jamesdpeters.minecraft.chests.database.entities.PlayerParty;
 import com.jamesdpeters.minecraft.chests.misc.ItemBuilder;
-import com.jamesdpeters.minecraft.chests.party.PartyUtils;
-import com.jamesdpeters.minecraft.chests.party.PlayerParty;
 import fr.minuskube.inv.ClickableItem;
 import fr.minuskube.inv.SmartInventory;
 import fr.minuskube.inv.content.InventoryContents;
@@ -16,6 +16,7 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiConsumer;
 
 public class PartySelectorMenu implements InventoryProvider {
@@ -62,7 +63,7 @@ public class PartySelectorMenu implements InventoryProvider {
             // Pass through click to the menus onPlayerSelect function.
             ItemStack partyBook = ItemBuilder
                     .getInstance(Material.ENCHANTED_BOOK)
-                    .setName(playerParty.getPartyName())
+                    .setName(playerParty.getName())
                     .addLore("Owner: "+playerParty.getOwner().getName())
                     .get();
             ClickableItem clickableItem = ClickableItem.from(partyBook, itemClickData -> onPlayerSelect.accept(playerParty, menu));
@@ -109,16 +110,12 @@ public class PartySelectorMenu implements InventoryProvider {
         return menu;
     }
 
-    private List<PlayerParty> getParties(OfflinePlayer player) {
-        switch (type) {
-            case ALL:
-                return PartyUtils.getPlayerPartyStorage(player).getAllParties();
-            case OWNED:
-                return PartyUtils.getPlayerPartyStorage(player).getOwnedPartiesList();
-            case MEMBER_OF:
-                return PartyUtils.getPlayerPartyStorage(player).getPartiesMemberOf();
-            default:
-                return new ArrayList<>();
-        }
+    private Set<PlayerParty> getParties(OfflinePlayer player) {
+        var cppPlayer = DBUtil.PLAYER.findPlayer(player).join();
+        return switch (type) {
+            case ALL -> cppPlayer.getAllParties();
+            case OWNED -> cppPlayer.getOwnedParties();
+            case MEMBER_OF -> cppPlayer.getPlayerParties();
+        };
     }
 }

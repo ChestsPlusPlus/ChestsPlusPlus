@@ -184,7 +184,6 @@
             <classifier>jar-with-dependencies</classifier>
         </dependency>
 
-
     </dependencies>
 
     <!--Tell maven how to prepare and build our jar file from our source and dependancies-->

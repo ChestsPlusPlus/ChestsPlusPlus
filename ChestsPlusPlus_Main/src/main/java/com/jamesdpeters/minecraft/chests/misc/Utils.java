@@ -37,6 +37,7 @@ import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
@@ -338,13 +339,11 @@ public class Utils {
         }
     }
 
-    public static List<OfflinePlayer> getOnlinePlayersNotInList(List<OfflinePlayer> players) {
-        List<OfflinePlayer> list = new ArrayList<>();
-        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-            if (!players.contains(onlinePlayer)){
-                list.add(onlinePlayer);
-            }
-        }
-        return list;
+    public static Set<OfflinePlayer> getOnlinePlayersNotInList(Set<OfflinePlayer> players) {
+        return Bukkit.getOnlinePlayers()
+                .stream()
+                .filter(player -> !players.contains(player))
+                .collect(Collectors.toSet());
     }
+
 }

@@ -16,8 +16,9 @@ import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.ServerType;
 import com.jamesdpeters.minecraft.chests.misc.Stats;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
-import com.jamesdpeters.minecraft.chests.party.PlayerParty;
+//import com.jamesdpeters.minecraft.chests.party.PlayerParty;
 import com.jamesdpeters.minecraft.chests.party.PlayerPartyStorage;
+import com.jamesdpeters.minecraft.chests.party.PlayerParty_OLD;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.serialize.ConfigStorage;
 import com.jamesdpeters.minecraft.chests.serialize.LocationInfo;
@@ -83,7 +84,7 @@ public class ChestsPlusPlus extends JavaPlugin {
         ConfigurationSerialization.registerClass(RecipeSerializable.class, "Recipe");
         ConfigurationSerialization.registerClass(LocationInfo.class, "LocationInfo");
         ConfigurationSerialization.registerClass(PlayerPartyStorage.class, "PlayerPartyStorage");
-        ConfigurationSerialization.registerClass(PlayerParty.class, "PlayerParty");
+        ConfigurationSerialization.registerClass(PlayerParty_OLD.class, "PlayerParty");
 
     }
 
@@ -137,18 +138,6 @@ public class ChestsPlusPlus extends JavaPlugin {
         Utils.fixEntities();
 
         DBUtil.init();
-        var playerDb = DBUtil.PLAYER;
-        var partyDb = DBUtil.PARTIES;
-
-        var test = playerDb.findPlayer(UUID.fromString("e0e93eb6-2ca4-4ac2-803f-684ce0b69b2c"));
-        getLogger().info("Original parties: "+test.getOwnedParties());
-
-        var party = partyDb.findParty(test, "Test Party 2");
-        party = party == null ? partyDb.createParty(test, "Test Party 2") : party;
-
-        getLogger().info("Found party: "+party);
-        getLogger().info("Players parties: "+test.getOwnedParties());
-
 
         //Load storages after load.
         Bukkit.getScheduler().scheduleSyncDelayedTask(this, () -> {
@@ -163,14 +152,32 @@ public class ChestsPlusPlus extends JavaPlugin {
             getServer().getPluginManager().registerEvents(new WorldListener(), this);
             Config.getStorageTypes().forEach(storageType -> getServer().getPluginManager().registerEvents(storageType, this));
             getLogger().info("Chests++ enabled!");
+
+            // Test DB
+            var playerDb = DBUtil.PLAYER;
+            var partyDb = DBUtil.PARTIES;
+
+            var playerFuture = playerDb.findPlayer(UUID.fromString("e0e93eb6-2ca4-4ac2-803f-684ce0b69b2c"));
+
+            playerFuture.thenAccept(player -> {
+                getLogger().info("Found player: "+player.getOfflinePlayer().getName());
+                getLogger().info("Original Parties: "+player.getOwnedParties());
+
+                var partyName = "Test Party Name 2";
+                var partyOpt = partyDb.findParty(player, partyName).join();
+                var party = partyOpt.orElseGet(() -> partyDb.createParty(player, partyName).join());
+
+                getLogger().info("Found party: "+party);
+                getLogger().info("Players parties: "+player.getOwnedParties());
+            });
         }, 1);
     }
 
     @Override
     public void onDisable() {
-        super.onDisable();
         Config.save();
         HibernateUtil.close();
+        super.onDisable();
 //        //Remove entities that could have been left behind from bad save files/crashes etc.
 //        Utils.fixEntities();
     }

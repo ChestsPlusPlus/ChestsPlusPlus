@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @SerializableAs("PlayerParty")
-public class PlayerParty implements ConfigurationSerializable {
+public class PlayerParty_OLD implements ConfigurationSerializable {
 
     private OfflinePlayer owner;
     private UUID ownerUUID;
@@ -21,7 +21,7 @@ public class PlayerParty implements ConfigurationSerializable {
     private List<OfflinePlayer> members;
     private ArrayList<String> memberUUIDs;
 
-    public PlayerParty(OfflinePlayer owner, String partyName) {
+    public PlayerParty_OLD(OfflinePlayer owner, String partyName) {
         this.owner = owner;
         this.ownerUUID = owner.getUniqueId();
         this.partyName = partyName;
@@ -29,7 +29,7 @@ public class PlayerParty implements ConfigurationSerializable {
     }
 
     @SuppressWarnings("unchecked")
-    public PlayerParty(Map<String, Object> map){
+    public PlayerParty_OLD(Map<String, Object> map){
         ownerUUID = UUID.fromString((String) map.get("owner"));
         owner = Bukkit.getOfflinePlayer(ownerUUID);
 

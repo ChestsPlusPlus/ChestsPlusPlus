@@ -23,7 +23,7 @@ public class HibernateUtil {
     private static Properties hibernateProperties() {
         Properties properties = new Properties();
         properties.put(Environment.DRIVER, "org.h2.Driver");
-        properties.put(Environment.URL, "jdbc:h2:file:"+databaseDirectory.getAbsolutePath()+"/db;AUTO_SERVER=TRUE");
+        properties.put(Environment.URL, "jdbc:h2:file:"+databaseDirectory.getAbsolutePath()+"/data/database");
         properties.put(Environment.USER, "sa");
         properties.put(Environment.PASS, "sa");
         properties.put(Environment.FORMAT_SQL, "true");

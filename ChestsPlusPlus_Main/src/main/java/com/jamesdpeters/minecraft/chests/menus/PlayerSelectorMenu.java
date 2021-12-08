@@ -14,6 +14,7 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
@@ -22,7 +23,7 @@ public class PlayerSelectorMenu implements InventoryProvider {
     private final SmartInventory menu;
     BiConsumer<OfflinePlayer, SmartInventory> onPlayerSelect;
     BiFunction<OfflinePlayer, ItemStack, ItemStack> onPlayerHeadCreation;
-    private List<OfflinePlayer> players;
+    private Set<OfflinePlayer> players;
     private int lastPage; // Store the last page the player was on.
     private SmartInventory previousInv;
 
@@ -37,7 +38,7 @@ public class PlayerSelectorMenu implements InventoryProvider {
         //menu.setInsertable(true);
     }
 
-    public static void open(Player player, String title, SmartInventory previousInv, List<OfflinePlayer> players, BiFunction<OfflinePlayer, ItemStack, ItemStack> onPlayerHeadCreation, BiConsumer<OfflinePlayer, SmartInventory> onPlayerSelect) {
+    public static void open(Player player, String title, SmartInventory previousInv, Set<OfflinePlayer> players, BiFunction<OfflinePlayer, ItemStack, ItemStack> onPlayerHeadCreation, BiConsumer<OfflinePlayer, SmartInventory> onPlayerSelect) {
         PlayerSelectorMenu playerSelectorMenu = new PlayerSelectorMenu(title);
         playerSelectorMenu.players = players;
         playerSelectorMenu.onPlayerHeadCreation = onPlayerHeadCreation;

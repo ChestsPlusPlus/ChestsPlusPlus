@@ -1,22 +1,23 @@
 package com.jamesdpeters.minecraft.chests.database.dao;
 
-import com.jamesdpeters.minecraft.chests.database.entities.Player;
-import com.jamesdpeters.minecraft.database.hibernate.Database;
+import com.jamesdpeters.minecraft.chests.database.entities.CppPlayer;
+import com.jamesdpeters.minecraft.chests.misc.BukkitFuture;
 import org.bukkit.OfflinePlayer;
 
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
-public class PlayerDatabase extends Database<Player> {
+public class PlayerDatabase extends Database<CppPlayer> {
 
     public PlayerDatabase() {
-        super(Player.class);
+        super(CppPlayer.class);
     }
 
-    public Player findPlayer(UUID uuid) {
-        return findEntity(uuid).orElseGet(() -> new Player(uuid));
+    public CompletableFuture<CppPlayer> findPlayer(UUID uuid) {
+        return BukkitFuture.supplyAsync(() -> findEntity(uuid).orElseGet(() -> new CppPlayer(uuid)));
     }
 
-    public Player findPlayer(OfflinePlayer player) {
+    public CompletableFuture<CppPlayer> findPlayer(OfflinePlayer player) {
         return findPlayer(player.getUniqueId());
     }
 }

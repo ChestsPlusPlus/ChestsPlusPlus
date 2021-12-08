@@ -1,9 +1,13 @@
-package com.jamesdpeters.minecraft.database.hibernate;
+package com.jamesdpeters.minecraft.chests.database.dao;
+
+import com.jamesdpeters.minecraft.chests.misc.BukkitFuture;
+import com.jamesdpeters.minecraft.database.hibernate.HibernateUtil;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Future;
 import java.util.function.Consumer;
 
 public class Database<T> {
@@ -17,6 +21,10 @@ public class Database<T> {
     //** MEMBER METHODS **/
     public void saveEntity(Object object) {
         runTransaction(entityManager -> entityManager.persist(object));
+    }
+
+    public Future<Optional<T>> findEntityAsync(Object id) {
+        return BukkitFuture.supplyAsync(() -> findEntity(id));
     }
 
     public Optional<T> findEntity(Object id) {
@@ -53,6 +61,10 @@ public class Database<T> {
 
     public void refresh(T entity) {
         HibernateUtil.getEntityManager().refresh(entity);
+    }
+
+    public void remove(T entity) {
+        HibernateUtil.getEntityManager().remove(entity);
     }
 
     public Class<T> clazz() {

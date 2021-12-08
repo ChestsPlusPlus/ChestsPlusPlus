@@ -50,7 +50,7 @@ public class InvitesMenu implements InventoryProvider {
 
         for (PartyInvite invite : PartyUtils.getPartyInvites(player)){
             // Pass through click to the menus onPlayerSelect function.
-            ItemStack inviteBook = ItemBuilder.getInstance(Material.ENCHANTED_BOOK).setName(invite.getParty().getPartyName()).get();
+            ItemStack inviteBook = ItemBuilder.getInstance(Material.ENCHANTED_BOOK).setName(invite.getParty().getName()).get();
             ClickableItem clickableItem = ClickableItem.from(inviteBook, itemClickData -> onPlayerSelect.accept(invite, menu));
             itemList.add(clickableItem);
         }

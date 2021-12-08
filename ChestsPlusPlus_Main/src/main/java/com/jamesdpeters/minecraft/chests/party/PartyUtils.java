@@ -1,15 +1,18 @@
 package com.jamesdpeters.minecraft.chests.party;
 
+import com.jamesdpeters.minecraft.chests.database.DBUtil;
+import com.jamesdpeters.minecraft.chests.database.dao.PlayerDatabase;
+import com.jamesdpeters.minecraft.chests.database.dao.PlayerPartyDatabase;
+import com.jamesdpeters.minecraft.chests.database.entities.PlayerParty;
 import com.jamesdpeters.minecraft.chests.lang.Message;
-import com.jamesdpeters.minecraft.chests.serialize.Config;
-import org.bukkit.ChatColor;
+import com.jamesdpeters.minecraft.chests.misc.BukkitFuture;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 public class PartyUtils {
 
@@ -18,7 +21,10 @@ public class PartyUtils {
         PARTY_CREATED
     }
 
-    // Stores party invites sent to this player.
+    private static final PlayerPartyDatabase partyDb = DBUtil.PARTIES;
+    private static final PlayerDatabase playerDb = DBUtil.PLAYER;
+
+    // Stores party invites sent to this cppPlayer.
     // Only stored in memory
     private static final HashMap<UUID, List<PartyInvite>> partyInvites = new HashMap<>();
 
@@ -33,24 +39,23 @@ public class PartyUtils {
     }
 
     /**
-     * Invites a player to the owners given party. The last pending invite is overwritten.
+     * Invites a cppPlayer to the owners given party. The last pending invite is overwritten.
      * @param owner
      * @param playerToInvite
      * @param partyName
      */
     public static void invitePlayer(OfflinePlayer owner, OfflinePlayer playerToInvite, String partyName){
-        PlayerPartyStorage storage = getPlayerPartyStorage(owner);
-
-        PlayerParty party = storage.getOwnedParties().get(partyName);
-        if (party == null){
-            Player onlineOwner = owner.getPlayer();
-            if(onlineOwner != null) {
-                onlineOwner.sendMessage(Message.PARTY_DOESNT_EXIST.getString(partyName));
+        playerDb.findPlayer(owner).thenAccept(player -> {
+            var party = player.getParty(partyName);
+            if (party.isPresent()) {
+                invitePlayer(party.get(), playerToInvite);
+            } else {
+                var onlinePlayer = owner.getPlayer();
+                if (onlinePlayer != null) {
+                    onlinePlayer.sendMessage(Message.PARTY_DOESNT_EXIST.getString(partyName));
+                }
             }
-            return;
-        }
-
-        invitePlayer(party, playerToInvite);
+        });
     }
 
     private static void addPlayerInvite(OfflinePlayer player, PartyInvite invite) {
@@ -59,28 +64,28 @@ public class PartyUtils {
     }
 
     public static void invitePlayer(PlayerParty party, OfflinePlayer playerToInvite) {
-        PartyInvite invite = new PartyInvite(party.getOwner(), playerToInvite, party);
-        addPlayerInvite(playerToInvite, invite);
-        invite.sendInvite();
+        playerDb.findPlayer(playerToInvite).thenAccept(player -> {
+            PartyInvite invite = new PartyInvite(party.getOwner(), player, party);
+            addPlayerInvite(playerToInvite, invite);
+            invite.sendInvite();
+        });
     }
 
     public static void removePlayer(OfflinePlayer owner, OfflinePlayer playerToRemove, String partyName){
-        PlayerPartyStorage storage = getPlayerPartyStorage(owner);
-
-        PlayerParty party = storage.getOwnedParties().get(partyName);
-        if (party == null){
-            Player onlineOwner = owner.getPlayer();
-            if(onlineOwner != null) {
-                onlineOwner.sendMessage(Message.PARTY_DOESNT_EXIST.getString(partyName));
-            }
-            return;
-        }
-
-        party.removeMember(playerToRemove);
+        partyDb
+            .removePlayerFromParty(owner, partyName, playerToRemove)
+            .thenAccept(partyResponse -> {
+                var onlinePlayer = owner.getPlayer();
+                if (onlinePlayer != null) {
+                    if (partyResponse == PlayerPartyDatabase.PartyResponse.NO_PARTY_EXISTS) {
+                        onlinePlayer.sendMessage(Message.PARTY_DOESNT_EXIST.getString(partyName));
+                    }
+                }
+            });
     }
 
     /**
-     * Accepts the current pending invite for this player.
+     * Accepts the current pending invite for this cppPlayer.
      * @param player
      */
     public static void acceptInvite(OfflinePlayer player, PartyInvite invite){
@@ -105,49 +110,19 @@ public class PartyUtils {
      * @param partyName
      * @return false if party already exists.
      */
-    public static boolean createParty(OfflinePlayer owner, String partyName){
-        PlayerPartyStorage storage = getPlayerPartyStorage(owner);
+    public static CompletableFuture<Boolean> createParty(OfflinePlayer owner, String partyName){
+        return BukkitFuture.supplyAsync(() -> {
+            var party = DBUtil.PARTIES.findParty(owner, partyName).join();
+            if (party.isPresent())
+                return false;
 
-        // Check if party already exists.
-        if (storage.getOwnedParties().containsKey(partyName)) return false;
-
-        storage.getOwnedParties().put(partyName, new PlayerParty(owner, partyName));
-        return true;
-    }
-
-    public static boolean deleteParty(OfflinePlayer owner, String partyName){
-        HashMap<String, PlayerPartyStorage> map = Config.getStore().parties;
-        PlayerPartyStorage storage = map.get(owner.getUniqueId().toString());
-        if (storage == null) {
-            storage = new PlayerPartyStorage(owner);
-            map.put(owner.getUniqueId().toString(), storage);
-        }
-
-        // Check if party already exists.
-        if (!storage.getOwnedParties().containsKey(partyName)) {
-            Player onlineOwner = owner.getPlayer();
-            if (onlineOwner != null) {
-                onlineOwner.sendMessage(ChatColor.RED + Message.PARTY_DOESNT_EXIST.getString(partyName));
-            }
-            return false;
-        }
-
-        // Remove party
-        storage.getOwnedParties().remove(partyName);
-        return true;
+            DBUtil.PARTIES.createParty(owner, partyName);
+            return true;
+        });
     }
 
     public static boolean deleteParty(PlayerParty party){
-        return deleteParty(party.getOwner(), party.getPartyName());
-    }
-
-    public static PlayerPartyStorage getPlayerPartyStorage(OfflinePlayer owner) {
-        HashMap<String, PlayerPartyStorage> map = Config.getStore().parties;
-        PlayerPartyStorage storage = map.get(owner.getUniqueId().toString());
-        if (storage == null){
-            storage = new PlayerPartyStorage(owner);
-            map.put(owner.getUniqueId().toString(), storage);
-        }
-        return storage;
+        DBUtil.PARTIES.remove(party);
+        return true;
     }
 }

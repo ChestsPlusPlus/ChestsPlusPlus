@@ -2,10 +2,10 @@ package com.jamesdpeters.minecraft.chests.commands;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.api.ApiSpecific;
+import com.jamesdpeters.minecraft.chests.database.DBUtil;
 import com.jamesdpeters.minecraft.chests.maventemplates.BuildConstants;
 import com.jamesdpeters.minecraft.chests.menus.PartyMenu;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
-import com.jamesdpeters.minecraft.chests.party.PartyUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -68,6 +68,11 @@ public class ChestsPlusPlusCommand extends ServerCommand {
                     return true;
 
                 case PARTY:
+                    DBUtil.PLAYER.findPlayer(player).thenAccept(p -> {
+                        sender.sendMessage("Found player: "+p.getOfflinePlayer().getName());
+                        DBUtil.PARTIES.createParty(p, "Test Party");
+                        sender.sendMessage(String.valueOf(p.getOwnedParties()));
+                    });
                     PartyMenu.getMenu(player).getMenu().open(player);
                     return true;
 
@@ -93,7 +98,7 @@ public class ChestsPlusPlusCommand extends ServerCommand {
                 try {
                     switch (OPTIONS.valueOf(args[0].toUpperCase())) {
                         case PARTY:
-                            return Stream.of("menu", "create", "invite", "delete", "remove-member", "view-invites", "list").filter(s -> s.contains(args[1])).collect(Collectors.toList());
+                            return Stream.of("menu", "create", "invite", "remove", "remove-member", "view-invites", "list").filter(s -> s.contains(args[1])).collect(Collectors.toList());
                     }
                 } catch (IllegalArgumentException ignored) {
                 }
@@ -103,8 +108,8 @@ public class ChestsPlusPlusCommand extends ServerCommand {
                     switch (OPTIONS.valueOf(args[0].toUpperCase())) {
                         case PARTY: {
                             String arg = args[1];
-                            if (arg.equals("delete") || arg.equals("invite") || arg.equals("remove-member")) {
-                                List<String> strings = PartyUtils.getPlayerPartyStorage(player).getOwnedPartiesAsStrings();
+                            if (arg.equals("remove") || arg.equals("invite") || arg.equals("remove-member")) {
+                                List<String> strings = DBUtil.PLAYER.findPlayer(player).join().getOwnedPartyStrings();
                                 return Utils.filterList(strings, args[2]);
                             }
                         }

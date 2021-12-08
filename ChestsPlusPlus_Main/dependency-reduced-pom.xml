@@ -40,6 +40,7 @@
               <include>net.wesjd:anvilgui*</include>
               <include>org.bstats*:*</include>
               <include>com.jamesdpeters.minecraft.chests</include>
+              <include>com.jamesdpeters*:*</include>
             </includes>
           </artifactSet>
           <relocations>

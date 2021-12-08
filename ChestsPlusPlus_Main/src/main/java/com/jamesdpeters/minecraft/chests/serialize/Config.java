@@ -115,7 +115,7 @@ public class Config {
         File legacyFile = getLegacyFile();
         if (!legacyFile.exists()) return;
         ChestsPlusPlus.PLUGIN.getLogger().info("Found a Legacy config! Converting to new data-format and moving to: /plugins/ChestsPlusPlus/data/storage.yml");
-        ChestsPlusPlus.PLUGIN.getLogger().info("If you are having issues with data-loss the plugin may not have permissions to delete the legacy file 'chests.yml'");
+        ChestsPlusPlus.PLUGIN.getLogger().info("If you are having issues with data-loss the plugin may not have permissions to remove the legacy file 'chests.yml'");
 
         try {
             Path path = Paths.get(legacyFile.toURI());
