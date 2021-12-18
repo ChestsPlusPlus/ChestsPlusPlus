@@ -55,12 +55,11 @@ public class HopperListener implements Listener {
                 while (true) {
                     ItemStack item = event.getSource().getItem(index++);
 
+                    if (item == null)
+                        continue;
+
                     if (index >= event.getSource().getSize())
                         return;
-
-                    if (item == null) {
-                        continue;
-                    }
 
                     if (isFilteredItem.apply(item)) {
                         Utils.hopperMove(event.getSource(), item, hopperAmount, event.getDestination());
