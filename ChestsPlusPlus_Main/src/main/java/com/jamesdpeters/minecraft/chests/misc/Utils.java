@@ -6,7 +6,7 @@ import com.jamesdpeters.minecraft.chests.filters.Filter;
 import com.jamesdpeters.minecraft.chests.filters.HopperFilter;
 import com.jamesdpeters.minecraft.chests.interfaces.VirtualInventoryHolder;
 import com.jamesdpeters.minecraft.chests.serialize.LocationInfo;
-import com.jamesdpeters.minecraft.chests.serialize.PluginConfig;
+import com.jamesdpeters.minecraft.chests.PluginConfig;
 import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorage;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -19,14 +19,11 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Container;
-import org.bukkit.block.Hopper;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.Vector;
 
 import java.io.File;
@@ -40,7 +37,6 @@ import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class Utils {
 
@@ -230,52 +226,6 @@ public class Utils {
             itemStacks[i] = AIR;
         }
         return itemStacks;
-    }
-
-    /**
-     * Removes all entities that contain a value of 1 under the Values.PluginKey key.
-     * Updates all Item Frames with invisibility status.
-     */
-    public static void fixEntities() {
-        Bukkit.getServer().getWorlds().forEach(world -> {
-            removeEntities(world);
-            setItemFrames(world);
-        });
-    }
-
-    public static void fixEntities(Chunk chunk) {
-        removeEntities(chunk);
-        setItemFrames(chunk);
-    }
-
-    public static void removeEntities(World world) {
-        world.getEntities().forEach(Utils::removeEntity);
-    }
-
-    public static void removeEntities(Chunk chunk) {
-        for (Entity entity : chunk.getEntities()) {
-            removeEntity(entity);
-        }
-    }
-
-    private static void removeEntity(Entity entity) {
-        Integer val = entity.getPersistentDataContainer().get(Values.PluginKey, PersistentDataType.INTEGER);
-        if (val != null && val == 1) entity.remove();
-    }
-
-    public static void setItemFrames(World world) {
-        setItemFrames(world.getEntities().stream());
-    }
-
-    public static void setItemFrames(Chunk chunk) {
-        setItemFrames(Arrays.stream(chunk.getEntities()));
-    }
-
-    private static void setItemFrames(Stream<Entity> entityStream) {
-        entityStream.filter(entity ->
-                (entity instanceof ItemFrame
-                        && entity.getLocation().getBlock().getRelative(((ItemFrame) entity).getAttachedFace()).getState() instanceof Hopper))
-                .forEach(entity -> ApiSpecific.getNmsProvider().setItemFrameVisible((ItemFrame) entity, !PluginConfig.INVISIBLE_FILTER_ITEM_FRAMES.get()));
     }
 
     public static List<String> filterList(List<String> list, String phrase) {

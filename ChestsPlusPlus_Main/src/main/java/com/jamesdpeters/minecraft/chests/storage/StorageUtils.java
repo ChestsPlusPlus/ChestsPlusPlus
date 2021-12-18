@@ -1,6 +1,6 @@
 package com.jamesdpeters.minecraft.chests.storage;
 
-import com.jamesdpeters.minecraft.chests.misc.Values;
+import com.jamesdpeters.minecraft.chests.Values;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.storage.abstracts.AbstractStorage;
 import com.jamesdpeters.minecraft.chests.storage.abstracts.StorageInfo;
@@ -24,7 +24,7 @@ public record StorageUtils<T extends StorageInfo<S>, S extends AbstractStorage>(
     public StorageInfo<S> getStorageInfo(Sign sign, String[] lines, UUID uuid) {
         if (lines != null) {
             if (lines.length >= 2 && lines[0].contains(storageType.getSignTag())) {
-                String playerUUID = sign.getPersistentDataContainer().get(Values.playerUUID, PersistentDataType.STRING);
+                String playerUUID = sign.getPersistentDataContainer().get(Values.Instance().playerUUID, PersistentDataType.STRING);
                 String group = ChatColor.stripColor(StringUtils.substringBetween(lines[1], "[", "]"));
                 if (playerUUID == null) {
                     if (uuid == null) return null;

@@ -2,6 +2,7 @@ package com.jamesdpeters.minecraft.chests.latest;
 
 import com.jamesdpeters.minecraft.chests.ChestOpener;
 import com.jamesdpeters.minecraft.chests.CraftingProvider;
+import com.jamesdpeters.minecraft.chests.EntityEventListener;
 import com.jamesdpeters.minecraft.chests.MaterialChecker;
 import com.jamesdpeters.minecraft.chests.NMSProvider;
 import org.bukkit.block.Lidded;
@@ -31,6 +32,11 @@ public class NMSProviderImpl implements NMSProvider {
     @Override
     public CraftingProvider getCraftingProvider() {
         return new Crafting();
+    }
+
+    @Override
+    public EntityEventListener getEntityEventListener() {
+        return new EntityEventListener_1_17();
     }
 
     @Override

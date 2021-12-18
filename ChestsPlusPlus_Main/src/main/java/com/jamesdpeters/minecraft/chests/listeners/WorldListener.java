@@ -6,7 +6,6 @@ import com.jamesdpeters.minecraft.chests.serialize.Config;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.world.ChunkLoadEvent;
-import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.event.world.WorldSaveEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -29,14 +28,8 @@ public class WorldListener implements Listener {
     }
 
     @EventHandler
-    public void onWorldLoad(WorldLoadEvent event) {
-        Utils.removeEntities(event.getWorld());
-    }
-
-    @EventHandler
     public void onChunkLoad(ChunkLoadEvent event) {
         if (!event.isNewChunk()) {
-            Utils.fixEntities(event.getChunk());
             Config.getStorageTypes().forEach(storageType -> {
                 storageType.getStorageMap().values().forEach(stringHashMap -> {
                     stringHashMap.values().forEach(o -> {

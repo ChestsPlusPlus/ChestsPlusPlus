@@ -4,7 +4,7 @@ import com.jamesdpeters.minecraft.chests.lang.Message;
 import com.jamesdpeters.minecraft.chests.misc.Messages;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
-import com.jamesdpeters.minecraft.chests.misc.Values;
+import com.jamesdpeters.minecraft.chests.Values;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.serialize.ConfigStorage;
 import com.jamesdpeters.minecraft.chests.storage.abstracts.StorageInfo;
@@ -54,7 +54,7 @@ public class AutoCraftingStorageType extends StorageType<AutoCraftingStorage> {
 
     @Override
     public String getSignTag() {
-        return Values.AutoCraftTag;
+        return Values.Instance().AutoCraftTag;
     }
 
     @Override
@@ -81,7 +81,7 @@ public class AutoCraftingStorageType extends StorageType<AutoCraftingStorage> {
                 Messages.ALREADY_PART_OF_GROUP(player, "Crafting Table");
                 return;
             }
-            placeSign(block, toReplace, facing, player, owner, identifier, Values.AutoCraftTag, requireSign);
+            placeSign(block, toReplace, facing, player, owner, identifier, Values.Instance().AutoCraftTag, requireSign);
         }
     }
 

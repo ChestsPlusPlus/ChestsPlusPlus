@@ -21,7 +21,6 @@ import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.serialize.ConfigStorage;
 import com.jamesdpeters.minecraft.chests.serialize.LocationInfo;
 import com.jamesdpeters.minecraft.chests.serialize.MaterialSerializer;
-import com.jamesdpeters.minecraft.chests.serialize.PluginConfig;
 import com.jamesdpeters.minecraft.chests.serialize.RecipeSerializable;
 import com.jamesdpeters.minecraft.chests.serialize.SpigotConfig;
 import com.jamesdpeters.minecraft.chests.storage.autocraft.AutoCraftingStorage;
@@ -83,7 +82,6 @@ public class ChestsPlusPlus extends JavaPlugin {
 
     }
 
-    @SuppressWarnings("ConstantConditions")
     @Override
     public void onEnable() {
         int pluginId = 7166;
@@ -128,8 +126,10 @@ public class ChestsPlusPlus extends JavaPlugin {
             }), 0, PluginConfig.UPDATE_CHECKER_PERIOD.get() * 20);
         }
 
-        // Remove armour stands if disabled
-        Utils.fixEntities();
+        getServer().getPluginManager().registerEvents(ApiSpecific.getNmsProvider().getEntityEventListener(), this);
+        Bukkit.getWorlds().forEach(world -> {
+            ApiSpecific.getNmsProvider().getEntityEventListener().fixEntities(world);
+        });
 
         //Load storages after load.
         Bukkit.getScheduler().scheduleSyncDelayedTask(this, () -> {

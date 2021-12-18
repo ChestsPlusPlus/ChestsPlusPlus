@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.jamesdpeters.minecraft.chests</groupId>
   <artifactId>ChestsPlusPlus-Master</artifactId>
-  <version>2.5-Release</version>
+  <version>2.5.1-Release</version>
   <scm>
     <connection>scm:git:git@github.com:JamesPeters98/ChestsPlusPlus.git</connection>
     <developerConnection>scm:git:git@github.com:JamesPeters98/ChestsPlusPlus.git</developerConnection>

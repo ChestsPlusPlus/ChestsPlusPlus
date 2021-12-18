@@ -7,7 +7,7 @@ import com.jamesdpeters.minecraft.chests.misc.Messages;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.runnables.VirtualChestToHopper;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
-import com.jamesdpeters.minecraft.chests.serialize.PluginConfig;
+import com.jamesdpeters.minecraft.chests.PluginConfig;
 import com.jamesdpeters.minecraft.chests.sort.InventorySorter;
 import com.jamesdpeters.minecraft.chests.sort.SortMethod;
 import com.jamesdpeters.minecraft.chests.storage.abstracts.AbstractStorage;

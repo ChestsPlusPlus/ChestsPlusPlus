@@ -2,7 +2,7 @@ package com.jamesdpeters.minecraft.chests.listeners;
 
 import com.jamesdpeters.minecraft.chests.misc.Messages;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
-import com.jamesdpeters.minecraft.chests.misc.Values;
+import com.jamesdpeters.minecraft.chests.Values;
 import com.jamesdpeters.minecraft.chests.runnables.ChestLinkVerifier;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.storage.abstracts.AbstractStorage;
@@ -83,7 +83,7 @@ public class StorageListener implements Listener {
         setLine(sign, signChangeEvent, 0, ChatColor.RED + ChatColor.stripColor(signChangeEvent.getLine(0)));
         setLine(sign, signChangeEvent, 1, ChatColor.GREEN + ChatColor.stripColor(signChangeEvent.getLine(1)));
         setLine(sign, signChangeEvent, 2, ChatColor.BOLD + ChatColor.stripColor(addedPlayer.getName()));
-        sign.getPersistentDataContainer().set(Values.playerUUID, PersistentDataType.STRING, addedPlayer.getUniqueId().toString());
+        sign.getPersistentDataContainer().set(Values.Instance().playerUUID, PersistentDataType.STRING, addedPlayer.getUniqueId().toString());
         sign.update();
     }
 
@@ -116,8 +116,8 @@ public class StorageListener implements Listener {
             if (storageType.isValidBlockType(event.getBlockPlaced())) {
                 ItemMeta itemMeta = event.getItemInHand().getItemMeta();
                 if (itemMeta != null) {
-                    String playerUUID = itemMeta.getPersistentDataContainer().get(Values.playerUUID, PersistentDataType.STRING);
-                    String storageID = itemMeta.getPersistentDataContainer().get(Values.storageID, PersistentDataType.STRING);
+                    String playerUUID = itemMeta.getPersistentDataContainer().get(Values.Instance().playerUUID, PersistentDataType.STRING);
+                    String storageID = itemMeta.getPersistentDataContainer().get(Values.Instance().storageID, PersistentDataType.STRING);
 
                     if (playerUUID != null && storageID != null) {
                         OfflinePlayer owner = Bukkit.getOfflinePlayer(UUID.fromString(playerUUID));
@@ -178,8 +178,8 @@ public class StorageListener implements Listener {
                         ItemMeta itemMeta = customChest.getItemMeta();
                         if (itemMeta != null) {
                             itemMeta.setDisplayName(ChatColor.AQUA + "" + storageType.getSignTag() + " " + storage.getIdentifier());
-                            itemMeta.getPersistentDataContainer().set(Values.playerUUID, PersistentDataType.STRING, storage.getOwner().getUniqueId().toString());
-                            itemMeta.getPersistentDataContainer().set(Values.storageID, PersistentDataType.STRING, storage.getIdentifier());
+                            itemMeta.getPersistentDataContainer().set(Values.Instance().playerUUID, PersistentDataType.STRING, storage.getOwner().getUniqueId().toString());
+                            itemMeta.getPersistentDataContainer().set(Values.Instance().storageID, PersistentDataType.STRING, storage.getIdentifier());
                         }
                         customChest.setItemMeta(itemMeta);
                         block.getWorld().dropItemNaturally(block.getLocation(), customChest);

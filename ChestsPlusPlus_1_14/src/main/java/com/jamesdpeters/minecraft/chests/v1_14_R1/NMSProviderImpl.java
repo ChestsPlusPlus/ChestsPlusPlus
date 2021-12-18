@@ -20,6 +20,11 @@ public class NMSProviderImpl implements NMSProvider {
     }
 
     @Override
+    public EntityEventListener getEntityEventListener() {
+        return new EntityEventListener_1_14();
+    }
+
+    @Override
     public void setItemFrameVisible(ItemFrame itemFrame, boolean visible) {
         //Not support in 1.14
     }

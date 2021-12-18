@@ -1,4 +1,4 @@
-package com.jamesdpeters.minecraft.chests.serialize;
+package com.jamesdpeters.minecraft.chests;
 
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;

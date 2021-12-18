@@ -4,7 +4,7 @@ import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.api.ApiSpecific;
 import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
-import com.jamesdpeters.minecraft.chests.misc.Values;
+import com.jamesdpeters.minecraft.chests.Values;
 import com.jamesdpeters.minecraft.chests.party.PlayerPartyStorage;
 import com.jamesdpeters.minecraft.chests.serialize.LocationInfo;
 import org.bukkit.Bukkit;
@@ -226,9 +226,14 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
      * @param location - location to be added.
      */
     public void addLocation(Location location, Location signLocation) {
-        LocationInfo locationInfo = new LocationInfo(location);
+        LocationInfo locationInfo = getLocationInfo(location);
+
+        if (locationInfo == null){
+            locationInfo = new LocationInfo(location);
+            locationInfoList.add(locationInfo);
+        }
         locationInfo.setSignLocation(signLocation);
-        locationInfoList.add(locationInfo);
+
         if (shouldDisplayArmourStands()) {
             if (displayItem != null) {
                 updateSign();
@@ -533,7 +538,7 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
         stand.setRightArmPose(angle);
 
         //Store value of 1 in armour stand to indicate it belongs to this plugin.
-        stand.getPersistentDataContainer().set(Values.PluginKey, PersistentDataType.INTEGER, 1);
+        stand.getPersistentDataContainer().set(Values.Instance().PluginKey, PersistentDataType.INTEGER, 1);
         return stand;
     }
 

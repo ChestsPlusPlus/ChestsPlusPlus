@@ -1,7 +1,7 @@
 package com.jamesdpeters.minecraft.chests.misc;
 
 import com.jamesdpeters.minecraft.chests.serialize.Config;
-import com.jamesdpeters.minecraft.chests.serialize.PluginConfig;
+import com.jamesdpeters.minecraft.chests.PluginConfig;
 import org.bstats.bukkit.Metrics;
 import org.bstats.charts.SimplePie;
 

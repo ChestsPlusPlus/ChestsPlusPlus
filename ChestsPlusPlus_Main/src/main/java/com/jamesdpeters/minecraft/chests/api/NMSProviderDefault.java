@@ -32,6 +32,11 @@ public class NMSProviderDefault implements NMSProvider {
     }
 
     @Override
+    public EntityEventListener getEntityEventListener() {
+        return defaultProvider.getEntityEventListener();
+    }
+
+    @Override
     public void setItemFrameVisible(ItemFrame itemFrame, boolean visible) {
         //Not supported in Bukkit api 1.14.
         defaultProvider.setItemFrameVisible(itemFrame, visible);

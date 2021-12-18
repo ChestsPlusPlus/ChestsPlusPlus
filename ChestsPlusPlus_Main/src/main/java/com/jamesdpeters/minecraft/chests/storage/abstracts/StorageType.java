@@ -4,12 +4,12 @@ package com.jamesdpeters.minecraft.chests.storage.abstracts;
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.misc.Messages;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
-import com.jamesdpeters.minecraft.chests.misc.Values;
+import com.jamesdpeters.minecraft.chests.Values;
 import com.jamesdpeters.minecraft.chests.party.PartyUtils;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.serialize.ConfigStorage;
 import com.jamesdpeters.minecraft.chests.serialize.LocationInfo;
-import com.jamesdpeters.minecraft.chests.serialize.PluginConfig;
+import com.jamesdpeters.minecraft.chests.PluginConfig;
 import com.jamesdpeters.minecraft.chests.storage.StorageUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
@@ -219,11 +219,7 @@ public abstract class StorageType<T extends AbstractStorage> implements Listener
 
         T storage = map.get(identifier);
         storage.onStorageAdded(chestLocation.getBlock(), player);
-
-        //If the location isn't already part of the system add it.
-        if (!storage.containsLocation(chestLocation)) {
-            storage.addLocation(chestLocation, sign);
-        }
+        storage.addLocation(chestLocation, sign);
 
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1f);
         Config.saveASync();
@@ -370,7 +366,7 @@ public abstract class StorageType<T extends AbstractStorage> implements Listener
             WallSign signBlockData = (WallSign) sign.getBlockData();
             signBlockData.setFacing(facing);
             sign.setBlockData(signBlockData);
-            sign.getPersistentDataContainer().set(Values.playerUUID, PersistentDataType.STRING, uuid);
+            sign.getPersistentDataContainer().set(Values.Instance().playerUUID, PersistentDataType.STRING, uuid);
             sign.update();
 
             BlockPlaceEvent event = new BlockPlaceEvent(sign.getBlock(), replacedBlockState, placedAgainst, new ItemStack(Material.AIR), player, true, EquipmentSlot.HAND);

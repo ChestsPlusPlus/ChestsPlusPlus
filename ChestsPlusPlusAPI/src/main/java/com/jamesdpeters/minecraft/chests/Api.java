@@ -8,9 +8,11 @@ import java.lang.reflect.InvocationTargetException;
 public class Api {
 
     private static Plugin plugin;
+    private static NMSProvider nmsProvider;
 
     public static void register(Plugin plugin) {
         Api.plugin = plugin;
+        Values.init(plugin);
     }
 
     public static Plugin getPlugin() {
@@ -29,5 +31,9 @@ public class Api {
             // So NMSProviderDefault is used for all versions 1.17+
             return null;
         }
+    }
+
+    protected static NMSProvider getNmsProvider() {
+        return nmsProvider;
     }
 }
