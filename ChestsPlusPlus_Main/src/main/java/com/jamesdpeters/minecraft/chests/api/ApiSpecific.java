@@ -5,6 +5,7 @@ import com.jamesdpeters.minecraft.chests.ChestOpener;
 import com.jamesdpeters.minecraft.chests.MaterialChecker;
 import com.jamesdpeters.minecraft.chests.NMSProvider;
 import org.bukkit.Bukkit;
+import org.bukkit.plugin.Plugin;
 
 
 public class ApiSpecific {
@@ -13,8 +14,9 @@ public class ApiSpecific {
     private static ChestOpener chestOpener;
     private static NMSProvider nmsProvider;
 
-    public static void init() {
-        nmsProvider = Api.setupNMSProvider();
+    public static void init(Plugin plugin) {
+        Api.init(plugin);
+        nmsProvider = Api.getNmsProvider();
         if (nmsProvider == null) nmsProvider = new NMSProviderDefault();
         materialChecker = nmsProvider.getMaterialChecker();
         chestOpener = nmsProvider.getChestOpener();

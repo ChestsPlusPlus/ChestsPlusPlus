@@ -10,16 +10,17 @@ public class Api {
     private static Plugin plugin;
     private static NMSProvider nmsProvider;
 
-    public static void register(Plugin plugin) {
+    public static void init(Plugin plugin) {
         Api.plugin = plugin;
         Values.init(plugin);
+        nmsProvider = setupNMSProvider();
     }
 
     public static Plugin getPlugin() {
         return plugin;
     }
 
-    public static NMSProvider setupNMSProvider() {
+    private static NMSProvider setupNMSProvider() {
         String packageName = NMSProvider.class.getPackage().getName();
         String nmsVersion = Bukkit.getServer().getClass().getPackage().getName().split("\\.")[3];
         String nmsProvider = packageName + "." + nmsVersion + ".NMSProviderImpl";
@@ -33,7 +34,7 @@ public class Api {
         }
     }
 
-    protected static NMSProvider getNmsProvider() {
+    public static NMSProvider getNmsProvider() {
         return nmsProvider;
     }
 }

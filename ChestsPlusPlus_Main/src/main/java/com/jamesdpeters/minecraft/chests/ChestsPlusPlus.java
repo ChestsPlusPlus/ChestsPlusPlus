@@ -94,8 +94,7 @@ public class ChestsPlusPlus extends JavaPlugin {
         Stats.addCharts(metrics);
 
         //API initialisation
-        Api.register(this);
-        ApiSpecific.init();
+        ApiSpecific.init(this);
 
         //Register commands
         new ChestLinkCommand().register(this);
