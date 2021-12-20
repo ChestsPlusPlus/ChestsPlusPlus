@@ -1,7 +1,12 @@
 package com.jamesdpeters.minecraft.chests.v1_16_R2;
 
-import com.jamesdpeters.minecraft.chests.*;
-import com.jamesdpeters.minecraft.chests.v1_14_R1.EntityEventListener_1_14;
+import com.jamesdpeters.minecraft.chests.BaseMaterialChecker;
+import com.jamesdpeters.minecraft.chests.ChestOpener;
+import com.jamesdpeters.minecraft.chests.CraftingProvider;
+import com.jamesdpeters.minecraft.chests.EntityEventListener;
+import com.jamesdpeters.minecraft.chests.MaterialChecker;
+import com.jamesdpeters.minecraft.chests.NMSProvider;
+import com.jamesdpeters.minecraft.chests.v1_16_R1.EntityEventListener_1_16;
 import org.bukkit.block.Lidded;
 import org.bukkit.entity.ItemFrame;
 
@@ -25,7 +30,7 @@ public class NMSProviderImpl implements NMSProvider {
 
     @Override
     public MaterialChecker getMaterialChecker() {
-        return new MaterialChecker_1_16_R2();
+        return new BaseMaterialChecker();
     }
 
     @Override
@@ -35,7 +40,7 @@ public class NMSProviderImpl implements NMSProvider {
 
     @Override
     public EntityEventListener getEntityEventListener() {
-        return new EntityEventListener_1_14();
+        return new EntityEventListener_1_16();
     }
 
     @Override

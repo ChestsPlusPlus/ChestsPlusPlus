@@ -4,16 +4,21 @@ import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.function.Supplier;
 
 public class Api {
 
     private static Plugin plugin;
     private static NMSProvider nmsProvider;
 
-    public static void init(Plugin plugin) {
+    public static NMSProvider init(Plugin plugin, Supplier<NMSProvider> defaultProvider) {
         Api.plugin = plugin;
         Values.init(plugin);
         nmsProvider = setupNMSProvider();
+        if (nmsProvider == null)
+            nmsProvider = defaultProvider.get();
+
+        return nmsProvider;
     }
 
     public static Plugin getPlugin() {
@@ -32,9 +37,5 @@ public class Api {
             // So NMSProviderDefault is used for all versions 1.17+
             return null;
         }
-    }
-
-    public static NMSProvider getNmsProvider() {
-        return nmsProvider;
     }
 }

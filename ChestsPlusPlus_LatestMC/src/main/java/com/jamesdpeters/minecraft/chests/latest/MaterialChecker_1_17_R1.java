@@ -1,35 +1,35 @@
 package com.jamesdpeters.minecraft.chests.latest;
 
+import com.jamesdpeters.minecraft.chests.BaseMaterialChecker;
 import com.jamesdpeters.minecraft.chests.MaterialChecker;
-import com.jamesdpeters.minecraft.chests.v1_16_R1.MaterialChecker_1_16;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.List;
 
 /**
- * Only a protocol change from 1.16.2 to 1.16.3 so no new materials were added.
+ * Material Checker for items available in 1.17+
  */
 public class MaterialChecker_1_17_R1 extends MaterialChecker {
 
-    private final MaterialChecker_1_16 version1_16;
+    private final BaseMaterialChecker baseMaterialChecker;
 
     public MaterialChecker_1_17_R1(){
-        version1_16 = new MaterialChecker_1_16();
+        baseMaterialChecker = new BaseMaterialChecker();
     }
 
     @Override
     public List<Material> graphically2DList() {
-        return version1_16.graphically2DList();
+        return baseMaterialChecker.graphically2DList();
     }
 
     @Override
     public List<Material> ignoredMaterials() {
-        return version1_16.ignoredMaterials();
+        return baseMaterialChecker.ignoredMaterials();
     }
 
     @Override
     public boolean isTool(ItemStack itemStack) {
-        return version1_16.isTool(itemStack);
+        return baseMaterialChecker.isTool(itemStack);
     }
 }

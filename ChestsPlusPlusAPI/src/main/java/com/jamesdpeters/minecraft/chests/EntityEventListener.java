@@ -48,9 +48,10 @@ public abstract class EntityEventListener implements Listener {
     }
 
     private void setItemFrames(Stream<Entity> entityStream) {
-        entityStream.filter(entity ->
-                        (entity instanceof ItemFrame
-                                && entity.getLocation().getBlock().getRelative(((ItemFrame) entity).getAttachedFace()).getState() instanceof Hopper))
-                .forEach(entity -> Api.getNmsProvider().setItemFrameVisible((ItemFrame) entity, !PluginConfig.INVISIBLE_FILTER_ITEM_FRAMES.get()));
+        entityStream
+                // Filter Item frames that are connected to Hoppers.
+                .filter(entity -> (entity instanceof ItemFrame
+                        && entity.getLocation().getBlock().getRelative(((ItemFrame) entity).getAttachedFace()).getState() instanceof Hopper))
+                .forEach(entity -> ((ItemFrame) entity).setVisible(!PluginConfig.INVISIBLE_FILTER_ITEM_FRAMES.get()));
     }
 }
