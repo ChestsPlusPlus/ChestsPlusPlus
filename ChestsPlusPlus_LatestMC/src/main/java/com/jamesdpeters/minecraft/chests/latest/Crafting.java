@@ -8,15 +8,17 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 
+import java.util.Arrays;
+
 public class Crafting implements CraftingProvider {
 
     @Override
     public CraftingResult craft(Player player, World world, ItemStack[] items) {
-        var item = Bukkit.craftItem(items, world, player);
-        CraftingResult result = new CraftingResult();
-        result.setResult(item);
-        result.setMatrixResult(items);
-        return result;
+        // Create copy of array since Bukkit#craftItem modifies the input array.
+        ItemStack[] itemsCopy = Arrays.copyOf(items, items.length);
+
+        var item = Bukkit.craftItem(itemsCopy, world, player);
+        return new CraftingResult(item, itemsCopy);
     }
 
     @Override

@@ -106,7 +106,7 @@ public class VirtualCraftingHolder implements InventoryHolder {
         else if (recipe instanceof ShapelessRecipe) setCrafting((ShapelessRecipe) recipe);
         else {
             // For ComplexRecipes or other implementations just use the result and original matrix for choices.
-            result = ApiSpecific.getNmsProvider().getCraftingProvider().craft(storage.getOwner().getPlayer(), Bukkit.getWorlds().get(0), matrix).getResult();
+            result = ApiSpecific.getNmsProvider().getCraftingProvider().craft(storage.getOwner().getPlayer(), Bukkit.getWorlds().get(0), matrix).result();
             for (int i = 0; i < matrix.length; i++) {
                 ItemStack item = matrix[i];
                 if (item != null) {
@@ -419,20 +419,20 @@ public class VirtualCraftingHolder implements InventoryHolder {
 //        PrepareItemCraftEvent itemCraftEvent = new PrepareItemCraftEvent(craftingInventoryImpl, inventoryView, false);
 //        Bukkit.getPluginManager().callEvent(itemCraftEvent);
 
-        if (craftingResult.getResult() == null) return false;
+        if (craftingResult.result() == null) return false;
 
         //If we reach here there are enough materials so check for space in the Hopper and update inventory.
         //Check if output and input are the same inventory to avoid duplication.
         Inventory tempOutput = sameInv ? sameInventory : Utils.copyInventory(output);
-        HashMap<Integer, ItemStack> map = tempOutput.addItem(craftingResult.getResult());
+        HashMap<Integer, ItemStack> map = tempOutput.addItem(craftingResult.result());
 
-        boolean isEmpty = Arrays.stream(craftingResult.getMatrixResult())
+        boolean isEmpty = Arrays.stream(craftingResult.matrixResult())
                 .anyMatch(itemStack -> (itemStack == null || itemStack.getType() == Material.AIR));
 
         // Add any leftover items from the recipe e.g buckets.
         HashMap<Integer, ItemStack> craftingMatrixLeftOvers =
                 isEmpty ? Maps.newHashMap()
-                        : tempOutput.addItem(craftingResult.getMatrixResult());
+                        : tempOutput.addItem(craftingResult.matrixResult());
 
         //If result fits into output copy over the temporary inventories.
         if (map.isEmpty() && craftingMatrixLeftOvers.isEmpty()) {
