@@ -22,7 +22,7 @@ public class Crafting implements CraftingProvider {
     }
 
     @Override
-    public Recipe getRecipe(Player player, World world, ItemStack[] items) {
+    public Recipe getRecipe(World world, ItemStack[] items) {
         return Bukkit.getCraftingRecipe(items, world);
     }
 }

@@ -7,14 +7,12 @@ import org.bukkit.Keyed;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.SerializableAs;
-import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.ShapelessRecipe;
 
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 @SerializableAs("C++Recipe")
@@ -25,10 +23,12 @@ public class RecipeSerializable implements ConfigurationSerializable {
 
     // Store items used for ComplexRecipes
     private ItemStack[] items;
+    private ItemStack[] returnedItems; // Stores and items returned from the recipe. i.e Buckets/bottles etc.
 
-    public RecipeSerializable(Recipe recipe, ItemStack[] items) {
+    public RecipeSerializable(Recipe recipe, ItemStack[] items, ItemStack[] returnedItems) {
         this.recipe = recipe;
         this.items = items;
+        this.returnedItems = returnedItems;
         if (recipe instanceof Keyed){
             namespacedKey = ((Keyed) recipe).getKey();
         }
@@ -37,8 +37,12 @@ public class RecipeSerializable implements ConfigurationSerializable {
     public RecipeSerializable(Map<String, Object> map) {
         Object obj = map.get("items");
         if (obj != null) {
-            //noinspection unchecked
             items = (ItemStack[]) obj;
+        }
+
+        Object retItems = map.get("returnedItems");
+        if (retItems != null) {
+            returnedItems = (ItemStack[]) retItems;
         }
 
         //noinspection deprecation
@@ -46,9 +50,9 @@ public class RecipeSerializable implements ConfigurationSerializable {
         recipe = Crafting.getRecipeByKey(namespacedKey);
     }
 
-    public void updateRecipe(Player player) {
+    public void updateRecipe() {
         if (recipe == null) {
-            recipe = ApiSpecific.getNmsProvider().getCraftingProvider().getRecipe(player, Bukkit.getWorlds().get(0), items);
+            recipe = ApiSpecific.getNmsProvider().getCraftingProvider().getRecipe(Bukkit.getWorlds().get(0), items);
         }
     }
 
@@ -59,6 +63,7 @@ public class RecipeSerializable implements ConfigurationSerializable {
         map.put("key", namespacedKey.getKey());
         if (!(recipe instanceof ShapedRecipe || recipe instanceof ShapelessRecipe)) {
             map.put("items", items);
+            map.put("returnedItems", returnedItems);
         }
         return map;
     }
@@ -73,5 +78,9 @@ public class RecipeSerializable implements ConfigurationSerializable {
 
     public ItemStack[] getItems() {
         return items;
+    }
+
+    public ItemStack[] getReturnedItems() {
+        return returnedItems;
     }
 }

@@ -18,6 +18,7 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.Container;
 import org.bukkit.block.Hopper;
 import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.InventoryEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
@@ -33,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class VirtualCraftingHolder implements InventoryHolder {
@@ -44,6 +46,7 @@ public class VirtualCraftingHolder implements InventoryHolder {
 
     private ItemStack[][] recipeChoices = new ItemStack[9][];
     private ItemStack result;
+    private ItemStack[] matrixResult; // stored matrix result after a crafting event
     private final int[] recipeChoiceIndex = new int[9];
     private boolean hasCompleteRecipe = false;
 
@@ -71,6 +74,7 @@ public class VirtualCraftingHolder implements InventoryHolder {
 
     public void setCrafting(ShapelessRecipe shapelessRecipe) {
         result = shapelessRecipe.getResult();
+        matrixResult = null;
         List<RecipeChoice> choiceList = shapelessRecipe.getChoiceList();
         for (int i = 0; i < choiceList.size(); i++) {
             RecipeChoice recipeChoice = choiceList.get(i);
@@ -84,6 +88,7 @@ public class VirtualCraftingHolder implements InventoryHolder {
 
     public void setCrafting(ShapedRecipe recipe) {
         result = recipe.getResult();
+        matrixResult = null;
         int row = 0;
         for (String r : recipe.getShape()) {
             int col = 0;
@@ -101,12 +106,13 @@ public class VirtualCraftingHolder implements InventoryHolder {
         setHasCompleteRecipe();
     }
 
-    public void setCrafting(Recipe recipe, ItemStack[] matrix) {
+    public void setCrafting(Recipe recipe, ItemStack[] matrix, ItemStack[] matrixResult) {
         if (recipe instanceof ShapedRecipe) setCrafting((ShapedRecipe) recipe);
         else if (recipe instanceof ShapelessRecipe) setCrafting((ShapelessRecipe) recipe);
         else {
             // For ComplexRecipes or other implementations just use the result and original matrix for choices.
-            result = ApiSpecific.getNmsProvider().getCraftingProvider().craft(storage.getOwner().getPlayer(), Bukkit.getWorlds().get(0), matrix).result();
+            result = recipe.getResult();
+            this.matrixResult = matrixResult;
             for (int i = 0; i < matrix.length; i++) {
                 ItemStack item = matrix[i];
                 if (item != null) {
@@ -131,15 +137,18 @@ public class VirtualCraftingHolder implements InventoryHolder {
         stopCraftingItems();
     }
 
-    public void updateCrafting() {
+    public void updateCrafting(InventoryEvent event) {
         var crafting = Arrays.copyOfRange(inventory.getContents(),1, inventory.getContents().length);
 
-        Recipe recipe = Crafting.getRecipe(storage.getOwner().getPlayer(), crafting);
-        getStorage().setRecipe(recipe, crafting); // Only store the crafting matrix if the recipe is valid
+        Player player = (Player) event.getView().getPlayer();
+        var craftingResult = ApiSpecific.getNmsProvider().getCraftingProvider().craft(player, player.getWorld(), Arrays.copyOf(crafting, crafting.length));
+
+        Recipe recipe = Crafting.getRecipe(crafting);
+        getStorage().setRecipe(recipe, crafting, craftingResult.matrixResult()); // Only store the crafting matrix if the recipe is valid
         resetChoices();
 
         if (recipe != null) {
-            setCrafting(recipe, crafting);
+            setCrafting(recipe, crafting, craftingResult.matrixResult());
             playSound(Sound.BLOCK_NOTE_BLOCK_CHIME, 0.5f, 1f);
         } else {
             stopCraftingItems();
@@ -426,13 +435,16 @@ public class VirtualCraftingHolder implements InventoryHolder {
         Inventory tempOutput = sameInv ? sameInventory : Utils.copyInventory(output);
         HashMap<Integer, ItemStack> map = tempOutput.addItem(craftingResult.result());
 
-        boolean isEmpty = Arrays.stream(craftingResult.matrixResult())
-                .anyMatch(itemStack -> (itemStack == null || itemStack.getType() == Material.AIR));
+        // Remove nulls from matrix result.
+        var matrix = Arrays.stream(craftingResult.matrixResult())
+                .filter(Objects::nonNull).toList();
+
+        boolean isEmpty = matrix.stream().allMatch(itemStack -> itemStack.getType() == Material.AIR);
 
         // Add any leftover items from the recipe e.g buckets.
         HashMap<Integer, ItemStack> craftingMatrixLeftOvers =
                 isEmpty ? Maps.newHashMap()
-                        : tempOutput.addItem(craftingResult.matrixResult());
+                        : tempOutput.addItem(matrix.toArray(ItemStack[]::new));
 
         //If result fits into output copy over the temporary inventories.
         if (map.isEmpty() && craftingMatrixLeftOvers.isEmpty()) {

@@ -63,7 +63,7 @@ public class Crafting implements CraftingProvider {
     }
 
     @Override
-    public Recipe getRecipe(Player player, World world, ItemStack[] items) {
+    public Recipe getRecipe(World world, ItemStack[] items) {
         Container container = new Container(null, -1) {
             @Override
             public InventoryView getBukkitView() {

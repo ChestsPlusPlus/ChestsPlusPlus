@@ -113,10 +113,9 @@ public class InventoryListener implements Listener {
     }
 
     private void craftingUpdate(InventoryInteractEvent event) {
-        InventoryHolder holder = event.getInventory().getHolder();
-        if (holder instanceof VirtualCraftingHolder) {
-            Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN, (((VirtualCraftingHolder) holder).setUpdatingRecipe(true))::updateCrafting, 1);
-            Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN, (((VirtualCraftingHolder) holder))::forceUpdateInventory, 1);
+        if (event.getInventory().getHolder() instanceof VirtualCraftingHolder vHolder) {
+            Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN, () -> vHolder.setUpdatingRecipe(true).updateCrafting(event), 1);
+            Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN, vHolder::forceUpdateInventory, 1);
         }
     }
 

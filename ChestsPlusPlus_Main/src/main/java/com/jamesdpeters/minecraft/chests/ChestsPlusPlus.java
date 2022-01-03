@@ -17,6 +17,7 @@ import com.jamesdpeters.minecraft.chests.misc.Stats;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.party.PlayerParty;
 import com.jamesdpeters.minecraft.chests.party.PlayerPartyStorage;
+import com.jamesdpeters.minecraft.chests.players.PlayerStorage;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.serialize.ConfigStorage;
 import com.jamesdpeters.minecraft.chests.serialize.LocationInfo;
@@ -141,6 +142,7 @@ public class ChestsPlusPlus extends JavaPlugin {
             getServer().getPluginManager().registerEvents(new InventoryListener(), this);
             getServer().getPluginManager().registerEvents(new HopperListener(), this);
             getServer().getPluginManager().registerEvents(new WorldListener(), this);
+            getServer().getPluginManager().registerEvents(new PlayerStorage(), this);
             Config.getStorageTypes().forEach(storageType -> getServer().getPluginManager().registerEvents(storageType, this));
             getLogger().info("Chests++ enabled!");
         }, 1);

@@ -32,8 +32,8 @@ public class Crafting {
         });
     }
 
-    public static Recipe getRecipe(Player player, ItemStack[] craftingTable) {
-        return ApiSpecific.getNmsProvider().getCraftingProvider().getRecipe(player, Bukkit.getWorlds().get(0), craftingTable);
+    public static Recipe getRecipe(ItemStack[] craftingTable) {
+        return ApiSpecific.getNmsProvider().getCraftingProvider().getRecipe(Bukkit.getWorlds().get(0), craftingTable);
     }
 
     public static CraftingResult craft(Player player, ItemStack[] recipe) {
