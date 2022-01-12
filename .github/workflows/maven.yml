@@ -38,6 +38,7 @@ jobs:
     - name: Run BuildTools Pre 1.17
       working-directory: ./BuildTools
       run: |
+        ls ./BuildTools -R
         # make file runnable, might not be necessary
         chmod +x "${GITHUB_WORKSPACE}/BuildTools/build-pre1.17.sh"
         # run script
