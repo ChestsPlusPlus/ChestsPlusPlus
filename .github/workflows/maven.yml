@@ -23,17 +23,17 @@ jobs:
       with:
         path: |
           ~/.m2
-          ~/BuildTools/Bukkit
-          ~/BuildTools/CraftBukkit
-          ~/BuildTools/Spigot
-          ~/BuildTools/BuildData
+          ../BuildTools/Bukkit
+          ../BuildTools/CraftBukkit
+          ../BuildTools/Spigot
+          ../BuildTools/BuildData
         key: buildtools-cache
     
     - name: Check BuildTools cached
       run: |
-        ls BuildTools
+        ls ../BuildTools
         echo "Separator"
-        ls ${GITHUB_WORKSPACE}/BuildTools
+        ls ${GITHUB_WORKSPACE}/../BuildTools
       shell: bash
     
 #     - name: Set up JDK 8
@@ -76,13 +76,13 @@ jobs:
         distribution: 'adopt'
 
     - name: Run BuildTools 1.18+
-      working-directory: ~/BuildTools
+      working-directory: ../BuildTools
       run: |
-        ls ~/BuildTools -R
+        ls -R
         # make file runnable, might not be necessary
         chmod +x "${GITHUB_WORKSPACE}/BuildTools/build-1.18+.sh"
         # run script
-        bash build-1.18+.sh
+        bash ${GITHUB_WORKSPACE}/BuildTools/build-1.18+.sh
         ls ~/.m2/repository/org/spigotmc/ -R
       shell: sh
       
