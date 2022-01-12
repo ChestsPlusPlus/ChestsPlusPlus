@@ -24,7 +24,7 @@ jobs:
         distribution: 'adopt'
         cache: maven
     - name: Run BuildTools Pre 1.17
-      working-directory: /BuildTools
+      working-directory: ./BuildTools
       run: build-pre1.17.sh
       
     - name: Set up JDK 16
@@ -34,7 +34,7 @@ jobs:
         distribution: 'adopt'
         cache: maven
     - name: Run BuildTools 1.17
-      working-directory: /BuildTools
+      working-directory: ./BuildTools
       run: build-1.17.sh
     
     - name: Set up JDK 17
@@ -44,7 +44,7 @@ jobs:
         distribution: 'adopt'
         cache: maven
     - name: Run BuildTools 1.18+
-      working-directory: /BuildTools
+      working-directory: ./BuildTools
       run: build-1.18+.sh
       
     - name: Build with Maven
