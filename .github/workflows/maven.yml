@@ -30,6 +30,7 @@ jobs:
         chmod +x "${GITHUB_WORKSPACE}/BuildTools/build-pre1.17.sh"
         # run script
         bash build-pre1.17.sh
+        ls ~/.m2/repository/org/spigotmc/ -R
       shell: bash
       
     - name: Set up JDK 16
@@ -44,7 +45,8 @@ jobs:
         # make file runnable, might not be necessary
         chmod +x "${GITHUB_WORKSPACE}/BuildTools/build-1.17.sh"
         # run script
-        "${GITHUB_WORKSPACE}/BuildTools/build-1.17.sh"
+        bash build-1.17.sh
+        ls ~/.m2/repository/org/spigotmc/ -R
       shell: sh
     
     - name: Set up JDK 17
@@ -56,10 +58,11 @@ jobs:
     - name: Run BuildTools 1.18+
       working-directory: ./BuildTools
       run: |
-        # make file runnable, might not be necessary
+       # make file runnable, might not be necessary
         chmod +x "${GITHUB_WORKSPACE}/BuildTools/build-1.18+.sh"
         # run script
-        "${GITHUB_WORKSPACE}/BuildTools/build-pre1.18+.sh"
+        bash build-1.18+.sh
+        ls ~/.m2/repository/org/spigotmc/ -R
       shell: sh
       
     - name: Build with Maven
