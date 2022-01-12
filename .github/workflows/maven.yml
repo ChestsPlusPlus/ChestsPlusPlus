@@ -17,12 +17,24 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     
+    - name: Cache BuildTools
+      id: cache-buildtools
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.m2
+          ${GITHUB_WORKSPACE}/BuildTools/Bukkit
+          ${GITHUB_WORKSPACE}/BuildTools/CraftBukkit
+          ${GITHUB_WORKSPACE}/BuildTools/Spigot
+          ${GITHUB_WORKSPACE}/BuildTools/BuildData
+        key: buildtools-cache
+    
     - name: Set up JDK 8
       uses: actions/setup-java@v2
       with:
         java-version: '8'
         distribution: 'adopt'
-        cache: maven
+        
     - name: Run BuildTools Pre 1.17
       working-directory: ./BuildTools
       run: |
@@ -38,7 +50,7 @@ jobs:
       with:
         java-version: '16'
         distribution: 'adopt'
-        cache: maven
+
     - name: Run BuildTools 1.17
       working-directory: ./BuildTools
       run: |
@@ -54,7 +66,7 @@ jobs:
       with:
         java-version: '17'
         distribution: 'adopt'
-        cache: maven
+
     - name: Run BuildTools 1.18+
       working-directory: ./BuildTools
       run: |
