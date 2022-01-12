@@ -7,7 +7,7 @@ import org.bukkit.inventory.Recipe;
 
 public interface CraftingProvider {
 
-    CraftingResult craft(Player player, World world, ItemStack[] items);
+    CraftingResult craft(World world, ItemStack[] items);
 
     Recipe getRecipe(Player player, World world, ItemStack[] items);
 }

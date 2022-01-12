@@ -6,10 +6,17 @@ before_install:
 - bash build-pre1.17.sh
 - wget https://github.com/sormuras/bach/raw/master/install-jdk.sh
 - chmod +x $TRAVIS_BUILD_DIR/BuildTools/install-jdk.sh
+# Installs Java 16 and runs scripts needing Java 16.
 - export JAVA_HOME=$HOME/openjdk16
 - $TRAVIS_BUILD_DIR/BuildTools/install-jdk.sh -F 16 --target $JAVA_HOME
 - export PATH=$JAVA_HOME/bin:$PATH
-#- bash build-1.17+.sh
+- bash build-1.17.sh
+# Installs Java 17 and runs scripts needing Java 17.
+- export JAVA_HOME=$HOME/openjdk17
+- $TRAVIS_BUILD_DIR/BuildTools/install-jdk.sh -F 17 --target $JAVA_HOME
+- export PATH=$JAVA_HOME/bin:$PATH
+- bash build-1.18+.sh
+##
 - cd ../
 
 install:

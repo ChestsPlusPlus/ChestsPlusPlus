@@ -1,4 +1,4 @@
-package com.jamesdpeters.minecraft.chests.latest;
+package com.jamesdpeters.minecraft.chests.v1_17_R1;
 
 import com.jamesdpeters.minecraft.chests.ChestOpener;
 import com.jamesdpeters.minecraft.chests.CraftingProvider;

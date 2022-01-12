@@ -106,7 +106,7 @@ public class VirtualCraftingHolder implements InventoryHolder {
         else if (recipe instanceof ShapelessRecipe) setCrafting((ShapelessRecipe) recipe);
         else {
             // For ComplexRecipes or other implementations just use the result and original matrix for choices.
-            result = ApiSpecific.getNmsProvider().getCraftingProvider().craft(storage.getOwner().getPlayer(), Bukkit.getWorlds().get(0), matrix).result();
+            result = ApiSpecific.getNmsProvider().getCraftingProvider().craft(Bukkit.getWorlds().get(0), matrix).result();
             for (int i = 0; i < matrix.length; i++) {
                 ItemStack item = matrix[i];
                 if (item != null) {

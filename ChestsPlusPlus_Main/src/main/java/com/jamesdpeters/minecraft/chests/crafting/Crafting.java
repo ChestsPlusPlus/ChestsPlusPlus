@@ -37,7 +37,7 @@ public class Crafting {
     }
 
     public static CraftingResult craft(Player player, ItemStack[] recipe) {
-        return ApiSpecific.getNmsProvider().getCraftingProvider().craft(player, Bukkit.getWorlds().get(0), recipe);
+        return ApiSpecific.getNmsProvider().getCraftingProvider().craft(Bukkit.getWorlds().get(0), recipe);
     }
 
     public static Recipe getRecipeByKey(NamespacedKey key) {

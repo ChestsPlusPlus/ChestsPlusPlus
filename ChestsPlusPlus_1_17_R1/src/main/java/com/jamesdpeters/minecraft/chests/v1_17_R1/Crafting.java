@@ -1,27 +1,24 @@
-package com.jamesdpeters.minecraft.chests.v1_16_R1;
+package com.jamesdpeters.minecraft.chests.v1_17_R1;
 
 import com.jamesdpeters.minecraft.chests.CraftingProvider;
 import com.jamesdpeters.minecraft.chests.CraftingResult;
-import net.minecraft.server.v1_16_R1.Container;
-import net.minecraft.server.v1_16_R1.EntityHuman;
-import net.minecraft.server.v1_16_R1.IRecipe;
-import net.minecraft.server.v1_16_R1.InventoryCrafting;
-import net.minecraft.server.v1_16_R1.NonNullList;
-import net.minecraft.server.v1_16_R1.RecipeCrafting;
-import net.minecraft.server.v1_16_R1.Recipes;
-import net.minecraft.server.v1_16_R1.WorldServer;
+import net.minecraft.core.NonNullList;
+import net.minecraft.server.level.WorldServer;
+import net.minecraft.world.entity.player.EntityHuman;
+import net.minecraft.world.inventory.Container;
+import net.minecraft.world.inventory.InventoryCrafting;
+import net.minecraft.world.item.crafting.Recipes;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
-import org.bukkit.craftbukkit.v1_16_R1.CraftServer;
-import org.bukkit.craftbukkit.v1_16_R1.CraftWorld;
-import org.bukkit.craftbukkit.v1_16_R1.inventory.CraftItemStack;
+import org.bukkit.craftbukkit.v1_17_R1.CraftServer;
+import org.bukkit.craftbukkit.v1_17_R1.CraftWorld;
+import org.bukkit.craftbukkit.v1_17_R1.inventory.CraftItemStack;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 
 import java.util.ArrayList;
-import java.util.Optional;
 
 public class Crafting implements CraftingProvider {
 
@@ -46,10 +43,10 @@ public class Crafting implements CraftingProvider {
             inventoryCrafting.setItem(i, CraftItemStack.asNMSCopy(items[i]));
         }
 
-        Optional<RecipeCrafting> recipe = ((CraftServer) Bukkit.getServer()).getServer().getCraftingManager().craft(Recipes.CRAFTING, inventoryCrafting, craftWorld.getHandle());
+        var recipe = ((CraftServer) Bukkit.getServer()).getServer().getCraftingManager().craft(Recipes.a, inventoryCrafting, craftWorld.getHandle());
 
         // Generate the resulting ItemStack from the Crafting Matrix
-        net.minecraft.server.v1_16_R1.ItemStack itemStack = net.minecraft.server.v1_16_R1.ItemStack.b;
+        net.minecraft.world.item.ItemStack itemStack = net.minecraft.world.item.ItemStack.b;
 
         if (recipe.isPresent()) {
             itemStack = recipe.get().a(inventoryCrafting);
@@ -60,42 +57,19 @@ public class Crafting implements CraftingProvider {
 
     @Override
     public Recipe getRecipe(Player player, World world, ItemStack[] items) {
-        Container container = new Container(null, -1) {
-            @Override
-            public InventoryView getBukkitView() {
-                return null;
-            }
-
-            @Override
-            public boolean canUse(EntityHuman entityHuman) {
-                return false;
-            }
-        };
-
-        InventoryCrafting crafting = new InventoryCrafting(container, 3, 3);
-
-        for (int i = 0; i < items.length; i++) {
-            if(i >= 9) break; // ItemList cant contain more than 9 items.
-            crafting.setItem(i, CraftItemStack.asNMSCopy(items[i]));
-        }
-
-        CraftServer server = (CraftServer) Bukkit.getServer();
-        CraftWorld craftWorld = (CraftWorld) world;
-        Optional<RecipeCrafting> optional = server.getServer().getCraftingManager().craft(Recipes.CRAFTING, crafting, craftWorld.getHandle());
-
-        return optional.map(IRecipe::toBukkitRecipe).orElse(null);
+        return Bukkit.getCraftingRecipe(items, world);
     }
 
     private CraftingResult createItemCraftResult(ItemStack itemStack, InventoryCrafting inventoryCrafting, WorldServer worldServer) {
         CraftServer server = (CraftServer) Bukkit.getServer();
-        NonNullList<net.minecraft.server.v1_16_R1.ItemStack> remainingItems = server.getServer().getCraftingManager().c(Recipes.CRAFTING, inventoryCrafting, worldServer);
+        NonNullList<net.minecraft.world.item.ItemStack> remainingItems = server.getServer().getCraftingManager().c(Recipes.a, inventoryCrafting, worldServer);
 
         CraftingResult craftItemResult = new CraftingResult(itemStack, new ItemStack[9], new ArrayList<>());
 
         // Create resulting matrix and overflow items
         for (int i = 0; i < remainingItems.size(); ++i) {
-            net.minecraft.server.v1_16_R1.ItemStack itemstack1 = inventoryCrafting.getItem(i);
-            net.minecraft.server.v1_16_R1.ItemStack itemstack2 = remainingItems.get(i);
+            net.minecraft.world.item.ItemStack itemstack1 = inventoryCrafting.getItem(i);
+            net.minecraft.world.item.ItemStack itemstack2 = (net.minecraft.world.item.ItemStack) remainingItems.get(i);
 
             if (!itemstack1.isEmpty()) {
                 inventoryCrafting.splitStack(i, 1);
@@ -105,7 +79,7 @@ public class Crafting implements CraftingProvider {
             if (!itemstack2.isEmpty()) {
                 if (itemstack1.isEmpty()) {
                     inventoryCrafting.setItem(i, itemstack2);
-                } else if (net.minecraft.server.v1_16_R1.ItemStack.equals(itemstack1, itemstack2) && net.minecraft.server.v1_16_R1.ItemStack.matches(itemstack1, itemstack2)) {
+                } else if (net.minecraft.world.item.ItemStack.equals(itemstack1, itemstack2) && net.minecraft.world.item.ItemStack.matches(itemstack1, itemstack2)) {
                     itemstack2.add(itemstack1.getCount());
                     inventoryCrafting.setItem(i, itemstack2);
                 } else {
