@@ -25,7 +25,11 @@ jobs:
         cache: maven
     - name: Run BuildTools Pre 1.17
       working-directory: ./BuildTools
-      run: build-pre1.17.sh
+      run: |
+        # make file runnable, might not be necessary
+        chmod +x "${GITHUB_WORKSPACE}/BuildTools/build-pre1.17.sh"
+        # run script
+        "${GITHUB_WORKSPACE}/BuildTools/build-pre1.17.sh"
       shell: bash
       
     - name: Set up JDK 16
@@ -36,7 +40,11 @@ jobs:
         cache: maven
     - name: Run BuildTools 1.17
       working-directory: ./BuildTools
-      run: build-1.17.sh
+      run: |
+        # make file runnable, might not be necessary
+        chmod +x "${GITHUB_WORKSPACE}/BuildTools/build-1.17.sh"
+        # run script
+        "${GITHUB_WORKSPACE}/BuildTools/build-1.17.sh"
       shell: bash
     
     - name: Set up JDK 17
@@ -47,7 +55,11 @@ jobs:
         cache: maven
     - name: Run BuildTools 1.18+
       working-directory: ./BuildTools
-      run: build-1.18+.sh
+      run: |
+        # make file runnable, might not be necessary
+        chmod +x "${GITHUB_WORKSPACE}/BuildTools/build-1.18+.sh"
+        # run script
+        "${GITHUB_WORKSPACE}/BuildTools/build-pre1.18+.sh"
       shell: bash
       
     - name: Build with Maven
