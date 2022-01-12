@@ -31,6 +31,7 @@ jobs:
     
     - name: Check BuildTools cached
       run: |
+        mkdir -p ../BuildTools
         ls ../BuildTools
         echo "Separator"
         ls ${GITHUB_WORKSPACE}/../BuildTools
