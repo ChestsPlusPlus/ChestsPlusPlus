@@ -23,10 +23,10 @@ jobs:
       with:
         path: |
           ~/.m2
-          ${GITHUB_WORKSPACE}/BuildTools/Bukkit
-          ${GITHUB_WORKSPACE}/BuildTools/CraftBukkit
-          ${GITHUB_WORKSPACE}/BuildTools/Spigot
-          ${GITHUB_WORKSPACE}/BuildTools/BuildData
+          ~/BuildTools/Bukkit
+          ~/BuildTools/CraftBukkit
+          ~/BuildTools/Spigot
+          ~/BuildTools/BuildData
         key: buildtools-cache
     
     - name: Check BuildTools cached
@@ -36,38 +36,38 @@ jobs:
         ls ${GITHUB_WORKSPACE}/BuildTools
       shell: bash
     
-    - name: Set up JDK 8
-      uses: actions/setup-java@v2
-      with:
-        java-version: '8'
-        distribution: 'adopt'
+#     - name: Set up JDK 8
+#       uses: actions/setup-java@v2
+#       with:
+#         java-version: '8'
+#         distribution: 'adopt'
         
-    - name: Run BuildTools Pre 1.17
-      working-directory: ./BuildTools
-      run: |
-        ls ${GITHUB_WORKSPACE}/BuildTools/ -R
-        # make file runnable, might not be necessary
-        chmod +x "${GITHUB_WORKSPACE}/BuildTools/build-pre1.17.sh"
-        # run script
-        bash build-pre1.17.sh
-        ls ~/.m2/repository/org/spigotmc/ -R
-      shell: bash
+#     - name: Run BuildTools Pre 1.17
+#       working-directory: ~/BuildTools
+#       run: |
+#         ls ~/BuildTools -R
+#         # make file runnable, might not be necessary
+#         chmod +x "${GITHUB_WORKSPACE}/BuildTools/build-pre1.17.sh"
+#         # run script
+#         bash build-pre1.17.sh
+#         ls ~/.m2/repository/org/spigotmc/ -R
+#       shell: bash
       
-    - name: Set up JDK 16
-      uses: actions/setup-java@v2
-      with:
-        java-version: '16'
-        distribution: 'adopt'
+#     - name: Set up JDK 16
+#       uses: actions/setup-java@v2
+#       with:
+#         java-version: '16'
+#         distribution: 'adopt'
 
-    - name: Run BuildTools 1.17
-      working-directory: ./BuildTools
-      run: |
-        # make file runnable, might not be necessary
-        chmod +x "${GITHUB_WORKSPACE}/BuildTools/build-1.17.sh"
-        # run script
-        bash build-1.17.sh
-        ls ~/.m2/repository/org/spigotmc/ -R
-      shell: sh
+#     - name: Run BuildTools 1.17
+#       working-directory: ~/BuildTools
+#       run: |
+#         # make file runnable, might not be necessary
+#         chmod +x "${GITHUB_WORKSPACE}/BuildTools/build-1.17.sh"
+#         # run script
+#         bash build-1.17.sh
+#         ls ~/.m2/repository/org/spigotmc/ -R
+#       shell: sh
     
     - name: Set up JDK 17
       uses: actions/setup-java@v2
@@ -76,9 +76,9 @@ jobs:
         distribution: 'adopt'
 
     - name: Run BuildTools 1.18+
-      working-directory: ./BuildTools
+      working-directory: ~/BuildTools
       run: |
-        ls -R
+        ls ~/BuildTools -R
         # make file runnable, might not be necessary
         chmod +x "${GITHUB_WORKSPACE}/BuildTools/build-1.18+.sh"
         # run script
@@ -86,16 +86,16 @@ jobs:
         ls ~/.m2/repository/org/spigotmc/ -R
       shell: sh
       
-    - name: Build with Maven
-      run: mvn -B package --file pom.xml
+#     - name: Build with Maven
+#       run: mvn -B package --file pom.xml
               
-    - name: Upload Release Asset
-      id: upload-release-asset 
-      uses: softprops/action-gh-release@v1
-      if: startsWith(github.event.ref, 'refs/tags/v')
-      with:
-        draft: true
-        generate_release_notes: true
-        files: |
-          ${GITHUB_WORKSPACE}/Server/plugins/ChestsPlusPlus-*.jar
+#     - name: Upload Release Asset
+#       id: upload-release-asset 
+#       uses: softprops/action-gh-release@v1
+#       if: startsWith(github.event.ref, 'refs/tags/v')
+#       with:
+#         draft: true
+#         generate_release_notes: true
+#         files: |
+#           ${GITHUB_WORKSPACE}/Server/plugins/ChestsPlusPlus-*.jar
 
