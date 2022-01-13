@@ -27,7 +27,7 @@ jobs:
           ~/BuildTools/CraftBukkit
           ~/BuildTools/Spigot
           ~/BuildTools/BuildData
-        key: buildtools-cache
+        key: buildtools-cache-${{ hashFiles('**/spigot-*.jar') }}
     
     - name: Check BuildTools cached
       run: |
