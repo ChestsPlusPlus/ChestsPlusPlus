@@ -92,7 +92,7 @@ jobs:
     - name: Upload Release Asset
       id: upload-release-asset 
       uses: softprops/action-gh-release@v1
-      if: startsWith(github.event.ref, 'refs/tags/v')
+      if: startsWith(github.ref, 'refs/tags/v')
       with:
         draft: true
         generate_release_notes: true
