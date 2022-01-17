@@ -23,11 +23,9 @@ jobs:
       with:
         path: |
           ~/.m2
-          ~/BuildTools/Bukkit
-          ~/BuildTools/CraftBukkit
-          ~/BuildTools/Spigot
-          ~/BuildTools/BuildData
-        key: buildtools-cache-${{ hashFiles('**/spigot-*.jar') }}
+          ~/BuildTools
+        key: buildtools-cache-${{ hashFiles('spigot-*.jar') }}
+        restore-keys: buildtools-cache-
     
     - name: Check BuildTools cached
       run: |
