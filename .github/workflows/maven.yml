@@ -91,6 +91,11 @@ jobs:
       
     - name: Build with Maven
       run: mvn -B package --file pom.xml
+      
+    - name: Check Folders
+      run: |
+        ls -R
+      shell: bash
               
     - name: Upload Release Asset
       id: upload-release-asset 
@@ -100,5 +105,5 @@ jobs:
         draft: true
         generate_release_notes: true
         files: |
-          /Server/plugins/ChestsPlusPlus-*.jar
+          ChestsPlusPlus-*.jar
 
