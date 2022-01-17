@@ -33,37 +33,37 @@ jobs:
         ls ~/BuildTools
       shell: bash
     
-#     - name: Set up JDK 8
-#       uses: actions/setup-java@v2
-#       with:
-#         java-version: '8'
-#         distribution: 'adopt'
+    - name: Set up JDK 8
+      uses: actions/setup-java@v2
+      with:
+        java-version: '8'
+        distribution: 'adopt'
         
-#     - name: Run BuildTools Pre 1.17
-#       working-directory: BuildTools
-#       run: |
-#         cd ~/BuildTools
-#         # make file runnable, might not be necessary
-#         chmod +x "${GITHUB_WORKSPACE}/BuildTools/build-pre1.17.sh"
-#         # run script
-#         bash ${GITHUB_WORKSPACE}/BuildTools/build-pre1.17.sh
-#       shell: bash
+    - name: Run BuildTools Pre 1.17
+      working-directory: BuildTools
+      run: |
+        cd ~/BuildTools
+        # make file runnable, might not be necessary
+        chmod +x "${GITHUB_WORKSPACE}/BuildTools/build-pre1.17.sh"
+        # run script
+        bash ${GITHUB_WORKSPACE}/BuildTools/build-pre1.17.sh
+      shell: bash
       
-#     - name: Set up JDK 16
-#       uses: actions/setup-java@v2
-#       with:
-#         java-version: '16'
-#         distribution: 'adopt'
+    - name: Set up JDK 16
+      uses: actions/setup-java@v2
+      with:
+        java-version: '16'
+        distribution: 'adopt'
 
-#     - name: Run BuildTools 1.17
-#       working-directory: BuildTools
-#       run: |
-#         cd ~/BuildTools
-#         # make file runnable, might not be necessary
-#         chmod +x "${GITHUB_WORKSPACE}/BuildTools/build-1.17.sh"
-#         # run script
-#         bash ${GITHUB_WORKSPACE}/BuildTools/build-1.17.sh
-#       shell: bash
+    - name: Run BuildTools 1.17
+      working-directory: BuildTools
+      run: |
+        cd ~/BuildTools
+        # make file runnable, might not be necessary
+        chmod +x "${GITHUB_WORKSPACE}/BuildTools/build-1.17.sh"
+        # run script
+        bash ${GITHUB_WORKSPACE}/BuildTools/build-1.17.sh
+      shell: bash
     
     - name: Set up JDK 17
       uses: actions/setup-java@v2
