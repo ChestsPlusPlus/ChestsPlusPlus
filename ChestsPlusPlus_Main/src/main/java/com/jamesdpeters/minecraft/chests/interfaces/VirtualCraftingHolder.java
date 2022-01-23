@@ -427,7 +427,7 @@ public class VirtualCraftingHolder implements InventoryHolder {
         HashMap<Integer, ItemStack> map = tempOutput.addItem(craftingResult.result());
 
         boolean isEmpty = Arrays.stream(craftingResult.matrixResult())
-                .anyMatch(itemStack -> (itemStack == null || itemStack.getType() == Material.AIR));
+                .allMatch(itemStack -> (itemStack == null || itemStack.getType() == Material.AIR));
 
         // Add any leftover items from the recipe e.g buckets.
         HashMap<Integer, ItemStack> craftingMatrixLeftOvers =
