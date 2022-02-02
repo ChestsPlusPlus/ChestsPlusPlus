@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class VirtualCraftingHolder implements InventoryHolder {
@@ -42,7 +43,8 @@ public class VirtualCraftingHolder implements InventoryHolder {
     private BukkitRunnable guiTask;
     private BukkitRunnable craftItemTask;
 
-    private ItemStack[][] recipeChoices = new ItemStack[9][];
+    private RecipeChoice[] recipeChoices = new RecipeChoice[9];
+    private Map<RecipeChoice, List<ItemStack>> recipeChoiceItems = new HashMap<>();
     private ItemStack result;
     private final int[] recipeChoiceIndex = new int[9];
     private boolean hasCompleteRecipe = false;
@@ -71,29 +73,19 @@ public class VirtualCraftingHolder implements InventoryHolder {
 
     public void setCrafting(ShapelessRecipe shapelessRecipe) {
         result = shapelessRecipe.getResult();
-        List<RecipeChoice> choiceList = shapelessRecipe.getChoiceList();
-        for (int i = 0; i < choiceList.size(); i++) {
-            RecipeChoice recipeChoice = choiceList.get(i);
-            if (recipeChoice instanceof RecipeChoice.MaterialChoice materialChoice) {
-                ItemStack[] choices = materialChoice.getChoices().stream().map(ItemStack::new).toArray(ItemStack[]::new);
-                recipeChoices[i] = choices;
-            }
-        }
+        recipeChoices = shapelessRecipe.getChoiceList().toArray(new RecipeChoice[0]);
         setHasCompleteRecipe();
     }
 
     public void setCrafting(ShapedRecipe recipe) {
         result = recipe.getResult();
+        recipeChoices = new RecipeChoice[9];
         int row = 0;
         for (String r : recipe.getShape()) {
             int col = 0;
             for (char c : r.toCharArray()) {
-                RecipeChoice recipeChoice = recipe.getChoiceMap().get(c);
-                if (recipeChoice instanceof RecipeChoice.MaterialChoice materialChoice) {
-                    ItemStack[] choices = materialChoice.getChoices().stream().map(ItemStack::new).toArray(ItemStack[]::new);
-                    int i = (row * 3) + col;
-                    recipeChoices[i] = choices;
-                }
+                int i = (row * 3) + col;
+                recipeChoices[i] = recipe.getChoiceMap().get(c);
                 col++;
             }
             row++;
@@ -107,13 +99,14 @@ public class VirtualCraftingHolder implements InventoryHolder {
         else {
             // For ComplexRecipes or other implementations just use the result and original matrix for choices.
             result = ApiSpecific.getNmsProvider().getCraftingProvider().craft(Bukkit.getWorlds().get(0), matrix).result();
+            recipeChoices = new RecipeChoice[9];
             for (int i = 0; i < matrix.length; i++) {
-                ItemStack item = matrix[i];
+                var item = matrix[i];
+                RecipeChoice recipeChoice = null;
                 if (item != null) {
-                    recipeChoices[i] = new ItemStack[]{item};
-                } else {
-                    recipeChoices[i] = null;
+                    recipeChoice = new RecipeChoice.MaterialChoice(item.getType());
                 }
+                recipeChoices[i] = recipeChoice;
             }
             setHasCompleteRecipe();
         }
@@ -121,11 +114,16 @@ public class VirtualCraftingHolder implements InventoryHolder {
 
     private void setHasCompleteRecipe() {
         hasCompleteRecipe = true;
+        for (RecipeChoice recipeChoice : recipeChoices) {
+            if (recipeChoice != null)
+                recipeChoiceItems.put(recipeChoice, Utils.getItemsFromRecipeChoice(recipeChoice));
+        }
         startCraftingItems();
     }
 
     public void resetChoices() {
-        recipeChoices = new ItemStack[9][];
+        recipeChoices = new RecipeChoice[9];
+        recipeChoiceItems.clear();
         result = null;
         hasCompleteRecipe = false;
         stopCraftingItems();
@@ -174,7 +172,7 @@ public class VirtualCraftingHolder implements InventoryHolder {
         BukkitTask task;
 
         public UpdateTask() {
-            task = runTaskTimer(ChestsPlusPlus.PLUGIN, 1, 15);
+            task = runTaskTimer(ChestsPlusPlus.PLUGIN, 1, 30);
         }
 
         @Override
@@ -187,20 +185,27 @@ public class VirtualCraftingHolder implements InventoryHolder {
         inventory.setItem(0, result);
         if (hasCompleteRecipe && !isUpdatingRecipe) {
             for (int i = 0; i < 9; i++) {
-                ItemStack[] choices = recipeChoices[i];
-                if (choices != null) {
-                    int index = recipeChoiceIndex[i];
+                int index = recipeChoiceIndex[i];
+                List<ItemStack> choices = null;
+
+                if (index < recipeChoices.length) {
+                    var recipeChoice = recipeChoices[i];
+                    choices = recipeChoiceItems.get(recipeChoice);
+                }
+
+                if (choices != null && !choices.isEmpty()) {
                     ItemStack choice;
-                    if (index < choices.length) {
-                        choice = choices[index];
+                    if (index < choices.size()) {
+                        choice = choices.get(index);
                     } else {
                         recipeChoiceIndex[i] = 0;
-                        choice = choices[0];
+                        choice = choices.get(0);
                     }
                     inventory.setItem(i + 1, choice);
                     recipeChoiceIndex[i]++;
                 } else {
                     inventory.setItem(i + 1, null);
+                    recipeChoiceIndex[i] = 0;
                 }
             }
         }
@@ -292,16 +297,6 @@ public class VirtualCraftingHolder implements InventoryHolder {
         return inventory;
     }
 
-    private int getRecipeChoiceAmount()  {
-        int max = 0;
-        for (ItemStack[] recipeChoice : recipeChoices) {
-            if (recipeChoice != null && recipeChoice.length > max){
-                max = recipeChoice.length;
-            }
-        }
-        return max;
-    }
-
     /**
      * Finds a valid recipe matrix for the currently selected recipe.
      * Removes the items from the inventories provided.
@@ -309,81 +304,59 @@ public class VirtualCraftingHolder implements InventoryHolder {
      * @return a valid recipe matrix selected from the inventories provided.
      */
     private ItemStack[] getRecipeMatrix(List<Inventory> inventories) {
+        // Store each item selected for the recipe.
+        // This is used to retrieve the actual result taking into account meta data, such as repairing items.
+        ItemStack[] tempRecipe = Utils.createAirList(9);
 
-        // Loop through recipe choice array to find recipeChoice index.
-        int recipeChoicesAmount = getRecipeChoiceAmount();
+        // Need a new copy of the inventories to test for each recipe choice.
+        List<Inventory> tempInvs = Utils.copyInventoryList(inventories);
 
-        for (int recipeChoiceIndex = 0; recipeChoiceIndex < recipeChoicesAmount; recipeChoiceIndex++) {
+        for (int i = 0; i < recipeChoices.length; i++) {
+            var recipeChoice = recipeChoices[i];
+            var possibleItems = recipeChoiceItems.get(recipeChoice);
 
-            // Store each item selected for the recipe.
-            // This is used to retrieve the actual result taking into account meta data, such as repairing items.
-            ItemStack[] tempRecipe = Utils.createAirList(9);
-            int recipeIndex = 0;
+            if (possibleItems == null)
+                continue;
 
-            // Need a new copy of the inventories to test for each recipe choice.
-            List<Inventory> tempInvs = Utils.copyInventoryList(inventories);
+            boolean foundMatch = false;
+            for (ItemStack possibleItem : possibleItems) {
 
-//            Bukkit.broadcastMessage("Recipe choices in loop: "+ Arrays.deepToString(recipeChoices));
+                for (Inventory tempInv : tempInvs) {
+                    int index = tempInv.first(possibleItem.getType());
 
-            // Loops over each slot of the matrix
-            for (ItemStack[] choices : recipeChoices) {
+                    if (index != -1) {
+                        ItemStack item = tempInv.getItem(index);
 
-                // If there's no recipe choice at this index skip and set the matrix pos to null
-                if (choices == null){
-                    tempRecipe[recipeIndex] = null;
-                    recipeIndex++;
+                        if (item != null) {
+                            // If a valid item has been found in one of the inventories.
+                            ItemStack selectedItem = item.clone();
+                            item.setAmount(item.getAmount() - 1);
+                            tempInv.setItem(index, item);
 
-                } else { // Otherwise check for a valid item for this recipe choice.
-
-                    // Select the current recipeChoice
-                    ItemStack choice = choices[recipeChoiceIndex];
-
-                    boolean foundMatch = false;
-                    for (Inventory tempInv : tempInvs) {
-                        int index = tempInv.first(choice.getType());
-
-                        if (index != -1) {
-                            ItemStack item = tempInv.getItem(index);
-
-                            if (item != null) {
-                                // If a valid item has been found in one of the inventories.
-                                ItemStack selectedItem = item.clone();
-
-//                                if (selectedItem.getType())
-                                item.setAmount(item.getAmount() - 1);
-                                tempInv.setItem(index, item);
-
-                                selectedItem.setAmount(1);
-                                tempRecipe[recipeIndex] = selectedItem;
-
-                                recipeIndex++;
-                                foundMatch = true;
-                                break;
-                            }
+                            selectedItem.setAmount(1);
+                            tempRecipe[i] = selectedItem;
+                            foundMatch = true;
+                            break;
                         }
                     }
-
-                    //If no match found
-                    if (!foundMatch) {
-                        break;
-                    }
                 }
 
-                // Completed the matrix
-                if ((recipeIndex >= recipeChoices.length)) {
-
-                    // Move temp invs to input invs.
-                    for (int i = 0; i < tempInvs.size(); i++) {
-                        moveTempInv(tempInvs.get(i), inventories.get(i));
-                    }
-
-                    return tempRecipe;
-                }
-
+                if (foundMatch)
+                    break;
             }
 
+            //If no match found
+            if (!foundMatch) {
+                return null;
+            }
         }
-        return null;
+
+        // Move temp invs to input invs.
+        for (int i = 0; i < tempInvs.size(); i++) {
+            moveTempInv(tempInvs.get(i), inventories.get(i));
+        }
+
+        return tempRecipe;
     }
 
     private boolean craftItem(List<Inventory> inputs, Inventory output, Inventory craftingInventory) {

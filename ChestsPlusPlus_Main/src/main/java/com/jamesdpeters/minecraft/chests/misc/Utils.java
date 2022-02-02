@@ -24,6 +24,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.RecipeChoice;
 import org.bukkit.util.Vector;
 
 import java.io.File;
@@ -295,5 +296,18 @@ public class Utils {
             }
         }
         return list;
+    }
+
+    public static List<ItemStack> getItemsFromRecipeChoice(RecipeChoice recipeChoice) {
+        if (recipeChoice instanceof RecipeChoice.MaterialChoice materialChoice) {
+            return materialChoice.getChoices().stream().map(ItemStack::new).toList();
+        }
+        else if (recipeChoice instanceof RecipeChoice.ExactChoice exactChoice) {
+            return exactChoice.getChoices();
+        }
+        else {
+            return List.of(recipeChoice.getItemStack());
+        }
+
     }
 }
