@@ -1,10 +1,6 @@
 package com.jamesdpeters.minecraft.chests.api;
 
-import com.jamesdpeters.minecraft.chests.ChestOpener;
-import com.jamesdpeters.minecraft.chests.CraftingProvider;
-import com.jamesdpeters.minecraft.chests.EntityEventListener;
-import com.jamesdpeters.minecraft.chests.MaterialChecker;
-import com.jamesdpeters.minecraft.chests.NMSProvider;
+import com.jamesdpeters.minecraft.chests.*;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.ItemFrame;
 
@@ -18,12 +14,17 @@ public class NMSProviderDefault implements NMSProvider {
         String NAME = Bukkit.getServer().getClass().getPackage().getName();
         String VERSION = NAME.substring(NAME.lastIndexOf('.') + 1);
         switch (VERSION) {
-            case "v1_16_R1" -> defaultProvider = new com.jamesdpeters.minecraft.chests.v1_16_R1.NMSProviderImpl();
             case "v1_16_R2" -> defaultProvider = new com.jamesdpeters.minecraft.chests.v1_16_R2.NMSProviderImpl();
             case "v1_16_R3" -> defaultProvider = new com.jamesdpeters.minecraft.chests.v1_16_R3.NMSProviderImpl();
             case "v1_17_R1" -> defaultProvider = new com.jamesdpeters.minecraft.chests.v1_17_R1.NMSProviderImpl();
             case "v1_18_R1" -> defaultProvider = new com.jamesdpeters.minecraft.chests.v1_18_R1.NMSProviderImpl();
             case "v1_18_R2" -> defaultProvider = new com.jamesdpeters.minecraft.chests.v1_18_R2.NMSProviderImpl();
+            default -> {
+                ChestsPlusPlus.PLUGIN.getLogger().severe("§c=======================================================");
+                ChestsPlusPlus.PLUGIN.getLogger().severe("§cThis version is not supported. Please update your server!");
+                ChestsPlusPlus.PLUGIN.getLogger().severe("§c=======================================================");
+                defaultProvider = new com.jamesdpeters.minecraft.chests.v1_16_R1.NMSProviderImpl();
+            }
         }
     }
 
