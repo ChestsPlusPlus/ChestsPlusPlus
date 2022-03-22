@@ -19,11 +19,14 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 
 public class Config {
 
     private static ConfigStorage store;
     private static FileConfiguration config;
+    private static ThreadPoolExecutor executor;
 
     private static final String saveName = "/data/storage.yml";
 
@@ -34,6 +37,7 @@ public class Config {
     private static List<StorageType<? extends AbstractStorage>> storageTypes;
 
     public Config() {
+        executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
         legacyConverter();
         configConverter();
 
@@ -71,7 +75,7 @@ public class Config {
     }
 
     public static void saveASync() {
-        Bukkit.getScheduler().runTaskAsynchronously(ChestsPlusPlus.PLUGIN, Config::save);
+        executor.execute(Config::save);
     }
 
     public static AutoCraftingStorageType getAutoCraft() {
