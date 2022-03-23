@@ -147,7 +147,11 @@ public class Utils {
     }
 
     public static List<String> getAllPlayers() {
-        return getPlayersAsNameList(Arrays.asList(Bukkit.getOfflinePlayers()));
+        List<String> result = new ArrayList<>();
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            result.add(p.getName());
+        }
+        return result;
     }
 
     public static List<String> getPlayersAsNameList(Collection<? extends OfflinePlayer> players) {

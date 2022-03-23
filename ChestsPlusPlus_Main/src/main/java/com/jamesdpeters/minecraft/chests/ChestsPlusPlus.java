@@ -150,6 +150,7 @@ public class ChestsPlusPlus extends JavaPlugin {
     public void onDisable() {
         super.onDisable();
         Config.save();
+        HandlerList.unregisterAll(this);
 //        //Remove entities that could have been left behind from bad save files/crashes etc.
 //        Utils.fixEntities();
     }
