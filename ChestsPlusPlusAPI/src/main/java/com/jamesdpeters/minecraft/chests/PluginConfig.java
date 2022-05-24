@@ -29,6 +29,9 @@ public class PluginConfig {
      * ***************/
     public final static Value<Boolean> IS_UPDATE_CHECKER_ENABLED = new Value<>("update-checker", Boolean.class, true);
     public final static Value<Integer> UPDATE_CHECKER_PERIOD = new Value<>("update-checker-period", Integer.class, 60 * 60);
+    public final static Value<Boolean> CHESTLINKS_ENABLED = new Value<>("chestlinks-enabled", Boolean.class, true);
+    public final static Value<Boolean> AUTOCRAFTERS_ENABLED = new Value<>("autocrafters-enabled", Boolean.class, true);
+    public final static Value<Boolean> HOPPER_FILTERS_ENABLED = new Value<>("hopper-filters-enabled", Boolean.class, true);
     public final static Value<Boolean> SHOULD_LIMIT_CHESTS = new Value<>("limit-chests", Boolean.class, false);
     public final static Value<Integer> LIMIT_CHESTS_AMOUNT = new Value<>("limit-chestlinks-amount", Integer.class, 0);
     public final static Value<Boolean> SHOULD_ANIMATE_ALL_CHESTS = new Value<>("should-animate-all-chests", Boolean.class, true);
