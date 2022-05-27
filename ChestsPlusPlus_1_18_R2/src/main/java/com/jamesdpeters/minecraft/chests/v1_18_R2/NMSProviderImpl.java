@@ -1,6 +1,10 @@
 package com.jamesdpeters.minecraft.chests.v1_18_R2;
 
-import com.jamesdpeters.minecraft.chests.*;
+import com.jamesdpeters.minecraft.chests.ChestOpener;
+import com.jamesdpeters.minecraft.chests.CraftingProvider;
+import com.jamesdpeters.minecraft.chests.EntityEventListener;
+import com.jamesdpeters.minecraft.chests.MaterialChecker;
+import com.jamesdpeters.minecraft.chests.NMSProvider;
 import com.jamesdpeters.minecraft.chests.v1_17_R1.EntityEventListener_1_17;
 import com.jamesdpeters.minecraft.chests.v1_17_R1.MaterialChecker_1_17_R1;
 import org.bukkit.Chunk;
