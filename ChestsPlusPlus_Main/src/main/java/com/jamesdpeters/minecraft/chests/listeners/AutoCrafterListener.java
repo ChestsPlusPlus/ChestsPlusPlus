@@ -7,6 +7,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
@@ -49,14 +50,24 @@ public class AutoCrafterListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onCraftingPlayerUpdate(InventoryClickEvent event) {
         Player player = (Player) event.getWhoClicked();
-        if (event.getClickedInventory() == player.getOpenInventory().getTopInventory()) {
-            if (event.getSlot() == 0) event.setCancelled(true);
-            if (event.getSlot() >= 1 && event.getSlot() <= 9) {
-                setCraftingItem(event.getInventory(), event.getSlot(), event.getCursor());
+        if (event.getView().getTopInventory().getHolder() instanceof VirtualCraftingHolder) {
+            if (event.getAction() == InventoryAction.COLLECT_TO_CURSOR ||
+                    event.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY ||
+                    event.getAction() == InventoryAction.NOTHING) {
                 event.setCancelled(true);
-                craftingUpdate(event);
+                player.updateInventory();
+                return;
+            }
+            if (event.getClickedInventory() == player.getOpenInventory().getTopInventory()) {
+                if (event.getSlot() == 0) event.setCancelled(true);
+                if (event.getSlot() >= 1 && event.getSlot() <= 9) {
+                    setCraftingItem(event.getInventory(), event.getSlot(), event.getCursor());
+                    event.setCancelled(true);
+                    craftingUpdate(event);
+                }
             }
         }
+
     }
 
     private void setCraftingItem(Inventory inventory, int slot, ItemStack cursor) {

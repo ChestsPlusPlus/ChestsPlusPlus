@@ -1,42 +1,21 @@
 package com.jamesdpeters.minecraft.chests.filters;
 
-import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
 import org.bukkit.Tag;
 import org.bukkit.inventory.ItemStack;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
+@SuppressWarnings("unchecked")
 public class ItemTypeUtil {
 
-    private static List<Tag<Material>> tags;
+    private static final List<Tag<Material>> tags;
 
     static {
         tags = new ArrayList<>();
 
-        tags.add(new Tag<>() {
-            @Override
-            public boolean isTagged(@NotNull Material item) {
-                return item.equals(Material.WHEAT_SEEDS) || item.equals(Material.PUMPKIN_SEEDS) || item.equals(Material.MELON_SEEDS) || item.equals(Material.BEETROOT_SEEDS);
-            }
-
-            @NotNull
-            @Override
-            public Set<Material> getValues() {
-                return Set.of(Material.WHEAT_SEEDS, Material.PUMPKIN_SEEDS, Material.MELON_SEEDS, Material.BEETROOT_SEEDS);
-            }
-
-            @NotNull
-            @Override
-            public NamespacedKey getKey() {
-                return new NamespacedKey(ChestsPlusPlus.PLUGIN, "seeds");
-            }
-        });
+        tags.add(ChestsPlusPlusTag.SEEDS);
         tags.add(Tag.WOOL);
         tags.add(Tag.PLANKS);
         tags.add(Tag.STONE_BRICKS);

@@ -30,7 +30,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.function.Function;
 
-public class HopperListener implements Listener {
+public class HopperFilterListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onHopperMoveEvent(InventoryMoveItemEvent event) {
