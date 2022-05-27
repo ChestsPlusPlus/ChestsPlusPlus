@@ -6,16 +6,13 @@ import org.bukkit.entity.ItemFrame;
 
 public class NMSProviderDefault implements NMSProvider {
 
-    //Latest version at time of build is 1.17
-    //All new versions should be able to run with the default provided after 1.17 <- Not seem to be working by: ceze88
+    //Latest version at time of build is 1.18.2
     NMSProvider defaultProvider;
 
     public NMSProviderDefault() {
         String NAME = Bukkit.getServer().getClass().getPackage().getName();
         String VERSION = NAME.substring(NAME.lastIndexOf('.') + 1);
         switch (VERSION) {
-            case "v1_16_R2" -> defaultProvider = new com.jamesdpeters.minecraft.chests.v1_16_R2.NMSProviderImpl();
-            case "v1_16_R3" -> defaultProvider = new com.jamesdpeters.minecraft.chests.v1_16_R3.NMSProviderImpl();
             case "v1_17_R1" -> defaultProvider = new com.jamesdpeters.minecraft.chests.v1_17_R1.NMSProviderImpl();
             case "v1_18_R1" -> defaultProvider = new com.jamesdpeters.minecraft.chests.v1_18_R1.NMSProviderImpl();
             case "v1_18_R2" -> defaultProvider = new com.jamesdpeters.minecraft.chests.v1_18_R2.NMSProviderImpl();
@@ -23,7 +20,7 @@ public class NMSProviderDefault implements NMSProvider {
                 ChestsPlusPlus.PLUGIN.getLogger().severe("§c=======================================================");
                 ChestsPlusPlus.PLUGIN.getLogger().severe("§cThis version is not supported. Please update your server!");
                 ChestsPlusPlus.PLUGIN.getLogger().severe("§c=======================================================");
-                defaultProvider = new com.jamesdpeters.minecraft.chests.v1_16_R1.NMSProviderImpl();
+                defaultProvider = new com.jamesdpeters.minecraft.chests.v1_17_R1.NMSProviderImpl();
             }
         }
     }

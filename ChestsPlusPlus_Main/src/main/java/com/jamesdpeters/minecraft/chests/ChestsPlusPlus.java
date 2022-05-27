@@ -42,7 +42,7 @@ import org.bukkit.plugin.java.annotation.plugin.Plugin;
 import org.bukkit.plugin.java.annotation.plugin.author.Author;
 
 @Plugin(name = "ChestsPlusPlus", version = BuildConstants.VERSION)
-@ApiVersion(ApiVersion.Target.v1_14)
+@ApiVersion(ApiVersion.Target.v1_17)
 @Description(value = "Minecraft Spigot mod that enhances chests and hoppers, with ChestLinks and Hopper filters!")
 @Author(value = "jameslfc19")
 @Commands({
