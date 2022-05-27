@@ -2,18 +2,9 @@ package com.jamesdpeters.minecraft.chests.lang;
 
 import com.jamesdpeters.minecraft.chests.maventemplates.BuildConstants;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 public class LanguageFile extends Properties {
 
