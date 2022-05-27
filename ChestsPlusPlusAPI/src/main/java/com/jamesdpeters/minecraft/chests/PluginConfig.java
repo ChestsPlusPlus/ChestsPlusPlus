@@ -35,6 +35,7 @@ public class PluginConfig {
     public final static Value<Boolean> SHOULD_LIMIT_CHESTS = new Value<>("limit-chests", Boolean.class, false);
     public final static Value<Integer> LIMIT_CHESTS_AMOUNT = new Value<>("limit-chestlinks-amount", Integer.class, 0);
     public final static Value<Boolean> SHOULD_ANIMATE_ALL_CHESTS = new Value<>("should-animate-all-chests", Boolean.class, true);
+    public final static Value<Boolean> SHOULD_RUN_HOPPERS_UNLOADED_CHUNKS = new Value<>("run-hoppers-unloaded-chunks", Boolean.class, false);
     public final static Value<Boolean> DISPLAY_CHESTLINK_ARMOUR_STAND = new Value<>("display_chestlink_armour_stand", Boolean.class, true);
     public final static Value<Boolean> DISPLAY_AUTOCRAFT_ARMOUR_STAND = new Value<>("display_autocraft_armour_stands", Boolean.class, true);
     public final static Value<Boolean> INVISIBLE_FILTER_ITEM_FRAMES = new Value<>("set-filter-itemframe-invisible", Boolean.class, false);
