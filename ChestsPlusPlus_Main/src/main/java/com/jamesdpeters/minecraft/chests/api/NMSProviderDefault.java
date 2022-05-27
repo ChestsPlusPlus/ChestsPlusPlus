@@ -1,11 +1,6 @@
 package com.jamesdpeters.minecraft.chests.api;
 
-import com.jamesdpeters.minecraft.chests.ChestOpener;
-import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
-import com.jamesdpeters.minecraft.chests.CraftingProvider;
-import com.jamesdpeters.minecraft.chests.EntityEventListener;
-import com.jamesdpeters.minecraft.chests.MaterialChecker;
-import com.jamesdpeters.minecraft.chests.NMSProvider;
+import com.jamesdpeters.minecraft.chests.*;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.entity.ItemFrame;

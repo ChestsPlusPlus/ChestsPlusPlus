@@ -2,14 +2,7 @@ package com.jamesdpeters.minecraft.chests.v1_16_R1;
 
 import com.jamesdpeters.minecraft.chests.CraftingProvider;
 import com.jamesdpeters.minecraft.chests.CraftingResult;
-import net.minecraft.server.v1_16_R1.Container;
-import net.minecraft.server.v1_16_R1.EntityHuman;
-import net.minecraft.server.v1_16_R1.IRecipe;
-import net.minecraft.server.v1_16_R1.InventoryCrafting;
-import net.minecraft.server.v1_16_R1.NonNullList;
-import net.minecraft.server.v1_16_R1.RecipeCrafting;
-import net.minecraft.server.v1_16_R1.Recipes;
-import net.minecraft.server.v1_16_R1.WorldServer;
+import net.minecraft.server.v1_16_R1.*;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.craftbukkit.v1_16_R1.CraftServer;
