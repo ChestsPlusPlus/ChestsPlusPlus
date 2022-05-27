@@ -3,7 +3,6 @@ package com.jamesdpeters.minecraft.chests.menus;
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import net.wesjd.anvilgui.AnvilGUI;
 import org.bukkit.entity.Player;
-
 import java.util.function.BiFunction;
 
 public class TextInputUI {
