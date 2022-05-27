@@ -11,7 +11,6 @@ import com.jamesdpeters.minecraft.chests.serialize.ConfigStorage;
 import com.jamesdpeters.minecraft.chests.serialize.LocationInfo;
 import com.jamesdpeters.minecraft.chests.PluginConfig;
 import com.jamesdpeters.minecraft.chests.storage.StorageUtils;
-import lombok.var;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.GameMode;
@@ -48,7 +47,7 @@ import java.util.stream.Collectors;
 public abstract class StorageType<T extends AbstractStorage> implements Listener {
 
     private final ConfigStorage store;
-    private final StorageUtils<T> storageUtils;
+    private final StorageUtils<StorageInfo<T>, T> storageUtils;
     private final HashMap<Location, T> storageCache;
 
     protected StorageType(ConfigStorage store) {
@@ -57,7 +56,7 @@ public abstract class StorageType<T extends AbstractStorage> implements Listener
         storageCache = new HashMap<>();
     }
 
-    public StorageUtils<T> getStorageUtils() {
+    public StorageUtils<StorageInfo<T>, T> getStorageUtils() {
         return storageUtils;
     }
 

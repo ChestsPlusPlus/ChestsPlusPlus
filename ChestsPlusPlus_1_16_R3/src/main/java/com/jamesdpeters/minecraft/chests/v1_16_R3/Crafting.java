@@ -118,7 +118,7 @@ public class Crafting implements CraftingProvider {
                     itemstack2.add(itemstack1.getCount());
                     inventoryCrafting.setItem(i, itemstack2);
                 } else {
-                    craftItemResult.getOverflowItems().add(CraftItemStack.asBukkitCopy(itemstack2));
+                    craftItemResult.overflowItems().add(CraftItemStack.asBukkitCopy(itemstack2));
                 }
             }
         }

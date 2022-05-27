@@ -1,7 +1,6 @@
 package com.jamesdpeters.minecraft.chests.runnables;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
-import com.jamesdpeters.minecraft.chests.api.ApiSpecific;
 import com.jamesdpeters.minecraft.chests.filters.HopperFilter;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.serialize.LocationInfo;
@@ -24,7 +23,7 @@ public class VirtualChestToHopper extends BukkitRunnable {
     }
 
     public void start() {
-        task = runTaskTimer(ChestsPlusPlus.PLUGIN, 2, SpigotConfig.getDefault().getTicksPerHopperTransfer());
+        task = runTaskTimer(ChestsPlusPlus.PLUGIN, 1, 8);
     }
 
     public void stop() {
@@ -36,17 +35,14 @@ public class VirtualChestToHopper extends BukkitRunnable {
         for (LocationInfo location : storage.getLocations()) {
             if (location != null) {
                 if (location.getLocation() != null) {
-                    if (!Utils.isLocationChunkLoaded(location.getLocation()) || !ApiSpecific.getNmsProvider().isEntitiesLoadedOnChunk(location.getLocation().getChunk())) {
+                    if (!PluginConfig.SHOULD_RUN_HOPPERS_UNLOADED_CHUNKS.get() && !Utils.isLocationChunkLoaded(location.getLocation()))
                         continue;
-                    }
-
                     Location below = location.getLocation().clone().subtract(0, 1, 0);
-                    if (below.getBlock().getState() instanceof Hopper) {
+                    if (below.getBlock().getState() instanceof Hopper hopper) {
                         if (below.getBlock().isBlockIndirectlyPowered() || below.getBlock().isBlockPowered()) {
                             continue;
                         }
-
-                        if (move(below, storage.getInventory(), ((Hopper)below.getBlock().getState()).getInventory())) {
+                        if (move(hopper.getLocation(), storage.getInventory(), hopper.getInventory())) {
                             storage.updateDisplayItem();
                         }
                         if (storage.getInventory().getViewers().size() > 0) storage.sort();

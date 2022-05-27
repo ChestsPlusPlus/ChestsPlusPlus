@@ -96,6 +96,8 @@ public class ChestsPlusPlus extends JavaPlugin {
         //API initialisation
         ApiSpecific.init(this);
 
+
+
         //Load storage
         ServerType.init();
         SpigotConfig.load(this);
@@ -120,7 +122,10 @@ public class ChestsPlusPlus extends JavaPlugin {
             }), 0, PluginConfig.UPDATE_CHECKER_PERIOD.get() * 20);
         }
 
-
+        getServer().getPluginManager().registerEvents(ApiSpecific.getNmsProvider().getEntityEventListener(), this);
+        Bukkit.getWorlds().forEach(world -> {
+            ApiSpecific.getNmsProvider().getEntityEventListener().fixEntities(world);
+        });
 
         //Load storages after load.
         Bukkit.getScheduler().scheduleSyncDelayedTask(this, () -> {
@@ -128,33 +133,17 @@ public class ChestsPlusPlus extends JavaPlugin {
             new Config();
             getLogger().info("Chests++ Successfully Loaded Config and Recipes");
 
-            //LinkedChest
-            if (PluginConfig.CHESTLINKS_ENABLED.get()) {
-                new ChestLinkCommand().register(this);
-                getServer().getPluginManager().registerEvents(new LinkedChestHopperListener(), this);
-            }
-
-            //AutoCrafter
-            if (PluginConfig.AUTOCRAFTERS_ENABLED.get()) {
-                new AutoCraftCommand().register(this);
-                getServer().getPluginManager().registerEvents(new AutoCrafterListener(), this);
-            }
-
-            //HopperFilter
-            if (PluginConfig.HOPPER_FILTERS_ENABLED.get()) {
-                getServer().getPluginManager().registerEvents(new FilterHopperListener(), this);
-            }
-
-            //Shared
-            if (PluginConfig.CHESTLINKS_ENABLED.get() || PluginConfig.AUTOCRAFTERS_ENABLED.get()) {
-                getServer().getPluginManager().registerEvents(new StorageListener(), this);
-                getServer().getPluginManager().registerEvents(new InventoryListener(), this);
-            }
-
-            //Other
-            getServer().getPluginManager().registerEvents(new WorldListener(), this);
+            //Register commands
+            if (PluginConfig.CHESTLINKS_ENABLED.get()) new ChestLinkCommand().register(this);
+            if (PluginConfig.AUTOCRAFTERS_ENABLED.get()) new AutoCraftCommand().register(this);
             new ChestsPlusPlusCommand().register(this);
 
+            //Register event listeners
+            if (PluginConfig.CHESTLINKS_ENABLED.get() || PluginConfig.AUTOCRAFTERS_ENABLED.get()) getServer().getPluginManager().registerEvents(new StorageListener(), this);
+            if (PluginConfig.AUTOCRAFTERS_ENABLED.get() || PluginConfig.CHESTLINKS_ENABLED.get()) getServer().getPluginManager().registerEvents(new InventoryListener(), this);
+            if (PluginConfig.AUTOCRAFTERS_ENABLED.get()) getServer().getPluginManager().registerEvents(new AutoCrafterListener(), this);
+            if (PluginConfig.HOPPER_FILTERS_ENABLED.get()) getServer().getPluginManager().registerEvents(new HopperListener(), this);
+            getServer().getPluginManager().registerEvents(new WorldListener(), this);
             Config.getStorageTypes().forEach(storageType -> {
                 if (storageType instanceof AutoCraftingStorageType && PluginConfig.AUTOCRAFTERS_ENABLED.get()) {
                     getServer().getPluginManager().registerEvents(storageType, this);
@@ -163,8 +152,6 @@ public class ChestsPlusPlus extends JavaPlugin {
                     getServer().getPluginManager().registerEvents(storageType, this);
                 }
             });
-            getServer().getPluginManager().registerEvents(ApiSpecific.getNmsProvider().getEntityEventListener(), this);
-            //Bukkit.getWorlds().forEach(world -> ApiSpecific.getNmsProvider().getEntityEventListener().fixEntities(world));
             getLogger().info("Chests++ enabled!");
         }, 1);
     }

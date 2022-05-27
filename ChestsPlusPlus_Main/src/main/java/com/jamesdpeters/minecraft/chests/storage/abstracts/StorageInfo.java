@@ -27,8 +27,7 @@ public class StorageInfo<T extends AbstractStorage> {
         this.player = Bukkit.getOfflinePlayer(playerUUID);
         this.storage = storageType.getStorage(playerUUID, group);
         if (storage == null) {
-            if (sign.getBlockData() instanceof Directional) {
-                Directional directional = (Directional) sign.getBlockData();
+            if (sign.getBlockData() instanceof Directional directional) {
                 BlockFace storageFace = directional.getFacing().getOppositeFace();
                 Block storageBlock = sign.getBlock().getRelative(storageFace);
                 Player player = Bukkit.getPlayer(playerUUID);

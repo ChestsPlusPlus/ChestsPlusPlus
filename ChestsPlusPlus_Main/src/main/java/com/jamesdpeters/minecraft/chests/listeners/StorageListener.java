@@ -89,8 +89,7 @@ public class StorageListener implements Listener {
 
     @EventHandler
     public void onSignBreak(BlockBreakEvent event) {
-        if (event.getBlock().getState() instanceof Sign) {
-            Sign sign = (Sign) event.getBlock().getState();
+        if (event.getBlock().getState() instanceof Sign sign) {
             //Get blockface of sign.
             if (sign.getBlockData() instanceof Directional) {
 

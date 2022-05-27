@@ -1,9 +1,10 @@
 package com.jamesdpeters.minecraft.chests.filters;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
-import org.bukkit.*;
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Tag;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
@@ -18,17 +19,16 @@ public class ItemTypeUtil {
     static {
         tags = new ArrayList<>();
 
-        tags.add(new Tag() {
-
+        tags.add(new Tag<>() {
             @Override
-            public boolean isTagged(@NotNull Keyed item) {
+            public boolean isTagged(@NotNull Material item) {
                 return item.equals(Material.WHEAT_SEEDS) || item.equals(Material.PUMPKIN_SEEDS) || item.equals(Material.MELON_SEEDS) || item.equals(Material.BEETROOT_SEEDS);
             }
 
             @NotNull
             @Override
             public Set<Material> getValues() {
-                return Sets.newHashSet(Material.WHEAT_SEEDS, Material.PUMPKIN_SEEDS, Material.MELON_SEEDS, Material.BEETROOT_SEEDS);
+                return Set.of(Material.WHEAT_SEEDS, Material.PUMPKIN_SEEDS, Material.MELON_SEEDS, Material.BEETROOT_SEEDS);
             }
 
             @NotNull

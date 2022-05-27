@@ -7,7 +7,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.*;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.inventory.InventoryInteractEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
@@ -46,22 +49,12 @@ public class AutoCrafterListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onCraftingPlayerUpdate(InventoryClickEvent event) {
         Player player = (Player) event.getWhoClicked();
-
-        if (event.getView().getTopInventory().getHolder() instanceof VirtualCraftingHolder) {
-            if (event.getAction() == InventoryAction.COLLECT_TO_CURSOR ||
-                    event.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY ||
-                    event.getAction() == InventoryAction.NOTHING) {
+        if (event.getClickedInventory() == player.getOpenInventory().getTopInventory()) {
+            if (event.getSlot() == 0) event.setCancelled(true);
+            if (event.getSlot() >= 1 && event.getSlot() <= 9) {
+                setCraftingItem(event.getInventory(), event.getSlot(), event.getCursor());
                 event.setCancelled(true);
-                player.updateInventory();
-                return;
-            }
-            if (event.getClickedInventory() == player.getOpenInventory().getTopInventory()) {
-                if (event.getSlot() == 0) event.setCancelled(true);
-                if (event.getSlot() >= 1 && event.getSlot() <= 9) {
-                    setCraftingItem(event.getInventory(), event.getSlot(), event.getCursor());
-                    event.setCancelled(true);
-                    craftingUpdate(event);
-                }
+                craftingUpdate(event);
             }
         }
     }

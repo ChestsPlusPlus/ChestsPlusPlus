@@ -75,8 +75,7 @@ public class ItemBuilder {
                 meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
             }
 
-            if (skullOwner != null && meta instanceof SkullMeta) {
-                SkullMeta skullMeta = (SkullMeta) meta;
+            if (skullOwner != null && meta instanceof SkullMeta skullMeta) {
                 skullMeta.setOwningPlayer(skullOwner);
             }
             itemStack.setItemMeta(meta);

@@ -19,13 +19,7 @@ import org.bukkit.persistence.PersistentDataType;
 
 import java.util.UUID;
 
-public class StorageUtils<S extends AbstractStorage> {
-
-    private StorageType<S> storageType;
-
-    public StorageUtils(StorageType<S> storageType) {
-        this.storageType = storageType;
-    }
+public record StorageUtils<T extends StorageInfo<S>, S extends AbstractStorage>(StorageType<S> storageType) {
 
     public StorageInfo<S> getStorageInfo(Sign sign, String[] lines, UUID uuid) {
         if (lines != null) {
@@ -71,13 +65,11 @@ public class StorageUtils<S extends AbstractStorage> {
         if (face == null) return null;
         Block sign = block.getRelative(face);
 
-        if (sign.getBlockData() instanceof Directional) {
-            Directional directional = (Directional) sign.getBlockData();
+        if (sign.getBlockData() instanceof Directional directional) {
             //Check if the sign is attached to the given block.
             if (directional.getFacing() != face) return null;
             //If it is we can extract info from it.
-            if (sign.getState() instanceof Sign) {
-                Sign s = (Sign) sign.getState();
+            if (sign.getState() instanceof Sign s) {
                 return getStorageInfo(s);
             }
         }
@@ -93,8 +85,7 @@ public class StorageUtils<S extends AbstractStorage> {
      */
     public boolean isValidSignPosition(Location location) {
         Block block = location.getBlock();
-        if (block.getBlockData() instanceof Directional) {
-            Directional sign = (Directional) block.getBlockData();
+        if (block.getBlockData() instanceof Directional sign) {
             BlockFace facing = sign.getFacing().getOppositeFace();
             Block toTest = block.getRelative(facing);
 
