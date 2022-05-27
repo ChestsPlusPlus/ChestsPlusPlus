@@ -10,6 +10,7 @@ import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.serialize.LocationInfo;
 import com.jamesdpeters.minecraft.chests.storage.autocraft.AutoCraftingStorage;
 import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorage;
+import lombok.var;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -98,7 +99,7 @@ public class VirtualCraftingHolder implements InventoryHolder {
         else if (recipe instanceof ShapelessRecipe) setCrafting((ShapelessRecipe) recipe);
         else {
             // For ComplexRecipes or other implementations just use the result and original matrix for choices.
-            result = ApiSpecific.getNmsProvider().getCraftingProvider().craft(Bukkit.getWorlds().get(0), matrix).result();
+            result = ApiSpecific.getNmsProvider().getCraftingProvider().craft(Bukkit.getWorlds().get(0), matrix).getResult();
             recipeChoices = new RecipeChoice[9];
             for (int i = 0; i < matrix.length; i++) {
                 var item = matrix[i];
@@ -245,7 +246,8 @@ public class VirtualCraftingHolder implements InventoryHolder {
 
             Inventory output;
 
-            if (blockBelow.getState() instanceof Hopper hopper) {
+            if (blockBelow.getState() instanceof Hopper) {
+                Hopper hopper = (Hopper) blockBelow.getState();
                 if (blockBelow.isBlockPowered() || blockBelow.isBlockIndirectlyPowered()) {
                     continue; //If hopper is powered no crafting should happen.
                 }
@@ -392,20 +394,20 @@ public class VirtualCraftingHolder implements InventoryHolder {
 //        PrepareItemCraftEvent itemCraftEvent = new PrepareItemCraftEvent(craftingInventoryImpl, inventoryView, false);
 //        Bukkit.getPluginManager().callEvent(itemCraftEvent);
 
-        if (craftingResult.result() == null) return false;
+        if (craftingResult.getResult() == null) return false;
 
         //If we reach here there are enough materials so check for space in the Hopper and update inventory.
         //Check if output and input are the same inventory to avoid duplication.
         Inventory tempOutput = sameInv ? sameInventory : Utils.copyInventory(output);
-        HashMap<Integer, ItemStack> map = tempOutput.addItem(craftingResult.result());
+        HashMap<Integer, ItemStack> map = tempOutput.addItem(craftingResult.getResult());
 
-        boolean isEmpty = Arrays.stream(craftingResult.matrixResult())
+        boolean isEmpty = Arrays.stream(craftingResult.getMatrixResult())
                 .allMatch(itemStack -> (itemStack == null || itemStack.getType() == Material.AIR));
 
         // Add any leftover items from the recipe e.g buckets.
         HashMap<Integer, ItemStack> craftingMatrixLeftOvers =
                 isEmpty ? Maps.newHashMap()
-                        : tempOutput.addItem(craftingResult.matrixResult());
+                        : tempOutput.addItem(craftingResult.getMatrixResult());
 
         //If result fits into output copy over the temporary inventories.
         if (map.isEmpty() && craftingMatrixLeftOvers.isEmpty()) {

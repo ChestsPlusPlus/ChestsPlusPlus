@@ -29,12 +29,7 @@ import org.bukkit.util.Vector;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
@@ -59,7 +54,8 @@ public class Utils {
     private static void containerAnimation(Inventory inventory, LocationInfo location, boolean open) {
         if (location != null && Utils.isLocationChunkLoaded(location.getLocation())) {
             Block block = location.getLocation().getBlock();
-            if (block.getState() instanceof Container chest) {
+            if (block.getState() instanceof Container) {
+                Container chest = (Container) block.getState();
                 if (open) {
                     location.setTileEntityOpener(ApiSpecific.getChestOpener().updateState(inventory, chest, location.getTileEntityOpener()));
                 } else {
@@ -303,14 +299,16 @@ public class Utils {
     }
 
     public static List<ItemStack> getItemsFromRecipeChoice(RecipeChoice recipeChoice) {
-        if (recipeChoice instanceof RecipeChoice.MaterialChoice materialChoice) {
-            return materialChoice.getChoices().stream().map(ItemStack::new).toList();
+        if (recipeChoice instanceof RecipeChoice.MaterialChoice) {
+            RecipeChoice.MaterialChoice materialChoice = (RecipeChoice.MaterialChoice) recipeChoice;
+            return materialChoice.getChoices().stream().map(ItemStack::new).collect(Collectors.toList());
         }
-        else if (recipeChoice instanceof RecipeChoice.ExactChoice exactChoice) {
+        else if (recipeChoice instanceof RecipeChoice.ExactChoice) {
+            RecipeChoice.ExactChoice exactChoice = (RecipeChoice.ExactChoice) recipeChoice;
             return exactChoice.getChoices();
         }
         else {
-            return List.of(recipeChoice.getItemStack());
+            return Collections.singletonList(recipeChoice.getItemStack());
         }
 
     }

@@ -7,6 +7,7 @@ import com.jamesdpeters.minecraft.chests.MaterialChecker;
 import com.jamesdpeters.minecraft.chests.NMSProvider;
 import com.jamesdpeters.minecraft.chests.v1_17_R1.EntityEventListener_1_17;
 import com.jamesdpeters.minecraft.chests.v1_17_R1.MaterialChecker_1_17_R1;
+import org.bukkit.Chunk;
 import org.bukkit.block.Lidded;
 import org.bukkit.entity.ItemFrame;
 
@@ -39,6 +40,11 @@ public class NMSProviderImpl implements NMSProvider {
     @Override
     public EntityEventListener getEntityEventListener() {
         return new EntityEventListener_1_17();
+    }
+
+    @Override
+    public boolean isEntitiesLoadedOnChunk(Chunk chunk) {
+        return chunk.isEntitiesLoaded();
     }
 
     @Override

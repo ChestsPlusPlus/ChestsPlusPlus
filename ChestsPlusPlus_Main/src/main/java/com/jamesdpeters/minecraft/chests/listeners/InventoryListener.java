@@ -30,7 +30,8 @@ public class InventoryListener implements Listener {
     public void onInventoryClose(InventoryCloseEvent event) {
         try {
             InventoryHolder holder = event.getInventory().getHolder();
-            if (holder instanceof VirtualInventoryHolder vHolder) {
+            if (holder instanceof VirtualInventoryHolder) {
+                VirtualInventoryHolder vHolder = (VirtualInventoryHolder) holder;
                 vHolder.openPreviousInventory();
                 if (vHolder.didPlayerRemoteOpen(event.getPlayer().getUniqueId())) {
                     Utils.closeInventorySound((Player) event.getPlayer(), event.getInventory());
@@ -45,7 +46,8 @@ public class InventoryListener implements Listener {
 
     public void inventoryUpdate(InventoryInteractEvent event) {
         InventoryHolder holder = event.getInventory().getHolder();
-        if (holder instanceof VirtualInventoryHolder vHolder) {
+        if (holder instanceof VirtualInventoryHolder) {
+            VirtualInventoryHolder vHolder = (VirtualInventoryHolder) holder;
             Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN, () -> {
                 vHolder.getStorage().sort();
                 vHolder.getStorage().onItemDisplayUpdate(InventorySorter.getMostCommonItem(event.getInventory()));
@@ -57,19 +59,5 @@ public class InventoryListener implements Listener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onInventoryPlayerUpdate(InventoryDragEvent event) {
         inventoryUpdate(event);
-    }
-
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onCraftingPlayerUpdate(InventoryClickEvent event) {
-        Player player = (Player) event.getWhoClicked();
-
-        if (event.getView().getTopInventory().getHolder() instanceof VirtualCraftingHolder) {
-            if (event.getAction() == InventoryAction.COLLECT_TO_CURSOR ||
-                    event.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY ||
-                    event.getAction() == InventoryAction.NOTHING) {
-                event.setCancelled(true);
-                player.updateInventory();
-            }
-        }
     }
 }

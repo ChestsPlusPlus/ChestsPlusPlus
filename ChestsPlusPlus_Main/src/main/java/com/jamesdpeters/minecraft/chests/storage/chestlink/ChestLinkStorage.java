@@ -49,7 +49,8 @@ public class ChestLinkStorage extends AbstractStorage implements ConfigurationSe
         this.sortMethod = SortMethod.OFF;
 
         Block block = location.getBlock();
-        if (block.getState() instanceof Container container) {
+        if (block.getState() instanceof Container) {
+            Container container = (Container) block.getState();
             getInventory().setContents(container.getInventory().getContents());
             container.getInventory().clear();
             updateDisplayItem();
@@ -102,7 +103,8 @@ public class ChestLinkStorage extends AbstractStorage implements ConfigurationSe
     @Override
     public void onStorageAdded(Block block, Player player) {
         //Migrates that chest into InventoryStorage and if full drops it at the chest location.
-        if (block.getState() instanceof Container chest) {
+        if (block.getState() instanceof Container) {
+            Chest chest = (Chest) block.getState();
             boolean hasOverflow = false;
             for (ItemStack chestItem : chest.getInventory().getContents()) {
                 if (chestItem != null) {
@@ -147,8 +149,8 @@ public class ChestLinkStorage extends AbstractStorage implements ConfigurationSe
     public ClickableItem getClickableItem(Player player) {
         return ClickableItem.from(getIventoryIcon(player), event -> {
             InventoryHolder inventoryHolder = getInventory().getHolder();
-            if (inventoryHolder instanceof VirtualInventoryHolder virtualInventoryHolder) {
-                virtualInventoryHolder.setPreviousInventory(() ->
+            if (inventoryHolder instanceof VirtualInventoryHolder) {
+                ((VirtualInventoryHolder)inventoryHolder).setPreviousInventory(() ->
                         Bukkit.getScheduler().runTask(ChestsPlusPlus.PLUGIN, () -> ChestLinkMenu.getMenu(player).openLastPage(player)));
             }
             Utils.openChestInventory(player, getInventory());

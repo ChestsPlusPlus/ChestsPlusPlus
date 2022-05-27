@@ -27,7 +27,8 @@ public class HopperFilter {
         Collection<Entity> ent = block.getWorld().getNearbyEntities(block.getLocation(), 1.01, 1.01, 1.01);
         List<Filter> filters = new ArrayList<>(ent.size());
         for (Entity entity : ent) {
-            if (entity instanceof ItemFrame frame) {
+            if (entity instanceof ItemFrame) {
+                ItemFrame frame = (ItemFrame) entity;
                 if (frame.getItem().getType().equals(Material.AIR)) continue;
                 Block attachedBlock = frame.getLocation().getBlock().getRelative(frame.getAttachedFace());
                 if (block.equals(attachedBlock)) {

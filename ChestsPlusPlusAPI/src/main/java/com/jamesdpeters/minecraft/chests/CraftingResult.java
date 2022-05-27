@@ -6,9 +6,32 @@ import org.bukkit.inventory.ItemStack;
 import java.util.List;
 import java.util.Objects;
 
-public record CraftingResult(ItemStack result, ItemStack[] matrixResult, List<ItemStack> overflowItems) {
+public class CraftingResult {
+
+    private ItemStack result;
+    private ItemStack[] matrixResult;
+    private List<ItemStack> overflowItems;
+
+    public CraftingResult(ItemStack result, ItemStack[] matrixResult, List<ItemStack> overflowItems) {
+        this.result = result;
+        this.matrixResult = matrixResult;
+        this.overflowItems = overflowItems;
+    }
 
     public void setResultMatrix(int i, ItemStack asBukkitCopy) {
-        matrixResult[i] = Objects.requireNonNullElseGet(asBukkitCopy, () -> new ItemStack(Material.AIR));
+        if (asBukkitCopy == null) asBukkitCopy = new ItemStack(Material.AIR);
+        matrixResult[i] = asBukkitCopy;
+    }
+
+    public List<ItemStack> getOverflowItems() {
+        return overflowItems;
+    }
+
+    public ItemStack getResult() {
+        return result;
+    }
+
+    public ItemStack[] getMatrixResult() {
+        return matrixResult;
     }
 }

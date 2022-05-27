@@ -64,11 +64,11 @@ public class ChestLinkCommand extends ServerCommand {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender instanceof Player player)) {
+        if (!(sender instanceof Player)) {
             sender.sendMessage("Only a player can use this command");
             return false;
         }
-
+        Player player = (Player) sender;
         if (args != null && args.length > 0) {
             try {
                 switch (OPTIONS.valueOf(args[0].toUpperCase())) {
@@ -205,8 +205,8 @@ public class ChestLinkCommand extends ServerCommand {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        if ((sender instanceof Player player)) {
-
+        if ((sender instanceof Player)) {
+            Player player = (Player) sender;
             if (args.length == 1) {
                 return OPTIONS.valuesList;
             }

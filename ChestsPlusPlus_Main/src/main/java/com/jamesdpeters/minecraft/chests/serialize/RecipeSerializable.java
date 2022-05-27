@@ -37,8 +37,8 @@ public class RecipeSerializable implements ConfigurationSerializable {
     public RecipeSerializable(Map<String, Object> map) {
         Object obj = map.get("items");
         if (obj != null) {
-            if (obj instanceof ItemStack[] itemArray) {
-                items = itemArray;
+            if (obj instanceof ItemStack[]) {
+                items = (ItemStack[]) obj;
             } else {
                 //noinspection unchecked
                 items = ((List<ItemStack>)obj).toArray(new ItemStack[9]);

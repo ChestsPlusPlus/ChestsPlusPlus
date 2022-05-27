@@ -110,10 +110,18 @@ public class PartySelectorMenu implements InventoryProvider {
     }
 
     private List<PlayerParty> getParties(OfflinePlayer player) {
-        return switch (type) {
-            case ALL -> PartyUtils.getPlayerPartyStorage(player).getAllParties();
-            case OWNED -> PartyUtils.getPlayerPartyStorage(player).getOwnedPartiesList();
-            case MEMBER_OF -> PartyUtils.getPlayerPartyStorage(player).getPartiesMemberOf();
+        List<PlayerParty> result;
+        switch (type) {
+            case ALL:
+                result = PartyUtils.getPlayerPartyStorage(player).getAllParties();
+                break;
+            case OWNED:
+                result = PartyUtils.getPlayerPartyStorage(player).getOwnedPartiesList();
+                break;
+            default:
+                result = PartyUtils.getPlayerPartyStorage(player).getPartiesMemberOf();
+                break;
         };
+        return result;
     }
 }
