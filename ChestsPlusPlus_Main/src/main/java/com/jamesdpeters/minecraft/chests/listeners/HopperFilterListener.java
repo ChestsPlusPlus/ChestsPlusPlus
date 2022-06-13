@@ -10,6 +10,7 @@ import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.PluginConfig;
 import com.jamesdpeters.minecraft.chests.serialize.SpigotConfig;
 import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorage;
+import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorageType;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -29,7 +30,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.function.Function;
 
-public class HopperListener implements Listener {
+public class HopperFilterListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onHopperMoveEvent(InventoryMoveItemEvent event) {
@@ -77,7 +78,9 @@ public class HopperListener implements Listener {
         //FROM HOPPER
         if (event.getInitiator().getHolder() instanceof Hopper) {
             Location location = event.getDestination().getLocation();
-            ChestLinkStorage storage = Config.getChestLink().getStorage(location);
+            ChestLinkStorageType storageType = Config.getChestLink();
+            if (storageType == null) return;
+            ChestLinkStorage storage = storageType.getStorage(location);
             if (storage != null) {
                 if(!event.isCancelled()) {
                     event.setCancelled(true);

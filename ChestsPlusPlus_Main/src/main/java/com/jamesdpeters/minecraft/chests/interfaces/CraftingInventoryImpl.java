@@ -173,6 +173,11 @@ public class CraftingInventoryImpl implements CraftingInventory {
     }
 
     @Override
+    public boolean isEmpty() {
+        return inventory.isEmpty();
+    }
+
+    @Override
     public void remove(@NotNull Material material) throws IllegalArgumentException {
         inventory.remove(material);
     }

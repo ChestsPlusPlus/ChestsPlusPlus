@@ -2,6 +2,7 @@ package com.jamesdpeters.minecraft.chests.serialize;
 
 import com.google.common.base.Charsets;
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
+import com.jamesdpeters.minecraft.chests.PluginConfig;
 import com.jamesdpeters.minecraft.chests.storage.abstracts.AbstractStorage;
 import com.jamesdpeters.minecraft.chests.storage.abstracts.StorageType;
 import com.jamesdpeters.minecraft.chests.storage.autocraft.AutoCraftingStorageType;
@@ -53,13 +54,13 @@ public class Config {
             store = new ConfigStorage();
             saveASync();
         }
-        chestLinkStorageType = new ChestLinkStorageType(store);
-        autoCraftingStorageType = new AutoCraftingStorageType(store);
+        if (PluginConfig.CHESTLINKS_ENABLED.get()) chestLinkStorageType = new ChestLinkStorageType(store);
+        if (PluginConfig.AUTOCRAFTERS_ENABLED.get()) autoCraftingStorageType = new AutoCraftingStorageType(store);
 
         //Add each storage type to a list.
         storageTypes = new ArrayList<>();
-        storageTypes.add(chestLinkStorageType);
-        storageTypes.add(autoCraftingStorageType);
+        if (PluginConfig.CHESTLINKS_ENABLED.get()) storageTypes.add(chestLinkStorageType);
+        if (PluginConfig.AUTOCRAFTERS_ENABLED.get()) storageTypes.add(autoCraftingStorageType);
 
         storageTypes.forEach(StorageType::onConfigLoad);
     }

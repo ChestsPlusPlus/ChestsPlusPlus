@@ -6,8 +6,10 @@ import com.jamesdpeters.minecraft.chests.commands.ChestLinkCommand;
 import com.jamesdpeters.minecraft.chests.commands.ChestsPlusPlusCommand;
 import com.jamesdpeters.minecraft.chests.crafting.Crafting;
 import com.jamesdpeters.minecraft.chests.lang.LangFileProperties;
-import com.jamesdpeters.minecraft.chests.listeners.HopperListener;
+import com.jamesdpeters.minecraft.chests.listeners.AutoCrafterListener;
+import com.jamesdpeters.minecraft.chests.listeners.HopperFilterListener;
 import com.jamesdpeters.minecraft.chests.listeners.InventoryListener;
+import com.jamesdpeters.minecraft.chests.listeners.LinkedChestHopperListener;
 import com.jamesdpeters.minecraft.chests.listeners.StorageListener;
 import com.jamesdpeters.minecraft.chests.listeners.WorldListener;
 import com.jamesdpeters.minecraft.chests.maventemplates.BuildConstants;
@@ -24,13 +26,16 @@ import com.jamesdpeters.minecraft.chests.serialize.MaterialSerializer;
 import com.jamesdpeters.minecraft.chests.serialize.RecipeSerializable;
 import com.jamesdpeters.minecraft.chests.serialize.SpigotConfig;
 import com.jamesdpeters.minecraft.chests.storage.autocraft.AutoCraftingStorage;
+import com.jamesdpeters.minecraft.chests.storage.autocraft.AutoCraftingStorageType;
 import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorage;
+import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorageType;
 import com.jamesdpeters.minecraft.chests.versionchecker.UpdateChecker;
 import fr.minuskube.inv.InventoryManager;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
+import org.bukkit.event.HandlerList;
 import org.bukkit.permissions.PermissionDefault;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.java.annotation.command.Command;
@@ -42,7 +47,7 @@ import org.bukkit.plugin.java.annotation.plugin.Plugin;
 import org.bukkit.plugin.java.annotation.plugin.author.Author;
 
 @Plugin(name = "ChestsPlusPlus", version = BuildConstants.VERSION)
-@ApiVersion(ApiVersion.Target.v1_14)
+@ApiVersion(ApiVersion.Target.v1_17)
 @Description(value = "Minecraft Spigot mod that enhances chests and hoppers, with ChestLinks and Hopper filters!")
 @Author(value = "jameslfc19")
 @Commands({
@@ -96,10 +101,7 @@ public class ChestsPlusPlus extends JavaPlugin {
         //API initialisation
         ApiSpecific.init(this);
 
-        //Register commands
-        new ChestLinkCommand().register(this);
-        new AutoCraftCommand().register(this);
-        new ChestsPlusPlusCommand().register(this);
+
 
         //Load storage
         ServerType.init();
@@ -125,23 +127,50 @@ public class ChestsPlusPlus extends JavaPlugin {
             }), 0, PluginConfig.UPDATE_CHECKER_PERIOD.get() * 20);
         }
 
-        getServer().getPluginManager().registerEvents(ApiSpecific.getNmsProvider().getEntityEventListener(), this);
-        Bukkit.getWorlds().forEach(world -> {
-            ApiSpecific.getNmsProvider().getEntityEventListener().fixEntities(world);
-        });
-
         //Load storages after load.
         Bukkit.getScheduler().scheduleSyncDelayedTask(this, () -> {
             Crafting.load();
             new Config();
             getLogger().info("Chests++ Successfully Loaded Config and Recipes");
 
-            //Register event listeners
-            getServer().getPluginManager().registerEvents(new StorageListener(), this);
-            getServer().getPluginManager().registerEvents(new InventoryListener(), this);
-            getServer().getPluginManager().registerEvents(new HopperListener(), this);
+            //LinkedChest
+            if (PluginConfig.CHESTLINKS_ENABLED.get()) {
+                new ChestLinkCommand().register(this);
+                getServer().getPluginManager().registerEvents(new LinkedChestHopperListener(), this);
+            }
+
+            //AutoCrafter
+            if (PluginConfig.AUTOCRAFTERS_ENABLED.get()) {
+                new AutoCraftCommand().register(this);
+                getServer().getPluginManager().registerEvents(new AutoCrafterListener(), this);
+            }
+
+            //HopperFilter
+            if (PluginConfig.HOPPER_FILTERS_ENABLED.get()) {
+                getServer().getPluginManager().registerEvents(new HopperFilterListener(), this);
+            }
+
+            //Shared
+            if (PluginConfig.CHESTLINKS_ENABLED.get() || PluginConfig.AUTOCRAFTERS_ENABLED.get()) {
+                getServer().getPluginManager().registerEvents(new StorageListener(), this);
+                getServer().getPluginManager().registerEvents(new InventoryListener(), this);
+            }
+
+            //Other
             getServer().getPluginManager().registerEvents(new WorldListener(), this);
-            Config.getStorageTypes().forEach(storageType -> getServer().getPluginManager().registerEvents(storageType, this));
+            new ChestsPlusPlusCommand().register(this);
+
+            Config.getStorageTypes().forEach(storageType -> {
+                if (storageType instanceof AutoCraftingStorageType && PluginConfig.AUTOCRAFTERS_ENABLED.get()) {
+                    getServer().getPluginManager().registerEvents(storageType, this);
+                }
+                if (storageType instanceof ChestLinkStorageType && PluginConfig.CHESTLINKS_ENABLED.get()) {
+                    getServer().getPluginManager().registerEvents(storageType, this);
+                }
+            });
+
+            getServer().getPluginManager().registerEvents(ApiSpecific.getNmsProvider().getEntityEventListener(), this);
+            Bukkit.getWorlds().forEach(world -> ApiSpecific.getNmsProvider().getEntityEventListener().fixEntities(world));
             getLogger().info("Chests++ enabled!");
         }, 1);
     }
@@ -150,6 +179,7 @@ public class ChestsPlusPlus extends JavaPlugin {
     public void onDisable() {
         super.onDisable();
         Config.save();
+        HandlerList.unregisterAll(this);
 //        //Remove entities that could have been left behind from bad save files/crashes etc.
 //        Utils.fixEntities();
     }

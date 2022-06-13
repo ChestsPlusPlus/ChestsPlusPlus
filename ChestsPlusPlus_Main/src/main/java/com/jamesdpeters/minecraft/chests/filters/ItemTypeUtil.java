@@ -7,13 +7,15 @@ import org.bukkit.inventory.ItemStack;
 import java.util.ArrayList;
 import java.util.List;
 
+@SuppressWarnings("unchecked")
 public class ItemTypeUtil {
 
-    private static List<Tag<Material>> tags;
+    private static final List<Tag<Material>> tags;
 
     static {
         tags = new ArrayList<>();
 
+        tags.add(ChestsPlusPlusTag.SEEDS);
         tags.add(Tag.WOOL);
         tags.add(Tag.PLANKS);
         tags.add(Tag.STONE_BRICKS);
