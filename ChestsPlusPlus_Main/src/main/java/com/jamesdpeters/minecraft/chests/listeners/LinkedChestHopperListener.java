@@ -19,7 +19,7 @@ public class LinkedChestHopperListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH)
     public void fromHopper(InventoryMoveItemEvent event) {
         //FROM HOPPER
-        if (event.getInitiator().getHolder() instanceof Hopper) {
+        if (event.getSource().getHolder() instanceof Hopper) {
             Location location = event.getDestination().getLocation();
             if (location == null) return;
             if (!Utils.isLocationChunkLoaded(location)) return;

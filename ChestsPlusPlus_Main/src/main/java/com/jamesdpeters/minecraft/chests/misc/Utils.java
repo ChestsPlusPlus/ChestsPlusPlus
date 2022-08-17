@@ -21,6 +21,7 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.Container;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -95,42 +96,36 @@ public class Utils {
         //player.closeInventory();
     }
 
-    public static ItemStack removeStackFromInventory(Inventory inventory, int amount, List<Filter> filters) {
-        ItemStack toRemove;
-        for (int i = 0; i < inventory.getContents().length; i++) {
-            ItemStack stack = inventory.getItem(i);
-            if ((stack != null) && (HopperFilter.isInFilter(filters, stack))) {
-                toRemove = stack.clone();
-                toRemove.setAmount(Math.min(stack.getAmount(), amount));
-                stack.setAmount(stack.getAmount() - toRemove.getAmount());
-                return toRemove;
+    public static boolean hopperMove(Inventory from, int amount, Inventory to) {
+        // Search for an item stack to remove
+        for (int i = 0; i < from.getContents().length; i++) {
+            ItemStack stack = from.getItem(i);
+            if (stack != null) {
+                // if (hopperMove(from, stack, amount, to)) return true;
+                hopperMove(from, stack, amount, to);
+                return true;
             }
-        }
-        return null;
-    }
-
-    public static boolean hopperMove(Inventory from, int amount, Inventory to, List<Filter> filters) {
-        ItemStack removed = removeStackFromInventory(from, amount, filters);
-        if (removed != null) {
-            HashMap<Integer, ItemStack> leftOvers = to.addItem(removed);
-            for (ItemStack leftOver : leftOvers.values()) {
-                from.addItem(leftOver);
-                if (removed.equals(leftOver)) return false;
-            }
-            return true;
         }
         return false;
     }
 
-    public static boolean hopperMove(Inventory from, int amount, Inventory to) {
-        return hopperMove(from, amount, to, null);
+    public static boolean hopperMove(Inventory from, ItemStack stack, int amount, Inventory to) {
+        return hopperMove(from, stack, amount, to, true);
     }
 
-    public static boolean hopperMove(Inventory from, ItemStack stack, int amount, Inventory to) {
+    public static boolean hopperMove(Inventory from, ItemStack stack, int amount, Inventory to, boolean triggerEvent) {
         if (stack != null) {
             ItemStack toRemove = stack.clone();
             toRemove.setAmount(Math.min(stack.getAmount(), amount));
             stack.setAmount(stack.getAmount() - toRemove.getAmount());
+            if(triggerEvent) {
+                InventoryMoveItemEvent event = new InventoryMoveItemEvent(from, toRemove.clone(), to, false);
+                Bukkit.getPluginManager().callEvent(event);
+                if(event.isCancelled()) {
+                    stack.setAmount(stack.getAmount() + toRemove.getAmount());
+                    return false;
+                }
+            }
 
             HashMap<Integer, ItemStack> leftOvers = to.addItem(toRemove);
             for (ItemStack leftOver : leftOvers.values()) {
