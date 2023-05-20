@@ -141,10 +141,10 @@ public class PartyMenu implements InventoryProvider {
             if (result){
                 player.sendMessage(ChatColor.GREEN+ Message.PARTY_CREATED.getString(ChatColor.WHITE+partyName+ChatColor.GREEN));
                 getMenu().open(player);
-                return AnvilGUI.Response.close();
+                return AnvilGUI.ResponseAction.close();
             } else {
                 player.sendMessage(ChatColor.RED+Message.PARTY_ALREADY_EXISTS.getString(ChatColor.WHITE+partyName+ChatColor.RED));
-                return AnvilGUI.Response.text(Message.ALREADY_EXISTS_ANVIL.getString());
+                return AnvilGUI.ResponseAction.replaceInputText(Message.ALREADY_EXISTS_ANVIL.getString());
             }
         });
     }

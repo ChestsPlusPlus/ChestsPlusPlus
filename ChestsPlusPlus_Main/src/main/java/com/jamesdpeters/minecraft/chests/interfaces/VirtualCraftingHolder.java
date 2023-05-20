@@ -188,7 +188,7 @@ public class VirtualCraftingHolder implements InventoryHolder {
                 int index = recipeChoiceIndex[i];
                 List<ItemStack> choices = null;
 
-                if (index < recipeChoices.length) {
+                if (i < recipeChoices.length) {
                     var recipeChoice = recipeChoices[i];
                     choices = recipeChoiceItems.get(recipeChoice);
                 }
