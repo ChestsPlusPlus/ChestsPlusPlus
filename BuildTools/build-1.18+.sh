@@ -8,7 +8,7 @@ MAVEN_DIR="$HOME/.m2"
 SPIGOT="${MAVEN_DIR}/repository/org/spigotmc/spigot"
 
 #Versions
-array=("1.18.1" "1.18.2" "1.19" "1.19.3" "1.19.4")
+array=("1.18.1" "1.18.2" "1.19" "1.19.3" "1.19.4" "1.20")
 
 #Download BuildTools jar
 curl -s -o BuildTools.jar https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar
