@@ -22,6 +22,8 @@ public class NMSProviderDefault implements NMSProvider {
             case "v1_18_R1" -> defaultProvider = new com.jamesdpeters.minecraft.chests.v1_18_R1.NMSProviderImpl();
             case "v1_18_R2" -> defaultProvider = new com.jamesdpeters.minecraft.chests.v1_18_R2.NMSProviderImpl();
             case "v1_19_R1" -> defaultProvider = new com.jamesdpeters.minecraft.chests.v1_19_R1.NMSProviderImpl();
+            case "v1_20_R1" -> defaultProvider = new com.jamesdpeters.minecraft.chests.v1_20_R1.NMSProviderImpl();
+            case "v1_20_R2" -> defaultProvider = new com.jamesdpeters.minecraft.chests.v1_20_R2.NMSProviderImpl();
             default -> {
                 ChestsPlusPlus.PLUGIN.getLogger().severe("§c=======================================================");
                 ChestsPlusPlus.PLUGIN.getLogger().severe("§cThis version is not supported. Please update your server or the plugin!");
