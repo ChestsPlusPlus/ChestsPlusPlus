@@ -11,7 +11,7 @@
     </parent>
 
     <artifactId>ChestsPlusPlus-Master</artifactId>
-    <version>2.9-Release</version>
+    <version>2.10-Release</version>
 
     <properties>
         <maven.compiler.target>16</maven.compiler.target>
