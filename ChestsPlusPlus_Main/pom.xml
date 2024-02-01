@@ -74,6 +74,20 @@
 
         <dependency>
             <groupId>com.jamesdpeters.minecraft.chests</groupId>
+            <artifactId>ChestsPlusPlus_1_20_R3</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.jamesdpeters.minecraft.chests</groupId>
+            <artifactId>ChestsPlusPlus_1_20_R2</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.jamesdpeters.minecraft.chests</groupId>
             <artifactId>ChestsPlusPlus_1_20_R1</artifactId>
             <version>1.0-SNAPSHOT</version>
             <type>jar</type>
@@ -148,12 +162,6 @@
             <artifactId>lombok</artifactId>
             <version>1.18.22</version>
             <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.jamesdpeters.minecraft.chests</groupId>
-            <artifactId>ChestsPlusPlus_1_20_R2</artifactId>
-            <version>1.0-SNAPSHOT</version>
-            <scope>compile</scope>
         </dependency>
 
 
