@@ -38,6 +38,10 @@ public class HopperFilter {
         return filters;
     }
 
+    public static boolean hasFilters(Block block) {
+        return getHopperFilters(block).size() > 0;
+    }
+
     public static boolean isInFilter(Block block, ItemStack itemStack) {
         return isInFilter(getHopperFilters(block), itemStack);
     }
