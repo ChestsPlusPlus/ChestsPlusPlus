@@ -16,6 +16,7 @@
 
     <modules>
         <module>ChestsPlusPlusAPI</module>
+        <module>ChestsPlusPlus_1_21_R1</module>
         <module>ChestsPlusPlus_1_20_R3</module>
         <module>ChestsPlusPlus_1_20_R2</module>
         <module>ChestsPlusPlus_1_20_R1</module>
