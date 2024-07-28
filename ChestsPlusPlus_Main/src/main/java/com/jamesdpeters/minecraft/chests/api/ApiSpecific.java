@@ -4,35 +4,25 @@ import com.jamesdpeters.minecraft.chests.Api;
 import com.jamesdpeters.minecraft.chests.ChestOpener;
 import com.jamesdpeters.minecraft.chests.MaterialChecker;
 import com.jamesdpeters.minecraft.chests.NMSProvider;
-import org.bukkit.Bukkit;
+import lombok.Getter;
 import org.bukkit.plugin.Plugin;
-
 
 public class ApiSpecific {
 
+    @Getter
     private static MaterialChecker materialChecker;
+    @Getter
     private static ChestOpener chestOpener;
+    @Getter
     private static NMSProvider nmsProvider;
 
-    public static void init(Plugin plugin) {
-        nmsProvider = Api.init(plugin, NMSProviderDefault::new);
-        materialChecker = nmsProvider.getMaterialChecker();
-        chestOpener = nmsProvider.getChestOpener();
-    }
+    public static boolean init(Plugin plugin) {
+        nmsProvider = Api.init(plugin);
+        if (nmsProvider != null) {
+            materialChecker = nmsProvider.getMaterialChecker();
+            chestOpener = nmsProvider.getChestOpener();
+        }
 
-    public static MaterialChecker getMaterialChecker() {
-        return materialChecker;
-    }
-
-    public static ChestOpener getChestOpener() {
-        return chestOpener;
-    }
-
-    public static NMSProvider getNmsProvider() {
-        return nmsProvider;
-    }
-
-    public static String getApiVersion() {
-        return Bukkit.getServer().getClass().getPackage().getName().split("\\.")[3];
+        return (nmsProvider != null && materialChecker != null && chestOpener != null);
     }
 }

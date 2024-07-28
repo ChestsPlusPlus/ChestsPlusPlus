@@ -1,7 +1,7 @@
 package com.jamesdpeters.minecraft.chests.commands;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
-import com.jamesdpeters.minecraft.chests.api.ApiSpecific;
+import com.jamesdpeters.minecraft.chests.VersionMatcher;
 import com.jamesdpeters.minecraft.chests.maventemplates.BuildConstants;
 import com.jamesdpeters.minecraft.chests.menus.PartyMenu;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
@@ -11,6 +11,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,8 +24,9 @@ public class ChestsPlusPlusCommand extends ServerCommand {
         PARTY("/chestsplusplus party", "Open the party menu to create, add, remove and invite parties and players."),
         RELOAD("/chestsplusplus reload", "Reloads the plugin.");
 
-        String description, commandHelp;
-        static List<String> valuesList;
+        final String description;
+        final String commandHelp;
+        static final List<String> valuesList;
 
         static {
             valuesList = Stream.of(OPTIONS.values()).map(OPTIONS::toString).collect(Collectors.toList());
@@ -48,7 +50,7 @@ public class ChestsPlusPlusCommand extends ServerCommand {
     }
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String[] args) {
         if (!(sender instanceof Player player)) {
             sender.sendMessage("Only a player can use this command");
             return false;
@@ -59,7 +61,7 @@ public class ChestsPlusPlusCommand extends ServerCommand {
                     sender.sendMessage("ChestsPlusPlus Version: " + BuildConstants.VERSION);
                     sender.sendMessage("Server Version: " + Bukkit.getVersion());
                     sender.sendMessage("CraftBukkit Version: " + Bukkit.getBukkitVersion());
-                    sender.sendMessage("Detected API Version: " + ApiSpecific.getApiVersion());
+                    sender.sendMessage("Detected API Version: " + VersionMatcher.match());
                     return true;
 
                 case RELOAD:
@@ -82,7 +84,7 @@ public class ChestsPlusPlusCommand extends ServerCommand {
     }
 
     @Override
-    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, String[] args) {
         if ((sender instanceof Player player)) {
             if (args.length == 1) {
                 return OPTIONS.valuesList;

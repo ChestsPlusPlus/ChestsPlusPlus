@@ -99,9 +99,9 @@ public class ChestsPlusPlus extends JavaPlugin {
         Stats.addCharts(metrics);
 
         //API initialisation
-        ApiSpecific.init(this);
-
-
+        if (!ApiSpecific.init(this)) {
+            return;
+        }
 
         //Load storage
         ServerType.init();
