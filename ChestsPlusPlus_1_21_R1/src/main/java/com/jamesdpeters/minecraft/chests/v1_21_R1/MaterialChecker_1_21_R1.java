@@ -1,4 +1,4 @@
-package com.jamesdpeters.minecraft.chests.v1_17_R1;
+package com.jamesdpeters.minecraft.chests.v1_21_R1;
 
 import com.jamesdpeters.minecraft.chests.BaseMaterialChecker;
 import com.jamesdpeters.minecraft.chests.MaterialChecker;
@@ -7,14 +7,11 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.List;
 
-/**
- * Material Checker for items available in 1.17+
- */
-public class MaterialChecker_1_17_R1 extends MaterialChecker {
+public class MaterialChecker_1_21_R1 extends MaterialChecker {
 
     private final BaseMaterialChecker baseMaterialChecker;
 
-    public MaterialChecker_1_17_R1(){
+    public MaterialChecker_1_21_R1(){
         baseMaterialChecker = new BaseMaterialChecker();
     }
 

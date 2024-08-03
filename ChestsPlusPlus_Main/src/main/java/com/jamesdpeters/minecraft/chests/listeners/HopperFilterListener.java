@@ -1,13 +1,12 @@
 package com.jamesdpeters.minecraft.chests.listeners;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
-import com.jamesdpeters.minecraft.chests.api.ApiSpecific;
+import com.jamesdpeters.minecraft.chests.PluginConfig;
 import com.jamesdpeters.minecraft.chests.filters.HopperFilter;
 import com.jamesdpeters.minecraft.chests.lang.Message;
 import com.jamesdpeters.minecraft.chests.misc.ServerType;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
-import com.jamesdpeters.minecraft.chests.PluginConfig;
 import com.jamesdpeters.minecraft.chests.serialize.SpigotConfig;
 import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorage;
 import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorageType;
@@ -119,7 +118,7 @@ public class HopperFilterListener implements Listener {
             Rotation rotation = itemFrame.getRotation();
 
             //Set ItemFrame invisible based on config.
-            ApiSpecific.getNmsProvider().setItemFrameVisible(itemFrame, !PluginConfig.INVISIBLE_FILTER_ITEM_FRAMES.get());
+            itemFrame.setVisible(!PluginConfig.INVISIBLE_FILTER_ITEM_FRAMES.get());
 
             //ItemFrame event acts weird, it returns the values of the itemframe *before* the event. So we have to calculate what the next state will be.
             if (!itemFrame.getItem().getType().equals(Material.AIR)) rotation = rotation.rotateClockwise();

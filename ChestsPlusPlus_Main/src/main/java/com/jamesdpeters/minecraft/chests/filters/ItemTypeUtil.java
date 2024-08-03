@@ -58,7 +58,7 @@ public class ItemTypeUtil {
         tags.add(Tag.ITEMS_BANNERS);
         tags.add(Tag.ITEMS_BOATS);
         tags.add(Tag.ITEMS_FISHES);
-        tags.add(Tag.ITEMS_MUSIC_DISCS);
+        tags.add(Tag.ITEMS_CREEPER_DROP_MUSIC_DISCS);
         tags.add(Tag.ITEMS_COALS);
         tags.add(Tag.ITEMS_ARROWS);
     }

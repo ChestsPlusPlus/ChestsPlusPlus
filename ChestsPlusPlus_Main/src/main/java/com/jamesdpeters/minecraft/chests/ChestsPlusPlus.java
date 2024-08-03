@@ -7,6 +7,7 @@ import com.jamesdpeters.minecraft.chests.commands.ChestsPlusPlusCommand;
 import com.jamesdpeters.minecraft.chests.crafting.Crafting;
 import com.jamesdpeters.minecraft.chests.lang.LangFileProperties;
 import com.jamesdpeters.minecraft.chests.listeners.AutoCrafterListener;
+import com.jamesdpeters.minecraft.chests.listeners.EntityEventListener;
 import com.jamesdpeters.minecraft.chests.listeners.HopperFilterListener;
 import com.jamesdpeters.minecraft.chests.listeners.InventoryListener;
 import com.jamesdpeters.minecraft.chests.listeners.LinkedChestHopperListener;
@@ -169,8 +170,8 @@ public class ChestsPlusPlus extends JavaPlugin {
                 }
             });
 
-            getServer().getPluginManager().registerEvents(ApiSpecific.getNmsProvider().getEntityEventListener(), this);
-            Bukkit.getWorlds().forEach(world -> ApiSpecific.getNmsProvider().getEntityEventListener().fixEntities(world));
+            getServer().getPluginManager().registerEvents(new EntityEventListener(), this);
+            Bukkit.getWorlds().forEach(EntityEventListener::fixEntities);
             getLogger().info("Chests++ enabled!");
         }, 1);
     }

@@ -1,12 +1,11 @@
 package com.jamesdpeters.minecraft.chests.misc;
 
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
-import com.jamesdpeters.minecraft.chests.api.ApiSpecific;
+import com.jamesdpeters.minecraft.chests.PluginConfig;
 import com.jamesdpeters.minecraft.chests.filters.Filter;
 import com.jamesdpeters.minecraft.chests.filters.HopperFilter;
 import com.jamesdpeters.minecraft.chests.interfaces.VirtualInventoryHolder;
 import com.jamesdpeters.minecraft.chests.serialize.LocationInfo;
-import com.jamesdpeters.minecraft.chests.PluginConfig;
 import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorage;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -18,7 +17,7 @@ import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.block.Container;
+import org.bukkit.block.Lidded;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryType;
@@ -30,7 +29,6 @@ import org.bukkit.util.Vector;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -59,15 +57,23 @@ public class Utils {
     private static void containerAnimation(Inventory inventory, LocationInfo location, boolean open) {
         if (location != null && Utils.isLocationChunkLoaded(location.getLocation())) {
             Block block = location.getLocation().getBlock();
-            if (block.getState() instanceof Container chest) {
+            if (block.getState() instanceof Lidded chest) {
                 if (open) {
-                    location.setTileEntityOpener(ApiSpecific.getChestOpener().updateState(inventory, chest, location.getTileEntityOpener()));
+                    checkChestState(chest, inventory);
                 } else {
                     Bukkit.getScheduler().scheduleSyncDelayedTask(ChestsPlusPlus.PLUGIN, () -> {
-                        location.setTileEntityOpener(ApiSpecific.getChestOpener().updateState(inventory, chest, location.getTileEntityOpener()));
+                        checkChestState(chest, inventory);
                     }, 1);
                 }
             }
+        }
+    }
+
+    private static void checkChestState(Lidded lidded, Inventory inventory) {
+        if (!inventory.getViewers().isEmpty()) {
+            lidded.open();
+        } else {
+            lidded.close();
         }
     }
 

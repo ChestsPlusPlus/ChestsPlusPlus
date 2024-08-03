@@ -1,6 +1,5 @@
 package com.jamesdpeters.minecraft.chests.serialize;
 
-import com.jamesdpeters.minecraft.chests.TileEntityOpener;
 import org.bukkit.Location;
 import org.bukkit.block.Sign;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
@@ -20,7 +19,6 @@ public class LocationInfo implements ConfigurationSerializable {
     private final Location location;
     private Location signLocation;
     private ArmorStand itemStand, blockStand, toolItemStand;
-    private TileEntityOpener tileEntityOpener;
 
     @Override
     public Map<String, Object> serialize() {
@@ -78,14 +76,6 @@ public class LocationInfo implements ConfigurationSerializable {
 
     public void setSignLocation(Location signLocation) {
         this.signLocation = signLocation;
-    }
-
-    public void setTileEntityOpener(TileEntityOpener tileEntityOpener) {
-        this.tileEntityOpener = tileEntityOpener;
-    }
-
-    public TileEntityOpener getTileEntityOpener() {
-        return tileEntityOpener;
     }
 
     public static List<LocationInfo> convert(List<Location> locationList) {
