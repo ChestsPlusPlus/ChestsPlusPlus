@@ -2,9 +2,6 @@ package com.jamesdpeters.minecraft.chests.interfaces;
 
 import com.google.common.collect.Maps;
 import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
-import com.jamesdpeters.minecraft.chests.CraftingResult;
-import com.jamesdpeters.minecraft.chests.api.ApiSpecific;
-import com.jamesdpeters.minecraft.chests.crafting.Crafting;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.serialize.LocationInfo;
@@ -98,7 +95,7 @@ public class VirtualCraftingHolder implements InventoryHolder {
         else if (recipe instanceof ShapelessRecipe) setCrafting((ShapelessRecipe) recipe);
         else {
             // For ComplexRecipes or other implementations just use the result and original matrix for choices.
-            result = ApiSpecific.getNmsProvider().getCraftingProvider().craft(Bukkit.getWorlds().get(0), matrix).result();
+            result = Bukkit.craftItem(matrix, Bukkit.getWorlds().getFirst());
             recipeChoices = new RecipeChoice[9];
             for (int i = 0; i < matrix.length; i++) {
                 var item = matrix[i];
@@ -132,7 +129,7 @@ public class VirtualCraftingHolder implements InventoryHolder {
     public void updateCrafting() {
         var crafting = Arrays.copyOfRange(inventory.getContents(),1, inventory.getContents().length);
 
-        Recipe recipe = Crafting.getRecipe(storage.getOwner().getPlayer(), crafting);
+        Recipe recipe = Bukkit.getCraftingRecipe(crafting, Bukkit.getWorlds().getFirst());
         getStorage().setRecipe(recipe, crafting); // Only store the crafting matrix if the recipe is valid
         resetChoices();
 
@@ -382,30 +379,22 @@ public class VirtualCraftingHolder implements InventoryHolder {
         // null recipe means no recipe was found from the inventories.
         if (recipe == null) return false;
 
-        // Use NMS to get the real result considering meta data etc.
-        CraftingResult craftingResult = Crafting.craft(storage.getOwner().getPlayer(), recipe);
+        var craftingResult = Bukkit.craftItemResult(recipe, Bukkit.getWorlds().getFirst());
 
-        //TODO
-//        Recipe recipeActual = Crafting.getRecipe(storage.getOwner().getPlayer(), recipe);
-//        CraftingInventoryImpl craftingInventoryImpl = new CraftingInventoryImpl(craftingInventory, craftingResult.getResult(), recipe, recipeActual);
-//        InventoryViewImpl inventoryView = new InventoryViewImpl(craftingInventory, output, ApiSpecific.getNmsProvider().getNPCProvider().createHumanEntity());
-//        PrepareItemCraftEvent itemCraftEvent = new PrepareItemCraftEvent(craftingInventoryImpl, inventoryView, false);
-//        Bukkit.getPluginManager().callEvent(itemCraftEvent);
-
-        if (craftingResult.result() == null) return false;
+        if (craftingResult.getResult() == null) return false;
 
         //If we reach here there are enough materials so check for space in the Hopper and update inventory.
         //Check if output and input are the same inventory to avoid duplication.
         Inventory tempOutput = sameInv ? sameInventory : Utils.copyInventory(output);
-        HashMap<Integer, ItemStack> map = tempOutput.addItem(craftingResult.result());
+        HashMap<Integer, ItemStack> map = tempOutput.addItem(craftingResult.getResult());
 
-        boolean isEmpty = Arrays.stream(craftingResult.matrixResult())
+        boolean isEmpty = Arrays.stream(craftingResult.getResultingMatrix())
                 .allMatch(itemStack -> (itemStack == null || itemStack.getType() == Material.AIR));
 
         // Add any leftover items from the recipe e.g buckets.
         HashMap<Integer, ItemStack> craftingMatrixLeftOvers =
                 isEmpty ? Maps.newHashMap()
-                        : tempOutput.addItem(craftingResult.matrixResult());
+                        : tempOutput.addItem(craftingResult.getResultingMatrix());
 
         //If result fits into output copy over the temporary inventories.
         if (map.isEmpty() && craftingMatrixLeftOvers.isEmpty()) {

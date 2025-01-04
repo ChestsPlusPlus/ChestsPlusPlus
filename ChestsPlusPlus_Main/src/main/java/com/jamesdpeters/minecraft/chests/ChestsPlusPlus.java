@@ -4,7 +4,6 @@ import com.jamesdpeters.minecraft.chests.api.ApiSpecific;
 import com.jamesdpeters.minecraft.chests.commands.AutoCraftCommand;
 import com.jamesdpeters.minecraft.chests.commands.ChestLinkCommand;
 import com.jamesdpeters.minecraft.chests.commands.ChestsPlusPlusCommand;
-import com.jamesdpeters.minecraft.chests.crafting.Crafting;
 import com.jamesdpeters.minecraft.chests.lang.LangFileProperties;
 import com.jamesdpeters.minecraft.chests.listeners.AutoCrafterListener;
 import com.jamesdpeters.minecraft.chests.listeners.EntityEventListener;
@@ -13,8 +12,6 @@ import com.jamesdpeters.minecraft.chests.listeners.InventoryListener;
 import com.jamesdpeters.minecraft.chests.listeners.LinkedChestHopperListener;
 import com.jamesdpeters.minecraft.chests.listeners.StorageListener;
 import com.jamesdpeters.minecraft.chests.listeners.WorldListener;
-import com.jamesdpeters.minecraft.chests.maventemplates.BuildConstants;
-import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.ServerType;
 import com.jamesdpeters.minecraft.chests.misc.Stats;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
@@ -37,39 +34,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.event.HandlerList;
-import org.bukkit.permissions.PermissionDefault;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.plugin.java.annotation.command.Command;
-import org.bukkit.plugin.java.annotation.command.Commands;
-import org.bukkit.plugin.java.annotation.permission.Permission;
-import org.bukkit.plugin.java.annotation.plugin.ApiVersion;
-import org.bukkit.plugin.java.annotation.plugin.Description;
-import org.bukkit.plugin.java.annotation.plugin.Plugin;
-import org.bukkit.plugin.java.annotation.plugin.author.Author;
 
-@Plugin(name = "ChestsPlusPlus", version = BuildConstants.VERSION)
-@ApiVersion(ApiVersion.Target.v1_17)
-@Description(value = "Minecraft Spigot mod that enhances chests and hoppers, with ChestLinks and Hopper filters!")
-@Author(value = "jameslfc19")
-@Commands({
-        @Command(name = "chestlink", desc = "Chests++ ChestLink Commands.", aliases = {"cl"}, usage = "Use /chestlink help for more info."),
-        @Command(name = "autocraft", desc = "Chests++ AutoCraft Commands.", aliases = {"ac"}, usage = "Use /autocraft help for more info."),
-        @Command(name = "chests++", desc = "Chests++ Commands.", aliases = {"c++"}, usage = "/chests++ version")})
-@Permission(name = Permissions.ADD, desc = "Gives permission to add ChestLinks!", defaultValue = PermissionDefault.TRUE)
-@Permission(name = Permissions.OPEN, desc = "Gives permission to open ChestLinks!", defaultValue = PermissionDefault.TRUE)
-@Permission(name = Permissions.OPEN_REMOTE, desc = "Gives permission to remotely open ChestLinks!", defaultValue = PermissionDefault.TRUE)
-@Permission(name = Permissions.MENU, desc = "Gives permission to open the ChestLink menu!", defaultValue = PermissionDefault.TRUE)
-@Permission(name = Permissions.REMOVE, desc = "Gives permission to remove a ChestLink!", defaultValue = PermissionDefault.TRUE)
-@Permission(name = Permissions.OPEN_ANY, desc = "Gives permission to open all chests/autocraft stations, for admin use.", defaultValue = PermissionDefault.OP)
-@Permission(name = Permissions.MEMBER, desc = "Gives permission to add/remove a member to/from their chestlink.", defaultValue = PermissionDefault.TRUE)
-@Permission(name = Permissions.SORT, desc = "Gives permission to sort ChestLinks.", defaultValue = PermissionDefault.TRUE)
-@Permission(name = Permissions.AUTOCRAFT_OPEN, desc = "Gives permission to open AutoCrafting stations.", defaultValue = PermissionDefault.TRUE)
-@Permission(name = Permissions.AUTOCRAFT_OPEN_REMOTE, desc = "Gives permission to remotely open AutoCrafting stations.", defaultValue = PermissionDefault.TRUE)
-@Permission(name = Permissions.AUTOCRAFT_ADD, desc = "Gives permission to add AutoCrafting stations.", defaultValue = PermissionDefault.TRUE)
-@Permission(name = Permissions.AUTOCRAFT_REMOVE, desc = "Gives permission to remove AutoCrafting stations.", defaultValue = PermissionDefault.TRUE)
-@Permission(name = Permissions.PARTY_CREATE, desc = "Gives permission to create Chests++ parties.", defaultValue = PermissionDefault.TRUE)
-@Permission(name = Permissions.PARTY_ACCEPT_INVITE, desc = "Gives permission to accept Chests++ party invites.", defaultValue = PermissionDefault.TRUE)
-@Permission(name = Permissions.PARTY_INVITE, desc = "Gives permission to invite players to Chests++ parties.", defaultValue = PermissionDefault.TRUE)
 public class ChestsPlusPlus extends JavaPlugin {
 
     public static JavaPlugin PLUGIN;
@@ -130,7 +96,6 @@ public class ChestsPlusPlus extends JavaPlugin {
 
         //Load storages after load.
         Bukkit.getScheduler().scheduleSyncDelayedTask(this, () -> {
-            Crafting.load();
             new Config();
             getLogger().info("Chests++ Successfully Loaded Config and Recipes");
 
@@ -172,6 +137,7 @@ public class ChestsPlusPlus extends JavaPlugin {
 
             getServer().getPluginManager().registerEvents(new EntityEventListener(), this);
             Bukkit.getWorlds().forEach(EntityEventListener::fixEntities);
+            Config.onPostConfigLoad();
             getLogger().info("Chests++ enabled!");
         }, 1);
     }

@@ -61,8 +61,6 @@ public class Config {
         storageTypes = new ArrayList<>();
         if (PluginConfig.CHESTLINKS_ENABLED.get()) storageTypes.add(chestLinkStorageType);
         if (PluginConfig.AUTOCRAFTERS_ENABLED.get()) storageTypes.add(autoCraftingStorageType);
-
-        storageTypes.forEach(StorageType::onConfigLoad);
     }
 
     public static void save() {
@@ -110,6 +108,10 @@ public class Config {
         file.getParentFile().mkdirs();
         if (!file.exists()) file.createNewFile();
         return file;
+    }
+
+    public static void onPostConfigLoad() {
+        storageTypes.forEach(StorageType::onConfigLoad);
     }
 
     private File getLegacyFile() {

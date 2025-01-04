@@ -25,7 +25,8 @@ public class BaseMaterialChecker extends MaterialChecker {
         version_Items.add(Material.RED_MUSHROOM);
         version_Items.add(Material.END_ROD);
         version_Items.add(Material.COBWEB);
-        version_Items.add(Material.GRASS);
+        version_Items.add(Material.TALL_GRASS);
+        version_Items.add(Material.SHORT_GRASS);
         version_Items.add(Material.FERN);
         version_Items.add(Material.DEAD_BUSH);
         version_Items.add(Material.SEAGRASS);
@@ -56,9 +57,10 @@ public class BaseMaterialChecker extends MaterialChecker {
         version_Items.add(Material.HOPPER);
         version_Items.add(Material.TORCH);
         version_Items.add(Material.WHEAT);
+        version_Items.add(Material.CAKE);
 
         version_Items.addAll(Tag.CROPS.getValues());
-        version_Items.addAll(Tag.TALL_FLOWERS.getValues());
+        version_Items.addAll(Tag.SMALL_FLOWERS.getValues());
         version_Items.addAll(Tag.FLOWERS.getValues());
         version_Items.add(Material.WARPED_FUNGUS);
         version_Items.add(Material.WARPED_ROOTS);

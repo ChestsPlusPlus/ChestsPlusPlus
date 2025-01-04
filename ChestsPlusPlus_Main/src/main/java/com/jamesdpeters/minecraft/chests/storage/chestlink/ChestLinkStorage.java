@@ -195,7 +195,7 @@ public class ChestLinkStorage extends AbstractStorage implements ConfigurationSe
     @Override
     public void postConfigLoad() {
         super.postConfigLoad();
-        onItemDisplayUpdate(InventorySorter.getMostCommonItem(getInventory()));
+        updateDisplayItem();
     }
 
     @Override

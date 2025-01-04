@@ -52,7 +52,7 @@ public class AutoCraftingStorage extends AbstractStorage implements Configuratio
         recipeSerializable = (RecipeSerializable) map.get("recipe");
         //If autocraft doesn't have a recipe in it it will be throw a NPE, this check seems to be working. Also the exception caused data loss in the data file
         if (recipeSerializable != null) {
-            recipeSerializable.updateRecipe(getOwner().getPlayer());
+            recipeSerializable.updateRecipe();
         }
         identifier = (String) map.get("identifier");
         initInventory();

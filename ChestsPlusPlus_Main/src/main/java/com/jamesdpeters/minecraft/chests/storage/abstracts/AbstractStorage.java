@@ -493,7 +493,7 @@ public abstract class AbstractStorage implements ConfigurationSerializable {
                     addArmorStand(isBlock, isTool, location, stand);
                 }
 
-                stand.setItemInHand(displayItem);
+                stand.getEquipment().setItemInMainHand(displayItem);
 
                 //Set on fire to correct lighting.
                 stand.setFireTicks(Integer.MAX_VALUE);

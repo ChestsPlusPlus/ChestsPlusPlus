@@ -10,7 +10,7 @@
     </parent>
 
     <properties>
-        <minecraft.version>1.21</minecraft.version>
+        <minecraft.version>1.21.4</minecraft.version>
     </properties>
 
     <modelVersion>4.0.0</modelVersion>

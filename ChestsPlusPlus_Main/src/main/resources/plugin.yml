@@ -1,0 +1,66 @@
+main: com.jamesdpeters.minecraft.chests.ChestsPlusPlus
+name: ChestsPlusPlus
+version: ${version}
+api-version: 1.21.4
+description: Minecraft Spigot mod that enhances chests and hoppers, with ChestLinks
+  and Hopper filters!
+author: jameslfc19
+commands:
+  chestlink:
+    aliases: cl
+    description: Chests++ ChestLink Commands.
+    usage: Use /chestlink help for more info.
+  autocraft:
+    aliases: ac
+    description: Chests++ AutoCraft Commands.
+    usage: Use /autocraft help for more info.
+  chests++:
+    aliases: c++
+    description: Chests++ Commands.
+    usage: /chests++ version
+permissions:
+  chestlink.add:
+    description: Gives permission to add ChestLinks!
+    default: 'true'
+  chestlink.open:
+    description: Gives permission to open ChestLinks!
+    default: 'true'
+  chestlink.remote-open:
+    description: Gives permission to remotely open ChestLinks!
+    default: 'true'
+  chestlink.menu:
+    description: Gives permission to open the ChestLink menu!
+    default: 'true'
+  chestlink.remove:
+    description: Gives permission to remove a ChestLink!
+    default: 'true'
+  chestlink.openall:
+    description: Gives permission to open all chests/autocraft stations, for admin
+      use.
+  chestlink.member:
+    description: Gives permission to add/remove a member to/from their chestlink.
+    default: 'true'
+  chestlink.sort:
+    description: Gives permission to sort ChestLinks.
+    default: 'true'
+  chestlink.autocraft.open:
+    description: Gives permission to open AutoCrafting stations.
+    default: 'true'
+  chestlink.autocraft.remote-open:
+    description: Gives permission to remotely open AutoCrafting stations.
+    default: 'true'
+  chestlink.autocraft.add:
+    description: Gives permission to add AutoCrafting stations.
+    default: 'true'
+  chestlink.autocraft.remove:
+    description: Gives permission to remove AutoCrafting stations.
+    default: 'true'
+  chestlink.party.create:
+    description: Gives permission to create Chests++ parties.
+    default: 'true'
+  chestlink.party.accept_invite:
+    description: Gives permission to accept Chests++ party invites.
+    default: 'true'
+  chestlink.party.invite:
+    description: Gives permission to invite players to Chests++ parties.
+    default: 'true'
