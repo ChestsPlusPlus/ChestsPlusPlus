@@ -5,6 +5,9 @@ api-version: 1.21.4
 description: Minecraft Spigot mod that enhances chests and hoppers, with ChestLinks
   and Hopper filters!
 author: jameslfc19
+libraries:
+  - org.apache.commons:commons-lang3:${apache.common.lang.version}
+  - org.apache.commons:commons-math3:${apache.common.math.version}
 commands:
   chestlink:
     aliases: cl

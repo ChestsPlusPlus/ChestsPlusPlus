@@ -5,7 +5,7 @@ import com.jamesdpeters.minecraft.chests.serialize.Config;
 import com.jamesdpeters.minecraft.chests.storage.abstracts.AbstractStorage;
 import com.jamesdpeters.minecraft.chests.storage.abstracts.StorageInfo;
 import com.jamesdpeters.minecraft.chests.storage.abstracts.StorageType;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
