@@ -4,6 +4,8 @@ import com.jamesdpeters.minecraft.chests.ChestsPlusPlus;
 import com.jamesdpeters.minecraft.chests.VersionMatcher;
 import com.jamesdpeters.minecraft.chests.maventemplates.BuildConstants;
 import com.jamesdpeters.minecraft.chests.menus.PartyMenu;
+import com.jamesdpeters.minecraft.chests.misc.Messages;
+import com.jamesdpeters.minecraft.chests.misc.Permissions;
 import com.jamesdpeters.minecraft.chests.misc.Utils;
 import com.jamesdpeters.minecraft.chests.party.PartyUtils;
 import org.bukkit.Bukkit;
@@ -51,25 +53,38 @@ public class ChestsPlusPlusCommand extends ServerCommand {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String[] args) {
-        if (!(sender instanceof Player player)) {
-            sender.sendMessage("Only a player can use this command");
-            return false;
-        }
+
         if (args != null && args.length > 0) {
             switch (OPTIONS.valueOf(args[0].toUpperCase())) {
                 case VERSION:
-                    sender.sendMessage("ChestsPlusPlus Version: " + BuildConstants.VERSION);
-                    sender.sendMessage("Server Version: " + Bukkit.getVersion());
-                    sender.sendMessage("CraftBukkit Version: " + Bukkit.getBukkitVersion());
-                    sender.sendMessage("Detected API Version: " + VersionMatcher.match());
+                    if(sender.hasPermission(Permissions.VERSION)){
+                        sender.sendMessage("ChestsPlusPlus Version: " + BuildConstants.VERSION);
+                        sender.sendMessage("Server Version: " + Bukkit.getVersion());
+                        sender.sendMessage("CraftBukkit Version: " + Bukkit.getBukkitVersion());
+                        sender.sendMessage("Detected API Version: " + VersionMatcher.match());
+                    }else{
+                        Messages.NO_PERMISSION(sender);
+                    }
                     return true;
 
                 case RELOAD:
-                    ChestsPlusPlus.PLUGIN.onEnable();
+                    if(sender.hasPermission(Permissions.RELOAD)){
+                        ChestsPlusPlus.PLUGIN.onEnable();
+                    }else{
+                        Messages.NO_PERMISSION(sender);
+                    }
                     return true;
 
                 case PARTY:
-                    PartyMenu.getMenu(player).getMenu().open(player);
+                    if (!(sender instanceof Player player)) {
+                        sender.sendMessage("Only a player can use this command");
+                        return false;
+                    }
+                    if(sender.hasPermission(Permissions.PARTY_OPEN)){
+                        PartyMenu.getMenu(player).getMenu().open(player);
+                    }else{
+                        Messages.NO_PERMISSION(sender);
+                    }
                     return true;
 
                 default:
