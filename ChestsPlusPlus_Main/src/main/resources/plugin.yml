@@ -58,6 +58,9 @@ permissions:
   chestlink.autocraft.remove:
     description: Gives permission to remove AutoCrafting stations.
     default: 'true'
+  chestlink.party.open:
+    description: Gives permission to open Chests++ parties menu.
+    default: 'true'
   chestlink.party.create:
     description: Gives permission to create Chests++ parties.
     default: 'true'
@@ -67,3 +70,9 @@ permissions:
   chestlink.party.invite:
     description: Gives permission to invite players to Chests++ parties.
     default: 'true'
+  chestlink.reload:
+    description: Gives permission to reload Chests++ plugin.
+    default: 'op'
+  chestlink.version:
+    description: Gives permission to check Chests++ version.
+    default: 'op'
