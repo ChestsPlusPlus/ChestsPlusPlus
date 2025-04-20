@@ -4,6 +4,7 @@ import com.jamesdpeters.minecraft.chests.lang.Message;
 import com.jamesdpeters.minecraft.chests.storage.chestlink.ChestLinkStorage;
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 public class Messages {
@@ -19,6 +20,10 @@ public class Messages {
     }
 
     public static void NO_PERMISSION(Player target) {
+        target.sendMessage(ChatColor.RED + "" + ChatColor.BOLD + TAG + " " + Message.NO_PERMISSION.getString());
+    }
+
+    public static void NO_PERMISSION(CommandSender target) {
         target.sendMessage(ChatColor.RED + "" + ChatColor.BOLD + TAG + " " + Message.NO_PERMISSION.getString());
     }
 
