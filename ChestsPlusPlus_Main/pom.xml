@@ -11,7 +11,7 @@
     </parent>
 
     <artifactId>ChestsPlusPlus-Master</artifactId>
-    <version>2.14-Release</version>
+    <version>2.15-Release</version>
 
     <properties>
         <maven.compiler.target>21</maven.compiler.target>
@@ -53,7 +53,7 @@
         <dependency>
             <groupId>net.wesjd</groupId>
             <artifactId>anvilgui</artifactId>
-            <version>1.10.4-SNAPSHOT</version>
+            <version>1.10.5-SNAPSHOT</version>
         </dependency>
 
         <dependency>
@@ -139,10 +139,6 @@
                             <pattern>fr.minuskube.inv</pattern>
                             <shadedPattern>com.jamesdpeters.minecraft.chests</shadedPattern>
                         </relocation>
-<!--                        <relocation>-->
-<!--                            <pattern>net.wesjd.anvilgui</pattern>-->
-<!--                            <shadedPattern>com.jamesdpeters.minecraft.chests</shadedPattern>-->
-<!--                        </relocation>-->
                     </relocations>
                 </configuration>
 
