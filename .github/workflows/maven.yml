@@ -43,7 +43,7 @@ jobs:
         echo "REVISION=$VERSION" >> $GITHUB_ENV
 
     - name: Build with Maven
-      run: mvn -B package --file pom.xml -Drevision=${{ env.REVISION }}
+      run: mvn -B clean install --file pom.xml -Drevision=${{ env.REVISION }}
 
     - name: Upload Release Asset
       id: upload-release-asset 
