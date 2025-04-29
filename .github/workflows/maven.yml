@@ -65,9 +65,9 @@ jobs:
       uses: softprops/action-gh-release@v2.2.2
       if: "!startsWith(github.ref, 'refs/tags/v')"
       with:
-        tag_name: latest
         name: Latest Build
         target_commitish: ${{ github.sha }}
+        make_latest: true
         body: |
           Automated build from commit ${{ github.sha }}
         draft: false
