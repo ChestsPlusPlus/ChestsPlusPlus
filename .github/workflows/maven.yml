@@ -54,13 +54,3 @@ jobs:
         generate_release_notes: true
         files: |
           ./Server/plugins/ChestsPlusPlus-*.jar
-
-    - uses: "marvinpinto/action-automatic-releases@latest"
-      with:
-        repo_token: "${{ secrets.GITEA_TOKEN }}"
-        automatic_release_tag: "latest"
-        prerelease: true
-        title: "Latest Build"
-        files: |
-          ./Server/plugins/ChestsPlusPlus-*.jar
-        
