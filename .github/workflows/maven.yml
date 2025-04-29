@@ -67,6 +67,7 @@ jobs:
       with:
         name: Latest Build
         target_commitish: ${{ github.sha }}
+        tag_name: latest
         make_latest: true
         body: |
           Automated build from commit ${{ github.sha }}
