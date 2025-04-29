@@ -55,16 +55,12 @@ jobs:
         files: |
           ./Server/plugins/ChestsPlusPlus-*.jar
 
-    - name: Upload to 'latest' release (non-tag builds)
-      uses: softprops/action-gh-release@v1
+    - uses: "marvinpinto/action-automatic-releases@latest"
       if: "!startsWith(github.ref, 'refs/tags/v')"
       with:
-        tag_name: latest
-        name: Latest Build
-        body: |
-          Automated build from commit ${{ github.sha }}
-        draft: false
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        automatic_release_tag: "latest/${{ github.ref_name }}"
         prerelease: true
+        title: "Latest Build [${{ github.ref_name }}]"
         files: |
           ./Server/plugins/ChestsPlusPlus-*.jar
-
