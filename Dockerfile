@@ -3,7 +3,6 @@ FROM maven:3.9-eclipse-temurin-21 as build
 WORKDIR /app
 # Copy pom.xml and source code
 COPY pom.xml .
-COPY src ./src
 COPY ChestsPlusPlus_Main ./ChestsPlusPlus_Main
 COPY ChestsPlusPlus_1_21_R1 ./ChestsPlusPlus_1_21_R1
 COPY ChestsPlusPlusAPI ./ChestsPlusPlusAPI
