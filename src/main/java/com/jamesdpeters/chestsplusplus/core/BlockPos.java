@@ -49,6 +49,11 @@ public record BlockPos(UUID world, int x, int y, int z) {
     }
 
     public long packed() {
+        return packed(x, y, z);
+    }
+
+    /** The packed key without allocating a {@code BlockPos} (hot paths). */
+    public static long packed(int x, int y, int z) {
         return ((x & XZ_MASK) << X_SHIFT) | ((z & XZ_MASK) << Z_SHIFT) | (y & Y_MASK);
     }
 

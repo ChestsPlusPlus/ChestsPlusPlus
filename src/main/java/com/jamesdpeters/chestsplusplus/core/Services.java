@@ -8,6 +8,8 @@ import com.jamesdpeters.chestsplusplus.message.Messages;
 import com.jamesdpeters.chestsplusplus.model.GroupRegistry;
 import com.jamesdpeters.chestsplusplus.model.NodeIndex;
 import com.jamesdpeters.chestsplusplus.persistence.PersistenceService;
+import java.util.HashMap;
+import java.util.Map;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jspecify.annotations.Nullable;
 
@@ -26,6 +28,7 @@ public final class Services {
     private volatile Settings settings;
     private volatile Messages messages;
     private @Nullable PersistenceService persistence;
+    private final Map<Class<?>, Object> components = new HashMap<>();
 
     public Services(JavaPlugin plugin, Settings settings, Messages messages) {
         this.plugin = plugin;
@@ -78,5 +81,17 @@ public final class Services {
 
     public void persistence(PersistenceService persistence) {
         this.persistence = persistence;
+    }
+
+    /** Registers a feature service (ChestLink, AutoCraft, displays, ...) for lookup by type. */
+    public <T> T add(Class<T> type, T component) {
+        components.put(type, component);
+        return component;
+    }
+
+    public <T> T get(Class<T> type) {
+        Object component = components.get(type);
+        if (component == null) throw new IllegalStateException(type.getSimpleName() + " is not registered");
+        return type.cast(component);
     }
 }

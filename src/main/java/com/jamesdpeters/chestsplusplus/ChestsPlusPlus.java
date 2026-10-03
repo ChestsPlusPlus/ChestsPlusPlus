@@ -1,17 +1,26 @@
 package com.jamesdpeters.chestsplusplus;
 
-import com.jamesdpeters.chestsplusplus.chestlink.ChestLinkHolder;
+import com.jamesdpeters.chestsplusplus.chestlink.ChestLinkListener;
+import com.jamesdpeters.chestsplusplus.chestlink.ChestLinkService;
+import com.jamesdpeters.chestsplusplus.chestlink.HopperBridge;
 import com.jamesdpeters.chestsplusplus.config.Settings;
 import com.jamesdpeters.chestsplusplus.core.Services;
-import com.jamesdpeters.chestsplusplus.message.Message;
+import com.jamesdpeters.chestsplusplus.display.DisplayLayout;
+import com.jamesdpeters.chestsplusplus.display.DisplayService;
+import com.jamesdpeters.chestsplusplus.link.LinkItem;
+import com.jamesdpeters.chestsplusplus.link.LinkService;
+import com.jamesdpeters.chestsplusplus.link.NodeListener;
+import com.jamesdpeters.chestsplusplus.link.SignLinkListener;
 import com.jamesdpeters.chestsplusplus.message.Messages;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
+import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.persistence.Database;
 import com.jamesdpeters.chestsplusplus.persistence.PersistenceService;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.SQLException;
+import org.bukkit.block.Chest;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.world.WorldSaveEvent;
@@ -31,6 +40,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
+        // 1. Settings and messages.
         Settings settings;
         Messages messages;
         try {
@@ -43,6 +53,20 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         }
         Services services = new Services(this, settings, messages);
 
+        // 2. Feature services.
+        DisplayService displays = services.add(
+                DisplayService.class,
+                new DisplayService(this, services.groups(), services.nodes(), services::settings));
+        displays.surfaces(block -> block.getState(false) instanceof Chest
+                ? DisplayLayout.Surface.CHEST
+                : DisplayLayout.Surface.FULL_BLOCK);
+        LinkService links = services.add(LinkService.class, new LinkService(services, displays));
+        LinkItem linkItems = services.add(LinkItem.class, new LinkItem(this));
+        ChestLinkService chestLinks = services.add(ChestLinkService.class, new ChestLinkService(services, displays));
+        links.register(chestLinks);
+        displays.register(GroupType.CHESTLINK, chestLinks);
+
+        // 3. Database and model.
         PersistenceService persistence;
         try {
             File dataFolder = getDataFolder();
@@ -58,12 +82,10 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
                         if (isEnabled()) getServer().getScheduler().runTask(this, task);
                     },
                     () -> services.settings().storage().maxSerialisationsPerTick());
+            services.persistence(persistence);
             int loaded = persistence.load(loadedGroup -> {
                 if (loadedGroup.group() instanceof ChestLinkGroup chest) {
-                    ChestLinkHolder.attach(
-                            chest,
-                            services.messages().get(Message.CHESTLINK_TITLE, Messages.text("group", chest.name())),
-                            loadedGroup.contents());
+                    chestLinks.attachLoaded(chest, loadedGroup.contents());
                 }
             });
             getSLF4JLogger()
@@ -76,10 +98,17 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
-        services.persistence(persistence);
         this.services = services;
 
-        getServer().getPluginManager().registerEvents(this, this);
+        // 4. Listeners.
+        var pluginManager = getServer().getPluginManager();
+        pluginManager.registerEvents(this, this);
+        pluginManager.registerEvents(new NodeListener(services, links, displays, linkItems), this);
+        pluginManager.registerEvents(new SignLinkListener(this, links), this);
+        pluginManager.registerEvents(new ChestLinkListener(services, links, chestLinks), this);
+        pluginManager.registerEvents(new HopperBridge(services), this);
+
+        // 5. Central tickers (plan §9: no per-group tasks).
         services.tickers().every("persistence", 1, persistence::tick);
         int[] seconds = {0};
         services.tickers().every("persistence-flush", 20, () -> {
@@ -88,6 +117,10 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
                 persistence.requestFlush();
             }
         });
+        services.tickers().every("displays", 1, displays::tick);
+
+        // 6. Displays for chunks that are already loaded.
+        displays.refreshAll();
     }
 
     @Override
@@ -96,6 +129,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         services = null;
         if (current == null) return;
         current.tickers().stopAll();
+        current.get(DisplayService.class).despawnAll();
         current.persistence().close();
     }
 
@@ -109,6 +143,9 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         Services current = services;
         if (current == null) throw new IllegalStateException("ChestsPlusPlus is not enabled");
         current.reconfigure(loadSettings(), loadMessages());
+        ChestLinkService chestLinks = current.get(ChestLinkService.class);
+        for (var group : current.groups().all(GroupType.CHESTLINK)) chestLinks.retitle((ChestLinkGroup) group);
+        current.get(DisplayService.class).refreshAll();
     }
 
     @EventHandler

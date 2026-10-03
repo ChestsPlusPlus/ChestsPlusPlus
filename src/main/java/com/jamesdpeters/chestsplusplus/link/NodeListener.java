@@ -1,0 +1,199 @@
+package com.jamesdpeters.chestsplusplus.link;
+
+import com.jamesdpeters.chestsplusplus.core.BlockPos;
+import com.jamesdpeters.chestsplusplus.core.Holders;
+import com.jamesdpeters.chestsplusplus.core.Services;
+import com.jamesdpeters.chestsplusplus.display.DisplayService;
+import com.jamesdpeters.chestsplusplus.message.Message;
+import com.jamesdpeters.chestsplusplus.message.Messages;
+import com.jamesdpeters.chestsplusplus.model.GroupType;
+import com.jamesdpeters.chestsplusplus.model.Node;
+import com.jamesdpeters.chestsplusplus.model.StorageGroup;
+import java.util.List;
+import org.bukkit.GameMode;
+import org.bukkit.Location;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.data.type.Chest;
+import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockBurnEvent;
+import org.bukkit.event.block.BlockExplodeEvent;
+import org.bukkit.event.block.BlockPistonExtendEvent;
+import org.bukkit.event.block.BlockPistonRetractEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityChangeBlockEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.world.ChunkLoadEvent;
+import org.bukkit.event.world.ChunkUnloadEvent;
+import org.bukkit.inventory.ItemStack;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * World changes to linked blocks, for both group types (plan §5.2): breaking (incl. Silk Touch), explosions, pistons,
+ * burning, entity block changes, double-chest prevention, link-item placement and chunk load/unload. All lookups are
+ * index lookups.
+ */
+public final class NodeListener implements Listener {
+
+    private final Services services;
+    private final LinkService links;
+    private final DisplayService displays;
+    private final LinkItem linkItems;
+
+    public NodeListener(Services services, LinkService links, DisplayService displays, LinkItem linkItems) {
+        this.services = services;
+        this.links = links;
+        this.displays = displays;
+        this.linkItems = linkItems;
+    }
+
+    private @Nullable Node node(Block block) {
+        return services.nodes()
+                .get(block.getWorld().getUID(), BlockPos.packed(block.getX(), block.getY(), block.getZ()));
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    void onBreak(BlockBreakEvent event) {
+        Block block = event.getBlock();
+        Node node = node(block);
+        if (node == null) return;
+        Player player = event.getPlayer();
+        StorageGroup group = services.groups().byId(node.groupId());
+        Location dropAt = block.getLocation().clone().add(0.5, 0.5, 0.5);
+        ItemStack tool = player.getInventory().getItemInMainHand();
+        boolean silkTouch = player.getGameMode() != GameMode.CREATIVE
+                && tool.containsEnchantment(Enchantment.SILK_TOUCH)
+                && group != null;
+        if (silkTouch) {
+            event.setDropItems(false);
+            block.getWorld().dropItemNaturally(dropAt, linkItems.create(group, block.getType(), services.messages()));
+        }
+        links.unlink(node.pos(), dropAt, silkTouch);
+        if (group == null) return;
+        boolean removed = services.groups().byId(group.id()) == null;
+        Message message = group.type() == GroupType.CHESTLINK
+                ? (removed ? Message.CHESTLINK_REMOVED : Message.CHESTLINK_UNLINKED)
+                : (removed ? Message.AUTOCRAFT_REMOVED : Message.AUTOCRAFT_UNLINKED);
+        services.messages().send(player, message, Messages.text("group", group.name()));
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    void onPlace(BlockPlaceEvent event) {
+        Block block = event.getBlockPlaced();
+        LinkItem.Link link = linkItems.read(event.getItemInHand());
+        if (link != null) {
+            StorageGroup group = services.groups().byId(link.groupId());
+            Player player = event.getPlayer();
+            if (group != null && group.type() == link.type()) {
+                if (!links.isFeatureEnabled(group.type())) {
+                    services.messages().send(player, Message.ERROR_FEATURE_DISABLED);
+                    event.setCancelled(true);
+                    return;
+                }
+                if (!services.access().canAccess(player.getUniqueId(), player, group)) {
+                    services.messages().send(player, Message.ERROR_NO_ACCESS, Messages.text("group", group.name()));
+                    event.setCancelled(true);
+                    return;
+                }
+                if (services.settings().isBlacklisted(block.getWorld().getName())) {
+                    services.messages().send(player, Message.ERROR_WORLD_BLACKLISTED);
+                    event.setCancelled(true);
+                    return;
+                }
+                GroupTypeHandler handler = links.handler(group.type());
+                if (handler != null && handler.isValidBlock(block)) {
+                    links.addNode(group, block, Holders.facing(player).getOppositeFace());
+                    services.messages()
+                            .send(
+                                    player,
+                                    group.type() == GroupType.CHESTLINK
+                                            ? Message.CHESTLINK_LINKED
+                                            : Message.AUTOCRAFT_LINKED,
+                                    Messages.text("group", group.name()));
+                    return;
+                }
+            }
+        }
+        preventDoubleChest(block);
+    }
+
+    /** A chest placed next to a linked chest must not merge with it. */
+    private void preventDoubleChest(Block placed) {
+        if (!(placed.getBlockData() instanceof Chest data) || data.getType() == Chest.Type.SINGLE) return;
+        Block partner = placed.getRelative(LinkService.partnerDirection(data));
+        if (node(partner) != null || node(placed) != null) LinkService.splitDoubleChest(placed);
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    void onBlockExplode(BlockExplodeEvent event) {
+        event.blockList().removeIf(block -> node(block) != null);
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    void onEntityExplode(EntityExplodeEvent event) {
+        event.blockList().removeIf(block -> node(block) != null);
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    void onPistonExtend(BlockPistonExtendEvent event) {
+        if (anyLinked(event.getBlocks())) event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    void onPistonRetract(BlockPistonRetractEvent event) {
+        if (anyLinked(event.getBlocks())) event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    void onBurn(BlockBurnEvent event) {
+        if (node(event.getBlock()) != null) event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    void onEntityChangeBlock(EntityChangeBlockEvent event) {
+        if (node(event.getBlock()) != null) event.setCancelled(true);
+    }
+
+    private boolean anyLinked(List<Block> blocks) {
+        for (Block block : blocks) if (node(block) != null) return true;
+        return false;
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    void onChunkLoad(ChunkLoadEvent event) {
+        var world = event.getWorld().getUID();
+        long key = event.getChunk().getChunkKey();
+        List<Node> inChunk = services.nodes().inChunk(world, key);
+        if (inChunk.isEmpty()) return;
+        // Lazy validation (plan §5.1): blocks removed behind our back (e.g. WorldEdit) are unlinked.
+        for (Node node : inChunk) {
+            StorageGroup group = services.groups().byId(node.groupId());
+            GroupTypeHandler handler = group == null ? null : links.handler(group.type());
+            Block block = event.getChunk()
+                    .getBlock(node.pos().x() & 15, node.pos().y(), node.pos().z() & 15);
+            if (handler != null && !handler.isValidBlock(block)) {
+                services.plugin()
+                        .getSLF4JLogger()
+                        .warn("Unlinking {} from {}: block is now {}", node.pos(), group.name(), block.getType());
+                links.unlink(node.pos(), block.getLocation(), true);
+            }
+        }
+        displays.chunkLoaded(world, key);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    void onChunkUnload(ChunkUnloadEvent event) {
+        displays.chunkUnloaded(event.getWorld().getUID(), event.getChunk().getChunkKey());
+    }
+
+    /** Facing for a node linked by clicking a face: the clicked face if horizontal, else towards the player. */
+    public static BlockFace facingFor(@Nullable BlockFace clicked, Player player) {
+        if (clicked != null && clicked.isCartesian() && clicked.getModY() == 0) return clicked;
+        return Holders.facing(player).getOppositeFace();
+    }
+}
