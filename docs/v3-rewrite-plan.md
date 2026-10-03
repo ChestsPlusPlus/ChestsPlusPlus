@@ -177,6 +177,7 @@ Migrations are versioned with `PRAGMA user_version`, using numbered migration cl
 
 ### 4.3 Write-behind
 - **What marks a group dirty:** metadata changes (immediately), viewer close, `InventoryMoveItemEvent` at MONITOR where either side's holder is a `ChestLinkHolder`, AutoCraft output, and programmatic changes.
+- **Hopper-attached groups (S1):** groups that `HopperBridge` has substituted since the last flush are also re-checked at flush time against a cheap contents fingerprint (type + amount per slot). This covers servers with `hopper.disable-move-event: true`, where the move event never fires.
 - **Flush ticker** (default every 30 s, configurable, plus on `WorldSaveEvent`):
   - Serialise up to *N* dirty groups per tick on main. This is amortised, so a burst never causes a spike.
   - Hand the `byte[]` batch to the I/O thread, which runs one transaction per batch.
@@ -235,7 +236,9 @@ Effects:
 - **Deleted:** `VirtualChestToHopper` (the per-group 8-tick polling), the cancel/reschedule/`clear()` hack in `LinkedChestHopperListener`, `SpigotConfig`/`WorldSettings` (`hopper-amount` reading) and `InventoryAccess` reflection.
 - **Physical containers stay empty**, as today.
 - **Droppers, crafters and hopper minecarts** don't fire the search event. A narrow `InventoryMoveItemEvent` redirect handles dropper/crafter sources, and hopper minecarts are out of scope (documented).
-- **Spike S1** must confirm both directions with a custom inventory on 26.3, including full destinations and Paper's `hopper.disable-move-event` setting.
+- **Spike S1 (done, §13):** both directions work on 26.3 with a custom-holder inventory, including full destinations, stacked hoppers and side-facing hoppers into barrels. Two consequences:
+  - **Hot path:** idle hoppers fire the search event every tick (~20/s each), so `HopperBridge` must stay a single hash lookup.
+  - **Move event:** with Paper's `hopper.disable-move-event: true`, transfers still work but `InventoryMoveItemEvent` never fires. Dirty tracking therefore can't rely on the move event alone (see §4.3), and hopper filters can't work in that mode. We log a startup warning and document it.
 
 ### 5.5 Hopper filters (new UI)
 - **Open:** sneak + right-click a hopper with an empty hand (permission `chestsplusplus.filter`, plus the player must pass the same protection interact check).
@@ -417,7 +420,9 @@ Rough size: about 7,000 LOC of Java in v2. v3 is estimated at **~4,500 LOC** inc
   - `check` depends on `test` only, so local builds stay fast.
 - **SQLite fallback:** if the bundled driver is unreachable from the Paper plugin classloader, or is removed in a future Paper version, declare it through a `PluginLoader` + `MavenLibraryResolver` using Paper's Maven Central mirror instead of shading ~13 MB (spike S2).
 - **CI:** GitHub Actions on Java 25 running `./gradlew build` (tests + shadowJar), with artifact upload and tag-driven releases. Modrinth/Hangar publishing is optional later.
-- **Code quality:** Spotless (formatting), `-Xlint:all -Werror`, JSpecify `@NullMarked` packages, and Error Prone if it plays nicely with Java 25.
+- **Code quality:** Spotless (palantir-java-format), `-Xlint:all,-classfile -Werror`, JSpecify `@NullMarked` packages, and Error Prone if it plays nicely with Java 25 (not evaluated in Phase 0).
+  - `-classfile` is excluded because paper-api's JOML dependency (used by `Display#setTransformation`) triggers it on every use (S4).
+- **Test framework version:** `mockbukkit-v26.2:4.116.1` depends on JUnit Jupiter **6.1.3**, so the build uses the JUnit 6 BOM. The Jupiter API is unchanged; "JUnit 5" elsewhere in this doc means Jupiter.
 
 ---
 
@@ -466,6 +471,10 @@ Testing has three layers. Each catches a different class of bug, and each runs i
   - **Upgrade path:** bump `testPaperVersion` and the `mockbukkit-v26.3` coordinate together, and the skipped tests run automatically.
   - **Prefer 26.2 APIs:** where a 26.2 API exists, use it over a 26.3-only API so that as much as possible stays testable (spike S5 lists which 26.3-only APIs we actually need).
 - **Fixture:** a shared `PluginTestBase` that does `MockBukkit.mock()` → `MockBukkit.load(ChestsPlusPlus.class)`, points the DB at a temp file, and calls `MockBukkit.unmock()` after each test.
+- **S5 findings (§13):**
+  - **Bootstrapper:** MockBukkit reads `paper-plugin.yml` but never runs the `PluginBootstrap`. Command tests therefore load a test-only `CommandHostPlugin`, which registers the same `Commands` tree from `onEnable` via the plugin lifecycle manager.
+  - **Lazy `COMMANDS` event:** MockBukkit fires `COMMANDS` once, lazily, on the first `dispatchCommand`, so the host plugin must be loaded before any dispatch.
+  - **Plugin class:** MockBukkit loads the plugin through a generated subclass, so `ChestsPlusPlus` can't be `final`.
 - **Coverage:**
   - **Lifecycle:** enable/disable, reload doesn't double-register, and the final flush writes dirty groups.
   - **Linking:** `SignChangeEvent` → group created, sign removed, node indexed; limit, blacklist and permission denials; break/explode/piston handling; double-chest prevention.
@@ -545,6 +554,8 @@ Testing has three layers. Each catches a different class of bug, and each runs i
 
 If Stage A proves unworkable in spike S6 (Via mistranslating packets we depend on), E2E stays non-blocking (`allowFailure`) and the manual checklist carries those scenarios until Stage C.
 
+**Stage A status after S6 (§13): partly blocked.** Join, chat, commands, RCON and the harness all work. However, any bot older than about 3 s, or one that looks, walks, jumps or sneaks, is kicked by the 26.3 server with "Invalid move player packet received" when bridged by ViaBackwards 5.12.0 or 5.12.1-SNAPSHOT. The same bot works against native 26.1.2 and against 26.2 + Via, so the fault is in the 26.2 ↔ 26.3 movement translation. The E2E job stays non-blocking, and gameplay scenarios wait for a decision on the options in §13 (S6).
+
 ### 10.4 Manual checklist (`docs/testing.md`)
 This covers what automation can't:
 - Dialog look and feel.
@@ -616,3 +627,98 @@ From Phase 2 on, every phase's exit criteria include **MockBukkit tests for its 
 4. Hopper filters are lost when the hopper is broken in 3.0.0. Carrying them on the dropped item is a follow-up.
 5. bStats keeps plugin id **7166**.
 6. `Dockerfile` is removed (it currently exists for the dev server; confirm it isn't used elsewhere).
+
+---
+
+## 13. Spike results (Phase 0, 3 October 2026)
+
+Probes live on the `v3-spikes` branch (the `src/spikes` plugin `ChestsPlusPlus-Spikes`, `runSpikeServer`, `S5ProbeTest` and `spike-*.spec.ts`); none of it is on `v3`. Unless stated otherwise, everything ran against **Paper 26.3-146** (`a9d0382`) on JDK 25.0.2, Windows 11.
+
+### S1: `HopperInventorySearchEvent` with a custom inventory: **works**
+The probe substituted a `SpikeHolder` 54-slot inventory for chest/barrel nodes and ran all cases in force-loaded chunks for about 12 s.
+
+| Case | Result |
+|---|---|
+| A: hopper above a linked chest (`DESTINATION`) | 10/10 items in the virtual inventory; physical chest empty |
+| B: linked chest above a hopper (`SOURCE`) → plain sink chest | 10/10 items in the sink; virtual inventory drained |
+| C: full virtual destination | Items stay in the hopper; no errors or log spam |
+| D: two stacked hoppers → linked chest | 10/10 delivered |
+| E: side-facing hopper → linked **barrel** | 10/10 delivered |
+| `InventoryMoveItemEvent` with the custom holder | Fires for both directions (`toCustom=30`, `fromCustom=10`), so MONITOR-based dirty marking works |
+| `hopper.disable-move-event: true` | Search event and all transfers still work; **`InventoryMoveItemEvent` never fires** |
+
+Notes and design impact:
+- **Event rate:** `SOURCE` searches fire every tick for idle hoppers (≈1,000 events in 12 s from 7 hoppers). Keep the listener to one hash lookup (§5.4), with no allocation.
+- **Dirty tracking:** it can't rely only on the move event (§4.3 updated). Filters can't work with `disable-move-event: true`, so we warn at startup.
+- **No spawn chunks in 26.x:** nothing ticked until the area was force-loaded, because spawn chunks were removed in 1.21.9. That matches vanilla, but E2E fixtures must `forceload` the test area or keep a bot nearby.
+
+### S1b: first slot rejected → hopper stalls: **still stalls on 26.3**
+A hopper held `[DIRT×5, STONE×5]` and a LOWEST listener cancelled dirt. Stone never moved, and the move was retried and cancelled every cooldown (31 times in 12 s). **The stall-avoidance code in §5.5 stays.** With `disable-move-event: true` both stacks moved, as expected since there is no event to cancel.
+
+### S2: bundled `sqlite-jdbc` from a Paper plugin: **works, no fallback needed**
+- **Driver:** `Class.forName("org.sqlite.JDBC")` from a `paper-plugin.yml` plugin loads the server's `libraries/org/xerial/sqlite-jdbc/3.49.1.0` jar (server library `URLClassLoader`).
+- **SQLite:** `jdbc:sqlite:<file>`, `PRAGMA journal_mode=WAL` → `wal`, and `sqlite_version()` = 3.49.1.
+- **Item blobs:** a `serializeItemsAsBytes` round trip through a BLOB column works (3 slots → 173 bytes).
+- **Nulls:** null slots come back as `AIR x0`, so `InventoryRepo` must normalise empty stacks to `null` on load.
+
+The `PluginLoader` + `MavenLibraryResolver` fallback (§8) stays documented but unused.
+
+### S3: Dialogs: **pending in-game check**
+`/spike dialog [n]` (on `runSpikeServer`) opens a `multi_action` dialog with:
+- a `search` text input;
+- the buttons Refresh (unlimited uses), Single use (`uses=1`), Expires in 10 s (`lifetime=10s`), Reopen next tick, and Toggle afterAction;
+- `n` extra "group" buttons.
+
+Each callback records its thread, `Bukkit.isPrimaryThread()` and the `search` value (see `/spike dialoglog`). A bot confirmed the dialog is built and sent without server errors. The behaviour itself needs a real 26.3 client (Mineflayer can't render dialogs). Results: _TBD_.
+
+### S4: Display layout: **pending in-game check**
+`/spike s4` builds a demo area next to the player:
+- **Row A:** chest, barrel and crafting table facing N/E/S/W. Each has an `ItemDisplay` (FIXED, scale 0.5, brightness 15, view range 0.5) on the front face, 0.02 out (the chest face is inset by 1 px), plus a `TextDisplay` label underneath.
+- **Row B:** the same with the item yaw flipped 180°.
+- **Hopper row:** 4 side `ItemDisplay`s per hopper (scale 0.3) with lime/red glow overrides and a "+3" label.
+
+A bot confirmed it builds without errors. Which row is right, readability at distance and at night, and the glow look need a real client. Results: _TBD_.
+
+**Build finding:** using `Transformation`/JOML from plugin code triggers `-Xlint:classfile` warnings that `-Werror` turns into errors. The build now uses `-Xlint:all,-classfile` (§8).
+
+### S5: MockBukkit on 26.x
+| Question | Answer |
+|---|---|
+| `mockbukkit-v26.3` on Maven Central? | **No** (only `v26.1.2` and `v26.2`; latest `4.116.1`). The compile-26.3 / test-26.2 split is in place; `PluginTestBase#api263Present()` checks for `org.bukkit.inventory.BrewingRecipe` (26.3-only). |
+| `paper-plugin.yml` loading | **Yes**: `MockBukkit.load(ChestsPlusPlus.class)` reads name/version/main from it. |
+| `PluginBootstrap` | **Not run.** Commands are tested through `CommandHostPlugin` (§10.2). |
+| `LifecycleEvents.COMMANDS` | **Yes, from `onEnable`.** It fires lazily on the first dispatch; root and aliases (`cpp`, `c++`) dispatch; `requires()` hides `version` from players without permission. |
+| `HopperInventorySearchEvent` | Can be constructed and dispatched; `setInventory` works. MockBukkit never fires it itself (no hopper ticking), so the hopper bridge's real behaviour stays in E2E/manual. |
+| Display entities | `world.spawn(..., ItemDisplay.class/TextDisplay.class)` works; item and persistence are kept. |
+| PDC on `TileState` (hopper) | Works, including after `update()` and re-reading the state. `getState(false)` works. |
+| `ItemStack.serializeItemsAsBytes` / `serializeAsBytes` | Round trip works. |
+| Custom `InventoryHolder` inventories | Work (`getHolder()` returns the holder). |
+| Dialog API | Classes are present; showing dialogs isn't meaningful in a mock. Dialog tests call the handler code directly, as already planned. |
+| Plugin class | Must **not** be `final` (MockBukkit subclasses it). |
+
+### S6: Plugwright Stage A (ExternalMode, 26.1 bots → Via → 26.3): **partly blocked**
+**What works** (`./gradlew e2e`, locally on Windows):
+- **Orchestration:** `startE2eServer` (fresh world, fixture properties, background JVM, wait for `Done (`) → `plugwrightTest` → `stopE2eServer` over RCON works, about 15 s end to end.
+- **Join and commands:** bots join through ViaVersion/ViaBackwards 5.12.0, chat works, and `/cpp version` replies ("bot joins, `/cpp version` replies" passes).
+- **RCON:** `server.execute` returns the harness's `/cpptest` output.
+- **Harness:** `join-classpath: true` works on 26.3; the harness calls `JavaPlugin.getPlugin(ChestsPlusPlus.class)` directly. Ops can't run `/cpptest` (verified).
+- **Console-only check:** RCON arrives as `RemoteConsoleCommandSender`, which is **not** a `ConsoleCommandSender`, so the harness accepts both.
+- **Setup needed:**
+  - ExternalMode needs an account pool: `autoRegister { usernamePattern = "pw_%s" }`, with a dummy password file because no auth plugin is used.
+  - 26.x defaults `white-list=true`, so the fixture sets it to `false`.
+- **Interactions:** block placement and opening a command-opened custom-holder GUI reached the server (`BlockPlaceEvent`, `InventoryOpenEvent`) when the bot hadn't moved yet.
+
+**What's broken:**
+- **The kick:** the server kicks every bot with `Invalid move player packet received` about 3–4 s after joining (when Mineflayer sends a movement heartbeat), or immediately on look, walk, jump or sneak. Sign editing, sneak-click and GUI clicks therefore can't be exercised reliably.
+- **Where it comes from:**
+  - The same bot against **native Paper 26.1.2**: no kicks.
+  - Against **Paper 26.2 + Via**: look, walk and jump all fine.
+  - ViaBackwards **5.12.1-SNAPSHOT+634** (with ViaVersion 5.12.1-SNAPSHOT+1069) behaves the same as 5.12.0.
+  - So the fault is in the 26.2 ↔ 26.3 serverbound movement translation. 26.3 moved the position into `ACCEPT_TELEPORTATION`, and ViaBackwards rewrites the client's follow-up `MOVE_PLAYER_POS_ROT` into it. Every bot also logs "moved too quickly!" at spawn.
+- **Upstream:** no upstream issue exists yet (searched ViaVersion/ViaBackwards/mineflayer, 3 Oct 2026).
+- **Not yet verified:** the orchestration on GitHub Actions. The workflow exists (`.github/workflows/v3-ci.yml`) but hasn't run, because nothing has been pushed.
+
+**Options (decision needed):**
+1. **Wait (default):** keep the E2E job non-blocking, with only short smoke tests (join, command, RCON) in Stage A. Gameplay scenarios go on the manual checklist until ViaBackwards is fixed or Mineflayer supports 26.3 (Stage C). Optionally report the bug upstream with the repro above.
+2. **Target 26.2 at runtime for E2E:** declare `api-version: 26.2`, avoid 26.3-only APIs (already preferred by §10.2), and run the E2E server on Paper 26.2 + Via, where bots work. This costs a runtime guard against accidental 26.3-only API use and a second server version to maintain.
+3. **Custom mode with a newer protocol library:** only if Mineflayer or minecraft-data gains 26.3 data first (it currently has none for 26.2/26.3).

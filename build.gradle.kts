@@ -54,7 +54,8 @@ dependencies {
 tasks.withType<JavaCompile>().configureEach {
     options.release = javaVersion
     options.encoding = "UTF-8"
-    options.compilerArgs.addAll(listOf("-Xlint:all", "-Werror"))
+    // -classfile: paper-api's JOML dependency (used by Display transformations) trips it on every use (spike S4).
+    options.compilerArgs.addAll(listOf("-Xlint:all,-classfile", "-Werror"))
 }
 
 // ---------------------------------------------------------------------------------------------------------------
