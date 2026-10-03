@@ -256,6 +256,15 @@ plugwright {
             port.set(e2eServerPort)
             minecraftVersion.set("26.1") // bot protocol; ViaBackwards translates to the 26.3 server
             includeInMatrix.set(true)
+            // Offline-mode server without an auth plugin: every lease gets a fresh, never-reused name.
+            accounts {
+                autoRegister {
+                    usernamePattern.set("pw_%s")
+                    max.set(4)
+                    // Required by Plugwright but never used: no auth plugin runs on the E2E server.
+                    password.set(secret.file(file("src/test/e2e-server/bot-password.txt")))
+                }
+            }
             console {
                 rcon {
                     port.set(e2eRconPort)

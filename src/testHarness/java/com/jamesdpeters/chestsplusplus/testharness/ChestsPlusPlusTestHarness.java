@@ -6,7 +6,9 @@ import com.mojang.brigadier.context.CommandContext;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
+import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
+import org.bukkit.command.RemoteConsoleCommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
@@ -24,7 +26,7 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
                         event -> event.registrar()
                                 .register(
                                         Commands.literal("cpptest")
-                                                .requires(source -> source.getSender() instanceof ConsoleCommandSender)
+                                                .requires(ChestsPlusPlusTestHarness::isConsole)
                                                 .then(Commands.literal("ping")
                                                         .executes(context -> reply(context, "cpptest pong")))
                                                 .then(Commands.literal("plugin").executes(this::pluginState))
@@ -39,6 +41,12 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
                 context,
                 "cpptest plugin enabled=" + plugin.isEnabled() + " version="
                         + plugin.getPluginMeta().getVersion());
+    }
+
+    /** Server console or RCON (how the E2E suite drives it); never players or command blocks. */
+    private static boolean isConsole(CommandSourceStack source) {
+        CommandSender sender = source.getSender();
+        return sender instanceof ConsoleCommandSender || sender instanceof RemoteConsoleCommandSender;
     }
 
     private static int reply(CommandContext<CommandSourceStack> context, String line) {
