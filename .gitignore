@@ -1,11 +1,29 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
 
-Server/
-Server_1_14_4/
-target/
-*.log
+# run-paper / Plugwright dev and test servers
+run/
+src/test/e2e/node_modules/
+src/test/e2e/dist/
+src/test/e2e/generated/
+
+# IDE
 .idea/
-.DS_Store
-ChestsPlusPlus.iml
 *.iml
-POEditorImport/src/main/java/com/jamesdpeters/poeditor/POEapi.java
-/BuildTools/
+.vscode/
+out/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Legacy v2 local folders (not part of v3)
+Server/
+BuildTools/
+target/
+POEditorImport/
