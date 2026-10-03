@@ -1,0 +1,133 @@
+# ChestsPlusPlus messages (MiniMessage: https://docs.papermc.io/adventure/minimessage/format).
+# Copy keys you want to change into plugins/ChestsPlusPlus/messages.yml; missing keys use these defaults.
+
+prefix: "<dark_gray>[<gold>C++</gold>]</dark_gray>"
+
+command:
+  version: "<prefix> <gray>ChestsPlusPlus <green>v<version></green>"
+  reloaded: "<prefix> <green>Configuration and messages reloaded."
+  help-header: "<prefix> <gold>ChestsPlusPlus commands"
+  help-entry: "<gray>/<usage>"
+
+error:
+  no-permission: "<prefix> <red>You don't have permission to do that."
+  players-only: "<prefix> <red>Only players can do that."
+  world-blacklisted: "<prefix> <red>ChestsPlusPlus is disabled in this world."
+  feature-disabled: "<prefix> <red>That feature is disabled on this server."
+  limit-reached: "<prefix> <red>You have reached your limit of <limit> <type> groups."
+  unknown-group: "<prefix> <red>No group named <yellow><group></yellow> was found."
+  no-access: "<prefix> <red>You don't have access to <yellow><group></yellow>."
+  not-owner: "<prefix> <red>Only the owner of <yellow><group></yellow> can do that."
+  invalid-name: "<prefix> <red><yellow><name></yellow> isn't a valid name. Use up to 32 letters, numbers, - or _."
+  group-exists: "<prefix> <red>You already have a group named <yellow><group></yellow>."
+  already-linked: "<prefix> <red>That block is already linked to <yellow><group></yellow>."
+  invalid-block: "<prefix> <red>Look at a <type> block to do that."
+  player-not-found: "<prefix> <red>No player named <yellow><player></yellow> has played here."
+  protected: "<prefix> <red>You can't use that block here."
+  self: "<prefix> <red>You can't do that to yourself."
+
+chestlink:
+  created: "<prefix> <green>Created ChestLink <yellow><group></yellow>."
+  linked: "<prefix> <green>Linked to ChestLink <yellow><group></yellow>."
+  unlinked: "<prefix> <gray>Unlinked from ChestLink <yellow><group></yellow>."
+  removed: "<prefix> <gray>Removed ChestLink <yellow><group></yellow>; its items were dropped."
+  renamed: "<prefix> <green>Renamed <yellow><old></yellow> to <yellow><new></yellow>."
+  public: "<prefix> <green><yellow><group></yellow> is now <state>."
+  sort-mode: "<prefix> <green><yellow><group></yellow> now sorts by <yellow><mode></yellow>."
+  overflow: "<prefix> <gold><count> item stacks didn't fit and were dropped."
+  list-header: "<prefix> <gold>ChestLinks you can access:"
+  list-entry: "<gray>- <hover:show_text:'<gray>Owner: <owner><newline>Nodes: <nodes><newline>Items: <items>'><click:run_command:'/chestlink open <ref>'><yellow><group></yellow></click></hover> <dark_gray>(<owner>, <items> items)"
+  list-empty: "<prefix> <gray>You don't have access to any ChestLinks yet."
+  title: "<dark_gray>ChestLink: <group>"
+  display-label: "<white><group>"
+
+autocraft:
+  created: "<prefix> <green>Created AutoCrafter <yellow><group></yellow>."
+  linked: "<prefix> <green>Linked to AutoCrafter <yellow><group></yellow>."
+  unlinked: "<prefix> <gray>Unlinked from AutoCrafter <yellow><group></yellow>."
+  removed: "<prefix> <gray>Removed AutoCrafter <yellow><group></yellow>."
+  renamed: "<prefix> <green>Renamed <yellow><old></yellow> to <yellow><new></yellow>."
+  public: "<prefix> <green><yellow><group></yellow> is now <state>."
+  recipe-set: "<prefix> <green><yellow><group></yellow> now crafts <yellow><item></yellow>."
+  recipe-cleared: "<prefix> <gray><yellow><group></yellow> has no valid recipe."
+  list-header: "<prefix> <gold>AutoCrafters you can access:"
+  list-entry: "<gray>- <hover:show_text:'<gray>Owner: <owner><newline>Nodes: <nodes><newline>Crafts: <items>'><click:run_command:'/autocraft open <ref>'><yellow><group></yellow></click></hover> <dark_gray>(<owner>, <items>)"
+  list-empty: "<prefix> <gray>You don't have access to any AutoCrafters yet."
+  title: "<dark_gray>AutoCraft: <group>"
+  display-label: "<white><group>"
+
+state:
+  public: "<green>public</green>"
+  private: "<red>private</red>"
+
+members:
+  added: "<prefix> <green>Added <yellow><player></yellow> to <yellow><group></yellow>."
+  removed: "<prefix> <gray>Removed <yellow><player></yellow> from <yellow><group></yellow>."
+  list: "<prefix> <gold>Members of <yellow><group></yellow>: <gray><players>"
+  none: "<prefix> <gray><yellow><group></yellow> has no members."
+
+trust:
+  added: "<prefix> <green>You now trust <yellow><player></yellow> with all your groups."
+  removed: "<prefix> <gray>You no longer trust <yellow><player></yellow>."
+  list: "<prefix> <gold>Trusted players: <gray><players>"
+  none: "<prefix> <gray>You don't trust anyone yet."
+  looking-up: "<prefix> <gray>Looking up <yellow><player></yellow>..."
+
+filter:
+  title: "<dark_gray>Hopper filter"
+  allow: "<green>Allow"
+  deny: "<red>Deny"
+  match-exact: "<gray>Match: <white>exact item"
+  match-type: "<gray>Match: <white>same type"
+  match-similar: "<gray>Match: <white>similar items"
+  help: "<gray>Click with an item to add it. Click an entry to change how it matches; shift-click removes it."
+  clear: "<red>Clear all filters"
+  saved: "<prefix> <green>Hopper filter saved (<count> entries)."
+  move-event-disabled: "Paper's hopper.disable-move-event is enabled in world <world>: hopper filters can't work there."
+
+menu:
+  hub-title: "ChestsPlusPlus"
+  hub-search: "Search"
+  hub-search-button: "Search"
+  hub-grid-button: "Browse as grid"
+  hub-trust-button: "Trusted players"
+  hub-group-button: "<group> · <owner> · <items>"
+  hub-group-tooltip: "<gray>Owner: <owner><newline><gray>Public: <public><newline><gray>Members: <members>"
+  hub-next: "Next page"
+  hub-previous: "Previous page"
+  hub-empty: "<gray>No groups match."
+  group-title: "<group>"
+  group-open: "Open"
+  group-sort: "Sort"
+  group-sort-mode: "Sorting"
+  group-rename: "Rename"
+  group-new-name: "New name"
+  group-public: "Public"
+  group-save: "Save"
+  group-members: "Members…"
+  group-remove: "Remove group"
+  group-recipe: "Edit recipe"
+  confirm-remove: "<red>Remove <group>? Its items will be dropped at your feet."
+  confirm-yes: "<red>Remove"
+  confirm-no: "Cancel"
+  members-title: "Members of <group>"
+  members-player: "Player name"
+  members-add: "Add"
+  members-remove: "Remove <player>"
+  trust-title: "Trusted players"
+  trust-add: "Trust"
+  trust-remove: "Untrust <player>"
+  back: "Back"
+  close: "Close"
+  grid-title: "<dark_gray>ChestsPlusPlus groups"
+  grid-entry-lore: "<gray>Owner: <owner><newline><gray>Items: <items><newline><yellow>Left-click to open<newline><yellow>Right-click for options"
+  grid-next: "<yellow>Next page"
+  grid-previous: "<yellow>Previous page"
+  recipe-title: "<dark_gray>Recipe: <group>"
+
+item:
+  linked-name: "<gold><type>: <group>"
+  linked-lore: "<gray>Place to link to <yellow><group></yellow>"
+
+update:
+  available: "<prefix> <gold>ChestsPlusPlus <version> is available: <click:open_url:'<url>'><yellow><url></yellow></click>"

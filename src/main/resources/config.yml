@@ -1,0 +1,46 @@
+# ChestsPlusPlus v3 configuration. Reload with /cpp reload.
+
+features:
+  chestlinks: true
+  autocraft: true
+  hopper-filters: true
+
+chestlink:
+  # Play the lid animation on every node of a group, not just the one that was opened.
+  animate-all-nodes: true
+  display:
+    enabled: true
+    label: true
+    # Multiplier on the client's entity view distance (1.0 = 64 blocks at default settings).
+    view-range: 0.5
+
+autocraft:
+  display:
+    enabled: true
+    label: true
+    view-range: 0.5
+  # Ticks between crafting attempts (20 = once a second).
+  tick-interval: 20
+
+filters:
+  displays: true
+  glow: true
+
+# -1 = unlimited. Overridden per player by chestsplusplus.limit.chestlink.<n> / chestsplusplus.limit.autocraft.<n>.
+limits:
+  chestlink-default: -1
+  autocraft-default: -1
+
+worlds:
+  # Worlds where ChestLinks and AutoCrafters cannot be created, linked or opened.
+  blacklist: []
+
+storage:
+  flush-interval-seconds: 30
+  max-serialisations-per-tick: 16
+
+update-checker:
+  enabled: true
+
+metrics:
+  enabled: true

@@ -15,7 +15,7 @@ class CommandsTest {
 
     @Test
     void rootHasVersionLiteral() {
-        var root = Commands.root("3.0.0-test");
+        var root = new Commands(() -> null, "3.0.0-test").root();
 
         assertThat(root.getLiteral()).isEqualTo("chestsplusplus");
         assertThat(root.getChild("version")).isNotNull();
@@ -25,7 +25,7 @@ class CommandsTest {
     @Test
     void treeHasNoDebugOrTestLiterals() {
         List<String> names = new ArrayList<>();
-        collect(Commands.root("3.0.0-test"), names);
+        collect(new Commands(() -> null, "3.0.0-test").root(), names);
 
         assertThat(names).isNotEmpty().noneMatch(name -> name.contains("debug") || name.contains("test"));
     }

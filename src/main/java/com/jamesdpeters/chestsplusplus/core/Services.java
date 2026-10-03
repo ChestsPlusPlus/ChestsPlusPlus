@@ -1,0 +1,82 @@
+package com.jamesdpeters.chestsplusplus.core;
+
+import com.jamesdpeters.chestsplusplus.access.AccessService;
+import com.jamesdpeters.chestsplusplus.access.TrustService;
+import com.jamesdpeters.chestsplusplus.config.Settings;
+import com.jamesdpeters.chestsplusplus.core.scheduler.Tickers;
+import com.jamesdpeters.chestsplusplus.message.Messages;
+import com.jamesdpeters.chestsplusplus.model.GroupRegistry;
+import com.jamesdpeters.chestsplusplus.model.NodeIndex;
+import com.jamesdpeters.chestsplusplus.persistence.PersistenceService;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * The explicit service container (no static singletons). Created on enable and discarded on disable; settings and
+ * messages are swapped on reload.
+ */
+public final class Services {
+
+    private final JavaPlugin plugin;
+    private final GroupRegistry groups = new GroupRegistry();
+    private final NodeIndex nodes = new NodeIndex();
+    private final TrustService trust = new TrustService();
+    private final AccessService access = new AccessService(trust);
+    private final Tickers tickers;
+    private volatile Settings settings;
+    private volatile Messages messages;
+    private @Nullable PersistenceService persistence;
+
+    public Services(JavaPlugin plugin, Settings settings, Messages messages) {
+        this.plugin = plugin;
+        this.settings = settings;
+        this.messages = messages;
+        this.tickers = new Tickers(plugin, plugin.getSLF4JLogger());
+    }
+
+    public JavaPlugin plugin() {
+        return plugin;
+    }
+
+    public Settings settings() {
+        return settings;
+    }
+
+    public Messages messages() {
+        return messages;
+    }
+
+    public void reconfigure(Settings settings, Messages messages) {
+        this.settings = settings;
+        this.messages = messages;
+    }
+
+    public GroupRegistry groups() {
+        return groups;
+    }
+
+    public NodeIndex nodes() {
+        return nodes;
+    }
+
+    public TrustService trust() {
+        return trust;
+    }
+
+    public AccessService access() {
+        return access;
+    }
+
+    public Tickers tickers() {
+        return tickers;
+    }
+
+    public PersistenceService persistence() {
+        if (persistence == null) throw new IllegalStateException("Persistence not started");
+        return persistence;
+    }
+
+    public void persistence(PersistenceService persistence) {
+        this.persistence = persistence;
+    }
+}

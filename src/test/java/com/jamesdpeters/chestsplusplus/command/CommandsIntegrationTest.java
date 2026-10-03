@@ -30,13 +30,27 @@ class CommandsIntegrationTest extends PluginTestBase {
         attachment.setPermission("chestsplusplus.admin.version", true);
 
         assertThat(server.dispatchCommand(player, root + " version")).isTrue();
-        assertThat(player.nextMessage()).contains("ChestsPlusPlus v" + CommandHostPlugin.TEST_VERSION);
+        assertThat(nextPlain(player)).isEqualTo("[C++] ChestsPlusPlus v" + CommandHostPlugin.TEST_VERSION);
+    }
+
+    @Test
+    void reloadAppliesChangedConfig() {
+        PermissionAttachment attachment = player.addAttachment(plugin);
+        attachment.setPermission("chestsplusplus.admin.reload", true);
+        plugin.getConfig().set("storage.flush-interval-seconds", 5);
+        plugin.saveConfig();
+
+        assertThat(server.dispatchCommand(player, "cpp reload")).isTrue();
+
+        assertThat(nextPlain(player)).contains("reloaded");
+        assertThat(plugin.services().settings().storage().flushIntervalSeconds())
+                .isEqualTo(5);
     }
 
     @Test
     void versionHiddenWithoutPermission() {
         server.dispatchCommand(player, "cpp version");
 
-        assertThat(player.nextMessage()).doesNotContain("ChestsPlusPlus v");
+        assertThat(nextPlain(player)).doesNotContain("ChestsPlusPlus v");
     }
 }

@@ -69,9 +69,40 @@ paperPluginYaml {
     authors.add("James Peters")
     website = "https://github.com/ChestsPlusPlus/ChestsPlusPlus"
     permissions {
-        register("chestsplusplus.admin.version") {
-            description = "Use /chestsplusplus version"
-            default = Permission.Default.OP
+        val everyone = mapOf(
+            "chestsplusplus.chestlink.create" to "Create and link ChestLinks",
+            "chestsplusplus.chestlink.open" to "Open ChestLinks by clicking them",
+            "chestsplusplus.chestlink.remote" to "Open ChestLinks remotely (command or menu)",
+            "chestsplusplus.chestlink.menu" to "Use the ChestLink menu",
+            "chestsplusplus.chestlink.remove" to "Remove your ChestLinks",
+            "chestsplusplus.chestlink.sort" to "Change ChestLink sorting",
+            "chestsplusplus.chestlink.members" to "Manage ChestLink members",
+            "chestsplusplus.autocraft.create" to "Create and link AutoCrafters",
+            "chestsplusplus.autocraft.open" to "Open AutoCrafters by clicking them",
+            "chestsplusplus.autocraft.remote" to "Open AutoCrafters remotely (command or menu)",
+            "chestsplusplus.autocraft.menu" to "Use the AutoCraft menu",
+            "chestsplusplus.autocraft.remove" to "Remove your AutoCrafters",
+            "chestsplusplus.autocraft.members" to "Manage AutoCrafter members",
+            "chestsplusplus.filter" to "Edit hopper filters",
+            "chestsplusplus.trust" to "Manage your trusted players",
+        )
+        val ops = mapOf(
+            "chestsplusplus.admin.bypass" to "Access and manage every group",
+            "chestsplusplus.admin.reload" to "Use /chestsplusplus reload",
+            "chestsplusplus.admin.update" to "Receive update notifications",
+            "chestsplusplus.admin.version" to "Use /chestsplusplus version",
+        )
+        everyone.forEach { (node, text) ->
+            register(node) {
+                description = text
+                default = Permission.Default.TRUE
+            }
+        }
+        ops.forEach { (node, text) ->
+            register(node) {
+                description = text
+                default = Permission.Default.OP
+            }
         }
     }
 }

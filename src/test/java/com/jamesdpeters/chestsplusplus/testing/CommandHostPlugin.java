@@ -1,5 +1,6 @@
 package com.jamesdpeters.chestsplusplus.testing;
 
+import com.jamesdpeters.chestsplusplus.ChestsPlusPlus;
 import com.jamesdpeters.chestsplusplus.command.Commands;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -16,6 +17,11 @@ public class CommandHostPlugin extends JavaPlugin {
     public void onEnable() {
         getLifecycleManager()
                 .registerEventHandler(
-                        LifecycleEvents.COMMANDS, event -> Commands.register(event.registrar(), TEST_VERSION));
+                        LifecycleEvents.COMMANDS,
+                        event -> new Commands(
+                                        () -> (ChestsPlusPlus)
+                                                getServer().getPluginManager().getPlugin("ChestsPlusPlus"),
+                                        TEST_VERSION)
+                                .register(event.registrar()));
     }
 }

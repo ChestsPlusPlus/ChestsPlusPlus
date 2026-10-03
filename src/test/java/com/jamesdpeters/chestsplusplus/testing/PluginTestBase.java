@@ -28,6 +28,16 @@ public abstract class PluginTestBase {
         MockBukkit.unmock();
     }
 
+    /** The next chat message the player received, as plain text (null if none). */
+    protected static @org.jspecify.annotations.Nullable String nextPlain(
+            org.mockbukkit.mockbukkit.entity.PlayerMock player) {
+        net.kyori.adventure.text.Component message = player.nextComponentMessage();
+        return message == null
+                ? null
+                : net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                        .serialize(message);
+    }
+
     /** For {@code @EnabledIf}: true when the test runtime has the 26.3 API (i.e. once mockbukkit-v26.3 is in use). */
     public static boolean api263Present() {
         try {
