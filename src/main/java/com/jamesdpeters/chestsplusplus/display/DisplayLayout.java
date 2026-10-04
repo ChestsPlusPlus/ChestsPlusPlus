@@ -1,12 +1,13 @@
 package com.jamesdpeters.chestsplusplus.display;
 
-import java.util.List;
-import java.util.Set;
 import org.bukkit.Material;
 import org.bukkit.Tag;
 import org.bukkit.block.BlockFace;
 import org.bukkit.inventory.ItemStack;
 import org.jspecify.annotations.Nullable;
+
+import java.util.List;
+import java.util.Set;
 
 /**
  * Pure layout maths for node and filter displays: where, relative to the block's minimum corner, a display sits on a
@@ -23,7 +24,7 @@ public final class DisplayLayout {
          * Chests: the body's front is 1px inside the block; the latch sticks out 1px to the block boundary. Blocks are
          * centred on the body's front (half inset into the chest); flat items sit in front of the latch.
          */
-        CHEST(7.0 / 16, 8.0 / 16),
+        CHEST(7.0 / 16, 7.5 / 16),
         /** Barrels, crafting tables: full cubes. */
         FULL_BLOCK(0.5, 0.5),
         /** Hopper bowl sides (filters), upper part of the block. */
