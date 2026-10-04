@@ -3,7 +3,7 @@ package com.jamesdpeters.chestsplusplus;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import java.util.Locale;
 
-/** Permission nodes (plan §5.13). Defaults are declared in the build script, which generates paper-plugin.yml. */
+/** Permission nodes. Defaults are declared in the build script, which generates paper-plugin.yml. */
 public final class Permissions {
 
     public static final String CHESTLINK_CREATE = "chestsplusplus.chestlink.create";

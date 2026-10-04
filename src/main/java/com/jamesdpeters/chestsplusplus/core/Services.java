@@ -13,10 +13,7 @@ import java.util.Map;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jspecify.annotations.Nullable;
 
-/**
- * The explicit service container (no static singletons). Created on enable and discarded on disable; settings and
- * messages are swapped on reload.
- */
+/** Service container, created on enable and discarded on disable. Settings and messages are swapped on reload. */
 public final class Services {
 
     private final JavaPlugin plugin;
@@ -83,7 +80,6 @@ public final class Services {
         this.persistence = persistence;
     }
 
-    /** Registers a feature service (ChestLink, AutoCraft, displays, ...) for lookup by type. */
     public <T> T add(Class<T> type, T component) {
         components.put(type, component);
         return component;

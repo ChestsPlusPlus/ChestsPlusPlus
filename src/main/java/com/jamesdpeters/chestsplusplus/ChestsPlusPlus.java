@@ -8,7 +8,8 @@ import com.jamesdpeters.chestsplusplus.chestlink.ChestLinkService;
 import com.jamesdpeters.chestsplusplus.chestlink.HopperBridge;
 import com.jamesdpeters.chestsplusplus.config.Settings;
 import com.jamesdpeters.chestsplusplus.core.Services;
-import com.jamesdpeters.chestsplusplus.display.DisplayLayout;
+import com.jamesdpeters.chestsplusplus.core.scheduler.Tickers;
+import com.jamesdpeters.chestsplusplus.display.DisplayLayout.Surface;
 import com.jamesdpeters.chestsplusplus.display.DisplayService;
 import com.jamesdpeters.chestsplusplus.filter.FilterCodec;
 import com.jamesdpeters.chestsplusplus.filter.FilterListener;
@@ -35,6 +36,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.SQLException;
+import java.util.List;
 import org.bukkit.block.Chest;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -42,10 +44,7 @@ import org.bukkit.event.world.WorldSaveEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jspecify.annotations.Nullable;
 
-/**
- * Plugin entry point. Owns the lifecycle in a fixed order (plan §3.4); {@code /cpp reload} only swaps settings and
- * messages and never re-runs enable.
- */
+/** Plugin entry point. {@code /cpp reload} only swaps settings and messages; it never re-runs enable. */
 // Not final: MockBukkit loads plugins through a generated subclass.
 public class ChestsPlusPlus extends JavaPlugin implements Listener {
 
@@ -55,105 +54,104 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
-        // 1. Settings and messages.
-        Settings settings;
-        Messages messages;
+        Services services;
         try {
-            settings = loadSettings();
-            messages = loadMessages();
-        } catch (IOException e) {
-            getSLF4JLogger().error("Could not load configuration; disabling ChestsPlusPlus", e);
-            getServer().getPluginManager().disablePlugin(this);
-            return;
-        }
-        Services services = new Services(this, settings, messages);
-
-        // 2. Feature services.
-        DisplayService displays = services.add(DisplayService.class,
-                new DisplayService(this, services.groups(), services.nodes(), services::settings));
-        displays.surfaces(block -> block.getState(false) instanceof Chest ? DisplayLayout.Surface.CHEST : DisplayLayout.Surface.FULL_BLOCK);
-        LinkService links = services.add(LinkService.class, new LinkService(services, displays));
-        LinkItem linkItems = services.add(LinkItem.class, new LinkItem(this));
-        ChestLinkService chestLinks = services.add(ChestLinkService.class, new ChestLinkService(services, displays));
-        links.register(chestLinks);
-        displays.register(GroupType.CHESTLINK, chestLinks);
-        AutoCraftService autoCraft = services.add(AutoCraftService.class,
-                new AutoCraftService(services, displays, CraftingBackend.bukkit()));
-        links.register(autoCraft);
-        displays.register(GroupType.AUTOCRAFT, autoCraft);
-        GroupActions actions = services.add(GroupActions.class, new GroupActions(services, links));
-        MenuListener menus = services.add(MenuListener.class, new MenuListener(this));
-        services.add(UiService.class, new UiService(services, links, actions, menus));
-        FilterService filters = services.add(FilterService.class,
-                new FilterService(this, new FilterCodec(this), ItemGrouping.fromServerTags(), services::settings));
-
-        // 3. Database and model.
-        PersistenceService persistence;
-        try {
-            File dataFolder = getDataFolder();
-            if (!dataFolder.isDirectory() && !dataFolder.mkdirs()) throw new IOException("Cannot create " + dataFolder);
-            Database database = Database.open("jdbc:sqlite:" + new File(dataFolder, DATABASE_FILE).getAbsolutePath());
-            persistence = new PersistenceService(database, services.groups(), services.nodes(), services.trust(), getSLF4JLogger(),
-                    task -> {
-                        if (isEnabled()) getServer().getScheduler().runTask(this, task);
-                    }, () -> services.settings().storage().maxSerialisationsPerTick());
-            services.persistence(persistence);
-            int loaded = persistence.load(loadedGroup -> {
-                if (loadedGroup.group() instanceof ChestLinkGroup chest) {
-                    chestLinks.attachLoaded(chest, loadedGroup.contents());
-                } else if (loadedGroup.group() instanceof AutoCraftGroup craft) {
-                    autoCraft.resolveLoaded(craft);
-                }
-            });
-            getSLF4JLogger().info("Loaded {} group(s) and {} linked block(s)", loaded, services.nodes().size());
+            services = new Services(this, loadSettings(), loadMessages());
+            registerFeatures(services);
+            openDatabase(services);
         } catch (IOException | SQLException e) {
-            getSLF4JLogger().error("Could not open the ChestsPlusPlus database; disabling", e);
+            getSLF4JLogger().error("Could not start ChestsPlusPlus; disabling", e);
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
         this.services = services;
+        registerListeners(services);
+        startTickers(services);
+        startIntegrations(services);
+        refreshLoadedChunks(services);
+    }
 
-        // 4. Listeners.
-        var pluginManager = getServer().getPluginManager();
-        pluginManager.registerEvents(this, this);
-        pluginManager.registerEvents(new NodeListener(services, links, displays, linkItems), this);
-        pluginManager.registerEvents(new SignLinkListener(this, links), this);
-        pluginManager.registerEvents(new NameTagLinkListener(services, links), this);
-        pluginManager.registerEvents(new ChestLinkListener(services, links, chestLinks), this);
-        pluginManager.registerEvents(new HopperBridge(services), this);
-        pluginManager.registerEvents(menus, this);
-        pluginManager.registerEvents(new AutoCraftListener(services, links, autoCraft), this);
-        pluginManager.registerEvents(new FilterListener(services, filters, links), this);
+    private void registerFeatures(Services services) {
+        DisplayService displays = services.add(DisplayService.class,
+                new DisplayService(this, services.groups(), services.nodes(), services::settings));
+        displays.surfaces(block -> block.getState(false) instanceof Chest ? Surface.CHEST : Surface.FULL_BLOCK);
+        LinkService links = services.add(LinkService.class, new LinkService(services, displays));
+        services.add(LinkItem.class, new LinkItem(this));
 
-        // 5. Central tickers (plan §9: no per-group tasks).
-        services.tickers().every("persistence", 1, persistence::tick);
-        int[] seconds = {0};
-        services.tickers().every("persistence-flush", 20, () -> {
-            if (++seconds[0] >= services.settings().storage().flushIntervalSeconds()) {
-                seconds[0] = 0;
-                persistence.requestFlush();
+        ChestLinkService chestLinks = services.add(ChestLinkService.class, new ChestLinkService(services, displays));
+        links.register(chestLinks);
+        displays.register(GroupType.CHESTLINK, chestLinks);
+
+        AutoCraftService autoCraft = services.add(AutoCraftService.class, new AutoCraftService(services, displays, CraftingBackend.bukkit()));
+        links.register(autoCraft);
+        displays.register(GroupType.AUTOCRAFT, autoCraft);
+
+        GroupActions actions = services.add(GroupActions.class, new GroupActions(services, links));
+        MenuListener menus = services.add(MenuListener.class, new MenuListener(this));
+        services.add(UiService.class, new UiService(services, links, actions, menus));
+        services.add(FilterService.class, new FilterService(this, new FilterCodec(this), ItemGrouping.fromServerTags(), services::settings));
+    }
+
+    private void openDatabase(Services services) throws IOException, SQLException {
+        File dataFolder = getDataFolder();
+        if (!dataFolder.isDirectory() && !dataFolder.mkdirs()) throw new IOException("Cannot create " + dataFolder);
+        Database database = Database.open("jdbc:sqlite:" + new File(dataFolder, DATABASE_FILE).getAbsolutePath());
+        PersistenceService persistence = new PersistenceService(database, services.groups(), services.nodes(), services.trust(), getSLF4JLogger(),
+                this::runOnMainThread, () -> services.settings().storage().maxSerialisationsPerTick());
+        services.persistence(persistence);
+
+        ChestLinkService chestLinks = services.get(ChestLinkService.class);
+        AutoCraftService autoCraft = services.get(AutoCraftService.class);
+        int loaded = persistence.load(loadedGroup -> {
+            switch (loadedGroup.group()) {
+                case ChestLinkGroup chest -> chestLinks.attachLoaded(chest, loadedGroup.contents());
+                case AutoCraftGroup craft -> autoCraft.resolveLoaded(craft);
             }
         });
-        services.tickers().every("displays", 1, displays::tick);
-        int[] craftTicks = {0};
-        services.tickers().every("autocraft", 1, () -> {
-            int interval = services.settings().autocraft().tickInterval();
-            if (++craftTicks[0] >= interval) {
-                craftTicks[0] = 0;
-                autoCraft.tick(interval);
-            }
-        });
+        getSLF4JLogger().info("Loaded {} group(s) and {} linked block(s)", loaded, services.nodes().size());
+    }
 
-        // 6. Integrations.
+    private void runOnMainThread(Runnable task) {
+        if (isEnabled()) getServer().getScheduler().runTask(this, task);
+    }
+
+    private void registerListeners(Services services) {
+        LinkService links = services.get(LinkService.class);
+        List<Listener> listeners = List.of(
+                this,
+                new NodeListener(services, links, services.get(DisplayService.class), services.get(LinkItem.class)),
+                new SignLinkListener(this, links),
+                new NameTagLinkListener(services, links),
+                new ChestLinkListener(services, links, services.get(ChestLinkService.class)),
+                new HopperBridge(services),
+                services.get(MenuListener.class),
+                new AutoCraftListener(services, links, services.get(AutoCraftService.class)),
+                new FilterListener(services, services.get(FilterService.class), links));
+        listeners.forEach(listener -> getServer().getPluginManager().registerEvents(listener, this));
+    }
+
+    /** A few central tickers rather than one task per group. */
+    private void startTickers(Services services) {
+        Tickers tickers = services.tickers();
+        PersistenceService persistence = services.persistence();
+        tickers.every("persistence", 1, persistence::tick);
+        tickers.everyInterval("persistence-flush", () -> services.settings().storage().flushIntervalSeconds() * 20,
+                ticks -> persistence.requestFlush());
+        tickers.every("displays", 1, services.get(DisplayService.class)::tick);
+        tickers.everyInterval("autocraft", () -> services.settings().autocraft().tickInterval(), services.get(AutoCraftService.class)::tick);
+    }
+
+    private void startIntegrations(Services services) {
         services.add(MetricsService.class, new MetricsService()).start(this, services);
         UpdateChecker updates = services.add(UpdateChecker.class, new UpdateChecker(services, getPluginMeta().getVersion()));
-        pluginManager.registerEvents(updates, this);
+        getServer().getPluginManager().registerEvents(updates, this);
         updates.start();
+    }
 
-        // 7. Displays and filter index for chunks that are already loaded.
-        displays.refreshAll();
-        filters.scanLoadedChunks();
-        if (settings.features().hopperFilters()) warnIfMoveEventDisabled(services);
+    private void refreshLoadedChunks(Services services) {
+        services.get(DisplayService.class).refreshAll();
+        services.get(FilterService.class).scanLoadedChunks();
+        if (services.settings().features().hopperFilters()) warnIfMoveEventDisabled(services);
     }
 
     /** Diagnostics only: never let reading Paper's config files break enable. */
@@ -185,7 +183,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         return services;
     }
 
-    /** Re-reads config.yml and messages.yml and applies them without re-running enable. */
+    /** Re-reads config.yml and messages.yml without re-running enable. */
     public void reload() throws IOException {
         Services current = services;
         if (current == null) throw new IllegalStateException("ChestsPlusPlus is not enabled");

@@ -1,6 +1,7 @@
 package com.jamesdpeters.chestsplusplus.core;
 
 import java.util.UUID;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -79,17 +80,17 @@ public record BlockPos(UUID world, int x, int y, int z) {
     }
 
     public @Nullable Block block() {
-        World w = org.bukkit.Bukkit.getWorld(world);
+        World w = Bukkit.getWorld(world);
         return w == null ? null : w.getBlockAt(x, y, z);
     }
 
     public @Nullable Location center() {
-        World w = org.bukkit.Bukkit.getWorld(world);
+        World w = Bukkit.getWorld(world);
         return w == null ? null : new Location(w, x + 0.5, y + 0.5, z + 0.5);
     }
 
     public boolean isLoaded() {
-        World w = org.bukkit.Bukkit.getWorld(world);
+        World w = Bukkit.getWorld(world);
         return w != null && w.isChunkLoaded(chunkX(), chunkZ());
     }
 
