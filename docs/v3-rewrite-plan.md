@@ -1,6 +1,6 @@
 # ChestsPlusPlus v3: Paper Rewrite Plan
 
-**Status:** Draft for review · **Date:** 3 October 2026 · **Target:** Paper 26.x (Java 25)
+**Status:** Implemented on `v3`; see §14 for status and open items · **Date:** 3 October 2026 · **Target:** Paper 26.x (Java 25)
 
 v3 is a ground-up rewrite of ChestsPlusPlus as a native **Paper plugin**. It keeps the core gameplay: ChestLinks, AutoCraft, hopper filters and sharing. It replaces the Spigot-era plumbing with modern Paper APIs, a cleaner architecture and a performance-first runtime. It ships as a new major version, so **backwards compatibility with v2 data, commands, permissions and config is explicitly not a goal**.
 
@@ -722,3 +722,48 @@ A bot confirmed it builds without errors. Which row is right, readability at dis
 1. **Wait (default):** keep the E2E job non-blocking, with only short smoke tests (join, command, RCON) in Stage A. Gameplay scenarios go on the manual checklist until ViaBackwards is fixed or Mineflayer supports 26.3 (Stage C). Optionally report the bug upstream with the repro above.
 2. **Target 26.2 at runtime for E2E:** declare `api-version: 26.2`, avoid 26.3-only APIs (already preferred by §10.2), and run the E2E server on Paper 26.2 + Via, where bots work. This costs a runtime guard against accidental 26.3-only API use and a second server version to maintain.
 3. **Custom mode with a newer protocol library:** only if Mineflayer or minecraft-data gains 26.3 data first (it currently has none for 26.2/26.3).
+
+---
+
+## 14. Implementation status (4 October 2026)
+
+All six phases are implemented on `v3`. Every phase is verified with `./gradlew build` (unit + MockBukkit, 0
+failures, only the 26.3-guarded test skipped) and `./gradlew e2e` (all scenarios green locally on Paper 26.3-146).
+
+| Phase | Status | Notes |
+|---|---|---|
+| 0. Groundwork & spikes | Done | §13. S3/S4 still need the in-game check (below). |
+| 1. Core | Done | `BlockPos`, `Settings`, `Messages`, model + indexes, access/trust, SQLite v1 + write-behind, restart round-trip tested. |
+| 2. ChestLinks | Done | Sign/command/silk-touch linking, holder, lids, remote open, `HopperBridge` (E2E-verified with real hoppers), displays, sorting, limits, blacklist, protection check. |
+| 3. Commands & UI | Done | All Brigadier routes, `GroupArgument`, Dialog hub/group/members/trust/confirm, menu framework + grid. |
+| 4. Hopper filters | Done | PDC codec, `FilterIndex`, editor, side displays, tag grouping, stall avoidance (E2E-verified). |
+| 5. AutoCraft | Done | Recipe editor, `CraftPlanner`, central ticker + backoff, ChestLink inputs (E2E-verified with real recipes). |
+| 6. Polish & release | Partly done | bStats, update checker, README, `docs/testing.md`, CHANGELOG and a tag-driven draft-release workflow are done. The rest is listed below. |
+
+### Deviations from the plan (and why)
+- **Repositories (§3.2):** one `Repository` class holds all SQL instead of five repo classes; it's small and is only
+  used by the I/O thread.
+- **Recipe choice-cycling animation (§5.9):** not implemented. Ghost items are the concrete items the player placed;
+  tag recipes still accept any matching item when crafting (per-slot recipe choices).
+- **Update checker (§3.2, §5.12):** uses GitHub Releases, because no Modrinth or Hangar project exists.
+- **Rename closes viewers:** inventory titles are fixed at creation, so renaming or reloading recreates the shared
+  inventory and closes anyone viewing it.
+- **Command `/cl add`:** uses the clicked face when it's horizontal (otherwise it faces the player) for the display.
+- **Test seams:** AutoCraft takes a `CraftingBackend` (Bukkit in production, a fake in tests) because MockBukkit has no
+  recipe matching. `Holders.of` falls back to `getHolder()` where `getHolder(false)` is unimplemented. Both are
+  ordinary dependency/compatibility seams, not debug hooks; the release jar guard still passes.
+- **MockBukkit gaps found:** `PluginBootstrap`, `Inventory#getHolder(boolean)`, `Entity#getFacing`,
+  `TextDisplay#setBillboard`, redstone power, `Server#getWorldContainer`, and mutable `Block#getLocation`. A
+  `FailOnUnimplemented` extension makes any gap a test failure instead of a silent skip; that change also exposed that
+  some Phase 2 tests had been skipping before it.
+
+### Open items before tagging 3.0.0
+1. **S3/S4 in-game checks** (`docs/testing.md`). S4 decides `DisplayLayout.ITEM_YAW_OFFSET`; row A (0°) is assumed.
+2. **S6 decision:** E2E stays non-blocking and limited to short bot sessions until ViaBackwards fixes 26.3 movement
+   translation or Mineflayer supports 26.3 (§13, options 1-3). Reporting the bug upstream needs your approval.
+3. **First CI run:** nothing has been pushed yet, so `.github/workflows/v3-ci.yml` (build + e2e) and
+   `v3-release.yml` haven't run on GitHub Actions.
+4. **v2-vs-v3 spark comparison (§9):** needs the scenario world and a manual spark session; not done.
+5. **Manual checklist** in `docs/testing.md` on a native 26.3 client, including protection plugins and `kill -9`.
+6. **Release:** bump nothing in the build script; push a `v3.0.0` tag to produce a draft GitHub release with the jar
+   (needs your go-ahead).

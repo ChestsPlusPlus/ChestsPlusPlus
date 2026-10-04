@@ -1,0 +1,30 @@
+name: v3 Release
+
+# Runs only when a v3 tag is pushed (e.g. v3.0.0). Builds, runs the release-jar guard, and attaches the jar to a
+# draft GitHub release for review before publishing.
+on:
+  push:
+    tags: ["v3.*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Build release jar
+        run: ./gradlew build verifyReleaseJar -PreleaseVersion=${GITHUB_REF_NAME#v} --stacktrace
+      - name: Create draft release
+        uses: softprops/action-gh-release@v3
+        with:
+          draft: true
+          name: ChestsPlusPlus ${{ github.ref_name }}
+          body_path: CHANGELOG.md
+          files: build/libs/ChestsPlusPlus-*[0-9].jar

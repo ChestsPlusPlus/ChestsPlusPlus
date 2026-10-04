@@ -15,7 +15,7 @@ plugins {
 }
 
 group = "com.jamesdpeters"
-version = "3.0.0-SNAPSHOT"
+version = providers.gradleProperty("releaseVersion").getOrElse("3.0.0-SNAPSHOT")
 description = "Enhances chests and hoppers with ChestLinks, AutoCraft and hopper filters."
 
 val javaVersion = 25
