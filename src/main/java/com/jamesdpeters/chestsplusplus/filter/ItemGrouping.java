@@ -1,5 +1,6 @@
 package com.jamesdpeters.chestsplusplus.filter;
 
+import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.EnumMap;
@@ -12,7 +13,7 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.Tag;
 
 /**
- * "Similar item" groups, precomputed once from Paper item tags (plan §5.5; replaces v2's hard-coded tag lists). Two
+ * "Similar item" groups, precomputed once from Paper item tags. Two
  * materials are similar when they are equal or share a group. Lookups are an EnumMap get plus a BitSet intersect.
  */
 public final class ItemGrouping {
@@ -42,7 +43,7 @@ public final class ItemGrouping {
 
     /** Builds from the server's item tags. */
     public static ItemGrouping fromServerTags() {
-        List<Set<Material>> materialGroups = new java.util.ArrayList<>();
+        List<Set<Material>> materialGroups = new ArrayList<>();
         for (String key : GROUPING_TAGS) {
             Tag<Material> tag = Bukkit.getTag(Tag.REGISTRY_ITEMS, NamespacedKey.minecraft(key), Material.class);
             if (tag != null) materialGroups.add(Set.copyOf(tag.getValues()));

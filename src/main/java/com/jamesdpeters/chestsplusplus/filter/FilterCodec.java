@@ -11,7 +11,7 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
 
 /**
- * Stores hopper filters in the hopper's PDC (plan §4.4, §5.5): a version number and a list of
+ * Stores hopper filters in the hopper's PDC: a version number and a list of
  * {@code (item bytes, mode, match)} containers. Filters travel with the block (schematics, WorldEdit).
  */
 public final class FilterCodec {

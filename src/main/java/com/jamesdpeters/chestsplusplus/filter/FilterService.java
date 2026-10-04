@@ -32,7 +32,7 @@ import org.joml.Vector3f;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Hopper filters at runtime (plan §5.5): {@code FilterIndex} (position → compiled filters, built from hopper PDC on
+ * Hopper filters at runtime: {@code FilterIndex} (position → compiled filters, built from hopper PDC on
  * chunk load and on edit, dropped on unload/break) plus the small filter displays on the hopper's sides.
  */
 public final class FilterService {
@@ -91,21 +91,18 @@ public final class FilterService {
     }
 
     public void chunkUnloaded(Chunk chunk) {
-        Map<Long, CompiledFilter> filters = index.get(chunk.getWorld().getUID());
-        if (filters == null || filters.isEmpty()) return;
-        List<BlockPos> inChunk = new ArrayList<>();
         UUID world = chunk.getWorld().getUID();
-        for (long packed : filters.keySet()) {
-            BlockPos pos = BlockPos.unpack(world, packed);
-            if (pos.chunkX() == chunk.getX() && pos.chunkZ() == chunk.getZ()) inChunk.add(pos);
-        }
+        Map<Long, CompiledFilter> filters = index.get(world);
+        if (filters == null || filters.isEmpty()) return;
+        List<BlockPos> inChunk = filters.keySet().stream().map(packed -> BlockPos.unpack(world, packed))
+                .filter(pos -> pos.chunkX() == chunk.getX() && pos.chunkZ() == chunk.getZ()).toList();
         for (BlockPos pos : inChunk) {
             filters.remove(pos.packed());
             despawn(pos);
         }
     }
 
-    /** The hopper is gone (broken, exploded). Its filters are lost in 3.0 (plan §12, default 4). */
+    /** The hopper is gone (broken, exploded), and its filters with it. */
     public void removed(Block block) {
         Map<Long, CompiledFilter> filters = index.get(block.getWorld().getUID());
         if (filters != null) filters.remove(BlockPos.packed(block.getX(), block.getY(), block.getZ()));
@@ -135,15 +132,11 @@ public final class FilterService {
     }
 
     public int indexedCount() {
-        int count = 0;
-        for (Map<Long, CompiledFilter> filters : index.values()) count += filters.size();
-        return count;
+        return index.values().stream().mapToInt(Map::size).sum();
     }
 
     public int displayCount() {
-        int count = 0;
-        for (List<Entity> entities : displays.values()) count += entities.size();
-        return count;
+        return displays.values().stream().mapToInt(List::size).sum();
     }
 
     public boolean isOurs(Entity entity) {
@@ -151,16 +144,14 @@ public final class FilterService {
     }
 
     private void index(Block hopper, List<HopperFilter> filters) {
-        UUID world = hopper.getWorld().getUID();
-        long key = BlockPos.packed(hopper.getX(), hopper.getY(), hopper.getZ());
-        if (filters.isEmpty()) {
-            Map<Long, CompiledFilter> map = index.get(world);
-            if (map != null) map.remove(key);
-        } else {
-            index.computeIfAbsent(world, w -> new HashMap<>()).put(key, new CompiledFilter(filters, grouping));
-        }
         despawn(BlockPos.of(hopper));
-        if (!filters.isEmpty()) spawn(hopper, filters);
+        if (filters.isEmpty()) {
+            removed(hopper);
+            return;
+        }
+        long key = BlockPos.packed(hopper.getX(), hopper.getY(), hopper.getZ());
+        index.computeIfAbsent(hopper.getWorld().getUID(), w -> new HashMap<>()).put(key, new CompiledFilter(filters, grouping));
+        spawn(hopper, filters);
     }
 
     /**
@@ -170,36 +161,39 @@ public final class FilterService {
      */
     private void spawn(Block hopper, List<HopperFilter> filters) {
         if (!settings.get().filters().displays()) return;
+        List<List<ItemStack>> rows = iconRows(filters);
+        List<Entity> spawned = new ArrayList<>();
+        for (BlockFace face : DisplayLayout.HORIZONTAL) {
+            for (int r = 0; r < Math.min(rows.size(), DisplayLayout.FILTER_ROWS); r++) {
+                List<ItemStack> row = rows.get(r);
+                for (int c = 0; c < row.size(); c++) spawned.add(spawnIcon(hopper, DisplayLayout.filterCell(face, r, c), row.get(c)));
+            }
+        }
+        displays.put(BlockPos.of(hopper), spawned);
+    }
+
+    /** One row per non-empty mode, Allow first: a green or red pane, then that mode's entries. */
+    private static List<List<ItemStack>> iconRows(List<HopperFilter> filters) {
         List<List<ItemStack>> rows = new ArrayList<>();
         for (HopperFilter.Mode mode : HopperFilter.Mode.values()) {
-            List<ItemStack> row = new ArrayList<>();
-            for (HopperFilter filter : filters) if (filter.mode() == mode) row.add(filter.template());
+            List<ItemStack> row = new ArrayList<>(filters.stream().filter(filter -> filter.mode() == mode).map(HopperFilter::template).toList());
             if (row.isEmpty()) continue;
             row.addFirst(ItemStack.of(mode == HopperFilter.Mode.ALLOW ? Material.LIME_STAINED_GLASS_PANE : Material.RED_STAINED_GLASS_PANE));
             rows.add(row.subList(0, Math.min(row.size(), DisplayLayout.FILTER_COLUMNS)));
         }
-        List<Entity> spawned = new ArrayList<>();
-        World world = hopper.getWorld();
-        for (BlockFace face : DisplayLayout.HORIZONTAL) {
-            for (int r = 0; r < Math.min(rows.size(), DisplayLayout.FILTER_ROWS); r++) {
-                List<ItemStack> row = rows.get(r);
-                for (int c = 0; c < row.size(); c++) {
-                    ItemStack icon = row.get(c);
-                    DisplayLayout.Placement placement = DisplayLayout.filterCell(face, r, c);
-                    Location at = hopper.getLocation().clone().add(placement.x(), placement.y(), placement.z());
-                    at.setYaw(placement.yaw());
-                    spawned.add(world.spawn(at, ItemDisplay.class, entity -> {
-                        prepare(entity);
-                        entity.setItemStack(icon);
-                        entity.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.GUI);
-                        float scale = DisplayLayout.FILTER_ITEM_SCALE;
-                        entity.setTransformation(
-                                new Transformation(new Vector3f(), new AxisAngle4f(), new Vector3f(scale, scale, 0.001f), new AxisAngle4f()));
-                    }));
-                }
-            }
-        }
-        displays.put(BlockPos.of(hopper), spawned);
+        return rows;
+    }
+
+    private Entity spawnIcon(Block hopper, DisplayLayout.Placement placement, ItemStack icon) {
+        Location at = hopper.getLocation().clone().add(placement.x(), placement.y(), placement.z());
+        at.setYaw(placement.yaw());
+        float scale = DisplayLayout.FILTER_ITEM_SCALE;
+        return hopper.getWorld().spawn(at, ItemDisplay.class, entity -> {
+            prepare(entity);
+            entity.setItemStack(icon);
+            entity.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.GUI);
+            entity.setTransformation(new Transformation(new Vector3f(), new AxisAngle4f(), new Vector3f(scale, scale, 0.001f), new AxisAngle4f()));
+        });
     }
 
     private void prepare(Display entity) {
@@ -214,8 +208,8 @@ public final class FilterService {
     }
 
     /**
-     * With Paper's {@code hopper.disable-move-event: true} no InventoryMoveItemEvent fires, so filters can't work
-     * (spike S1). Reads the Paper world config files and returns the affected world names.
+     * With Paper's {@code hopper.disable-move-event: true} no InventoryMoveItemEvent fires, so filters can't work.
+     * Reads the Paper world config files and returns the affected world names.
      */
     public static List<String> worldsWithMoveEventDisabled(File serverRoot, List<World> worlds) {
         boolean defaultDisabled = disabledIn(new File(serverRoot, "config/paper-world-defaults.yml"), false);

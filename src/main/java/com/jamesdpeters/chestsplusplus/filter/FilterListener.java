@@ -34,7 +34,7 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
-/** Hopper filter enforcement, the editor, and index upkeep (plan §5.5). */
+/** Hopper filter enforcement, the editor, and index upkeep. */
 public final class FilterListener implements Listener {
 
     /** Minimum ticks between manual stall-avoidance moves per hopper (vanilla hopper cooldown). */
@@ -55,10 +55,7 @@ public final class FilterListener implements Listener {
         return services.settings().features().hopperFilters();
     }
 
-    // ---------------------------------------------------------------------------------------------------------------
-    // Enforcement (hot path: one type check, one holder lookup, one hash lookup)
-    // ---------------------------------------------------------------------------------------------------------------
-
+    /** Hot path: one type check, one holder lookup, one hash lookup. */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     void onMove(InventoryMoveItemEvent event) {
         Inventory destination = event.getDestination();
@@ -81,8 +78,8 @@ public final class FilterListener implements Listener {
     }
 
     /**
-     * Spike S1b: a hopper still stalls when the first slot of its source is rejected. Move the first acceptable stack
-     * instead, once per hopper cooldown, with a single slot scan and no event re-entry (plan §5.5).
+     * A hopper still stalls when the first slot of its source is rejected. Move the first acceptable stack instead, once per hopper
+     * cooldown, with a single slot scan and no event re-entry.
      */
     private void avoidStall(Inventory source, Inventory destination, CompiledFilter filter, int amount, BlockPos pos) {
         int now = services.plugin().getServer().getCurrentTick();
@@ -99,16 +96,10 @@ public final class FilterListener implements Listener {
             item.setAmount(item.getAmount() - moved);
             source.setItem(slot, item.isEmpty() ? null : item);
             lastManualMove.put(pos, now);
-            if (Holders.of(source) instanceof ChestLinkHolder holder) {
-                services.get(ChestLinkService.class).changed(holder.group());
-            }
+            if (Holders.of(source) instanceof ChestLinkHolder holder) services.get(ChestLinkService.class).changed(holder.group());
             return;
         }
     }
-
-    // ---------------------------------------------------------------------------------------------------------------
-    // Editor
-    // ---------------------------------------------------------------------------------------------------------------
 
     @EventHandler(priority = EventPriority.HIGH)
     void onInteract(PlayerInteractEvent event) {
@@ -121,15 +112,13 @@ public final class FilterListener implements Listener {
         event.setUseInteractedBlock(Event.Result.DENY);
         event.setUseItemInHand(Event.Result.DENY);
         if (event.getHand() != EquipmentSlot.HAND) return;
-        if (!player.hasPermission(Permissions.FILTER)) {
-            services.messages().send(player, Message.ERROR_NO_PERMISSION);
-            return;
-        }
-        if (services.settings().isBlacklisted(block.getWorld().getName())) {
-            services.messages().send(player, Message.ERROR_WORLD_BLACKLISTED);
-            return;
-        }
-        player.openInventory(new FilterEditorHolder(block, filters.read(block), services.messages()).getInventory());
+        Message refusal = !player.hasPermission(Permissions.FILTER)
+                ? Message.ERROR_NO_PERMISSION
+                : services.settings().isBlacklisted(block.getWorld().getName())
+                        ? Message.ERROR_WORLD_BLACKLISTED
+                        : null;
+        if (refusal != null) services.messages().send(player, refusal);
+        else player.openInventory(new FilterEditorHolder(block, filters.read(block), services.messages()).getInventory());
     }
 
     @EventHandler(priority = EventPriority.LOW)
@@ -150,9 +139,7 @@ public final class FilterListener implements Listener {
         FilterEditorHolder.Click click = event.isShiftClick()
                 ? FilterEditorHolder.Click.SHIFT
                 : event.isRightClick() ? FilterEditorHolder.Click.RIGHT : FilterEditorHolder.Click.LEFT;
-        if (editor.click(event.getSlot(), event.getCursor(), click)) {
-            filters.write(editor.hopper(), editor.filters());
-        }
+        if (editor.click(event.getSlot(), event.getCursor(), click)) filters.write(editor.hopper(), editor.filters());
     }
 
     @EventHandler(priority = EventPriority.LOW)
@@ -162,10 +149,6 @@ public final class FilterListener implements Listener {
             if (event.getRawSlots().stream().anyMatch(slot -> slot < topSize)) event.setCancelled(true);
         }
     }
-
-    // ---------------------------------------------------------------------------------------------------------------
-    // Index upkeep
-    // ---------------------------------------------------------------------------------------------------------------
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     void onBreak(BlockBreakEvent event) {

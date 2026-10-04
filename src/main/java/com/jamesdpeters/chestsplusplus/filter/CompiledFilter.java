@@ -5,7 +5,7 @@ import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 
 /**
- * A hopper's filters prepared for the hot path (plan §5.5). Semantics (same as v2): any deny match rejects; if any
+ * A hopper's filters prepared for the hot path. Any deny match rejects; if any
  * allow entries exist an item must match at least one; with no entries everything passes.
  */
 public final class CompiledFilter {
@@ -20,10 +20,13 @@ public final class CompiledFilter {
     public CompiledFilter(List<HopperFilter> filters, ItemGrouping grouping) {
         this.filters = List.copyOf(filters);
         this.grouping = grouping;
-        this.allows = filters.stream().filter(f -> f.mode() == HopperFilter.Mode.ALLOW)
-                .map(f -> new Entry(f.template().getType(), f.match(), f.template())).toArray(Entry[]::new);
-        this.denies = filters.stream().filter(f -> f.mode() == HopperFilter.Mode.DENY)
-                .map(f -> new Entry(f.template().getType(), f.match(), f.template())).toArray(Entry[]::new);
+        this.allows = entries(filters, HopperFilter.Mode.ALLOW);
+        this.denies = entries(filters, HopperFilter.Mode.DENY);
+    }
+
+    private static Entry[] entries(List<HopperFilter> filters, HopperFilter.Mode mode) {
+        return filters.stream().filter(f -> f.mode() == mode).map(f -> new Entry(f.template().getType(), f.match(), f.template()))
+                .toArray(Entry[]::new);
     }
 
     public List<HopperFilter> filters() {

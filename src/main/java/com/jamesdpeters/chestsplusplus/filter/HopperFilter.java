@@ -2,12 +2,16 @@ package com.jamesdpeters.chestsplusplus.filter;
 
 import org.bukkit.inventory.ItemStack;
 
-/** One hopper filter entry: a ghost item, whether it allows or denies, and how it matches (plan §5.5). */
+/** One hopper filter entry: a ghost item, whether it allows or denies, and how it matches. */
 public record HopperFilter(ItemStack template, Mode mode, Match match) {
 
     public enum Mode {
         ALLOW,
-        DENY
+        DENY;
+
+        public Mode opposite() {
+            return this == ALLOW ? DENY : ALLOW;
+        }
     }
 
     /** How an entry matches items; clicking an entry in the editor cycles through these in order. */

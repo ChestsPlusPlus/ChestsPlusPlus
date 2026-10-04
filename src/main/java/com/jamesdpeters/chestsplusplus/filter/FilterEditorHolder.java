@@ -16,7 +16,7 @@ import org.bukkit.inventory.ItemStack;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The sneak-click filter editor (plan §5.5). Row 1 is the Allow row and row 2 the Deny row; empty slots are lime/red
+ * The sneak-click filter editor. Row 1 is the Allow row and row 2 the Deny row; empty slots are lime/red
  * panes that say what clicking them does. Click a row with an item on the cursor to add a ghost copy (the item isn't
  * consumed). On an entry: left-click cycles exact → type → similar, right-click moves it to the other row, shift-click
  * removes it. Row 3 holds the help item and the clear button. Every change is saved straight to the hopper.
@@ -78,31 +78,35 @@ public final class FilterEditorHolder implements InventoryHolder {
         }
         if (slot < 0 || slot >= ROW * 2) return false;
         HopperFilter.Mode mode = slot < ROW ? HopperFilter.Mode.ALLOW : HopperFilter.Mode.DENY;
+        boolean changed = cursor != null && !cursor.isEmpty() ? place(mode, slot % ROW, cursor) : edit(mode, slot % ROW, click);
+        if (changed) render();
+        return changed;
+    }
+
+    /** Puts a ghost copy of {@code cursor} in the slot, replacing any entry there. */
+    private boolean place(HopperFilter.Mode mode, int index, ItemStack cursor) {
         List<HopperFilter> row = rowOf(mode);
-        int index = slot % ROW;
-        boolean hasCursor = cursor != null && !cursor.isEmpty();
-        if (hasCursor) {
-            HopperFilter added = new HopperFilter(cursor, mode, HopperFilter.Match.EXACT);
-            if (index < row.size()) row.set(index, added);
-            else if (row.size() < ROW) row.add(added);
-            else return false;
-        } else if (index < row.size()) {
-            HopperFilter entry = row.get(index);
-            switch (click) {
-                case SHIFT -> row.remove(index);
-                case RIGHT -> {
-                    HopperFilter.Mode other = mode == HopperFilter.Mode.ALLOW ? HopperFilter.Mode.DENY : HopperFilter.Mode.ALLOW;
-                    List<HopperFilter> target = rowOf(other);
-                    if (target.size() >= ROW) return false;
-                    row.remove(index);
-                    target.add(new HopperFilter(entry.template(), other, entry.match()));
-                }
-                case LEFT -> row.set(index, entry.withMatch(entry.match().next()));
+        HopperFilter added = new HopperFilter(cursor, mode, HopperFilter.Match.EXACT);
+        if (index < row.size()) row.set(index, added);
+        else if (row.size() < ROW) row.add(added);
+        else return false;
+        return true;
+    }
+
+    private boolean edit(HopperFilter.Mode mode, int index, Click click) {
+        List<HopperFilter> row = rowOf(mode);
+        if (index >= row.size()) return false;
+        HopperFilter entry = row.get(index);
+        switch (click) {
+            case SHIFT -> row.remove(index);
+            case RIGHT -> {
+                List<HopperFilter> target = rowOf(mode.opposite());
+                if (target.size() >= ROW) return false;
+                row.remove(index);
+                target.add(new HopperFilter(entry.template(), mode.opposite(), entry.match()));
             }
-        } else {
-            return false;
+            case LEFT -> row.set(index, entry.withMatch(entry.match().next()));
         }
-        render();
         return true;
     }
 
