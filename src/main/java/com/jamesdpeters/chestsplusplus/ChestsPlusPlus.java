@@ -90,7 +90,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         links.register(autoCraft);
         displays.register(GroupType.AUTOCRAFT, autoCraft);
 
-        GroupActions actions = services.add(GroupActions.class, new GroupActions(services, links));
+        GroupActions actions = services.add(GroupActions.class, new GroupActions(services, links, chestLinks));
         MenuListener menus = services.add(MenuListener.class, new MenuListener(this));
         services.add(UiService.class, new UiService(services, links, actions, menus));
         services.add(FilterService.class, new FilterService(this, new FilterCodec(this), ItemGrouping.fromServerTags(), services::settings));
@@ -130,7 +130,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
                 new HopperBridge(services),
                 services.get(MenuListener.class),
                 new AutoCraftListener(services, links, services.get(AutoCraftService.class)),
-                new FilterListener(services, services.get(FilterService.class), links));
+                new FilterListener(services, services.get(FilterService.class), links, services.get(ChestLinkService.class)));
         listeners.forEach(listener -> getServer().getPluginManager().registerEvents(listener, this));
     }
 

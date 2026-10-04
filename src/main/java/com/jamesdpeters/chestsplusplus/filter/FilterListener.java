@@ -41,12 +41,14 @@ public final class FilterListener implements Listener {
     private final Services services;
     private final FilterService filters;
     private final LinkService links;
+    private final ChestLinkService chestLinks;
     private final Map<BlockPos, Integer> lastManualMove = new HashMap<>();
 
-    public FilterListener(Services services, FilterService filters, LinkService links) {
+    public FilterListener(Services services, FilterService filters, LinkService links, ChestLinkService chestLinks) {
         this.services = services;
         this.filters = filters;
         this.links = links;
+        this.chestLinks = chestLinks;
     }
 
     private boolean enabled() {
@@ -94,7 +96,7 @@ public final class FilterListener implements Listener {
             item.setAmount(item.getAmount() - moved);
             source.setItem(slot, item.isEmpty() ? null : item);
             lastManualMove.put(pos, now);
-            if (Holders.of(source) instanceof ChestLinkHolder holder) services.get(ChestLinkService.class).changed(holder.group());
+            if (Holders.of(source) instanceof ChestLinkHolder holder) chestLinks.changed(holder.group());
             return;
         }
     }

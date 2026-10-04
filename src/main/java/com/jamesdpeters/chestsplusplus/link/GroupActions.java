@@ -29,10 +29,12 @@ public final class GroupActions {
 
     private final Services services;
     private final LinkService links;
+    private final ChestLinkService chestLinks;
 
-    public GroupActions(Services services, LinkService links) {
+    public GroupActions(Services services, LinkService links, ChestLinkService chestLinks) {
         this.services = services;
         this.links = links;
+        this.chestLinks = chestLinks;
     }
 
     /** Resolves {@code input} for {@code player}; messages and returns null if it isn't an accessible group. */
@@ -85,7 +87,6 @@ public final class GroupActions {
     public boolean sort(Player player, ChestLinkGroup group, SortMode mode) {
         if (!require(player, Permissions.CHESTLINK_SORT) || !canManage(player, group)) return false;
         group.setSortMode(mode);
-        ChestLinkService chestLinks = services.get(ChestLinkService.class);
         chestLinks.sort(group);
         chestLinks.changed(group);
         services.send(player, Message.CHESTLINK_SORT_MODE, Messages.group(group),
