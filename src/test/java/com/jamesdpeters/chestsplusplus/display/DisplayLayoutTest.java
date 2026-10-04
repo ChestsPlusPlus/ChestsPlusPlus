@@ -18,11 +18,11 @@ class DisplayLayoutTest {
     void nodeItemSitsJustOutsideTheFace() {
         Placement north = DisplayLayout.nodeItem(Surface.FULL_BLOCK, BlockFace.NORTH, Shape.FLAT);
         assertThat(north.x()).isEqualTo(0.5);
-        assertThat(north.z()).isCloseTo(-DisplayLayout.FACE_GAP, within(1e-9));
+        assertThat(north.z()).isCloseTo(-DisplayLayout.FLAT_ITEM_OFFSET, within(1e-9));
         assertThat(north.yaw()).isEqualTo(180f + DisplayLayout.ITEM_YAW_OFFSET);
 
         Placement east = DisplayLayout.nodeItem(Surface.FULL_BLOCK, BlockFace.EAST, Shape.FLAT);
-        assertThat(east.x()).isCloseTo(1 + DisplayLayout.FACE_GAP, within(1e-9));
+        assertThat(east.x()).isCloseTo(1 + DisplayLayout.FLAT_ITEM_OFFSET, within(1e-9));
         assertThat(east.z()).isEqualTo(0.5);
     }
 
@@ -43,7 +43,7 @@ class DisplayLayoutTest {
     @Test
     void flatItemsSitInFrontOfTheChestLatch() {
         Placement south = DisplayLayout.nodeItem(Surface.CHEST, BlockFace.SOUTH, Shape.FLAT);
-        assertThat(south.z()).isCloseTo(1 + DisplayLayout.FACE_GAP, within(1e-9));
+        assertThat(south.z()).isCloseTo(1 + DisplayLayout.FLAT_ITEM_OFFSET, within(1e-9));
         assertThat(south.yaw()).isEqualTo(DisplayLayout.ITEM_YAW_OFFSET);
     }
 

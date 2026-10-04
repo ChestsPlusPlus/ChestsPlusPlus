@@ -52,6 +52,13 @@ public final class DisplayLayout {
     static final double FACE_GAP = 0.02;
 
     /**
+     * How far flat item displays sit in front of the furthest-forward part of the model (the chest latch, or the face
+     * of a full block), in blocks. Make it smaller to tuck items closer; negative values push them into the latch
+     * (1px = 0.0625).
+     */
+    public static final double FLAT_ITEM_OFFSET = 0.02;
+
+    /**
      * Added to the facing yaw. S4 row A (0) vs row B (180): pending the in-game check, row A is assumed. Flip here if
      * displays turn out to face into the block.
      */
@@ -102,7 +109,7 @@ public final class DisplayLayout {
      * part of the model instead (otherwise the chest latch pokes through them).
      */
     public static Placement nodeItem(Surface surface, BlockFace facing, Shape shape) {
-        double out = shape == Shape.BLOCK ? surface.front : surface.protrusion + FACE_GAP;
+        double out = shape == Shape.BLOCK ? surface.front : surface.protrusion + FLAT_ITEM_OFFSET;
         return place(horizontal(facing), out, NODE_ITEM_HEIGHT);
     }
 
