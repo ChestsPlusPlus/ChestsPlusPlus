@@ -1,5 +1,8 @@
 package com.jamesdpeters.chestsplusplus;
 
+import com.jamesdpeters.chestsplusplus.autocraft.AutoCraftListener;
+import com.jamesdpeters.chestsplusplus.autocraft.AutoCraftService;
+import com.jamesdpeters.chestsplusplus.autocraft.CraftingBackend;
 import com.jamesdpeters.chestsplusplus.chestlink.ChestLinkListener;
 import com.jamesdpeters.chestsplusplus.chestlink.ChestLinkService;
 import com.jamesdpeters.chestsplusplus.chestlink.HopperBridge;
@@ -18,6 +21,7 @@ import com.jamesdpeters.chestsplusplus.link.NodeListener;
 import com.jamesdpeters.chestsplusplus.link.SignLinkListener;
 import com.jamesdpeters.chestsplusplus.message.Message;
 import com.jamesdpeters.chestsplusplus.message.Messages;
+import com.jamesdpeters.chestsplusplus.model.AutoCraftGroup;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.persistence.Database;
@@ -73,6 +77,10 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         ChestLinkService chestLinks = services.add(ChestLinkService.class, new ChestLinkService(services, displays));
         links.register(chestLinks);
         displays.register(GroupType.CHESTLINK, chestLinks);
+        AutoCraftService autoCraft = services.add(
+                AutoCraftService.class, new AutoCraftService(services, displays, CraftingBackend.bukkit()));
+        links.register(autoCraft);
+        displays.register(GroupType.AUTOCRAFT, autoCraft);
         GroupActions actions = services.add(GroupActions.class, new GroupActions(services, links));
         MenuListener menus = services.add(MenuListener.class, new MenuListener(this));
         services.add(UiService.class, new UiService(services, links, actions, menus));
@@ -100,6 +108,8 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
             int loaded = persistence.load(loadedGroup -> {
                 if (loadedGroup.group() instanceof ChestLinkGroup chest) {
                     chestLinks.attachLoaded(chest, loadedGroup.contents());
+                } else if (loadedGroup.group() instanceof AutoCraftGroup craft) {
+                    autoCraft.resolveLoaded(craft);
                 }
             });
             getSLF4JLogger()
@@ -122,6 +132,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         pluginManager.registerEvents(new ChestLinkListener(services, links, chestLinks), this);
         pluginManager.registerEvents(new HopperBridge(services), this);
         pluginManager.registerEvents(menus, this);
+        pluginManager.registerEvents(new AutoCraftListener(services, links, autoCraft), this);
         pluginManager.registerEvents(new FilterListener(services, filters, links), this);
 
         // 5. Central tickers (plan §9: no per-group tasks).
@@ -134,6 +145,14 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
             }
         });
         services.tickers().every("displays", 1, displays::tick);
+        int[] craftTicks = {0};
+        services.tickers().every("autocraft", 1, () -> {
+            int interval = services.settings().autocraft().tickInterval();
+            if (++craftTicks[0] >= interval) {
+                craftTicks[0] = 0;
+                autoCraft.tick(interval);
+            }
+        });
 
         // 6. Displays and filter index for chunks that are already loaded.
         displays.refreshAll();

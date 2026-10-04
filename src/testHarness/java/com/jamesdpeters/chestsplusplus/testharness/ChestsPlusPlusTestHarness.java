@@ -57,6 +57,15 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
                                                 .then(Commands.literal("displays")
                                                         .executes(this::displays))
                                                 .then(Commands.literal("reset").executes(this::reset))
+                                                .then(Commands.literal("recipe")
+                                                        .then(Commands.argument("owner", StringArgumentType.word())
+                                                                .then(Commands.argument(
+                                                                                "name", StringArgumentType.word())
+                                                                        .then(Commands.argument(
+                                                                                        "matrix",
+                                                                                        StringArgumentType
+                                                                                                .greedyString())
+                                                                                .executes(this::recipe)))))
                                                 .then(
                                                         Commands.literal("filter")
                                                                 .then(
@@ -221,6 +230,30 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
         return reply(
                 context,
                 "cpptest link ok " + group.name() + " nodes=" + services.nodes().count(group.id()));
+    }
+
+    /**
+     * Fixture: {@code cpptest recipe <owner> <name> <m1,...,m9>} ({@code -} for empty) sets an AutoCraft group's
+     * matrix through the same path as the editor and reports the resolved result.
+     */
+    private int recipe(CommandContext<CommandSourceStack> context) {
+        Services services = services();
+        StorageGroup group = services.groups()
+                .find(GroupType.AUTOCRAFT, owner(context), StringArgumentType.getString(context, "name"));
+        if (!(group instanceof com.jamesdpeters.chestsplusplus.model.AutoCraftGroup craft)) {
+            return reply(context, "cpptest recipe failed: no such AutoCraft group");
+        }
+        String[] parts = StringArgumentType.getString(context, "matrix").split(",");
+        org.bukkit.inventory.ItemStack[] matrix = new org.bukkit.inventory.ItemStack[9];
+        for (int i = 0; i < 9 && i < parts.length; i++) {
+            org.bukkit.Material material = org.bukkit.Material.matchMaterial(parts[i].trim());
+            matrix[i] = material == null ? null : org.bukkit.inventory.ItemStack.of(material);
+        }
+        var result = services.get(com.jamesdpeters.chestsplusplus.autocraft.AutoCraftService.class)
+                .setMatrix(craft, matrix, null);
+        return reply(
+                context,
+                "cpptest recipe result=" + (result == null ? "none" : result.getType() + "x" + result.getAmount()));
     }
 
     /** Fixture: {@code cpptest filter <x> <y> <z> <allow|deny> <material>} sets one TYPE filter on a hopper. */
