@@ -1,5 +1,6 @@
 package com.jamesdpeters.chestsplusplus.link;
 
+import com.jamesdpeters.chestsplusplus.ChestsPlusPlus;
 import com.jamesdpeters.chestsplusplus.core.Holders;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.display.DisplayService;
@@ -8,6 +9,7 @@ import com.jamesdpeters.chestsplusplus.message.Messages;
 import com.jamesdpeters.chestsplusplus.model.Node;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.bukkit.Chunk;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -37,6 +39,7 @@ import org.jspecify.annotations.Nullable;
  * burning, entity block changes, double-chest prevention, link-item placement and chunk load/unload. All lookups are
  * index lookups.
  */
+@Slf4j(topic = ChestsPlusPlus.NAME)
 public final class NodeListener implements Listener {
 
     private final Services services;
@@ -168,7 +171,7 @@ public final class NodeListener implements Listener {
             GroupTypeHandler handler = group == null ? null : links.handler(group.type());
             Block block = chunk.getBlock(node.pos().x() & 15, node.pos().y(), node.pos().z() & 15);
             if (handler != null && !handler.isValidBlock(block)) {
-                services.plugin().getSLF4JLogger().warn("Unlinking {} from {}: block is now {}", node.pos(), group.name(), block.getType());
+                log.warn("Unlinking {} from {}: block is now {}", node.pos(), group.name(), block.getType());
                 links.unlink(node.pos(), block.getLocation(), true);
             }
         }

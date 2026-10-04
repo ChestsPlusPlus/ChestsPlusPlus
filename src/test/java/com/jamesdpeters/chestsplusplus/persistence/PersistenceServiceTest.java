@@ -25,7 +25,6 @@ import org.bukkit.inventory.ItemStack;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.slf4j.LoggerFactory;
 
 class PersistenceServiceTest extends PluginTestBase {
 
@@ -45,8 +44,8 @@ class PersistenceServiceTest extends PluginTestBase {
         final PersistenceService persistence;
 
         Instance() throws Exception {
-            persistence = new PersistenceService(Database.open("jdbc:sqlite:" + dir.resolve("data.db")), groups, nodes, trust,
-                    LoggerFactory.getLogger("test"), mainQueue::add, () -> 1);
+            persistence = new PersistenceService(Database.open("jdbc:sqlite:" + dir.resolve("data.db")), groups, nodes, trust, mainQueue::add,
+                    () -> 1);
             persistence.load(loaded -> {
                 if (loaded.group() instanceof ChestLinkGroup chest) {
                     ChestLinkHolder.attach(chest, Component.text("t"), loaded.contents());

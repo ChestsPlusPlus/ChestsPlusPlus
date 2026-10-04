@@ -1,5 +1,6 @@
 package com.jamesdpeters.chestsplusplus.integration;
 
+import com.jamesdpeters.chestsplusplus.ChestsPlusPlus;
 import com.jamesdpeters.chestsplusplus.Permissions;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.message.Message;
@@ -11,6 +12,7 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.extern.slf4j.Slf4j;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -23,6 +25,7 @@ import org.jspecify.annotations.Nullable;
  * runs on the async scheduler with {@code java.net.http}; only players with {@code chestsplusplus.admin.update} are told,
  * when they join.
  */
+@Slf4j(topic = ChestsPlusPlus.NAME)
 public final class UpdateChecker implements Listener {
 
     static final String RELEASES_URL = "https://api.github.com/repos/ChestsPlusPlus/ChestsPlusPlus/releases/latest";
@@ -67,12 +70,12 @@ public final class UpdateChecker implements Listener {
             String tag = parseTag(response.body());
             if (tag == null || !Versions.isNewer(tag, currentVersion)) return;
             if (latest == null)
-                services.plugin().getSLF4JLogger().info("ChestsPlusPlus {} is available (running {}): {}", tag, currentVersion, DOWNLOAD_URL);
+                log.info("ChestsPlusPlus {} is available (running {}): {}", tag, currentVersion, DOWNLOAD_URL);
             latest = tag;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         } catch (Exception e) {
-            services.plugin().getSLF4JLogger().debug("Update check failed", e);
+            log.debug("Update check failed", e);
         }
     }
 

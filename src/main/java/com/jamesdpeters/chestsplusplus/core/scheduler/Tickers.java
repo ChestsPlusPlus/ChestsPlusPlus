@@ -1,23 +1,23 @@
 package com.jamesdpeters.chestsplusplus.core.scheduler;
 
+import com.jamesdpeters.chestsplusplus.ChestsPlusPlus;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.IntConsumer;
 import java.util.function.IntSupplier;
+import lombok.extern.slf4j.Slf4j;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitTask;
-import org.slf4j.Logger;
 
 /** The plugin's central repeating tasks. Each body is guarded so one failure doesn't cancel the ticker. */
+@Slf4j(topic = ChestsPlusPlus.NAME)
 public final class Tickers {
 
     private final Plugin plugin;
-    private final Logger logger;
     private final List<BukkitTask> tasks = new ArrayList<>();
 
-    public Tickers(Plugin plugin, Logger logger) {
+    public Tickers(Plugin plugin) {
         this.plugin = plugin;
-        this.logger = logger;
     }
 
     public void every(String name, long periodTicks, Runnable body) {
@@ -25,7 +25,7 @@ public final class Tickers {
             try {
                 body.run();
             } catch (RuntimeException e) {
-                logger.error("Ticker '{}' failed", name, e);
+                log.error("Ticker '{}' failed", name, e);
             }
         }, periodTicks, periodTicks));
     }

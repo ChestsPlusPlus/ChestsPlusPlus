@@ -1,7 +1,9 @@
 package com.jamesdpeters.chestsplusplus.integration;
 
+import com.jamesdpeters.chestsplusplus.ChestsPlusPlus;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
+import lombok.extern.slf4j.Slf4j;
 import org.bstats.bukkit.Metrics;
 import org.bstats.charts.SimplePie;
 import org.bstats.charts.SingleLineChart;
@@ -9,6 +11,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.jspecify.annotations.Nullable;
 
 /** bStats. Never allowed to break enable. */
+@Slf4j(topic = ChestsPlusPlus.NAME)
 public final class MetricsService {
 
     public static final int PLUGIN_ID = 7166;
@@ -25,7 +28,7 @@ public final class MetricsService {
             created.addCustomChart(new SimplePie("hopper_filters_enabled", () -> String.valueOf(services.settings().features().hopperFilters())));
             metrics = created;
         } catch (RuntimeException | LinkageError e) {
-            plugin.getSLF4JLogger().debug("bStats could not start", e);
+            log.debug("bStats could not start", e);
         }
     }
 

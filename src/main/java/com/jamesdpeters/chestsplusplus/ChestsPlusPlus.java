@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.sql.SQLException;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.bukkit.block.Chest;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -45,9 +46,12 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.jspecify.annotations.Nullable;
 
 /** Plugin entry point. {@code /cpp reload} only swaps settings and messages; it never re-runs enable. */
+@Slf4j(topic = ChestsPlusPlus.NAME)
 // Not final: MockBukkit loads plugins through a generated subclass.
 public class ChestsPlusPlus extends JavaPlugin implements Listener {
 
+    /** The plugin name, which is also the logger topic Paper uses for its plugin logger. */
+    public static final String NAME = "ChestsPlusPlus";
     public static final String DATABASE_FILE = "data.db";
 
     private @Nullable Services services;
@@ -60,7 +64,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
             registerFeatures(services);
             openDatabase(services);
         } catch (IOException | SQLException e) {
-            getSLF4JLogger().error("Could not start ChestsPlusPlus; disabling", e);
+            log.error("Could not start ChestsPlusPlus; disabling", e);
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
@@ -96,7 +100,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         File dataFolder = getDataFolder();
         if (!dataFolder.isDirectory() && !dataFolder.mkdirs()) throw new IOException("Cannot create " + dataFolder);
         Database database = Database.open("jdbc:sqlite:" + new File(dataFolder, DATABASE_FILE).getAbsolutePath());
-        PersistenceService persistence = new PersistenceService(database, services.groups(), services.nodes(), services.trust(), getSLF4JLogger(),
+        PersistenceService persistence = new PersistenceService(database, services.groups(), services.nodes(), services.trust(),
                 this::runOnMainThread, () -> services.settings().storage().maxSerialisationsPerTick());
         services.persistence(persistence);
 
@@ -108,7 +112,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
                 case AutoCraftGroup craft -> autoCraft.resolveLoaded(craft);
             }
         });
-        getSLF4JLogger().info("Loaded {} group(s) and {} linked block(s)", loaded, services.nodes().size());
+        log.info("Loaded {} group(s) and {} linked block(s)", loaded, services.nodes().size());
     }
 
     private void runOnMainThread(Runnable task) {
@@ -158,10 +162,10 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
     private void warnIfMoveEventDisabled(Services services) {
         try {
             for (String world : FilterService.worldsWithMoveEventDisabled(getServer().getWorldContainer(), getServer().getWorlds())) {
-                getSLF4JLogger().warn(services.messages().plain(Message.FILTER_MOVE_EVENT_DISABLED, Messages.text("world", world)));
+                log.warn(services.messages().plain(Message.FILTER_MOVE_EVENT_DISABLED, Messages.text("world", world)));
             }
         } catch (RuntimeException e) {
-            getSLF4JLogger().debug("Could not check hopper.disable-move-event", e);
+            log.debug("Could not check hopper.disable-move-event", e);
         }
     }
 

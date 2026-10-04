@@ -34,6 +34,8 @@ val testHarness: SourceSet = sourceSets.create("testHarness")
 dependencies {
     compileOnly(libs.paper.api)
     compileOnly(libs.jspecify)
+    compileOnly(libs.lombok)
+    annotationProcessor(libs.lombok)
     implementation(libs.bstats.bukkit)
 
     // Tests compile and run against paper-api 26.2 + mockbukkit-v26.2 until mockbukkit-v26.3 exists (plan §10.2).
@@ -54,8 +56,9 @@ dependencies {
 tasks.withType<JavaCompile>().configureEach {
     options.release = javaVersion
     options.encoding = "UTF-8"
-    // -classfile: paper-api's JOML dependency (used by Display transformations) trips it on every use (spike S4).
-    options.compilerArgs.addAll(listOf("-Xlint:all,-classfile", "-Werror"))
+    // -classfile: paper-api's JOML dependency (used by Display transformations) trips it on every use.
+    // -processing: Lombok is the only annotation processor, so every other annotation is "unclaimed".
+    options.compilerArgs.addAll(listOf("-Xlint:all,-classfile,-processing", "-Werror"))
 }
 
 // ---------------------------------------------------------------------------------------------------------------

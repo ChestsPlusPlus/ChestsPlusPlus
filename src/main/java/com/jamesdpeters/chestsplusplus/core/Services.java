@@ -34,7 +34,7 @@ public final class Services {
         this.plugin = plugin;
         this.settings = settings;
         this.messages = messages;
-        this.tickers = new Tickers(plugin, plugin.getSLF4JLogger());
+        this.tickers = new Tickers(plugin);
     }
 
     public JavaPlugin plugin() {

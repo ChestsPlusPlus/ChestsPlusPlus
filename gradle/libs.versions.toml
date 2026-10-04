@@ -3,13 +3,14 @@
 paper = "26.3.build.146-beta"
 paperServer = "26.3"
 paperServerBuild = "146"
-# Pinned downloads for the E2E server (plan ง10.3.1).
+# Pinned downloads for the E2E server (plan ยง10.3.1).
 paperServerUrl = "https://fill-data.papermc.io/v1/objects/406c91eac63e900142207a7cc5feb77413fb3d66813c2b595f096612eb6ad212/paper-26.3-146.jar"
 paperServerSha256 = "406c91eac63e900142207a7cc5feb77413fb3d66813c2b595f096612eb6ad212"
 testPaper = "26.2.build.129-stable"
 mockbukkit = "4.116.1"
 bstats = "3.2.1"
 jspecify = "1.0.1"
+lombok = "1.18.48"
 junit = "6.1.3"
 assertj = "3.27.7"
 sqlite = "3.49.1.0"
@@ -26,6 +27,7 @@ paper-api-test = { module = "io.papermc.paper:paper-api", version.ref = "testPap
 mockbukkit = { module = "org.mockbukkit.mockbukkit:mockbukkit-v26.2", version.ref = "mockbukkit" }
 bstats-bukkit = { module = "org.bstats:bstats-bukkit", version.ref = "bstats" }
 jspecify = { module = "org.jspecify:jspecify", version.ref = "jspecify" }
+lombok = { module = "org.projectlombok:lombok", version.ref = "lombok" }
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }

@@ -1,5 +1,6 @@
 package com.jamesdpeters.chestsplusplus.persistence;
 
+import com.jamesdpeters.chestsplusplus.ChestsPlusPlus;
 import com.jamesdpeters.chestsplusplus.access.TrustService;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupRegistry;
@@ -27,15 +28,16 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.IntSupplier;
+import lombok.extern.slf4j.Slf4j;
 import org.bukkit.inventory.ItemStack;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
 
 /**
  * Write-behind persistence. The in-memory model is authoritative; dirty groups are snapshotted on the main thread, a bounded number per
  * tick, and written by a single I/O thread. A dirty flag is cleared only once its write has committed. {@link #close()} drains everything
  * synchronously.
  */
+@Slf4j(topic = ChestsPlusPlus.NAME)
 public final class PersistenceService {
 
     private final Database database;
@@ -43,7 +45,6 @@ public final class PersistenceService {
     private final GroupRegistry groups;
     private final NodeIndex nodes;
     private final TrustService trust;
-    private final Logger logger;
     private final Consumer<Runnable> mainThread;
     private final IntSupplier maxPerTick;
     private final ExecutorService io = Executors.newSingleThreadExecutor(runnable -> {
@@ -68,14 +69,13 @@ public final class PersistenceService {
      * @param mainThread runs a task on the server thread (the scheduler); used for I/O completion callbacks
      * @param maxPerTick current {@code storage.max-serialisations-per-tick}
      */
-    public PersistenceService(Database database, GroupRegistry groups, NodeIndex nodes, TrustService trust, Logger logger,
+    public PersistenceService(Database database, GroupRegistry groups, NodeIndex nodes, TrustService trust,
             Consumer<Runnable> mainThread, IntSupplier maxPerTick) {
         this.database = database;
         this.repository = new Repository(database);
         this.groups = groups;
         this.nodes = nodes;
         this.trust = trust;
-        this.logger = logger;
         this.mainThread = mainThread;
         this.maxPerTick = maxPerTick;
         trust.onChange(this::markTrustDirty);
@@ -181,7 +181,7 @@ public final class PersistenceService {
     private void onWritten(SaveBatch batch, Map<Long, Long> generations, Map<UUID, Long> trustGenerations, @Nullable Throwable error) {
         batch.groups().forEach(g -> inFlight.remove(g.id()));
         if (error != null) {
-            logger.error("Failed to save {} ChestsPlusPlus group(s); will retry", batch.groups().size(), error);
+            log.error("Failed to save {} ChestsPlusPlus group(s); will retry", batch.groups().size(), error);
             deleted.addAll(batch.deletedGroups());
             batch.trust().keySet().forEach(owner -> dirtyTrust.putIfAbsent(owner, ++generation));
             flushing = true;
@@ -200,7 +200,7 @@ public final class PersistenceService {
         try {
             database.close();
         } catch (SQLException e) {
-            logger.warn("Closing the ChestsPlusPlus database failed", e);
+            log.warn("Closing the ChestsPlusPlus database failed", e);
         }
     }
 
@@ -208,7 +208,7 @@ public final class PersistenceService {
         io.shutdown();
         try {
             if (!io.awaitTermination(30, TimeUnit.SECONDS)) {
-                logger.warn("Persistence I/O thread did not finish in 30s; continuing with the final flush");
+                log.warn("Persistence I/O thread did not finish in 30s; continuing with the final flush");
                 io.shutdownNow();
             }
         } catch (InterruptedException e) {
@@ -226,7 +226,7 @@ public final class PersistenceService {
             deleted.clear();
             dirtyTrust.clear();
         } catch (SQLException e) {
-            logger.error("Final save of ChestsPlusPlus data failed; recent changes may be lost", e);
+            log.error("Final save of ChestsPlusPlus data failed; recent changes may be lost", e);
         }
     }
 
