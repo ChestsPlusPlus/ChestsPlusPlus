@@ -68,13 +68,20 @@ public final class DisplayLayout {
     public static final int FILTER_ROWS = 2;
     /**
      * Scale of a filter icon. Filter displays use the GUI transform (they look like inventory icons), where an item
-     * spans about one block at scale 1, so this is about one grid cell.
+     * spans about one block at scale 1.
      */
-    public static final float FILTER_ITEM_SCALE = 0.1f;
-    /** The hopper bowl's side spans y 10px..16px of the block; the grid fills it. */
-    static final double BOWL_BOTTOM = 10.0 / 16;
-
-    static final double BOWL_TOP = 1.0;
+    public static final float FILTER_ITEM_SCALE = 0.07f;
+    /** Distance between neighbouring icons; the same horizontally (1 / columns) and vertically for a square grid. */
+    static final double FILTER_PITCH = 1.0 / FILTER_COLUMNS;
+    /** Centre height of the top row of icons; both rows stay on the hopper bowl (y 10px..16px). */
+    static final double FILTER_TOP_ROW_Y = 0.92;
+    /** Icons are flattened onto the face; this tiny gap only avoids z-fighting with the hopper texture. */
+    static final double FILTER_FACE_GAP = 0.003;
+    /**
+     * GUI-transform icons render facing the opposite way to FIXED ones, so without this they face into the hopper and
+     * are seen from behind (block icons look upside down, items mirrored).
+     */
+    static final float FILTER_YAW_OFFSET = 180f;
 
     private DisplayLayout() {}
 
@@ -98,15 +105,14 @@ public final class DisplayLayout {
      * like text by someone looking at that face (column 0 is their left, row 0 the top).
      */
     public static Placement filterCell(BlockFace face, int row, int column) {
-        double cellHeight = (BOWL_TOP - BOWL_BOTTOM) / FILTER_ROWS;
-        double alongRight = (column + 0.5) / FILTER_COLUMNS - 0.5; // -0.45 (left) .. +0.45 (right)
+        double alongRight = (column + 0.5) * FILTER_PITCH - 0.5; // -0.45 (left) .. +0.45 (right)
         BlockFace right = rightOf(face);
-        double out = Surface.HOPPER_SIDE.protrusion + FACE_GAP;
+        double out = Surface.HOPPER_SIDE.protrusion + FILTER_FACE_GAP;
         return new Placement(
                 0.5 + face.getModX() * out + right.getModX() * alongRight,
-                BOWL_TOP - (row + 0.5) * cellHeight,
+                FILTER_TOP_ROW_Y - row * FILTER_PITCH,
                 0.5 + face.getModZ() * out + right.getModZ() * alongRight,
-                yaw(face) + ITEM_YAW_OFFSET);
+                yaw(face) + FILTER_YAW_OFFSET);
     }
 
     /** The direction to the right of someone looking at {@code face} from outside (they face the opposite way). */

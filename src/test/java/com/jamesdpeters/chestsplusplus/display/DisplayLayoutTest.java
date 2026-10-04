@@ -63,7 +63,11 @@ class DisplayLayoutTest {
         Placement nextRow = DisplayLayout.filterCell(BlockFace.SOUTH, 1, 0);
         assertThat(first.x()).isLessThan(second.x());
         assertThat(first.y()).isGreaterThan(nextRow.y());
-        assertThat(first.z()).isGreaterThan(1.0);
+        // Flush against the face (a hair's gap for z-fighting) and turned to face outwards.
+        assertThat(first.z()).isBetween(1.0, 1.01);
+        assertThat(first.yaw()).isEqualTo(180f);
+        // Rows are as close together as columns.
+        assertThat(first.y() - nextRow.y()).isCloseTo(second.x() - first.x(), within(1e-9));
         // Looking at the north face you face south, so your left is east (larger x).
         assertThat(DisplayLayout.filterCell(BlockFace.NORTH, 0, 0).x())
                 .isGreaterThan(DisplayLayout.filterCell(BlockFace.NORTH, 0, 1).x());
