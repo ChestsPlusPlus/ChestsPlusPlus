@@ -1,8 +1,10 @@
 package com.jamesdpeters.chestsplusplus.chestlink;
 
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
+import java.util.List;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
@@ -36,7 +38,7 @@ public final class ChestLinkHolder implements InventoryHolder {
      */
     public void retitle(Component title) {
         @Nullable ItemStack[] contents = inventory.getContents();
-        java.util.List.copyOf(inventory.getViewers()).forEach(viewer -> viewer.closeInventory());
+        List.copyOf(inventory.getViewers()).forEach(HumanEntity::closeInventory);
         inventory = Bukkit.createInventory(this, ChestLinkGroup.SIZE, title);
         inventory.setContents(contents);
         group.attachInventory(inventory);

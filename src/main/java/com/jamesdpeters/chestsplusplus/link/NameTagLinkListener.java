@@ -1,6 +1,5 @@
 package com.jamesdpeters.chestsplusplus.link;
 
-import com.jamesdpeters.chestsplusplus.core.BlockPos;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import io.papermc.paper.datacomponent.DataComponentTypes;
@@ -46,7 +45,7 @@ public final class NameTagLinkListener implements Listener {
         String name = tagName(item);
         if (name == null) return;
         // Linked blocks keep their normal click behaviour (opening the group).
-        if (services.nodes().get(BlockPos.of(block)) != null) return;
+        if (services.nodes().at(block) != null) return;
         GroupType type = typeFor(block);
         if (type == null) return;
         if (event.useInteractedBlock() == Event.Result.DENY) return;

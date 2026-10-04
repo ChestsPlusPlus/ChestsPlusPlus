@@ -149,7 +149,7 @@ public final class LinkService {
         if (!player.hasPermission(Permissions.create(type))) return new Resolved.Error(Message.ERROR_NO_PERMISSION);
         if (services.settings().isBlacklisted(block.getWorld().getName())) return new Resolved.Error(Message.ERROR_WORLD_BLACKLISTED);
         if (!handler.isValidBlock(block)) return new Resolved.Error(Message.ERROR_INVALID_BLOCK, Messages.text("type", type.displayName()));
-        Node existing = services.nodes().get(BlockPos.of(block));
+        Node existing = services.nodes().at(block);
         if (existing != null) {
             StorageGroup linkedTo = services.groups().byId(existing.groupId());
             return new Resolved.Error(Message.ERROR_ALREADY_LINKED, Messages.text("group", linkedTo == null ? "?" : linkedTo.name()));

@@ -1,7 +1,6 @@
 package com.jamesdpeters.chestsplusplus.autocraft;
 
 import com.jamesdpeters.chestsplusplus.Permissions;
-import com.jamesdpeters.chestsplusplus.core.BlockPos;
 import com.jamesdpeters.chestsplusplus.core.Holders;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.link.LinkService;
@@ -43,7 +42,7 @@ public final class AutoCraftListener implements Listener {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK || links.isFiringSyntheticInteract()) return;
         Block block = event.getClickedBlock();
         if (block == null) return;
-        Node node = services.nodes().get(block.getWorld().getUID(), BlockPos.packed(block.getX(), block.getY(), block.getZ()));
+        Node node = services.nodes().at(block);
         if (node == null || !(services.groups().byId(node.groupId()) instanceof AutoCraftGroup group)) return;
         Player player = event.getPlayer();
         if (player.isSneaking() && !player.getInventory().getItemInMainHand().isEmpty()) return;

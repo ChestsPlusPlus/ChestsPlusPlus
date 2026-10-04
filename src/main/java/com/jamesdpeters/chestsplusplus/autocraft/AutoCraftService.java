@@ -278,7 +278,7 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
      * else the container's own inventory.
      */
     private @Nullable Inventory inventoryAt(Block block, AutoCraftGroup crafter) {
-        Node node = services.nodes().get(block.getWorld().getUID(), BlockPos.packed(block.getX(), block.getY(), block.getZ()));
+        Node node = services.nodes().at(block);
         if (node != null) {
             if (services.groups().byId(node.groupId()) instanceof ChestLinkGroup chest
                     && services.access().canAccess(crafter.owner(), false, chest)) {

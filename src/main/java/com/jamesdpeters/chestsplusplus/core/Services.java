@@ -6,10 +6,13 @@ import com.jamesdpeters.chestsplusplus.config.Settings;
 import com.jamesdpeters.chestsplusplus.core.scheduler.Tickers;
 import com.jamesdpeters.chestsplusplus.message.Messages;
 import com.jamesdpeters.chestsplusplus.model.GroupRegistry;
+import com.jamesdpeters.chestsplusplus.model.Node;
 import com.jamesdpeters.chestsplusplus.model.NodeIndex;
+import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import com.jamesdpeters.chestsplusplus.persistence.PersistenceService;
 import java.util.HashMap;
 import java.util.Map;
+import org.bukkit.block.Block;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jspecify.annotations.Nullable;
 
@@ -69,6 +72,12 @@ public final class Services {
 
     public Tickers tickers() {
         return tickers;
+    }
+
+    /** The group {@code block} is linked to, if any. */
+    public @Nullable StorageGroup groupAt(Block block) {
+        Node node = nodes.at(block);
+        return node == null ? null : groups.byId(node.groupId());
     }
 
     public PersistenceService persistence() {

@@ -10,7 +10,7 @@ import org.bukkit.inventory.ItemStack;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Condensing sort in O(n log n) (plan §5.6): similar stacks are merged up to their max stack size, then ordered by
+ * Condensing sort in O(n log n): similar stacks are merged up to their max stack size, then ordered by
  * the mode. Replaces v2's O(n²) {@code isSimilar} comparators.
  */
 public final class Sorter {

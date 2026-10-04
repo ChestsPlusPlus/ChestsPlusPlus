@@ -14,11 +14,14 @@ import com.jamesdpeters.chestsplusplus.model.Node;
 import com.jamesdpeters.chestsplusplus.model.SortMode;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import net.kyori.adventure.text.Component;
@@ -96,7 +99,7 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
     @Override
     public String summary(StorageGroup group) {
         return group instanceof ChestLinkGroup chest && chest.hasInventory()
-                ? String.format(java.util.Locale.ROOT, "%,d items", itemCount(chest))
+                ? String.format(Locale.ROOT, "%,d items", itemCount(chest))
                 : "0 items";
     }
 
@@ -121,8 +124,8 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
     }
 
     /**
-     * Moves the physical container's contents into the group (the physical block stays empty, plan §5.6). Returns
-     * the number of stacks that did not fit and were dropped at the block.
+     * Moves the physical container's contents into the group, leaving the physical block empty. Returns the number of stacks that did not
+     * fit and were dropped at the block.
      */
     public int absorbPhysicalContents(ChestLinkGroup group, Block block) {
         if (!(block.getState(false) instanceof Container container)) return 0;
@@ -155,9 +158,7 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
         if (from != null) openedFrom.put(player.getUniqueId(), from.pos());
         else openedFrom.remove(player.getUniqueId());
         player.openInventory(group.inventory());
-        if (from == null) {
-            player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 0.5f, 1f);
-        }
+        if (from == null) player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 0.5f, 1f);
     }
 
     /** InventoryOpenEvent for a ChestLink inventory: open lids if this is the first viewer. */
@@ -176,7 +177,7 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
             if (block != null && block.getState(false) instanceof Lidded lidded) {
                 lidded.open();
                 lids.add(pos);
-                block.getWorld().playSound(block.getLocation().clone().add(0.5, 0.5, 0.5), openSound(block), 0.5f, 1f);
+                playLidSound(block, Sound.BLOCK_BARREL_OPEN, Sound.BLOCK_CHEST_OPEN);
             }
         }
     }
@@ -195,7 +196,7 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
             Block block = pos.isLoaded() ? pos.block() : null;
             if (block != null && block.getState(false) instanceof Lidded lidded) {
                 lidded.close();
-                block.getWorld().playSound(block.getLocation().clone().add(0.5, 0.5, 0.5), closeSound(block), 0.5f, 1f);
+                playLidSound(block, Sound.BLOCK_BARREL_CLOSE, Sound.BLOCK_CHEST_CLOSE);
             }
         }
     }
@@ -213,9 +214,7 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
 
     /** Total item count, for menus and listings. */
     public static int itemCount(ChestLinkGroup group) {
-        int total = 0;
-        for (ItemStack item : group.inventory().getContents()) if (item != null) total += item.getAmount();
-        return total;
+        return Arrays.stream(group.inventory().getContents()).filter(Objects::nonNull).mapToInt(ItemStack::getAmount).sum();
     }
 
     /** The most common item by total amount (the display item), or null when empty. */
@@ -244,12 +243,9 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
         return services.messages().get(Message.CHESTLINK_DISPLAY_LABEL, Messages.text("group", group.name()));
     }
 
-    private static Sound openSound(Block block) {
-        return block.getType() == Material.BARREL ? Sound.BLOCK_BARREL_OPEN : Sound.BLOCK_CHEST_OPEN;
-    }
-
-    private static Sound closeSound(Block block) {
-        return block.getType() == Material.BARREL ? Sound.BLOCK_BARREL_CLOSE : Sound.BLOCK_CHEST_CLOSE;
+    private static void playLidSound(Block block, Sound barrel, Sound chest) {
+        Sound sound = block.getType() == Material.BARREL ? barrel : chest;
+        block.getWorld().playSound(block.getLocation().clone().add(0.5, 0.5, 0.5), sound, 0.5f, 1f);
     }
 
     public void forgetViewer(UUID viewer) {

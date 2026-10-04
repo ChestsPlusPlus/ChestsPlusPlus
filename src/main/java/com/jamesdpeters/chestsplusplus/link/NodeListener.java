@@ -1,6 +1,5 @@
 package com.jamesdpeters.chestsplusplus.link;
 
-import com.jamesdpeters.chestsplusplus.core.BlockPos;
 import com.jamesdpeters.chestsplusplus.core.Holders;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.display.DisplayService;
@@ -52,14 +51,14 @@ public final class NodeListener implements Listener {
         this.linkItems = linkItems;
     }
 
-    private @Nullable Node node(Block block) {
-        return services.nodes().get(block.getWorld().getUID(), BlockPos.packed(block.getX(), block.getY(), block.getZ()));
+    private boolean isLinked(Block block) {
+        return services.nodes().at(block) != null;
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     void onBreak(BlockBreakEvent event) {
         Block block = event.getBlock();
-        Node node = node(block);
+        Node node = services.nodes().at(block);
         if (node == null) return;
         Player player = event.getPlayer();
         StorageGroup group = services.groups().byId(node.groupId());
@@ -115,17 +114,17 @@ public final class NodeListener implements Listener {
     private void preventDoubleChest(Block placed) {
         if (!(placed.getBlockData() instanceof Chest data) || data.getType() == Chest.Type.SINGLE) return;
         Block partner = placed.getRelative(LinkService.partnerDirection(data));
-        if (node(partner) != null || node(placed) != null) LinkService.splitDoubleChest(placed);
+        if (isLinked(partner) || isLinked(placed)) LinkService.splitDoubleChest(placed);
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     void onBlockExplode(BlockExplodeEvent event) {
-        event.blockList().removeIf(block -> node(block) != null);
+        event.blockList().removeIf(block -> isLinked(block));
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     void onEntityExplode(EntityExplodeEvent event) {
-        event.blockList().removeIf(block -> node(block) != null);
+        event.blockList().removeIf(block -> isLinked(block));
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -140,17 +139,16 @@ public final class NodeListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     void onBurn(BlockBurnEvent event) {
-        if (node(event.getBlock()) != null) event.setCancelled(true);
+        if (isLinked(event.getBlock())) event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     void onEntityChangeBlock(EntityChangeBlockEvent event) {
-        if (node(event.getBlock()) != null) event.setCancelled(true);
+        if (isLinked(event.getBlock())) event.setCancelled(true);
     }
 
     private boolean anyLinked(List<Block> blocks) {
-        for (Block block : blocks) if (node(block) != null) return true;
-        return false;
+        return blocks.stream().anyMatch(this::isLinked);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

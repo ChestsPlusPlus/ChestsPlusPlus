@@ -8,6 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.bukkit.block.Block;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -59,6 +60,11 @@ public final class NodeIndex {
 
     public @Nullable Node get(BlockPos pos) {
         return get(pos.world(), pos.packed());
+    }
+
+    /** The node at {@code block}, without allocating a {@link BlockPos} (hot paths). */
+    public @Nullable Node at(Block block) {
+        return get(block.getWorld().getUID(), BlockPos.packed(block.getX(), block.getY(), block.getZ()));
     }
 
     public @Nullable Node get(UUID world, long packed) {

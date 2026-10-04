@@ -1,7 +1,6 @@
 package com.jamesdpeters.chestsplusplus.chestlink;
 
 import com.jamesdpeters.chestsplusplus.Permissions;
-import com.jamesdpeters.chestsplusplus.core.BlockPos;
 import com.jamesdpeters.chestsplusplus.core.Holders;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.link.LinkService;
@@ -22,6 +21,7 @@ import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
+import org.jspecify.annotations.Nullable;
 
 /** Opening ChestLinks by clicking a node, viewer open/close bookkeeping, and dirty-marking hopper transfers. */
 public final class ChestLinkListener implements Listener {
@@ -41,7 +41,7 @@ public final class ChestLinkListener implements Listener {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK || links.isFiringSyntheticInteract()) return;
         Block block = event.getClickedBlock();
         if (block == null) return;
-        Node node = services.nodes().get(block.getWorld().getUID(), BlockPos.packed(block.getX(), block.getY(), block.getZ()));
+        Node node = services.nodes().at(block);
         if (node == null || !(services.groups().byId(node.groupId()) instanceof ChestLinkGroup group)) return;
         Player player = event.getPlayer();
         // Sneaking with an item places blocks against the chest, as in vanilla.
@@ -51,19 +51,16 @@ public final class ChestLinkListener implements Listener {
         event.setUseItemInHand(Event.Result.DENY);
         if (event.getHand() != EquipmentSlot.HAND) return;
 
-        if (services.settings().isBlacklisted(block.getWorld().getName())) {
-            services.messages().send(player, Message.ERROR_WORLD_BLACKLISTED);
-            return;
-        }
-        if (!player.hasPermission(Permissions.CHESTLINK_OPEN)) {
-            services.messages().send(player, Message.ERROR_NO_PERMISSION);
-            return;
-        }
-        if (!services.access().canAccess(player.getUniqueId(), player, group)) {
-            services.messages().send(player, Message.ERROR_NO_ACCESS, Messages.text("group", group.name()));
-            return;
-        }
-        chestLinks.open(player, group, node);
+        Message refusal = openRefusal(player, group, block);
+        if (refusal != null) services.messages().send(player, refusal, Messages.text("group", group.name()));
+        else chestLinks.open(player, group, node);
+    }
+
+    private @Nullable Message openRefusal(Player player, ChestLinkGroup group, Block block) {
+        if (services.settings().isBlacklisted(block.getWorld().getName())) return Message.ERROR_WORLD_BLACKLISTED;
+        if (!player.hasPermission(Permissions.CHESTLINK_OPEN)) return Message.ERROR_NO_PERMISSION;
+        if (!services.access().canAccess(player.getUniqueId(), player, group)) return Message.ERROR_NO_ACCESS;
+        return null;
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -80,7 +77,7 @@ public final class ChestLinkListener implements Listener {
         }
     }
 
-    /** Hopper transfers in or out of a ChestLink mark it dirty and refresh its display (plan §4.3). */
+    /** Hopper transfers in or out of a ChestLink mark it dirty and refresh its display. */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     void onMove(InventoryMoveItemEvent event) {
         if (Holders.of(event.getDestination()) instanceof ChestLinkHolder holder) chestLinks.changed(holder.group());
