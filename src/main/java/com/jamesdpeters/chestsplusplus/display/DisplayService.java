@@ -195,7 +195,8 @@ public final class DisplayService {
             prepare(entity, config.viewRange());
             entity.setItemStack(shown);
             entity.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
-            entity.setTransformation(scale(0.5f, 0.5f, 0.001f));
+            entity.setTransformation(
+                    scale(DisplayLayout.NODE_ITEM_SCALE, DisplayLayout.NODE_ITEM_SCALE, DisplayLayout.NODE_ITEM_SCALE));
         });
 
         TextDisplay label = null;

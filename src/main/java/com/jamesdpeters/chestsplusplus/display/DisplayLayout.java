@@ -39,6 +39,13 @@ public final class DisplayLayout {
      */
     static final float ITEM_YAW_OFFSET = 0f;
 
+    /**
+     * Uniform scale of node item displays. Uniform (not flattened) so they render in 3D like an item frame: blocks as
+     * small cubes and items with their pixel thickness. Centred on the face, half of a block's depth sits inside the
+     * container.
+     */
+    public static final float NODE_ITEM_SCALE = 0.5f;
+
     static final double NODE_ITEM_HEIGHT = 0.55;
     static final double NODE_LABEL_HEIGHT = 0.15;
     static final double FILTER_HEIGHT = 0.8;
