@@ -283,6 +283,13 @@ class ChestLinkIntegrationTest extends PluginTestBase {
                 .isEqualTo(com.jamesdpeters.chestsplusplus.display.DisplayLayout.Shape.FLAT);
         assertThat(com.jamesdpeters.chestsplusplus.display.DisplayLayout.shapeOf(ItemStack.of(Material.TORCH)))
                 .isEqualTo(com.jamesdpeters.chestsplusplus.display.DisplayLayout.Shape.FLAT);
+        // Solid block, but its item is a flat 2D icon.
+        assertThat(com.jamesdpeters.chestsplusplus.display.DisplayLayout.shapeOf(ItemStack.of(Material.HOPPER)))
+                .isEqualTo(com.jamesdpeters.chestsplusplus.display.DisplayLayout.Shape.FLAT);
+        assertThat(com.jamesdpeters.chestsplusplus.display.DisplayLayout.shapeOf(ItemStack.of(Material.OAK_LOG)))
+                .isEqualTo(com.jamesdpeters.chestsplusplus.display.DisplayLayout.Shape.BLOCK);
+        assertThat(com.jamesdpeters.chestsplusplus.display.DisplayLayout.shapeOf(ItemStack.of(Material.STONE_SLAB)))
+                .isEqualTo(com.jamesdpeters.chestsplusplus.display.DisplayLayout.Shape.BLOCK);
 
         sign(alice, chestAt(0, 0), "[ChestLink]", "g"); // display on the north face (z = 0 side)
         ChestLinkGroup group = group(alice, "g");

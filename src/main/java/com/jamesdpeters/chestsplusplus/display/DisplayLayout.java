@@ -1,5 +1,9 @@
 package com.jamesdpeters.chestsplusplus.display;
 
+import java.util.List;
+import java.util.Set;
+import org.bukkit.Material;
+import org.bukkit.Tag;
 import org.bukkit.block.BlockFace;
 import org.bukkit.inventory.ItemStack;
 import org.jspecify.annotations.Nullable;
@@ -158,12 +162,41 @@ public final class DisplayLayout {
     }
 
     /**
-     * Whether an item renders as a 3D block or a flat sheet. Solid blocks (cubes, stairs, slabs, glass, chests) render
-     * in 3D; everything else, including non-solid blocks like torches and flowers, renders flat. Empty counts as flat.
+     * Whether an item renders as a 3D block model or a flat sprite. Full cubes (logs, stone, planks...) and the usual
+     * 3D-model shapes (glass, leaves, slabs, stairs, walls, fences, chests, shulker boxes) are blocks. Everything else
+     * is flat, including solid blocks whose item is a 2D icon (hoppers, cauldrons, doors, brewing stands). Empty counts
+     * as flat. A heuristic: Paper doesn't expose item model types.
      */
     public static Shape shapeOf(@Nullable ItemStack item) {
-        return item != null && item.getType().isBlock() && item.getType().isSolid() ? Shape.BLOCK : Shape.FLAT;
+        if (item == null || item.isEmpty()) return Shape.FLAT;
+        Material type = item.getType();
+        if (!type.isBlock()) return Shape.FLAT;
+        if (type.isOccluding()) return Shape.BLOCK;
+        for (Tag<Material> tag : BLOCK_MODEL_TAGS) if (tag.isTagged(type)) return Shape.BLOCK;
+        return BLOCK_MODEL_MATERIALS.contains(type) ? Shape.BLOCK : Shape.FLAT;
     }
+
+    /** Non-occluding blocks whose items still render as 3D models. */
+    private static final List<Tag<Material>> BLOCK_MODEL_TAGS = List.of(
+            Tag.SLABS,
+            Tag.STAIRS,
+            Tag.WALLS,
+            Tag.FENCES,
+            Tag.FENCE_GATES,
+            Tag.LEAVES,
+            Tag.IMPERMEABLE,
+            Tag.SHULKER_BOXES);
+
+    private static final Set<Material> BLOCK_MODEL_MATERIALS = Set.of(
+            Material.CHEST,
+            Material.TRAPPED_CHEST,
+            Material.ENDER_CHEST,
+            Material.GLASS,
+            Material.TINTED_GLASS,
+            Material.SLIME_BLOCK,
+            Material.HONEY_BLOCK,
+            Material.ICE,
+            Material.SNOW_BLOCK);
 
     /** Displays only sit on the four horizontal faces; up/down (e.g. barrels facing up) fall back to north. */
     public static BlockFace horizontal(BlockFace facing) {
