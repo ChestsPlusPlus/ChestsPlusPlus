@@ -78,7 +78,7 @@ public final class NodeListener implements Listener {
         Message message = removed
                 ? group.type().pick(Message.CHESTLINK_REMOVED, Message.AUTOCRAFT_REMOVED)
                 : group.type().pick(Message.CHESTLINK_UNLINKED, Message.AUTOCRAFT_UNLINKED);
-        services.messages().send(player, message, Messages.text("group", group.name()));
+        services.send(player, message, Messages.group(group));
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -95,14 +95,14 @@ public final class NodeListener implements Listener {
         Block block = event.getBlockPlaced();
         Message refusal = relinkRefusal(player, group, block);
         if (refusal != null) {
-            services.messages().send(player, refusal, Messages.text("group", group.name()));
+            services.send(player, refusal, Messages.group(group));
             event.setCancelled(true);
             return true;
         }
         GroupTypeHandler handler = links.handler(group.type());
         if (handler == null || !handler.isValidBlock(block)) return false;
         links.addNode(group, block, Holders.facing(player).getOppositeFace());
-        services.messages().send(player, group.type().pick(Message.CHESTLINK_LINKED, Message.AUTOCRAFT_LINKED), Messages.text("group", group.name()));
+        services.send(player, group.type().pick(Message.CHESTLINK_LINKED, Message.AUTOCRAFT_LINKED), Messages.group(group));
         return true;
     }
 

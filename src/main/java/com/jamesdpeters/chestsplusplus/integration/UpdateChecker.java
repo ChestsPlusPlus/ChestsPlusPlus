@@ -89,6 +89,6 @@ public final class UpdateChecker implements Listener {
         String version = latest;
         Player player = event.getPlayer();
         if (version == null || !services.settings().updateChecker() || !player.hasPermission(Permissions.ADMIN_UPDATE)) return;
-        services.messages().send(player, Message.UPDATE_AVAILABLE, Messages.text("version", version), Messages.text("url", DOWNLOAD_URL));
+        services.send(player, Message.UPDATE_AVAILABLE, Messages.text("version", version), Messages.text("url", DOWNLOAD_URL));
     }
 }

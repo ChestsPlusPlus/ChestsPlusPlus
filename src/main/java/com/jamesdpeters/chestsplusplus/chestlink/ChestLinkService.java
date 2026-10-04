@@ -115,7 +115,7 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
     }
 
     public Component title(ChestLinkGroup group) {
-        return services.messages().get(Message.CHESTLINK_TITLE, Messages.text("group", group.name()));
+        return services.messages().get(Message.CHESTLINK_TITLE, Messages.group(group));
     }
 
     /** Inventory titles are fixed at creation, so renames recreate the inventory (closing viewers). */
@@ -240,7 +240,7 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
 
     @Override
     public Component label(StorageGroup group) {
-        return services.messages().get(Message.CHESTLINK_DISPLAY_LABEL, Messages.text("group", group.name()));
+        return services.messages().get(Message.CHESTLINK_DISPLAY_LABEL, Messages.group(group));
     }
 
     private static void playLidSound(Block block, Sound barrel, Sound chest) {

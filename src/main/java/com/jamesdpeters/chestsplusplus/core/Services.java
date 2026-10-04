@@ -4,6 +4,7 @@ import com.jamesdpeters.chestsplusplus.access.AccessService;
 import com.jamesdpeters.chestsplusplus.access.TrustService;
 import com.jamesdpeters.chestsplusplus.config.Settings;
 import com.jamesdpeters.chestsplusplus.core.scheduler.Tickers;
+import com.jamesdpeters.chestsplusplus.message.Message;
 import com.jamesdpeters.chestsplusplus.message.Messages;
 import com.jamesdpeters.chestsplusplus.model.GroupRegistry;
 import com.jamesdpeters.chestsplusplus.model.Node;
@@ -12,6 +13,8 @@ import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import com.jamesdpeters.chestsplusplus.persistence.PersistenceService;
 import java.util.HashMap;
 import java.util.Map;
+import net.kyori.adventure.audience.Audience;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.block.Block;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jspecify.annotations.Nullable;
@@ -47,6 +50,10 @@ public final class Services {
 
     public Messages messages() {
         return messages;
+    }
+
+    public void send(Audience audience, Message message, TagResolver... placeholders) {
+        messages.send(audience, message, placeholders);
     }
 
     public void reconfigure(Settings settings, Messages messages) {

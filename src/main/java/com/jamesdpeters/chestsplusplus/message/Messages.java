@@ -1,5 +1,6 @@
 package com.jamesdpeters.chestsplusplus.message;
 
+import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -85,6 +86,16 @@ public final class Messages {
     /** An unparsed (escaped) text placeholder, e.g. for group and player names. */
     public static TagResolver text(String key, String value) {
         return Placeholder.unparsed(key, value);
+    }
+
+    /** The {@code <group>} placeholder: the group's name. */
+    public static TagResolver group(StorageGroup group) {
+        return text("group", group.name());
+    }
+
+    /** The {@code <player>} placeholder. */
+    public static TagResolver player(String name) {
+        return text("player", name);
     }
 
     public static TagResolver text(String key, int value) {

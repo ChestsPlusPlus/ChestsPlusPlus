@@ -123,11 +123,11 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
 
     @Override
     public Component label(StorageGroup group) {
-        return services.messages().get(Message.AUTOCRAFT_DISPLAY_LABEL, Messages.text("group", group.name()));
+        return services.messages().get(Message.AUTOCRAFT_DISPLAY_LABEL, Messages.group(group));
     }
 
     public void openEditor(Player player, AutoCraftGroup group) {
-        Component title = services.messages().get(Message.MENU_RECIPE_TITLE, Messages.text("group", group.name()));
+        Component title = services.messages().get(Message.MENU_RECIPE_TITLE, Messages.group(group));
         player.openInventory(new RecipeEditorHolder(group, title, this).getInventory());
     }
 
@@ -135,7 +135,7 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
     void edit(Player player, RecipeEditorHolder editor, int slot, @Nullable ItemStack cursor) {
         AutoCraftGroup group = editor.group();
         if (!services.access().canManage(player.getUniqueId(), player, group)) {
-            services.messages().send(player, Message.ERROR_NOT_OWNER, Messages.text("group", group.name()));
+            services.send(player, Message.ERROR_NOT_OWNER, Messages.group(group));
             return;
         }
         @Nullable ItemStack[] matrix = editor.click(slot, cursor);
@@ -143,7 +143,7 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
         ItemStack result = setMatrix(group, matrix, player);
         editor.render();
         if (result != null) {
-            services.messages().send(player, Message.AUTOCRAFT_RECIPE_SET, Messages.text("group", group.name()),
+            services.send(player, Message.AUTOCRAFT_RECIPE_SET, Messages.group(group),
                     Messages.text("item", itemName(result)));
         }
     }

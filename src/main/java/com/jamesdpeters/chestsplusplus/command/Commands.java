@@ -111,7 +111,7 @@ public final class Commands {
     private int version(CommandContext<CommandSourceStack> context) {
         Services current = services(context);
         if (current == null) return 0;
-        current.messages().send(context.getSource().getSender(), Message.COMMAND_VERSION, Messages.text("version", version));
+        current.send(context.getSource().getSender(), Message.COMMAND_VERSION, Messages.text("version", version));
         return Command.SINGLE_SUCCESS;
     }
 
@@ -125,7 +125,7 @@ public final class Commands {
             context.getSource().getSender().sendMessage(Component.text("Reload failed: " + e.getMessage(), NamedTextColor.RED));
             return 0;
         }
-        current.messages().send(context.getSource().getSender(), Message.COMMAND_RELOADED);
+        current.send(context.getSource().getSender(), Message.COMMAND_RELOADED);
         return Command.SINGLE_SUCCESS;
     }
 
@@ -134,8 +134,8 @@ public final class Commands {
         Services current = services(context);
         if (current == null) return 0;
         CommandSourceStack source = context.getSource();
-        current.messages().send(source.getSender(), Message.COMMAND_HELP_HEADER);
-        for (String usage : usages(source)) current.messages().send(source.getSender(), Message.COMMAND_HELP_ENTRY, Messages.text("usage", usage));
+        current.send(source.getSender(), Message.COMMAND_HELP_HEADER);
+        for (String usage : usages(source)) current.send(source.getSender(), Message.COMMAND_HELP_ENTRY, Messages.text("usage", usage));
         return Command.SINGLE_SUCCESS;
     }
 
@@ -163,7 +163,7 @@ public final class Commands {
 
     private int playersOnly(CommandContext<CommandSourceStack> context) {
         Services current = services.get();
-        if (current != null) current.messages().send(context.getSource().getSender(), Message.ERROR_PLAYERS_ONLY);
+        if (current != null) current.send(context.getSource().getSender(), Message.ERROR_PLAYERS_ONLY);
         return 0;
     }
 

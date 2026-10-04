@@ -83,7 +83,7 @@ final class GroupCommands {
     private void add(CommandContext<CommandSourceStack> context, Player player) {
         Block target = player.getTargetBlockExact(TARGET_RANGE);
         if (target == null) {
-            requireServices().messages().send(player, Message.ERROR_INVALID_BLOCK, Messages.text("type", type.displayName()));
+            requireServices().send(player, Message.ERROR_INVALID_BLOCK, Messages.text("type", type.displayName()));
             return;
         }
         String group = StringArgumentType.getString(context, "group");
@@ -144,7 +144,7 @@ final class GroupCommands {
         return context -> {
             Services current = services.get();
             if (!(context.getSource().getExecutor() instanceof Player player)) {
-                if (current != null) current.messages().send(context.getSource().getSender(), Message.ERROR_PLAYERS_ONLY);
+                if (current != null) current.send(context.getSource().getSender(), Message.ERROR_PLAYERS_ONLY);
                 return 0;
             }
             if (current == null) {

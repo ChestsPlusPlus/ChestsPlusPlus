@@ -115,7 +115,7 @@ public final class FilterListener implements Listener {
                 : services.settings().isBlacklisted(block.getWorld().getName())
                         ? Message.ERROR_WORLD_BLACKLISTED
                         : null;
-        if (refusal != null) services.messages().send(player, refusal);
+        if (refusal != null) services.send(player, refusal);
         else player.openInventory(new FilterEditorHolder(block, filters.read(block), services.messages(), filters).getInventory());
     }
 

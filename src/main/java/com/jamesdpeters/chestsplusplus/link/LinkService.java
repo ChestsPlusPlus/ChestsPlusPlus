@@ -87,7 +87,7 @@ public final class LinkService {
             String ownerName = input.substring(0, colon);
             owned = input.substring(colon + 1);
             OfflinePlayer player = Bukkit.getOfflinePlayerIfCached(ownerName);
-            if (player == null) return new Resolved.Error(Message.ERROR_PLAYER_NOT_FOUND, Messages.text("player", ownerName));
+            if (player == null) return new Resolved.Error(Message.ERROR_PLAYER_NOT_FOUND, Messages.player(ownerName));
             owner = player.getUniqueId();
         }
         if (!GroupNames.isValid(owned)) return new Resolved.Error(Message.ERROR_INVALID_NAME, Messages.text("name", owned));
@@ -133,8 +133,8 @@ public final class LinkService {
         Message linked = target instanceof Resolved.Missing
                 ? type.pick(Message.CHESTLINK_CREATED, Message.AUTOCRAFT_CREATED)
                 : type.pick(Message.CHESTLINK_LINKED, Message.AUTOCRAFT_LINKED);
-        services.messages().send(player, linked, Messages.text("group", group.name()));
-        if (overflow > 0) services.messages().send(player, Message.CHESTLINK_OVERFLOW, Messages.text("count", overflow));
+        services.send(player, linked, Messages.group(group));
+        if (overflow > 0) services.send(player, Message.CHESTLINK_OVERFLOW, Messages.text("count", overflow));
         return group;
     }
 
@@ -158,7 +158,7 @@ public final class LinkService {
         GroupType type = handler.type();
         int limit = limit(player, type);
         if (limit >= 0 && services.groups().ownedBy(player.getUniqueId(), type).size() >= limit) {
-            services.messages().send(player, Message.ERROR_LIMIT_REACHED, Messages.text("limit", limit), Messages.text("type", type.displayName()));
+            services.send(player, Message.ERROR_LIMIT_REACHED, Messages.text("limit", limit), Messages.text("type", type.displayName()));
             return null;
         }
         StorageGroup group = handler.create(services.groups().nextId(), missing.owner(), missing.name());
@@ -167,7 +167,7 @@ public final class LinkService {
     }
 
     public void send(Audience audience, Resolved.Error error) {
-        services.messages().send(audience, error.message(), error.placeholders());
+        services.send(audience, error.message(), error.placeholders());
     }
 
     /** Adds a node without checks (used after validation, and by silk-touch re-linking). */
@@ -210,14 +210,13 @@ public final class LinkService {
 
     /** Renames a group, messaging {@code audience} on failure. */
     public boolean rename(Audience audience, StorageGroup group, String newName) {
-        var messages = services.messages();
         if (!GroupNames.isValid(newName)) {
-            messages.send(audience, Message.ERROR_INVALID_NAME, Messages.text("name", newName));
+            services.send(audience, Message.ERROR_INVALID_NAME, Messages.text("name", newName));
             return false;
         }
         StorageGroup existing = services.groups().find(group.type(), group.owner(), newName);
         if (existing != null && existing != group) {
-            messages.send(audience, Message.ERROR_GROUP_EXISTS, Messages.text("group", newName));
+            services.send(audience, Message.ERROR_GROUP_EXISTS, Messages.text("group", newName));
             return false;
         }
         String old = group.name();
@@ -226,7 +225,7 @@ public final class LinkService {
         if (handler != null) handler.onRenamed(group);
         services.persistence().markDirty(group);
         displays.requestUpdate(group);
-        messages.send(audience, group.type().pick(Message.CHESTLINK_RENAMED, Message.AUTOCRAFT_RENAMED),
+        services.send(audience, group.type().pick(Message.CHESTLINK_RENAMED, Message.AUTOCRAFT_RENAMED),
                 Messages.text("old", old), Messages.text("new", newName));
         return true;
     }
@@ -290,7 +289,7 @@ public final class LinkService {
 
         Message refusal = openRefusal(player, group, block);
         if (refusal == null) return node;
-        services.messages().send(player, refusal, Messages.text("group", group.name()));
+        services.send(player, refusal, Messages.group(group));
         return null;
     }
 

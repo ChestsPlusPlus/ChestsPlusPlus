@@ -78,7 +78,7 @@ public final class UiService {
 
     public void openHub(Player player, GroupType type, String search, int page) {
         if (!player.hasPermission(Permissions.menu(type))) {
-            services.messages().send(player, Message.ERROR_NO_PERMISSION);
+            services.send(player, Message.ERROR_NO_PERMISSION);
             return;
         }
         List<StorageGroup> groups = hubGroups(player, type, search);
@@ -106,7 +106,7 @@ public final class UiService {
     private ActionButton hubGroupButton(StorageGroup group) {
         String owner = PlayerNames.of(group.owner());
         Component label = text(Message.MENU_HUB_GROUP_BUTTON,
-                Messages.text("group", group.name()),
+                Messages.group(group),
                 Messages.text("owner", owner),
                 Messages.text("items", summary(group)));
         Component tooltip = text(Message.MENU_HUB_GROUP_TOOLTIP,
@@ -120,7 +120,7 @@ public final class UiService {
         if (!actions.canUse(player, group)) return;
         boolean manage = services.access().canManage(player.getUniqueId(), player, group);
         String description = PlayerNames.of(group.owner()) + " · " + summary(group) + " · " + services.nodes().count(group.id()) + " block(s)";
-        DialogBase base = DialogBase.builder(text(Message.MENU_GROUP_TITLE, Messages.text("group", group.name())))
+        DialogBase base = DialogBase.builder(text(Message.MENU_GROUP_TITLE, Messages.group(group)))
                 .canCloseWithEscape(true)
                 .body(List.of(DialogBody.item(icon(group)).description(DialogBody.plainMessage(Component.text(description))).build()))
                 .inputs(manage ? groupInputs(player, group) : List.of())
@@ -182,7 +182,7 @@ public final class UiService {
 
     public void confirmRemove(Player player, StorageGroup group) {
         DialogBase base = DialogBase.builder(text(Message.MENU_GROUP_REMOVE))
-                .body(List.of(DialogBody.plainMessage(text(Message.MENU_CONFIRM_REMOVE, Messages.text("group", group.name())))))
+                .body(List.of(DialogBody.plainMessage(text(Message.MENU_CONFIRM_REMOVE, Messages.group(group)))))
                 .build();
         ActionButton yes = button(text(Message.MENU_CONFIRM_YES), onGroup(group, actions::remove));
         ActionButton no = button(text(Message.MENU_CONFIRM_NO), onGroup(group, this::openGroup));
@@ -199,16 +199,16 @@ public final class UiService {
         })));
         for (UUID member : List.copyOf(group.members())) {
             String name = PlayerNames.of(member);
-            buttons.add(button(text(Message.MENU_MEMBERS_REMOVE, Messages.text("player", name)),
+            buttons.add(button(text(Message.MENU_MEMBERS_REMOVE, Messages.player(name)),
                     (view, p) -> withGroup(p, id, g -> actions.removeMember(p, g, name, () -> openMembers(p, g)))));
         }
         buttons.add(button(text(Message.MENU_BACK), onGroup(group, this::openGroup)));
-        player.showDialog(playerListDialog(text(Message.MENU_MEMBERS_TITLE, Messages.text("group", group.name())), buttons));
+        player.showDialog(playerListDialog(text(Message.MENU_MEMBERS_TITLE, Messages.group(group)), buttons));
     }
 
     public void openTrust(Player player, GroupType backTo) {
         if (!player.hasPermission(Permissions.TRUST)) {
-            services.messages().send(player, Message.ERROR_NO_PERMISSION);
+            services.send(player, Message.ERROR_NO_PERMISSION);
             return;
         }
         List<ActionButton> buttons = new ArrayList<>();
@@ -218,7 +218,7 @@ public final class UiService {
         }));
         for (UUID trusted : List.copyOf(services.trust().trustedBy(player.getUniqueId()))) {
             String name = PlayerNames.of(trusted);
-            buttons.add(button(text(Message.MENU_TRUST_REMOVE, Messages.text("player", name)),
+            buttons.add(button(text(Message.MENU_TRUST_REMOVE, Messages.player(name)),
                     (view, p) -> actions.untrust(p, name, () -> openTrust(p, backTo))));
         }
         buttons.add(button(text(Message.MENU_BACK), (view, p) -> openHub(p, backTo, "", 0)));
@@ -274,7 +274,7 @@ public final class UiService {
 
     private void withGroup(Player player, long id, Consumer<StorageGroup> action) {
         StorageGroup group = services.groups().byId(id);
-        if (group == null) services.messages().send(player, Message.ERROR_UNKNOWN_GROUP, Messages.text("group", "#" + id));
+        if (group == null) services.send(player, Message.ERROR_UNKNOWN_GROUP, Messages.text("group", "#" + id));
         else action.accept(group);
     }
 
