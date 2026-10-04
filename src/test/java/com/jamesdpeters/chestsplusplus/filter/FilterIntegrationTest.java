@@ -98,10 +98,18 @@ class FilterIntegrationTest extends PluginTestBase {
         FilterCodec codec = new FilterCodec(plugin);
         assertThat(codec.read(((Hopper) hopper.getState(false)).getPersistentDataContainer()))
                 .isEqualTo(stored);
-        // Every entry on each of the 4 sides, no glow outline.
-        assertThat(filters.displayCount()).isEqualTo(8);
-        assertThat(world.getEntitiesByClass(org.bukkit.entity.ItemDisplay.class))
-                .noneMatch(e -> e.isGlowing());
+        // Per side: an Allow row (green pane + stone) and a Deny row (red pane + log); 4 sides; no glow outline.
+        assertThat(filters.displayCount()).isEqualTo(16);
+        var icons = world.getEntitiesByClass(org.bukkit.entity.ItemDisplay.class);
+        assertThat(icons).noneMatch(e -> e.isGlowing());
+        assertThat(icons)
+                .allMatch(e -> e.getItemDisplayTransform() == org.bukkit.entity.ItemDisplay.ItemDisplayTransform.GUI);
+        assertThat(icons)
+                .filteredOn(e -> e.getItemStack().getType() == Material.LIME_STAINED_GLASS_PANE)
+                .hasSize(4);
+        assertThat(icons)
+                .filteredOn(e -> e.getItemStack().getType() == Material.RED_STAINED_GLASS_PANE)
+                .hasSize(4);
 
         filters.write(hopper, List.of());
         assertThat(filters.get(hopper)).isNull();
@@ -170,19 +178,6 @@ class FilterIntegrationTest extends PluginTestBase {
         assertThat(editor.click(FilterEditorHolder.HELP_SLOT, null, LEFT)).isFalse();
         assertThat(editor.click(FilterEditorHolder.CLEAR_SLOT, null, LEFT)).isTrue();
         assertThat(editor.filters()).isEmpty();
-    }
-
-    @Test
-    void hoverDescribesTheEntryOrSummarisesTheFilter() {
-        FilterHover hover = new FilterHover(plugin.services(), filters);
-        var plain = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText();
-
-        String entry = plain.serialize(hover.describe(filter(Material.STONE, Mode.DENY, Match.TYPE)));
-        String summary = plain.serialize(hover.summary(
-                List.of(filter(Material.STONE, Mode.ALLOW, Match.TYPE), filter(Material.DIRT, Mode.DENY, Match.TYPE))));
-
-        assertThat(entry).startsWith("Denied").contains("same item type");
-        assertThat(summary).contains("1 allowed").contains("1 denied");
     }
 
     @Test

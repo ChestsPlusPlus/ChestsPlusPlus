@@ -88,8 +88,6 @@ filter:
   help: "<yellow>How hopper filters work"
   help-lore: "<gray>Pick up an item from your inventory, then<newline><gray>click a slot in the <green>Allow</green> or <red>Deny</red> row.<newline><gray>Your item isn't used up.<newline><gray>Deny always wins. If anything is allowed,<newline><gray>only allowed items may enter.<newline><gray>Changes save immediately."
   clear: "<red>Clear all filters"
-  hover: "<mode> <dark_gray>·</dark_gray> <white><item></white> <dark_gray>·</dark_gray> <match>"
-  hover-summary: "<gray>Hopper filter: <green><allowed> allowed</green>, <red><denied> denied</red> <dark_gray>(sneak + right-click to edit)"
   saved: "<prefix> <green>Hopper filter saved (<count> entries)."
   move-event-disabled: "Paper's hopper.disable-move-event is enabled in world <world>: hopper filters can't work there."
 

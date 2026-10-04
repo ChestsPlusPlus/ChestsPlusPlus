@@ -253,8 +253,8 @@ Effects:
   - The material check is a `BitSet`/`EnumSet`, and tag-groups are precomputed once from Paper item tags.
   - There is no `getNearbyEntities` and no `getState()`.
 - **Displays:**
-  - **Revised after in-game feedback:** every entry is shown on all four sides as a small `ItemDisplay`, in a 9×2 grid on the hopper bowl, filled from the top-left as seen by the viewer. There is no glow outline.
-  - Looking at an entry shows its details (allowed/denied, item, match) in the action bar; between entries it shows a summary. Display entities can't have tooltips, so a central ticker ray-traces each player's view every 4 ticks, only while some hopper has filters.
+  - **Revised after in-game feedback:** every entry is shown on all four sides as a small inventory-style icon (`GUI` transform, flattened onto the face), in a grid on the hopper bowl read from the top-left. The Allow row starts with a green pane and the Deny row with a red pane; only rows with entries are shown, Allow first. There is no glow outline.
+  - An action-bar "hover" readout was tried and removed: it needed a ray trace per player every few ticks for little benefit.
   - Non-persistent, spawned on chunk load.
 - **Stall avoidance:** v2 manually moves the next acceptable item when the first slot is rejected. That behaviour is kept, but implemented with a single slot scan and no event re-entry. **Spike S1b** should check whether Paper still stalls on the first slot in 26.3; if not, this code is dropped.
 - **Hopper break:** filters are copied onto the dropped hopper item (PDC) so they survive pickup. This is a nice-to-have and can ship later.

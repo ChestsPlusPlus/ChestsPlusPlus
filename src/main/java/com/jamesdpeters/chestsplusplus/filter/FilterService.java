@@ -23,6 +23,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemDisplay;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.util.Transformation;
@@ -164,26 +165,46 @@ public final class FilterService {
         if (!filters.isEmpty()) spawn(hopper, filters);
     }
 
-    /** Every entry on every side of the hopper, in a grid read like text from the top-left (plan §5.5, revised). */
+    /**
+     * On every side of the hopper: one row per non-empty mode (Allow first), each starting with a green/red pane and
+     * followed by that mode's entries. Icons use the GUI transform, so blocks look like their inventory icons, and are
+     * flattened onto the face.
+     */
     private void spawn(Block hopper, List<HopperFilter> filters) {
         if (!settings.get().filters().displays()) return;
+        List<List<ItemStack>> rows = new ArrayList<>();
+        for (HopperFilter.Mode mode : HopperFilter.Mode.values()) {
+            List<ItemStack> row = new ArrayList<>();
+            for (HopperFilter filter : filters) if (filter.mode() == mode) row.add(filter.template());
+            if (row.isEmpty()) continue;
+            row.addFirst(ItemStack.of(
+                    mode == HopperFilter.Mode.ALLOW
+                            ? Material.LIME_STAINED_GLASS_PANE
+                            : Material.RED_STAINED_GLASS_PANE));
+            rows.add(row.subList(0, Math.min(row.size(), DisplayLayout.FILTER_COLUMNS)));
+        }
         List<Entity> spawned = new ArrayList<>();
         World world = hopper.getWorld();
-        int shown = Math.min(filters.size(), DisplayLayout.FILTER_COLUMNS * DisplayLayout.FILTER_ROWS);
         for (BlockFace face : DisplayLayout.HORIZONTAL) {
-            for (int i = 0; i < shown; i++) {
-                HopperFilter filter = filters.get(i);
-                DisplayLayout.Placement placement = DisplayLayout.filterCell(face, i);
-                Location at = hopper.getLocation().clone().add(placement.x(), placement.y(), placement.z());
-                at.setYaw(placement.yaw());
-                spawned.add(world.spawn(at, ItemDisplay.class, entity -> {
-                    prepare(entity);
-                    entity.setItemStack(filter.template());
-                    entity.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
-                    float scale = DisplayLayout.FILTER_ITEM_SCALE;
-                    entity.setTransformation(new Transformation(
-                            new Vector3f(), new AxisAngle4f(), new Vector3f(scale, scale, scale), new AxisAngle4f()));
-                }));
+            for (int r = 0; r < Math.min(rows.size(), DisplayLayout.FILTER_ROWS); r++) {
+                List<ItemStack> row = rows.get(r);
+                for (int c = 0; c < row.size(); c++) {
+                    ItemStack icon = row.get(c);
+                    DisplayLayout.Placement placement = DisplayLayout.filterCell(face, r, c);
+                    Location at = hopper.getLocation().clone().add(placement.x(), placement.y(), placement.z());
+                    at.setYaw(placement.yaw());
+                    spawned.add(world.spawn(at, ItemDisplay.class, entity -> {
+                        prepare(entity);
+                        entity.setItemStack(icon);
+                        entity.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.GUI);
+                        float scale = DisplayLayout.FILTER_ITEM_SCALE;
+                        entity.setTransformation(new Transformation(
+                                new Vector3f(),
+                                new AxisAngle4f(),
+                                new Vector3f(scale, scale, 0.001f),
+                                new AxisAngle4f()));
+                    }));
+                }
             }
         }
         displays.put(BlockPos.of(hopper), spawned);

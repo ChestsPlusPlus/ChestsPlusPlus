@@ -58,35 +58,22 @@ class DisplayLayoutTest {
     @Test
     void filterGridStartsTopLeftAsSeenByTheViewer() {
         // Looking at the south face you face north, so your left is west (smaller x).
-        Placement first = DisplayLayout.filterCell(BlockFace.SOUTH, 0);
-        Placement second = DisplayLayout.filterCell(BlockFace.SOUTH, 1);
-        Placement nextRow = DisplayLayout.filterCell(BlockFace.SOUTH, DisplayLayout.FILTER_COLUMNS);
+        Placement first = DisplayLayout.filterCell(BlockFace.SOUTH, 0, 0);
+        Placement second = DisplayLayout.filterCell(BlockFace.SOUTH, 0, 1);
+        Placement nextRow = DisplayLayout.filterCell(BlockFace.SOUTH, 1, 0);
         assertThat(first.x()).isLessThan(second.x());
         assertThat(first.y()).isGreaterThan(nextRow.y());
         assertThat(first.z()).isGreaterThan(1.0);
         // Looking at the north face you face south, so your left is east (larger x).
-        assertThat(DisplayLayout.filterCell(BlockFace.NORTH, 0).x())
-                .isGreaterThan(DisplayLayout.filterCell(BlockFace.NORTH, 1).x());
-        // Everything stays on the hopper bowl.
-        for (int i = 0; i < DisplayLayout.FILTER_COLUMNS * DisplayLayout.FILTER_ROWS; i++) {
-            assertThat(DisplayLayout.filterCell(BlockFace.EAST, i).y()).isBetween(10.0 / 16, 1.0);
-        }
-    }
-
-    @Test
-    void filterCellAtIsTheInverseOfFilterCell() {
-        for (BlockFace face : DisplayLayout.HORIZONTAL) {
-            for (int i = 0; i < DisplayLayout.FILTER_COLUMNS * DisplayLayout.FILTER_ROWS; i++) {
-                Placement p = DisplayLayout.filterCell(face, i);
-                // The hit point is on the block surface, just behind the display.
-                double x = p.x() - face.getModX() * DisplayLayout.FACE_GAP;
-                double z = p.z() - face.getModZ() * DisplayLayout.FACE_GAP;
-                assertThat(DisplayLayout.filterCellAt(face, x, p.y(), z))
-                        .as(face + " #" + i)
-                        .isEqualTo(i);
+        assertThat(DisplayLayout.filterCell(BlockFace.NORTH, 0, 0).x())
+                .isGreaterThan(DisplayLayout.filterCell(BlockFace.NORTH, 0, 1).x());
+        // Everything stays on the hopper bowl, within the block's width.
+        for (int row = 0; row < DisplayLayout.FILTER_ROWS; row++) {
+            for (int column = 0; column < DisplayLayout.FILTER_COLUMNS; column++) {
+                Placement cell = DisplayLayout.filterCell(BlockFace.EAST, row, column);
+                assertThat(cell.y()).isBetween(10.0 / 16, 1.0);
+                assertThat(cell.z()).isBetween(0.0, 1.0);
             }
         }
-        assertThat(DisplayLayout.filterCellAt(BlockFace.SOUTH, 0.5, 0.3, 1.0)).isEqualTo(-1); // below the bowl
-        assertThat(DisplayLayout.filterCellAt(BlockFace.UP, 0.5, 1.0, 0.5)).isEqualTo(-1);
     }
 }
