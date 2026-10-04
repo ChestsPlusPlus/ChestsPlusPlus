@@ -86,7 +86,7 @@ filter:
   match-similar: "<gray>Match: <white>similar items<gray> (e.g. any log)"
   controls: "<dark_gray>Left-click: change match<newline><dark_gray>Right-click: move to <other><newline><dark_gray>Shift-click: remove"
   help: "<yellow>How hopper filters work"
-  help-lore: "<gray>Pick up an item from your inventory, then<newline><gray>click a slot in the <green>Allow</green> or <red>Deny</red> row.<newline><gray>Your item isn't used up.<newline><gray>Deny always wins. If anything is allowed,<newline><gray>only allowed items may enter.<newline><gray>Changes save immediately."
+  help-lore: "<gray>Pick up an item from your inventory, then<newline><gray>click a slot in the <green>Allow</green> or <red>Deny</red> row.<newline><gray>Your item isn't used up.<newline><gray>Changes save immediately."
   clear: "<red>Clear all filters"
   saved: "<prefix> <green>Hopper filter saved (<count> entries)."
   move-event-disabled: "Paper's hopper.disable-move-event is enabled in world <world>: hopper filters can't work there."
