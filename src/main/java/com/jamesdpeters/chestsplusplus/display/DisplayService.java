@@ -18,9 +18,9 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import net.kyori.adventure.text.Component;
+import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
-import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
@@ -35,7 +35,7 @@ import org.joml.Vector3f;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Non-persistent {@link ItemDisplay}/{@link TextDisplay} views of nodes (plan §5.3). Spawned when a chunk loads (and
+ * Non-persistent {@link ItemDisplay}/{@link TextDisplay} views of nodes. Spawned when a chunk loads (and
  * for loaded chunks at enable), dropped on unload; updates go through a debounced queue and only touch an entity when
  * the shown item actually changes. No per-player packets and no per-node tasks.
  */
@@ -112,16 +112,21 @@ public final class DisplayService {
 
     /** Called every tick: spawns for newly loaded chunks; processes the update queue every few ticks. */
     public void tick() {
-        if (!pendingChunks.isEmpty()) {
-            List<ChunkRef> chunks = new ArrayList<>(pendingChunks);
-            pendingChunks.clear();
-            for (ChunkRef chunk : chunks) {
-                for (Node node : nodes.inChunk(chunk.world(), chunk.key())) {
-                    if (!displays.containsKey(node.pos()) && node.pos().isLoaded()) spawn(node);
-                }
+        if (!pendingChunks.isEmpty()) spawnPendingChunks();
+        if (++tick % UPDATE_INTERVAL_TICKS == 0 && !pendingGroups.isEmpty()) updatePendingGroups();
+    }
+
+    private void spawnPendingChunks() {
+        List<ChunkRef> chunks = new ArrayList<>(pendingChunks);
+        pendingChunks.clear();
+        for (ChunkRef chunk : chunks) {
+            for (Node node : nodes.inChunk(chunk.world(), chunk.key())) {
+                if (!displays.containsKey(node.pos()) && node.pos().isLoaded()) spawn(node);
             }
         }
-        if (++tick % UPDATE_INTERVAL_TICKS != 0 || pendingGroups.isEmpty()) return;
+    }
+
+    private void updatePendingGroups() {
         List<Long> ids = new ArrayList<>(pendingGroups);
         pendingGroups.clear();
         for (long id : ids) {
@@ -133,9 +138,7 @@ public final class DisplayService {
     /** Despawns everything and respawns displays for all loaded nodes (enable, reload). */
     public void refreshAll() {
         despawnAll();
-        for (Node node : nodes.all()) {
-            if (node.pos().isLoaded()) spawn(node);
-        }
+        for (Node node : nodes.all()) if (node.pos().isLoaded()) spawn(node);
     }
 
     public void despawnAll() {
@@ -152,27 +155,25 @@ public final class DisplayService {
         if (content == null) return;
         @Nullable ItemStack item = normalise(content.item(group));
         Component label = content.label(group);
-        for (Node node : nodes.nodesOf(group.id())) {
-            NodeDisplay display = displays.get(node.pos());
-            if (display == null) {
-                if (node.pos().isLoaded()) spawn(node);
-                continue;
-            }
-            if (!display.item().isValid()) {
-                displays.remove(node.pos());
-                spawn(node);
-                continue;
-            }
-            if (DisplayLayout.shapeOf(display.shown()) != DisplayLayout.shapeOf(item)) {
-                spawn(node); // block <-> flat item moves the display (see DisplayLayout#nodeItem)
-                continue;
-            }
-            if (!Objects.equals(display.shown(), item)) {
-                display.item().setItemStack(item);
-                displays.put(node.pos(), new NodeDisplay(display.item(), display.label(), item));
-            }
-            if (display.label() != null && !label.equals(display.label().text())) display.label().text(label);
+        for (Node node : nodes.nodesOf(group.id())) updateNode(node, item, label);
+    }
+
+    private void updateNode(Node node, @Nullable ItemStack item, Component label) {
+        NodeDisplay display = displays.get(node.pos());
+        if (display == null) {
+            if (node.pos().isLoaded()) spawn(node);
+            return;
         }
+        // A dead entity, or switching between block and flat item (which moves the display), needs a respawn.
+        if (!display.item().isValid() || DisplayLayout.shapeOf(display.shown()) != DisplayLayout.shapeOf(item)) {
+            spawn(node);
+            return;
+        }
+        if (!Objects.equals(display.shown(), item)) {
+            display.item().setItemStack(item);
+            displays.put(node.pos(), new NodeDisplay(display.item(), display.label(), item));
+        }
+        if (display.label() != null && !label.equals(display.label().text())) display.label().text(label);
     }
 
     private void spawn(Node node) {
@@ -184,36 +185,35 @@ public final class DisplayService {
         Block block = node.pos().block();
         if (block == null) return;
         despawn(node.pos());
-        World world = block.getWorld();
         DisplayLayout.Surface surface = surfaces.apply(block);
-
         @Nullable ItemStack shown = normalise(content.item(group));
-        DisplayLayout.Placement itemAt = DisplayLayout.nodeItem(surface, node.facing(), DisplayLayout.shapeOf(shown));
-        ItemDisplay item = world.spawn(at(block, itemAt), ItemDisplay.class, entity -> {
+        ItemDisplay item = spawnItem(block, DisplayLayout.nodeItem(surface, node.facing(), DisplayLayout.shapeOf(shown)), shown, config);
+        TextDisplay label = config.label() ? spawnLabel(block, DisplayLayout.nodeLabel(surface, node.facing()), content.label(group), config) : null;
+        displays.put(node.pos(), new NodeDisplay(item, label, shown));
+    }
+
+    private ItemDisplay spawnItem(Block block, DisplayLayout.Placement placement, @Nullable ItemStack shown, Settings.Display config) {
+        return block.getWorld().spawn(at(block, placement), ItemDisplay.class, entity -> {
             prepare(entity, config.viewRange());
             entity.setItemStack(shown);
             entity.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
             entity.setTransformation(scale(DisplayLayout.NODE_ITEM_SCALE, DisplayLayout.NODE_ITEM_SCALE, DisplayLayout.NODE_ITEM_SCALE));
         });
+    }
 
-        TextDisplay label = null;
-        if (config.label()) {
-            DisplayLayout.Placement labelAt = DisplayLayout.nodeLabel(surface, node.facing());
-            Component text = content.label(group);
-            label = world.spawn(at(block, labelAt), TextDisplay.class, entity -> {
-                prepare(entity, config.viewRange() / 2);
-                // Labels stay fully lit so names are readable at night; item displays use the world's lighting.
-                entity.setBrightness(new Display.Brightness(15, 15));
-                entity.text(text);
-                entity.setBillboard(Display.Billboard.FIXED);
-                entity.setDefaultBackground(false);
-                entity.setBackgroundColor(org.bukkit.Color.fromARGB(0x40000000));
-                entity.setShadowed(true);
-                entity.setLineWidth(200);
-                entity.setTransformation(scale(0.35f, 0.35f, 0.35f));
-            });
-        }
-        displays.put(node.pos(), new NodeDisplay(item, label, shown));
+    private TextDisplay spawnLabel(Block block, DisplayLayout.Placement placement, Component text, Settings.Display config) {
+        return block.getWorld().spawn(at(block, placement), TextDisplay.class, entity -> {
+            prepare(entity, config.viewRange() / 2);
+            // Labels stay fully lit so names are readable at night; item displays use the world's lighting.
+            entity.setBrightness(new Display.Brightness(15, 15));
+            entity.text(text);
+            entity.setBillboard(Display.Billboard.FIXED);
+            entity.setDefaultBackground(false);
+            entity.setBackgroundColor(Color.fromARGB(0x40000000));
+            entity.setShadowed(true);
+            entity.setLineWidth(200);
+            entity.setTransformation(scale(0.35f, 0.35f, 0.35f));
+        });
     }
 
     private void prepare(Display entity, float viewRange) {

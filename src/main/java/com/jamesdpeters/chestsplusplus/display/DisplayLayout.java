@@ -10,7 +10,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * Pure layout maths for node and filter displays: where, relative to the block's minimum corner, a display sits on a
- * face, and which yaw makes it face outward. Spike S4 picks the constants; see the plan (§13, S4).
+ * face, and which yaw makes it face outward.
  */
 public final class DisplayLayout {
 
@@ -59,8 +59,7 @@ public final class DisplayLayout {
     public static final double FLAT_ITEM_OFFSET = 0.02;
 
     /**
-     * Added to the facing yaw. S4 row A (0) vs row B (180): pending the in-game check, row A is assumed. Flip here if
-     * displays turn out to face into the block.
+     * Added to the facing yaw. Flip to 180 if displays turn out to face into the block.
      */
     static final float ITEM_YAW_OFFSET = 0f;
 
