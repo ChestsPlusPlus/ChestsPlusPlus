@@ -95,11 +95,11 @@ final class GroupCommands {
     }
 
     private void addMember(CommandContext<CommandSourceStack> context, Player player, StorageGroup group) {
-        actions().addMember(player, group, StringArgumentType.getString(context, "player"), null);
+        actions().addMember(player, group, StringArgumentType.getString(context, "player"), () -> {});
     }
 
     private void removeMember(CommandContext<CommandSourceStack> context, Player player, StorageGroup group) {
-        actions().removeMember(player, group, StringArgumentType.getString(context, "player"), null);
+        actions().removeMember(player, group, StringArgumentType.getString(context, "player"), () -> {});
     }
 
     private void setPublic(CommandContext<CommandSourceStack> context, Player player, StorageGroup group) {

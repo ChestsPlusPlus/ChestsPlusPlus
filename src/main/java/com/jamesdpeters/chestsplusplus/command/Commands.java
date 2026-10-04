@@ -95,8 +95,8 @@ public final class Commands {
             if (current == null) return 0;
             String name = StringArgumentType.getString(context, "player");
             GroupActions actions = current.get(GroupActions.class);
-            if (add) actions.trust(p, name, null);
-            else actions.untrust(p, name, null);
+            if (add) actions.trust(p, name, () -> {});
+            else actions.untrust(p, name, () -> {});
             return Command.SINGLE_SUCCESS;
         };
     }

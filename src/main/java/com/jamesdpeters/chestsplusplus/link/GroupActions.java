@@ -94,7 +94,7 @@ public final class GroupActions {
         return true;
     }
 
-    public void addMember(Player player, StorageGroup group, String name, @Nullable Runnable after) {
+    public void addMember(Player player, StorageGroup group, String name, Runnable after) {
         if (!require(player, Permissions.members(group.type())) || !canManage(player, group)) return;
         lookup(player, name, member -> {
             if (member.equals(group.owner())) {
@@ -103,16 +103,16 @@ public final class GroupActions {
             }
             links.addMember(group, member);
             services.send(player, Message.MEMBERS_ADDED, Messages.player(name), Messages.group(group));
-            if (after != null) after.run();
+            after.run();
         });
     }
 
-    public void removeMember(Player player, StorageGroup group, String name, @Nullable Runnable after) {
+    public void removeMember(Player player, StorageGroup group, String name, Runnable after) {
         if (!require(player, Permissions.members(group.type())) || !canManage(player, group)) return;
         lookup(player, name, member -> {
             links.removeMember(group, member);
             services.send(player, Message.MEMBERS_REMOVED, Messages.player(name), Messages.group(group));
-            if (after != null) after.run();
+            after.run();
         });
     }
 
@@ -126,7 +126,7 @@ public final class GroupActions {
                 Messages.text("players", PlayerNames.join(group.members())));
     }
 
-    public void trust(Player player, String name, @Nullable Runnable after) {
+    public void trust(Player player, String name, Runnable after) {
         if (!require(player, Permissions.TRUST)) return;
         lookup(player, name, trusted -> {
             if (trusted.equals(player.getUniqueId())) {
@@ -135,16 +135,16 @@ public final class GroupActions {
             }
             services.trust().trust(player.getUniqueId(), trusted);
             services.send(player, Message.TRUST_ADDED, Messages.player(name));
-            if (after != null) after.run();
+            after.run();
         });
     }
 
-    public void untrust(Player player, String name, @Nullable Runnable after) {
+    public void untrust(Player player, String name, Runnable after) {
         if (!require(player, Permissions.TRUST)) return;
         lookup(player, name, trusted -> {
             services.trust().untrust(player.getUniqueId(), trusted);
             services.send(player, Message.TRUST_REMOVED, Messages.player(name));
-            if (after != null) after.run();
+            after.run();
         });
     }
 
