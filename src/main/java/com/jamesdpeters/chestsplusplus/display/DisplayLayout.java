@@ -58,7 +58,17 @@ public final class DisplayLayout {
 
     static final double NODE_ITEM_HEIGHT = 0.55;
     static final double NODE_LABEL_HEIGHT = 0.15;
-    static final double FILTER_HEIGHT = 0.8;
+
+    /** Hopper filter grid on each side of the bowl: 9 columns × 2 rows (the editor's maximum of 18 entries). */
+    public static final int FILTER_COLUMNS = 9;
+
+    public static final int FILTER_ROWS = 2;
+    /** Scale of a filter item display: about one grid cell (FIXED items render at half a block at scale 1). */
+    public static final float FILTER_ITEM_SCALE = 0.2f;
+    /** The hopper bowl's side spans y 10px..16px of the block; the grid fills it. */
+    static final double BOWL_BOTTOM = 10.0 / 16;
+
+    static final double BOWL_TOP = 1.0;
 
     private DisplayLayout() {}
 
@@ -77,13 +87,51 @@ public final class DisplayLayout {
         return place(horizontal(facing), surface.front + FACE_GAP, NODE_LABEL_HEIGHT);
     }
 
-    /** Filter display {@code index} (0-3) goes on the hopper's N, E, S, W sides in turn. */
-    public static Placement filter(int index) {
-        BlockFace face = HORIZONTAL[Math.floorMod(index, HORIZONTAL.length)];
-        return place(face, Surface.HOPPER_SIDE.protrusion + FACE_GAP, FILTER_HEIGHT);
+    /**
+     * Where filter entry {@code index} goes on {@code face} of a hopper: a grid on the bowl, filled like text as seen by
+     * someone looking at that face (left to right from the top-left, then the next row).
+     */
+    public static Placement filterCell(BlockFace face, int index) {
+        int column = index % FILTER_COLUMNS;
+        int row = index / FILTER_COLUMNS;
+        double cellHeight = (BOWL_TOP - BOWL_BOTTOM) / FILTER_ROWS;
+        double alongRight = (column + 0.5) / FILTER_COLUMNS - 0.5; // -0.44 (left) .. +0.44 (right)
+        BlockFace right = rightOf(face);
+        double out = Surface.HOPPER_SIDE.protrusion + FACE_GAP;
+        return new Placement(
+                0.5 + face.getModX() * out + right.getModX() * alongRight,
+                BOWL_TOP - (row + 0.5) * cellHeight,
+                0.5 + face.getModZ() * out + right.getModZ() * alongRight,
+                yaw(face) + ITEM_YAW_OFFSET);
     }
 
-    static final BlockFace[] HORIZONTAL = {BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST};
+    /**
+     * The filter grid cell under a point on a hopper's side ({@code x, y, z} relative to the block's minimum corner),
+     * or -1 if the point isn't on the bowl's grid. Inverse of {@link #filterCell}.
+     */
+    public static int filterCellAt(BlockFace face, double x, double y, double z) {
+        if (horizontal(face) != face) return -1;
+        if (y < BOWL_BOTTOM || y > BOWL_TOP) return -1;
+        BlockFace right = rightOf(face);
+        double alongRight = (x - 0.5) * right.getModX() + (z - 0.5) * right.getModZ();
+        int column = (int) Math.floor((alongRight + 0.5) * FILTER_COLUMNS);
+        int row = (int) Math.floor((BOWL_TOP - y) / ((BOWL_TOP - BOWL_BOTTOM) / FILTER_ROWS));
+        if (column < 0 || column >= FILTER_COLUMNS || row < 0 || row >= FILTER_ROWS) return -1;
+        return row * FILTER_COLUMNS + column;
+    }
+
+    /** The direction to the right of someone looking at {@code face} from outside (they face the opposite way). */
+    static BlockFace rightOf(BlockFace face) {
+        return switch (face) {
+            case NORTH -> BlockFace.WEST; // looking south at the north face, right is west
+            case EAST -> BlockFace.NORTH;
+            case SOUTH -> BlockFace.EAST;
+            case WEST -> BlockFace.SOUTH;
+            default -> BlockFace.EAST;
+        };
+    }
+
+    public static final BlockFace[] HORIZONTAL = {BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST};
 
     private static Placement place(BlockFace face, double out, double height) {
         return new Placement(

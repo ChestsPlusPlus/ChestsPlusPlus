@@ -7,7 +7,7 @@ A ground-up rewrite for **Paper 26.x** (Java 25). Not compatible with v2 data, c
 ### New
 - **Sign → display:** linking signs turn into floating item and label displays; no more fake-air sign packets.
 - **Hopper filter editor:** sneak + right-click a hopper to set allow/deny filters (exact item, same type, or
-  similar items). Filters live in the hopper itself, with small glowing side displays.
+  similar items). Filters live in the hopper itself, shown as small items on every side; look at one to see its details.
 - **Dialog menus:** a searchable hub with per-group dialogs (rename, public, sort mode, members, remove) and a trust
   list, plus an icon grid.
 - **Trust lists and members** replace parties.

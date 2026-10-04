@@ -253,8 +253,8 @@ Effects:
   - The material check is a `BitSet`/`EnumSet`, and tag-groups are precomputed once from Paper item tags.
   - There is no `getNearbyEntities` and no `getState()`.
 - **Displays:**
-  - Up to 4 tiny `ItemDisplay`s on the hopper's side faces, one per filter in priority order. With more than 4 filters, a `TextDisplay` shows "+N".
-  - Deny entries glow red (`setGlowColorOverride`) and allow entries glow green. A config toggle controls this.
+  - **Revised after in-game feedback:** every entry is shown on all four sides as a small `ItemDisplay`, in a 9×2 grid on the hopper bowl, filled from the top-left as seen by the viewer. There is no glow outline.
+  - Looking at an entry shows its details (allowed/denied, item, match) in the action bar; between entries it shows a summary. Display entities can't have tooltips, so a central ticker ray-traces each player's view every 4 ticks, only while some hopper has filters.
   - Non-persistent, spawned on chunk load.
 - **Stall avoidance:** v2 manually moves the next acceptable item when the first slot is rejected. That behaviour is kept, but implemented with a single slot scan and no event re-entry. **Spike S1b** should check whether Paper still stalls on the first slot in 26.3; if not, this code is dropped.
 - **Hopper break:** filters are copied onto the dropped hopper item (PDC) so they survive pickup. This is a nice-to-have and can ship later.
@@ -337,7 +337,7 @@ Registered in the bootstrapper via `LifecycleEvents.COMMANDS`, with typed argume
 features: { chestlinks: true, autocraft: true, hopper-filters: true }
 chestlink: { animate-all-nodes: true, display: { enabled: true, label: true, view-range: 0.5 } }
 autocraft: { display: { enabled: true, label: true } , tick-interval: 20 }
-filters:   { displays: true, glow: true }
+filters:   { displays: true }
 limits:    { chestlink-default: -1, autocraft-default: -1 }   # -1 = unlimited; overridden by permissions
 worlds:    { blacklist: [] }
 storage:   { flush-interval-seconds: 30, max-serialisations-per-tick: 16 }

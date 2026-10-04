@@ -98,7 +98,10 @@ class FilterIntegrationTest extends PluginTestBase {
         FilterCodec codec = new FilterCodec(plugin);
         assertThat(codec.read(((Hopper) hopper.getState(false)).getPersistentDataContainer()))
                 .isEqualTo(stored);
-        assertThat(filters.displayCount()).isEqualTo(2);
+        // Every entry on each of the 4 sides, no glow outline.
+        assertThat(filters.displayCount()).isEqualTo(8);
+        assertThat(world.getEntitiesByClass(org.bukkit.entity.ItemDisplay.class))
+                .noneMatch(e -> e.isGlowing());
 
         filters.write(hopper, List.of());
         assertThat(filters.get(hopper)).isNull();
@@ -167,6 +170,19 @@ class FilterIntegrationTest extends PluginTestBase {
         assertThat(editor.click(FilterEditorHolder.HELP_SLOT, null, LEFT)).isFalse();
         assertThat(editor.click(FilterEditorHolder.CLEAR_SLOT, null, LEFT)).isTrue();
         assertThat(editor.filters()).isEmpty();
+    }
+
+    @Test
+    void hoverDescribesTheEntryOrSummarisesTheFilter() {
+        FilterHover hover = new FilterHover(plugin.services(), filters);
+        var plain = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText();
+
+        String entry = plain.serialize(hover.describe(filter(Material.STONE, Mode.DENY, Match.TYPE)));
+        String summary = plain.serialize(hover.summary(
+                List.of(filter(Material.STONE, Mode.ALLOW, Match.TYPE), filter(Material.DIRT, Mode.DENY, Match.TYPE))));
+
+        assertThat(entry).startsWith("Denied").contains("same item type");
+        assertThat(summary).contains("1 allowed").contains("1 denied");
     }
 
     @Test

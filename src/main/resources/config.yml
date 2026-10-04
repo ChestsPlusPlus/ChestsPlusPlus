@@ -23,8 +23,8 @@ autocraft:
   tick-interval: 20
 
 filters:
+  # Show each hopper's filter entries as small items on its sides (look at them to see allow/deny details).
   displays: true
-  glow: true
 
 # -1 = unlimited. Overridden per player by chestsplusplus.limit.chestlink.<n> / chestsplusplus.limit.autocraft.<n>.
 limits:

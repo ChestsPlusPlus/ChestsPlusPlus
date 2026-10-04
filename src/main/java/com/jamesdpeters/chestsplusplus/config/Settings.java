@@ -26,7 +26,7 @@ public record Settings(
 
     public record AutoCraft(Display display, int tickInterval) {}
 
-    public record Filters(boolean displays, boolean glow) {}
+    public record Filters(boolean displays) {}
 
     /** {@code -1} means unlimited. */
     public record Limits(int chestlinkDefault, int autocraftDefault) {}
@@ -46,7 +46,7 @@ public record Settings(
                 new AutoCraft(
                         display(config, "autocraft.display"),
                         clamp(config.getInt("autocraft.tick-interval", 20), 1, 1200)),
-                new Filters(config.getBoolean("filters.displays", true), config.getBoolean("filters.glow", true)),
+                new Filters(config.getBoolean("filters.displays", true)),
                 new Limits(
                         Math.max(-1, config.getInt("limits.chestlink-default", -1)),
                         Math.max(-1, config.getInt("limits.autocraft-default", -1))),

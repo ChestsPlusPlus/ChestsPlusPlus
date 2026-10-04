@@ -48,13 +48,45 @@ class DisplayLayoutTest {
     }
 
     @Test
-    void verticalFacingsFallBackToNorthAndFiltersCycleSides() {
+    void verticalFacingsFallBackToNorth() {
         assertThat(DisplayLayout.horizontal(BlockFace.UP)).isEqualTo(BlockFace.NORTH);
-        assertThat(DisplayLayout.filter(0).z()).isLessThan(0);
-        assertThat(DisplayLayout.filter(1).x()).isGreaterThan(1);
-        assertThat(DisplayLayout.filter(4)).isEqualTo(DisplayLayout.filter(0));
         assertThat(DisplayLayout.nodeLabel(Surface.FULL_BLOCK, BlockFace.WEST).y())
                 .isLessThan(DisplayLayout.nodeItem(Surface.FULL_BLOCK, BlockFace.WEST, Shape.FLAT)
                         .y());
+    }
+
+    @Test
+    void filterGridStartsTopLeftAsSeenByTheViewer() {
+        // Looking at the south face you face north, so your left is west (smaller x).
+        Placement first = DisplayLayout.filterCell(BlockFace.SOUTH, 0);
+        Placement second = DisplayLayout.filterCell(BlockFace.SOUTH, 1);
+        Placement nextRow = DisplayLayout.filterCell(BlockFace.SOUTH, DisplayLayout.FILTER_COLUMNS);
+        assertThat(first.x()).isLessThan(second.x());
+        assertThat(first.y()).isGreaterThan(nextRow.y());
+        assertThat(first.z()).isGreaterThan(1.0);
+        // Looking at the north face you face south, so your left is east (larger x).
+        assertThat(DisplayLayout.filterCell(BlockFace.NORTH, 0).x())
+                .isGreaterThan(DisplayLayout.filterCell(BlockFace.NORTH, 1).x());
+        // Everything stays on the hopper bowl.
+        for (int i = 0; i < DisplayLayout.FILTER_COLUMNS * DisplayLayout.FILTER_ROWS; i++) {
+            assertThat(DisplayLayout.filterCell(BlockFace.EAST, i).y()).isBetween(10.0 / 16, 1.0);
+        }
+    }
+
+    @Test
+    void filterCellAtIsTheInverseOfFilterCell() {
+        for (BlockFace face : DisplayLayout.HORIZONTAL) {
+            for (int i = 0; i < DisplayLayout.FILTER_COLUMNS * DisplayLayout.FILTER_ROWS; i++) {
+                Placement p = DisplayLayout.filterCell(face, i);
+                // The hit point is on the block surface, just behind the display.
+                double x = p.x() - face.getModX() * DisplayLayout.FACE_GAP;
+                double z = p.z() - face.getModZ() * DisplayLayout.FACE_GAP;
+                assertThat(DisplayLayout.filterCellAt(face, x, p.y(), z))
+                        .as(face + " #" + i)
+                        .isEqualTo(i);
+            }
+        }
+        assertThat(DisplayLayout.filterCellAt(BlockFace.SOUTH, 0.5, 0.3, 1.0)).isEqualTo(-1); // below the bowl
+        assertThat(DisplayLayout.filterCellAt(BlockFace.UP, 0.5, 1.0, 0.5)).isEqualTo(-1);
     }
 }

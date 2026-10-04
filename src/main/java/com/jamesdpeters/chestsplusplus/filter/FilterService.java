@@ -10,21 +10,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
-import net.kyori.adventure.text.Component;
 import org.bukkit.Chunk;
-import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Hopper;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemDisplay;
-import org.bukkit.entity.TextDisplay;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.util.Transformation;
@@ -37,8 +35,6 @@ import org.jspecify.annotations.Nullable;
  * chunk load and on edit, dropped on unload/break) plus the small filter displays on the hopper's sides.
  */
 public final class FilterService {
-
-    private static final int MAX_DISPLAYS = 4;
 
     private final Plugin plugin;
     private final FilterCodec codec;
@@ -168,35 +164,27 @@ public final class FilterService {
         if (!filters.isEmpty()) spawn(hopper, filters);
     }
 
+    /** Every entry on every side of the hopper, in a grid read like text from the top-left (plan §5.5, revised). */
     private void spawn(Block hopper, List<HopperFilter> filters) {
-        Settings.Filters config = settings.get().filters();
-        if (!config.displays()) return;
+        if (!settings.get().filters().displays()) return;
         List<Entity> spawned = new ArrayList<>();
         World world = hopper.getWorld();
-        for (int i = 0; i < Math.min(MAX_DISPLAYS, filters.size()); i++) {
-            HopperFilter filter = filters.get(i);
-            DisplayLayout.Placement placement = DisplayLayout.filter(i);
-            Location at = hopper.getLocation().clone().add(placement.x(), placement.y(), placement.z());
-            at.setYaw(placement.yaw());
-            spawned.add(world.spawn(at, ItemDisplay.class, entity -> {
-                prepare(entity);
-                entity.setItemStack(filter.template());
-                entity.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
-                entity.setTransformation(new Transformation(
-                        new Vector3f(), new AxisAngle4f(), new Vector3f(0.3f, 0.3f, 0.001f), new AxisAngle4f()));
-                if (config.glow()) {
-                    entity.setGlowing(true);
-                    entity.setGlowColorOverride(filter.mode() == HopperFilter.Mode.DENY ? Color.RED : Color.LIME);
-                }
-            }));
-        }
-        if (filters.size() > MAX_DISPLAYS) {
-            Location at = hopper.getLocation().clone().add(0.5, 1.25, 0.5);
-            spawned.add(world.spawn(at, TextDisplay.class, entity -> {
-                prepare(entity);
-                entity.text(Component.text("+" + (filters.size() - MAX_DISPLAYS)));
-                entity.setBillboard(Display.Billboard.CENTER);
-            }));
+        int shown = Math.min(filters.size(), DisplayLayout.FILTER_COLUMNS * DisplayLayout.FILTER_ROWS);
+        for (BlockFace face : DisplayLayout.HORIZONTAL) {
+            for (int i = 0; i < shown; i++) {
+                HopperFilter filter = filters.get(i);
+                DisplayLayout.Placement placement = DisplayLayout.filterCell(face, i);
+                Location at = hopper.getLocation().clone().add(placement.x(), placement.y(), placement.z());
+                at.setYaw(placement.yaw());
+                spawned.add(world.spawn(at, ItemDisplay.class, entity -> {
+                    prepare(entity);
+                    entity.setItemStack(filter.template());
+                    entity.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
+                    float scale = DisplayLayout.FILTER_ITEM_SCALE;
+                    entity.setTransformation(new Transformation(
+                            new Vector3f(), new AxisAngle4f(), new Vector3f(scale, scale, scale), new AxisAngle4f()));
+                }));
+            }
         }
         displays.put(BlockPos.of(hopper), spawned);
     }

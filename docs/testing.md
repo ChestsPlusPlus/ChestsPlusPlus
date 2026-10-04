@@ -47,7 +47,7 @@ Run each item on a native 26.3 client against `./gradlew runServer` (or the serv
 - [ ] Sneak + right-click with an empty hand opens the editor; the normal hopper GUI doesn't open.
 - [ ] Adding entries from the cursor doesn't consume items; click cycles exact → type → similar; shift-click removes;
       barrier clears.
-- [ ] Side displays show up to 4 entries with green/red glow, and "+N" beyond 4.
+- [ ] Every side shows all entries, small, in a grid from the top-left; looking at an entry shows allowed/denied, item and match in the action bar (a summary between entries).
 - [ ] Allow/deny behaviour with real hopper chains, including a rejected first slot.
 
 ### AutoCraft

@@ -73,6 +73,8 @@ public enum Message {
     FILTER_HELP("filter.help"),
     FILTER_HELP_LORE("filter.help-lore"),
     FILTER_CLEAR("filter.clear"),
+    FILTER_HOVER("filter.hover"),
+    FILTER_HOVER_SUMMARY("filter.hover-summary"),
     FILTER_SAVED("filter.saved"),
     FILTER_MOVE_EVENT_DISABLED("filter.move-event-disabled"),
     MENU_HUB_TITLE("menu.hub-title"),

@@ -11,6 +11,7 @@ import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.display.DisplayLayout;
 import com.jamesdpeters.chestsplusplus.display.DisplayService;
 import com.jamesdpeters.chestsplusplus.filter.FilterCodec;
+import com.jamesdpeters.chestsplusplus.filter.FilterHover;
 import com.jamesdpeters.chestsplusplus.filter.FilterListener;
 import com.jamesdpeters.chestsplusplus.filter.FilterService;
 import com.jamesdpeters.chestsplusplus.filter.ItemGrouping;
@@ -136,6 +137,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         pluginManager.registerEvents(menus, this);
         pluginManager.registerEvents(new AutoCraftListener(services, links, autoCraft), this);
         pluginManager.registerEvents(new FilterListener(services, filters, links), this);
+        FilterHover filterHover = services.add(FilterHover.class, new FilterHover(services, filters));
 
         // 5. Central tickers (plan §9: no per-group tasks).
         services.tickers().every("persistence", 1, persistence::tick);
@@ -147,6 +149,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
             }
         });
         services.tickers().every("displays", 1, displays::tick);
+        services.tickers().every("filter-hover", 4, () -> filterHover.tick(4));
         int[] craftTicks = {0};
         services.tickers().every("autocraft", 1, () -> {
             int interval = services.settings().autocraft().tickInterval();
