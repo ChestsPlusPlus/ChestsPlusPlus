@@ -12,6 +12,7 @@ import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.SortMode;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -21,8 +22,8 @@ import org.bukkit.entity.Player;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Every user-facing group action with its server-side checks and messages. Commands and dialogs both go through
- * here, so a dialog button can never do more than the equivalent command (plan §5.7).
+ * Every user-facing group action with its server-side checks and messages. Commands and dialogs both go through here, so a dialog button
+ * can never do more than the equivalent command.
  */
 public final class GroupActions {
 
@@ -43,7 +44,7 @@ public final class GroupActions {
                 yield null;
             }
             case LinkService.Resolved.Error error -> {
-                services.messages().send(player, error.message(), error.placeholders());
+                links.send(player, error);
                 yield null;
             }
         };
@@ -88,7 +89,7 @@ public final class GroupActions {
         chestLinks.sort(group);
         chestLinks.changed(group);
         services.messages().send(player, Message.CHESTLINK_SORT_MODE, Messages.text("group", group.name()),
-                Messages.text("mode", mode.name().toLowerCase(java.util.Locale.ROOT)));
+                Messages.text("mode", mode.name().toLowerCase(Locale.ROOT)));
         return true;
     }
 
@@ -158,18 +159,17 @@ public final class GroupActions {
 
     public void list(Player player, GroupType type) {
         List<StorageGroup> groups = links.accessibleGroups(player.getUniqueId(), AccessService.hasBypass(player), type);
-        boolean chest = type == GroupType.CHESTLINK;
         if (groups.isEmpty()) {
-            services.messages().send(player, chest ? Message.CHESTLINK_LIST_EMPTY : Message.AUTOCRAFT_LIST_EMPTY);
+            services.messages().send(player, type.pick(Message.CHESTLINK_LIST_EMPTY, Message.AUTOCRAFT_LIST_EMPTY));
             return;
         }
-        services.messages().send(player, chest ? Message.CHESTLINK_LIST_HEADER : Message.AUTOCRAFT_LIST_HEADER);
+        services.messages().send(player, type.pick(Message.CHESTLINK_LIST_HEADER, Message.AUTOCRAFT_LIST_HEADER));
         GroupTypeHandler handler = links.handler(type);
         for (StorageGroup group : groups) {
-            services.messages().send(player, chest ? Message.CHESTLINK_LIST_ENTRY : Message.AUTOCRAFT_LIST_ENTRY,
+            services.messages().send(player, type.pick(Message.CHESTLINK_LIST_ENTRY, Message.AUTOCRAFT_LIST_ENTRY),
                     Messages.text("group", group.name()), Messages.text("ref", LinkService.reference(player.getUniqueId(), group)),
                     Messages.text("owner", LinkService.ownerName(group.owner())),
-                    Messages.text("nodes", Integer.toString(services.nodes().count(group.id()))),
+                    Messages.text("nodes", services.nodes().count(group.id())),
                     Messages.text("items", handler == null ? "" : handler.summary(group)));
         }
     }
@@ -203,7 +203,7 @@ public final class GroupActions {
     }
 
     /**
-     * Resolves a player name without blocking the main thread (plan §5.8): the cache first, then an async profile
+     * Resolves a player name without blocking the main thread: the cache first, then an async profile
      * lookup whose result is applied back on the main thread.
      */
     private void lookup(Player requester, String name, Consumer<UUID> onFound) {

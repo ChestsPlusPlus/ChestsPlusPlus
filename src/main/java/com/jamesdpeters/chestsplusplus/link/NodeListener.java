@@ -6,10 +6,10 @@ import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.display.DisplayService;
 import com.jamesdpeters.chestsplusplus.message.Message;
 import com.jamesdpeters.chestsplusplus.message.Messages;
-import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.Node;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import java.util.List;
+import org.bukkit.Chunk;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
@@ -34,7 +34,7 @@ import org.bukkit.inventory.ItemStack;
 import org.jspecify.annotations.Nullable;
 
 /**
- * World changes to linked blocks, for both group types (plan §5.2): breaking (incl. Silk Touch), explosions, pistons,
+ * World changes to linked blocks, for both group types: breaking (incl. Silk Touch), explosions, pistons,
  * burning, entity block changes, double-chest prevention, link-item placement and chunk load/unload. All lookups are
  * index lookups.
  */
@@ -73,45 +73,42 @@ public final class NodeListener implements Listener {
         links.unlink(node.pos(), dropAt, silkTouch);
         if (group == null) return;
         boolean removed = services.groups().byId(group.id()) == null;
-        Message message = group.type() == GroupType.CHESTLINK
-                ? (removed ? Message.CHESTLINK_REMOVED : Message.CHESTLINK_UNLINKED)
-                : (removed ? Message.AUTOCRAFT_REMOVED : Message.AUTOCRAFT_UNLINKED);
+        Message message = removed
+                ? group.type().pick(Message.CHESTLINK_REMOVED, Message.AUTOCRAFT_REMOVED)
+                : group.type().pick(Message.CHESTLINK_UNLINKED, Message.AUTOCRAFT_UNLINKED);
         services.messages().send(player, message, Messages.text("group", group.name()));
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     void onPlace(BlockPlaceEvent event) {
-        Block block = event.getBlockPlaced();
         LinkItem.Link link = linkItems.read(event.getItemInHand());
-        if (link != null) {
-            StorageGroup group = services.groups().byId(link.groupId());
-            Player player = event.getPlayer();
-            if (group != null && group.type() == link.type()) {
-                if (!links.isFeatureEnabled(group.type())) {
-                    services.messages().send(player, Message.ERROR_FEATURE_DISABLED);
-                    event.setCancelled(true);
-                    return;
-                }
-                if (!services.access().canAccess(player.getUniqueId(), player, group)) {
-                    services.messages().send(player, Message.ERROR_NO_ACCESS, Messages.text("group", group.name()));
-                    event.setCancelled(true);
-                    return;
-                }
-                if (services.settings().isBlacklisted(block.getWorld().getName())) {
-                    services.messages().send(player, Message.ERROR_WORLD_BLACKLISTED);
-                    event.setCancelled(true);
-                    return;
-                }
-                GroupTypeHandler handler = links.handler(group.type());
-                if (handler != null && handler.isValidBlock(block)) {
-                    links.addNode(group, block, Holders.facing(player).getOppositeFace());
-                    services.messages().send(player, group.type().pick(Message.CHESTLINK_LINKED, Message.AUTOCRAFT_LINKED),
-                            Messages.text("group", group.name()));
-                    return;
-                }
-            }
+        StorageGroup group = link == null ? null : services.groups().byId(link.groupId());
+        if (group != null && group.type() == link.type() && relink(event, group)) return;
+        preventDoubleChest(event.getBlockPlaced());
+    }
+
+    /** Links a placed link item back to its group. Returns false if the block can't join the group, so it places normally. */
+    private boolean relink(BlockPlaceEvent event, StorageGroup group) {
+        Player player = event.getPlayer();
+        Block block = event.getBlockPlaced();
+        Message refusal = relinkRefusal(player, group, block);
+        if (refusal != null) {
+            services.messages().send(player, refusal, Messages.text("group", group.name()));
+            event.setCancelled(true);
+            return true;
         }
-        preventDoubleChest(block);
+        GroupTypeHandler handler = links.handler(group.type());
+        if (handler == null || !handler.isValidBlock(block)) return false;
+        links.addNode(group, block, Holders.facing(player).getOppositeFace());
+        services.messages().send(player, group.type().pick(Message.CHESTLINK_LINKED, Message.AUTOCRAFT_LINKED), Messages.text("group", group.name()));
+        return true;
+    }
+
+    private @Nullable Message relinkRefusal(Player player, StorageGroup group, Block block) {
+        if (!links.isFeatureEnabled(group.type())) return Message.ERROR_FEATURE_DISABLED;
+        if (!services.access().canAccess(player.getUniqueId(), player, group)) return Message.ERROR_NO_ACCESS;
+        if (services.settings().isBlacklisted(block.getWorld().getName())) return Message.ERROR_WORLD_BLACKLISTED;
+        return null;
     }
 
     /** A chest placed next to a linked chest must not merge with it. */
@@ -162,17 +159,21 @@ public final class NodeListener implements Listener {
         long key = event.getChunk().getChunkKey();
         List<Node> inChunk = services.nodes().inChunk(world, key);
         if (inChunk.isEmpty()) return;
-        // Lazy validation (plan §5.1): blocks removed behind our back (e.g. WorldEdit) are unlinked.
-        for (Node node : inChunk) {
+        unlinkChangedBlocks(event.getChunk(), inChunk);
+        displays.chunkLoaded(world, key);
+    }
+
+    /** Lazy validation: blocks changed behind our back (e.g. by WorldEdit) are unlinked when their chunk loads. */
+    private void unlinkChangedBlocks(Chunk chunk, List<Node> nodes) {
+        for (Node node : nodes) {
             StorageGroup group = services.groups().byId(node.groupId());
             GroupTypeHandler handler = group == null ? null : links.handler(group.type());
-            Block block = event.getChunk().getBlock(node.pos().x() & 15, node.pos().y(), node.pos().z() & 15);
+            Block block = chunk.getBlock(node.pos().x() & 15, node.pos().y(), node.pos().z() & 15);
             if (handler != null && !handler.isValidBlock(block)) {
                 services.plugin().getSLF4JLogger().warn("Unlinking {} from {}: block is now {}", node.pos(), group.name(), block.getType());
                 links.unlink(node.pos(), block.getLocation(), true);
             }
         }
-        displays.chunkLoaded(world, key);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

@@ -16,7 +16,7 @@ import org.bukkit.plugin.Plugin;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Sign → link conversion (plan §5.2): a wall sign reading {@code [ChestLink]} / {@code [AutoCraft]} on line 1 and a
+ * Sign → link conversion: a wall sign reading {@code [ChestLink]} / {@code [AutoCraft]} on line 1 and a
  * group ({@code name} or {@code owner:name}) on line 2 links the block it hangs on, then the sign is removed (it
  * becomes the node's display). Since this is a real placement, protection plugins already approved it.
  */

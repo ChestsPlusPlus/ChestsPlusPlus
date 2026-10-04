@@ -87,6 +87,10 @@ public final class Messages {
         return Placeholder.unparsed(key, value);
     }
 
+    public static TagResolver text(String key, int value) {
+        return text(key, Integer.toString(value));
+    }
+
     public static TagResolver component(String key, Component value) {
         return Placeholder.component(key, value);
     }

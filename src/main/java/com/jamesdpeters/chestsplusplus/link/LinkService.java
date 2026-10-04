@@ -11,8 +11,13 @@ import com.jamesdpeters.chestsplusplus.model.GroupNames;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.Node;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
+import java.util.Comparator;
 import java.util.EnumMap;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
@@ -31,8 +36,8 @@ import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The shared linking lifecycle for both group types (plan §5.2): resolve or create the target group, validate
- * permission, world, limit, access and protection, then link; unlink and remove; rename, public, members.
+ * The shared linking lifecycle for both group types: resolve or create the target group, validate permission, world, limit, access and
+ * protection, then link; unlink and remove; rename, public, members.
  */
 public final class LinkService {
 
@@ -110,65 +115,63 @@ public final class LinkService {
      *     protection plugins already approved it; otherwise a synthetic interact event is fired first
      */
     public @Nullable StorageGroup link(Player player, GroupType type, String input, Block block, BlockFace facing, boolean protectionChecked) {
-        var messages = services.messages();
+        Resolved.Error refusal = linkRefusal(player, type, block, facing, protectionChecked);
+        if (refusal != null) {
+            send(player, refusal);
+            return null;
+        }
+        GroupTypeHandler handler = Objects.requireNonNull(handlers.get(type));
+        Resolved target = resolve(player.getUniqueId(), AccessService.hasBypass(player), type, input);
+        StorageGroup group = switch (target) {
+            case Resolved.Found found -> found.group();
+            case Resolved.Missing missing -> createGroup(player, handler, missing);
+            case Resolved.Error error -> {
+                send(player, error);
+                yield null;
+            }
+        };
+        if (group == null) return null;
+
+        addNode(group, block, facing);
+        int overflow = handler.onLinked(group, block);
+        Message linked = target instanceof Resolved.Missing
+                ? type.pick(Message.CHESTLINK_CREATED, Message.AUTOCRAFT_CREATED)
+                : type.pick(Message.CHESTLINK_LINKED, Message.AUTOCRAFT_LINKED);
+        services.messages().send(player, linked, Messages.text("group", group.name()));
+        if (overflow > 0) services.messages().send(player, Message.CHESTLINK_OVERFLOW, Messages.text("count", overflow));
+        return group;
+    }
+
+    /** Why {@code player} may not link {@code block}, or null if they may. The protection check runs last as it fires an event. */
+    private Resolved.@Nullable Error linkRefusal(Player player, GroupType type, Block block, BlockFace facing, boolean protectionChecked) {
         GroupTypeHandler handler = handlers.get(type);
-        if (handler == null || !isFeatureEnabled(type)) {
-            messages.send(player, Message.ERROR_FEATURE_DISABLED);
-            return null;
-        }
-        if (!player.hasPermission(Permissions.create(type))) {
-            messages.send(player, Message.ERROR_NO_PERMISSION);
-            return null;
-        }
-        if (services.settings().isBlacklisted(block.getWorld().getName())) {
-            messages.send(player, Message.ERROR_WORLD_BLACKLISTED);
-            return null;
-        }
-        if (!handler.isValidBlock(block)) {
-            messages.send(player, Message.ERROR_INVALID_BLOCK, Messages.text("type", type.displayName()));
-            return null;
-        }
+        if (handler == null || !isFeatureEnabled(type)) return new Resolved.Error(Message.ERROR_FEATURE_DISABLED);
+        if (!player.hasPermission(Permissions.create(type))) return new Resolved.Error(Message.ERROR_NO_PERMISSION);
+        if (services.settings().isBlacklisted(block.getWorld().getName())) return new Resolved.Error(Message.ERROR_WORLD_BLACKLISTED);
+        if (!handler.isValidBlock(block)) return new Resolved.Error(Message.ERROR_INVALID_BLOCK, Messages.text("type", type.displayName()));
         Node existing = services.nodes().get(BlockPos.of(block));
         if (existing != null) {
             StorageGroup linkedTo = services.groups().byId(existing.groupId());
-            messages.send(player, Message.ERROR_ALREADY_LINKED, Messages.text("group", linkedTo == null ? "?" : linkedTo.name()));
-            return null;
+            return new Resolved.Error(Message.ERROR_ALREADY_LINKED, Messages.text("group", linkedTo == null ? "?" : linkedTo.name()));
         }
-        if (!protectionChecked && !passesProtection(player, block, facing)) {
-            messages.send(player, Message.ERROR_PROTECTED);
-            return null;
-        }
+        if (!protectionChecked && !passesProtection(player, block, facing)) return new Resolved.Error(Message.ERROR_PROTECTED);
+        return null;
+    }
 
-        boolean bypass = AccessService.hasBypass(player);
-        StorageGroup group;
-        boolean created = false;
-        switch (resolve(player.getUniqueId(), bypass, type, input)) {
-            case Resolved.Found found -> group = found.group();
-            case Resolved.Error error -> {
-                messages.send(player, error.message(), error.placeholders());
-                return null;
-            }
-            case Resolved.Missing missing -> {
-                int limit = limit(player, type);
-                if (limit >= 0 && services.groups().ownedBy(player.getUniqueId(), type).size() >= limit) {
-                    messages.send(player, Message.ERROR_LIMIT_REACHED, Messages.text("limit", Integer.toString(limit)),
-                            Messages.text("type", type.displayName()));
-                    return null;
-                }
-                group = handler.create(services.groups().nextId(), missing.owner(), missing.name());
-                services.groups().add(group);
-                created = true;
-            }
+    private @Nullable StorageGroup createGroup(Player player, GroupTypeHandler handler, Resolved.Missing missing) {
+        GroupType type = handler.type();
+        int limit = limit(player, type);
+        if (limit >= 0 && services.groups().ownedBy(player.getUniqueId(), type).size() >= limit) {
+            services.messages().send(player, Message.ERROR_LIMIT_REACHED, Messages.text("limit", limit), Messages.text("type", type.displayName()));
+            return null;
         }
-        addNode(group, block, facing);
-        int overflow = handler.onLinked(group, block);
-        messages.send(player,
-                created
-                        ? type.pick(Message.CHESTLINK_CREATED, Message.AUTOCRAFT_CREATED)
-                        : type.pick(Message.CHESTLINK_LINKED, Message.AUTOCRAFT_LINKED),
-                Messages.text("group", group.name()));
-        if (overflow > 0) messages.send(player, Message.CHESTLINK_OVERFLOW, Messages.text("count", Integer.toString(overflow)));
+        StorageGroup group = handler.create(services.groups().nextId(), missing.owner(), missing.name());
+        services.groups().add(group);
         return group;
+    }
+
+    public void send(Audience audience, Resolved.Error error) {
+        services.messages().send(audience, error.message(), error.placeholders());
     }
 
     /** Adds a node without checks (used after validation, and by silk-touch re-linking). */
@@ -273,7 +276,7 @@ public final class LinkService {
     }
 
     /**
-     * Protection check for links that don't come from a real placement (plan §5.2): fires a synthetic right-click and
+     * Protection check for links that don't come from a real placement: fires a synthetic right-click and
      * requires that no plugin denied using the block.
      */
     public boolean passesProtection(Player player, Block block, BlockFace face) {
@@ -292,8 +295,8 @@ public final class LinkService {
      * Groups of {@code type} the player can use: their own, member-of, owners who trust them, public ones (and all
      * groups with bypass). Own groups first, then by owner name and group name.
      */
-    public java.util.List<StorageGroup> accessibleGroups(UUID player, boolean bypass, GroupType type) {
-        java.util.Set<StorageGroup> found = new java.util.LinkedHashSet<>();
+    public List<StorageGroup> accessibleGroups(UUID player, boolean bypass, GroupType type) {
+        Set<StorageGroup> found = new LinkedHashSet<>();
         if (bypass) {
             found.addAll(services.groups().all(type));
         } else {
@@ -302,7 +305,7 @@ public final class LinkService {
             for (UUID owner : services.trust().ownersTrusting(player)) found.addAll(services.groups().ownedBy(owner, type));
             for (StorageGroup group : services.groups().all(type)) if (group.isPublic()) found.add(group);
         }
-        java.util.Comparator<StorageGroup> order = java.util.Comparator.<StorageGroup, Boolean>comparing(g -> !g.owner().equals(player))
+        Comparator<StorageGroup> order = Comparator.<StorageGroup, Boolean>comparing(g -> !g.owner().equals(player))
                 .thenComparing(g -> ownerName(g.owner()), String.CASE_INSENSITIVE_ORDER)
                 .thenComparing(StorageGroup::name, String.CASE_INSENSITIVE_ORDER);
         return found.stream().sorted(order).toList();
@@ -319,7 +322,7 @@ public final class LinkService {
         return name == null ? owner.toString().substring(0, 8) : name;
     }
 
-    /** Linked chests are always single (plan §5.2): split this chest and its partner. */
+    /** Linked chests are always single: split this chest and its partner. */
     public static void splitDoubleChest(Block block) {
         if (!(block.getBlockData() instanceof Chest data) || data.getType() == Chest.Type.SINGLE) return;
         BlockFace towardsPartner = partnerDirection(data);

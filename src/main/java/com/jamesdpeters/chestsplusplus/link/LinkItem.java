@@ -17,7 +17,7 @@ import org.bukkit.plugin.Plugin;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The item dropped when a linked block is broken with Silk Touch (plan §5.2): placing it re-links to the same group,
+ * The item dropped when a linked block is broken with Silk Touch: placing it re-links to the same group,
  * no sign needed. Identified by PDC (group id + type); named via data components.
  */
 public final class LinkItem {
