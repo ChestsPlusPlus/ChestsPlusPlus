@@ -71,8 +71,12 @@ public final class DisplayLayout {
      * spans about one block at scale 1.
      */
     public static final float FILTER_ITEM_SCALE = 0.07f;
-    /** Distance between neighbouring icons; the same horizontally (1 / columns) and vertically for a square grid. */
-    static final double FILTER_PITCH = 1.0 / FILTER_COLUMNS;
+    /** Distance between neighbouring icons in a row. */
+    static final double FILTER_COLUMN_PITCH = 0.085;
+    /** Distance between the two rows. */
+    static final double FILTER_ROW_PITCH = 0.1;
+    /** Centre of the first (leftmost) column, relative to the face's centre. */
+    static final double FILTER_FIRST_COLUMN = -0.45;
     /** Centre height of the top row of icons; both rows stay on the hopper bowl (y 10px..16px). */
     static final double FILTER_TOP_ROW_Y = 0.92;
     /** Icons are flattened onto the face; this tiny gap only avoids z-fighting with the hopper texture. */
@@ -105,12 +109,12 @@ public final class DisplayLayout {
      * like text by someone looking at that face (column 0 is their left, row 0 the top).
      */
     public static Placement filterCell(BlockFace face, int row, int column) {
-        double alongRight = (column + 0.5) * FILTER_PITCH - 0.5; // -0.45 (left) .. +0.45 (right)
+        double alongRight = FILTER_FIRST_COLUMN + column * FILTER_COLUMN_PITCH; // from the viewer's left
         BlockFace right = rightOf(face);
         double out = Surface.HOPPER_SIDE.protrusion + FILTER_FACE_GAP;
         return new Placement(
                 0.5 + face.getModX() * out + right.getModX() * alongRight,
-                FILTER_TOP_ROW_Y - row * FILTER_PITCH,
+                FILTER_TOP_ROW_Y - row * FILTER_ROW_PITCH,
                 0.5 + face.getModZ() * out + right.getModZ() * alongRight,
                 yaw(face) + FILTER_YAW_OFFSET);
     }
