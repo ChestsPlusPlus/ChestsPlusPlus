@@ -21,7 +21,7 @@ import org.bukkit.entity.Player;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A group reference: {@code name} for your own group, or {@code owner:name} for one you can access (plan §5.10).
+ * A group reference: {@code name} for your own group, or {@code owner:name} for one you can access.
  * Parsed as raw text up to the next space (resolution and access checks happen when the command runs); suggestions
  * list the groups the sender can access.
  */

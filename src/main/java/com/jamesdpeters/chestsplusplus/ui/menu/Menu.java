@@ -12,7 +12,7 @@ import org.bukkit.inventory.ItemStack;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A minimal chest-GUI menu (replaces SmartInvs): a custom holder with clickable buttons. Every click and drag in a
+ * A minimal chest-GUI menu: a custom holder with clickable buttons. Every click and drag in a
  * menu is cancelled by {@link MenuListener}; clicks on a button run its handler.
  */
 public class Menu implements InventoryHolder {

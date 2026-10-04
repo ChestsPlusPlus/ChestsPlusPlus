@@ -16,7 +16,7 @@ import org.bukkit.plugin.Plugin;
 
 /**
  * Dispatches menu clicks and handles "return to the menu you came from": when a player opens something from a menu
- * (e.g. a ChestLink), closing it reopens the menu. Tracked per viewer and cleared on quit (v2 leaked these).
+ * (e.g. a ChestLink), closing it reopens the menu. Tracked per viewer and cleared on quit.
  */
 public final class MenuListener implements Listener {
 

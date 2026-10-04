@@ -19,7 +19,7 @@ import org.bukkit.scheduler.BukkitTask;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Checks GitHub Releases for a newer ChestsPlusPlus (plan §5.12, §2.2: v2 broadcast notices to everyone). The check
+ * Checks GitHub Releases for a newer ChestsPlusPlus. The check
  * runs on the async scheduler with {@code java.net.http}; only players with {@code chestsplusplus.admin.update} are told,
  * when they join.
  */
@@ -57,18 +57,18 @@ public final class UpdateChecker implements Listener {
     void check() {
         if (!services.settings().updateChecker()) return;
         try {
-            HttpRequest request = HttpRequest.newBuilder(URI.create(RELEASES_URL)).timeout(Duration.ofSeconds(10))
-                    .header("Accept", "application/vnd.github+json").header("User-Agent", "ChestsPlusPlus/" + currentVersion).build();
+            HttpRequest request = HttpRequest.newBuilder(URI.create(RELEASES_URL))
+                    .timeout(Duration.ofSeconds(10))
+                    .header("Accept", "application/vnd.github+json")
+                    .header("User-Agent", "ChestsPlusPlus/" + currentVersion)
+                    .build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() != 200) return;
             String tag = parseTag(response.body());
-            if (tag != null && Versions.isNewer(tag, currentVersion)) {
-                boolean firstTime = latest == null;
-                latest = tag;
-                if (firstTime) {
-                    services.plugin().getSLF4JLogger().info("ChestsPlusPlus {} is available (running {}): {}", tag, currentVersion, DOWNLOAD_URL);
-                }
-            }
+            if (tag == null || !Versions.isNewer(tag, currentVersion)) return;
+            if (latest == null)
+                services.plugin().getSLF4JLogger().info("ChestsPlusPlus {} is available (running {}): {}", tag, currentVersion, DOWNLOAD_URL);
+            latest = tag;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         } catch (Exception e) {
@@ -85,9 +85,7 @@ public final class UpdateChecker implements Listener {
     void onJoin(PlayerJoinEvent event) {
         String version = latest;
         Player player = event.getPlayer();
-        if (version == null || !services.settings().updateChecker() || !player.hasPermission(Permissions.ADMIN_UPDATE)) {
-            return;
-        }
+        if (version == null || !services.settings().updateChecker() || !player.hasPermission(Permissions.ADMIN_UPDATE)) return;
         services.messages().send(player, Message.UPDATE_AVAILABLE, Messages.text("version", version), Messages.text("url", DOWNLOAD_URL));
     }
 }

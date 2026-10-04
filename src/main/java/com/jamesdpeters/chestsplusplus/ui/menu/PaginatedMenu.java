@@ -1,5 +1,6 @@
 package com.jamesdpeters.chestsplusplus.ui.menu;
 
+import io.papermc.paper.datacomponent.DataComponentTypes;
 import java.util.List;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
@@ -54,7 +55,7 @@ public class PaginatedMenu extends Menu {
 
     static ItemStack named(Material material, Component name) {
         ItemStack item = ItemStack.of(material);
-        item.setData(io.papermc.paper.datacomponent.DataComponentTypes.ITEM_NAME, name);
+        item.setData(DataComponentTypes.ITEM_NAME, name);
         return item;
     }
 }

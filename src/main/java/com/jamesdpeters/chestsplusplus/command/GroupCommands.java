@@ -1,11 +1,17 @@
 package com.jamesdpeters.chestsplusplus.command;
 
+import static com.jamesdpeters.chestsplusplus.command.Commands.argument;
+import static com.jamesdpeters.chestsplusplus.command.Commands.literal;
+import static com.jamesdpeters.chestsplusplus.command.Commands.permission;
+import static com.jamesdpeters.chestsplusplus.command.Commands.playerArgument;
+
 import com.jamesdpeters.chestsplusplus.Permissions;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.link.GroupActions;
 import com.jamesdpeters.chestsplusplus.link.LinkService;
 import com.jamesdpeters.chestsplusplus.link.NodeListener;
 import com.jamesdpeters.chestsplusplus.message.Message;
+import com.jamesdpeters.chestsplusplus.message.Messages;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.SortMode;
@@ -24,13 +30,11 @@ import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import org.bukkit.Bukkit;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.jspecify.annotations.Nullable;
 
-/** The {@code /chestlink} and {@code /autocraft} trees (plan §5.10); one builder for both group types. */
+/** The {@code /chestlink} and {@code /autocraft} trees; one builder for both group types. */
 final class GroupCommands {
 
     private static final int TARGET_RANGE = 6;
@@ -44,60 +48,68 @@ final class GroupCommands {
     }
 
     LiteralCommandNode<CommandSourceStack> build(String name) {
-        LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal(name).executes(player((context, p) -> ui().openHub(p, type, "", 0)))
-                .then(Commands.literal("add").requires(perm(Permissions.create(type))).then(group().executes(player(this::add))))
-                .then(Commands.literal("remove").requires(perm(Permissions.remove(type)))
+        LiteralArgumentBuilder<CommandSourceStack> root = literal(name)
+                .executes(player((context, p) -> ui().openHub(p, type, "", 0)))
+                .then(literal("add").requires(permission(Permissions.create(type))).then(group().executes(player(this::add))))
+                .then(literal("remove").requires(permission(Permissions.remove(type)))
                         .then(group().executes(withGroup((context, p, g) -> actions().remove(p, g)))))
-                .then(Commands.literal("open").requires(perm(Permissions.remote(type)))
+                .then(literal("open").requires(permission(Permissions.remote(type)))
                         .then(group().executes(withGroup((context, p, g) -> actions().openRemote(p, g)))))
-                .then(Commands.literal("menu").requires(perm(Permissions.menu(type))).executes(player((context, p) -> ui().openHub(p, type, "", 0))))
-                .then(Commands.literal("list").executes(player((context, p) -> actions().list(p, type))))
-                .then(Commands.literal("rename")
-                        .then(group().then(io.papermc.paper.command.brigadier.Commands.argument("new", StringArgumentType.word())
-                                .executes(withGroup((context, p, g) -> actions().rename(p, g, StringArgumentType.getString(context, "new")))))))
-                .then(Commands.literal("public")
-                        .then(group().then(io.papermc.paper.command.brigadier.Commands.argument("public", BoolArgumentType.bool())
-                                .executes(withGroup((context, p, g) -> actions().setPublic(p, g, BoolArgumentType.getBool(context, "public")))))))
-                .then(Commands.literal("members").requires(perm(Permissions.members(type))).then(Commands.literal("add")
-                        .then(group().then(playerArg().executes(
-                                withGroup((context, p, g) -> actions().addMember(p, g, StringArgumentType.getString(context, "player"), null))))))
-                        .then(Commands.literal("remove")
-                                .then(group().then(playerArg().executes(withGroup(
-                                        (context, p, g) -> actions().removeMember(p, g, StringArgumentType.getString(context, "player"), null))))))
-                        .then(Commands.literal("list").then(group().executes(withGroup((context, p, g) -> actions().listMembers(p, g))))));
-        if (type == GroupType.CHESTLINK) {
-            root.then(Commands.literal("sort").requires(perm(Permissions.CHESTLINK_SORT)).then(group()
-                    .then(io.papermc.paper.command.brigadier.Commands.argument("mode", StringArgumentType.word()).suggests((context, builder) -> {
-                        for (SortMode mode : SortMode.values()) {
-                            builder.suggest(mode.name().toLowerCase(Locale.ROOT));
-                        }
-                        return builder.buildFuture();
-                    }).executes(withGroup(this::sort)))));
-        }
+                .then(literal("menu").requires(permission(Permissions.menu(type))).executes(player((context, p) -> ui().openHub(p, type, "", 0))))
+                .then(literal("list").executes(player((context, p) -> actions().list(p, type))))
+                .then(literal("rename").then(group().then(argument("new", StringArgumentType.word()).executes(withGroup(this::rename)))))
+                .then(literal("public").then(group().then(argument("public", BoolArgumentType.bool()).executes(withGroup(this::setPublic)))))
+                .then(members());
+        if (type == GroupType.CHESTLINK) root.then(sort());
         return root.build();
     }
 
-    // ---------------------------------------------------------------------------------------------------------------
+    private LiteralArgumentBuilder<CommandSourceStack> members() {
+        return literal("members")
+                .requires(permission(Permissions.members(type)))
+                .then(literal("add").then(group().then(playerArgument().executes(withGroup(this::addMember)))))
+                .then(literal("remove").then(group().then(playerArgument().executes(withGroup(this::removeMember)))))
+                .then(literal("list").then(group().executes(withGroup((context, p, g) -> actions().listMembers(p, g)))));
+    }
+
+    private LiteralArgumentBuilder<CommandSourceStack> sort() {
+        RequiredArgumentBuilder<CommandSourceStack, String> mode = argument("mode", StringArgumentType.word()).suggests((context, builder) -> {
+            for (SortMode sortMode : SortMode.values()) builder.suggest(sortMode.name().toLowerCase(Locale.ROOT));
+            return builder.buildFuture();
+        });
+        return literal("sort").requires(permission(Permissions.CHESTLINK_SORT)).then(group().then(mode.executes(withGroup(this::sort))));
+    }
 
     private void add(CommandContext<CommandSourceStack> context, Player player) {
-        Services current = services.get();
-        if (current == null) return;
         Block target = player.getTargetBlockExact(TARGET_RANGE);
-        BlockFace face = player.getTargetBlockFace(TARGET_RANGE);
         if (target == null) {
-            current.messages().send(player, Message.ERROR_INVALID_BLOCK,
-                    com.jamesdpeters.chestsplusplus.message.Messages.text("type", type.displayName()));
+            requireServices().messages().send(player, Message.ERROR_INVALID_BLOCK, Messages.text("type", type.displayName()));
             return;
         }
-        current.get(LinkService.class).link(player, type, StringArgumentType.getString(context, "group"), target,
-                NodeListener.facingFor(face, player), false);
+        String group = StringArgumentType.getString(context, "group");
+        links().link(player, type, group, target, NodeListener.facingFor(player.getTargetBlockFace(TARGET_RANGE), player), false);
+    }
+
+    private void rename(CommandContext<CommandSourceStack> context, Player player, StorageGroup group) {
+        actions().rename(player, group, StringArgumentType.getString(context, "new"));
+    }
+
+    private void addMember(CommandContext<CommandSourceStack> context, Player player, StorageGroup group) {
+        actions().addMember(player, group, StringArgumentType.getString(context, "player"), null);
+    }
+
+    private void removeMember(CommandContext<CommandSourceStack> context, Player player, StorageGroup group) {
+        actions().removeMember(player, group, StringArgumentType.getString(context, "player"), null);
+    }
+
+    private void setPublic(CommandContext<CommandSourceStack> context, Player player, StorageGroup group) {
+        actions().setPublic(player, group, BoolArgumentType.getBool(context, "public"));
     }
 
     private void sort(CommandContext<CommandSourceStack> context, Player player, StorageGroup group) {
-        String raw = StringArgumentType.getString(context, "mode").toUpperCase(Locale.ROOT);
         SortMode mode;
         try {
-            mode = SortMode.valueOf(raw);
+            mode = SortMode.valueOf(StringArgumentType.getString(context, "mode").toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             player.sendMessage(Component.text("Sort modes: off, name, amount_asc, amount_desc", NamedTextColor.RED));
             return;
@@ -105,27 +117,16 @@ final class GroupCommands {
         if (group instanceof ChestLinkGroup chest) actions().sort(player, chest, mode);
     }
 
-    // ---------------------------------------------------------------------------------------------------------------
-
     private RequiredArgumentBuilder<CommandSourceStack, String> group() {
-        return io.papermc.paper.command.brigadier.Commands.argument("group", new GroupArgument(type, services));
-    }
-
-    private static RequiredArgumentBuilder<CommandSourceStack, String> playerArg() {
-        return io.papermc.paper.command.brigadier.Commands.argument("player", StringArgumentType.word()).suggests((context, builder) -> {
-            String typed = builder.getRemaining().toLowerCase(Locale.ROOT);
-            Bukkit.getOnlinePlayers().stream().map(Player::getName).filter(n -> n.toLowerCase(Locale.ROOT).startsWith(typed))
-                    .forEach(builder::suggest);
-            return builder.buildFuture();
-        });
-    }
-
-    private static java.util.function.Predicate<CommandSourceStack> perm(String permission) {
-        return source -> source.getSender().hasPermission(permission);
+        return argument("group", new GroupArgument(type, services));
     }
 
     private GroupActions actions() {
         return requireServices().get(GroupActions.class);
+    }
+
+    private LinkService links() {
+        return requireServices().get(LinkService.class);
     }
 
     private UiService ui() {
@@ -141,12 +142,12 @@ final class GroupCommands {
     /** A command body for players only, after the plugin is enabled. */
     private Command<CommandSourceStack> player(BiConsumer<CommandContext<CommandSourceStack>, Player> body) {
         return context -> {
+            Services current = services.get();
             if (!(context.getSource().getExecutor() instanceof Player player)) {
-                Services current = services.get();
                 if (current != null) current.messages().send(context.getSource().getSender(), Message.ERROR_PLAYERS_ONLY);
                 return 0;
             }
-            if (services.get() == null) {
+            if (current == null) {
                 player.sendMessage(Component.text("ChestsPlusPlus is not enabled.", NamedTextColor.RED));
                 return 0;
             }

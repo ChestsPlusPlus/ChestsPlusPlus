@@ -8,7 +8,7 @@ import org.bstats.charts.SingleLineChart;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jspecify.annotations.Nullable;
 
-/** bStats (plugin id 7166, kept from v2). Never allowed to break enable. */
+/** bStats. Never allowed to break enable. */
 public final class MetricsService {
 
     public static final int PLUGIN_ID = 7166;
