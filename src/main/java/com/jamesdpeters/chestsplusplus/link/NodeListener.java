@@ -116,8 +116,8 @@ public final class NodeListener implements Listener {
     /** A chest placed next to a linked chest must not merge with it. */
     private void preventDoubleChest(Block placed) {
         if (!(placed.getBlockData() instanceof Chest data) || data.getType() == Chest.Type.SINGLE) return;
-        Block partner = placed.getRelative(LinkService.partnerDirection(data));
-        if (isLinked(partner) || isLinked(placed)) LinkService.splitDoubleChest(placed);
+        Block partner = placed.getRelative(DoubleChests.partnerDirection(data));
+        if (isLinked(partner) || isLinked(placed)) DoubleChests.split(placed);
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)

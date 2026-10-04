@@ -1,5 +1,6 @@
 package com.jamesdpeters.chestsplusplus.model;
 
+import com.jamesdpeters.chestsplusplus.core.PlayerNames;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -64,6 +65,11 @@ public abstract sealed class StorageGroup permits ChestLinkGroup, AutoCraftGroup
 
     boolean removeMember(UUID member) {
         return members.remove(member);
+    }
+
+    /** How {@code requester} refers to this group in commands: {@code name}, or {@code owner:name} if it isn't theirs. */
+    public String referenceFor(UUID requester) {
+        return owner.equals(requester) ? name : PlayerNames.of(owner) + ":" + name;
     }
 
     @Override

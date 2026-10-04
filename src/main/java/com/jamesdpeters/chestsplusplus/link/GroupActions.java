@@ -4,6 +4,7 @@ import com.destroystokyo.paper.profile.PlayerProfile;
 import com.jamesdpeters.chestsplusplus.Permissions;
 import com.jamesdpeters.chestsplusplus.access.AccessService;
 import com.jamesdpeters.chestsplusplus.chestlink.ChestLinkService;
+import com.jamesdpeters.chestsplusplus.core.PlayerNames;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.message.Message;
 import com.jamesdpeters.chestsplusplus.message.Messages;
@@ -15,7 +16,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -122,7 +122,7 @@ public final class GroupActions {
             return;
         }
         services.messages().send(player, Message.MEMBERS_LIST, Messages.text("group", group.name()),
-                Messages.text("players", names(List.copyOf(group.members()))));
+                Messages.text("players", PlayerNames.join(group.members())));
     }
 
     public void trust(Player player, String name, @Nullable Runnable after) {
@@ -153,12 +153,12 @@ public final class GroupActions {
         if (trusted.isEmpty()) {
             services.messages().send(player, Message.TRUST_NONE);
         } else {
-            services.messages().send(player, Message.TRUST_LIST, Messages.text("players", names(trusted)));
+            services.messages().send(player, Message.TRUST_LIST, Messages.text("players", PlayerNames.join(trusted)));
         }
     }
 
     public void list(Player player, GroupType type) {
-        List<StorageGroup> groups = links.accessibleGroups(player.getUniqueId(), AccessService.hasBypass(player), type);
+        List<StorageGroup> groups = services.access().accessibleGroups(player.getUniqueId(), AccessService.hasBypass(player), type);
         if (groups.isEmpty()) {
             services.messages().send(player, type.pick(Message.CHESTLINK_LIST_EMPTY, Message.AUTOCRAFT_LIST_EMPTY));
             return;
@@ -167,8 +167,8 @@ public final class GroupActions {
         GroupTypeHandler handler = links.handler(type);
         for (StorageGroup group : groups) {
             services.messages().send(player, type.pick(Message.CHESTLINK_LIST_ENTRY, Message.AUTOCRAFT_LIST_ENTRY),
-                    Messages.text("group", group.name()), Messages.text("ref", LinkService.reference(player.getUniqueId(), group)),
-                    Messages.text("owner", LinkService.ownerName(group.owner())),
+                    Messages.text("group", group.name()), Messages.text("ref", group.referenceFor(player.getUniqueId())),
+                    Messages.text("owner", PlayerNames.of(group.owner())),
                     Messages.text("nodes", services.nodes().count(group.id())),
                     Messages.text("items", handler == null ? "" : handler.summary(group)));
         }
@@ -196,10 +196,6 @@ public final class GroupActions {
         if (!services.settings().isBlacklisted(player.getWorld().getName())) return false;
         services.messages().send(player, Message.ERROR_WORLD_BLACKLISTED);
         return true;
-    }
-
-    private static String names(List<UUID> players) {
-        return players.stream().map(LinkService::ownerName).collect(Collectors.joining(", "));
     }
 
     /**

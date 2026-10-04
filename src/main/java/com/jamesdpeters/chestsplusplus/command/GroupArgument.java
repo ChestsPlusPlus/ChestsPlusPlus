@@ -2,7 +2,6 @@ package com.jamesdpeters.chestsplusplus.command;
 
 import com.jamesdpeters.chestsplusplus.access.AccessService;
 import com.jamesdpeters.chestsplusplus.core.Services;
-import com.jamesdpeters.chestsplusplus.link.LinkService;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import com.mojang.brigadier.StringReader;
@@ -59,9 +58,8 @@ public final class GroupArgument implements CustomArgumentType<String, String> {
             return builder.buildFuture();
         }
         String typed = builder.getRemaining().toLowerCase(Locale.ROOT);
-        LinkService links = current.get(LinkService.class);
-        for (StorageGroup group : links.accessibleGroups(player.getUniqueId(), AccessService.hasBypass(player), type)) {
-            String reference = LinkService.reference(player.getUniqueId(), group);
+        for (StorageGroup group : current.access().accessibleGroups(player.getUniqueId(), AccessService.hasBypass(player), type)) {
+            String reference = group.referenceFor(player.getUniqueId());
             if (reference.toLowerCase(Locale.ROOT).startsWith(typed)) builder.suggest(reference);
         }
         return builder.buildFuture();

@@ -18,8 +18,8 @@ class AccessServiceTest {
     private static final UUID OTHER = UUID.randomUUID();
 
     private final TrustService trust = new TrustService();
-    private final AccessService access = new AccessService(trust);
     private final GroupRegistry registry = new GroupRegistry();
+    private final AccessService access = new AccessService(trust, registry);
     private final ChestLinkGroup group = new ChestLinkGroup(1, OWNER, "g", 0);
 
     @Test

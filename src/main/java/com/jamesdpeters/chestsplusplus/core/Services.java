@@ -23,7 +23,7 @@ public final class Services {
     private final GroupRegistry groups = new GroupRegistry();
     private final NodeIndex nodes = new NodeIndex();
     private final TrustService trust = new TrustService();
-    private final AccessService access = new AccessService(trust);
+    private final AccessService access = new AccessService(trust, groups);
     private final Tickers tickers;
     private volatile Settings settings;
     private volatile Messages messages;

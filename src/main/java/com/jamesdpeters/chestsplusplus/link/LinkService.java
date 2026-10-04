@@ -11,13 +11,9 @@ import com.jamesdpeters.chestsplusplus.model.GroupNames;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.Node;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
-import java.util.Comparator;
 import java.util.EnumMap;
-import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
@@ -176,7 +172,7 @@ public final class LinkService {
 
     /** Adds a node without checks (used after validation, and by silk-touch re-linking). */
     public Node addNode(StorageGroup group, Block block, BlockFace facing) {
-        if (block.getBlockData() instanceof Chest) splitDoubleChest(block);
+        if (block.getBlockData() instanceof Chest) DoubleChests.split(block);
         Node node = new Node(BlockPos.of(block), facing, group.id());
         services.nodes().put(node);
         services.persistence().markDirty(group);
@@ -319,62 +315,5 @@ public final class LinkService {
             firingSyntheticInteract = false;
         }
         return event.useInteractedBlock() != Event.Result.DENY;
-    }
-
-    /**
-     * Groups of {@code type} the player can use: their own, member-of, owners who trust them, public ones (and all
-     * groups with bypass). Own groups first, then by owner name and group name.
-     */
-    public List<StorageGroup> accessibleGroups(UUID player, boolean bypass, GroupType type) {
-        Set<StorageGroup> found = new LinkedHashSet<>();
-        if (bypass) {
-            found.addAll(services.groups().all(type));
-        } else {
-            found.addAll(services.groups().ownedBy(player, type));
-            for (StorageGroup group : services.groups().memberOf(player)) if (group.type() == type) found.add(group);
-            for (UUID owner : services.trust().ownersTrusting(player)) found.addAll(services.groups().ownedBy(owner, type));
-            for (StorageGroup group : services.groups().all(type)) if (group.isPublic()) found.add(group);
-        }
-        Comparator<StorageGroup> order = Comparator.<StorageGroup, Boolean>comparing(g -> !g.owner().equals(player))
-                .thenComparing(g -> ownerName(g.owner()), String.CASE_INSENSITIVE_ORDER)
-                .thenComparing(StorageGroup::name, String.CASE_INSENSITIVE_ORDER);
-        return found.stream().sorted(order).toList();
-    }
-
-    /** How {@code requester} refers to a group in commands: {@code name}, or {@code owner:name} if not theirs. */
-    public static String reference(UUID requester, StorageGroup group) {
-        return group.owner().equals(requester) ? group.name() : ownerName(group.owner()) + ":" + group.name();
-    }
-
-    /** The owner's last known name (never a blocking lookup). */
-    public static String ownerName(UUID owner) {
-        String name = Bukkit.getOfflinePlayer(owner).getName();
-        return name == null ? owner.toString().substring(0, 8) : name;
-    }
-
-    /** Linked chests are always single: split this chest and its partner. */
-    public static void splitDoubleChest(Block block) {
-        if (!(block.getBlockData() instanceof Chest data) || data.getType() == Chest.Type.SINGLE) return;
-        BlockFace towardsPartner = partnerDirection(data);
-        Block partner = block.getRelative(towardsPartner);
-        data.setType(Chest.Type.SINGLE);
-        block.setBlockData(data, false);
-        if (partner.getBlockData() instanceof Chest partnerData && partnerData.getType() != Chest.Type.SINGLE) {
-            partnerData.setType(Chest.Type.SINGLE);
-            partner.setBlockData(partnerData, false);
-        }
-    }
-
-    /** Vanilla: a LEFT half's partner is clockwise of its facing, a RIGHT half's counter-clockwise. */
-    public static BlockFace partnerDirection(Chest data) {
-        BlockFace facing = data.getFacing();
-        boolean clockwise = data.getType() == Chest.Type.LEFT;
-        return switch (facing) {
-            case NORTH -> clockwise ? BlockFace.EAST : BlockFace.WEST;
-            case EAST -> clockwise ? BlockFace.SOUTH : BlockFace.NORTH;
-            case SOUTH -> clockwise ? BlockFace.WEST : BlockFace.EAST;
-            case WEST -> clockwise ? BlockFace.NORTH : BlockFace.SOUTH;
-            default -> BlockFace.SELF;
-        };
     }
 }

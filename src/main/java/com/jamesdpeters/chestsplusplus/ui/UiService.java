@@ -2,6 +2,7 @@ package com.jamesdpeters.chestsplusplus.ui;
 
 import com.jamesdpeters.chestsplusplus.Permissions;
 import com.jamesdpeters.chestsplusplus.access.AccessService;
+import com.jamesdpeters.chestsplusplus.core.PlayerNames;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.link.GroupActions;
 import com.jamesdpeters.chestsplusplus.link.GroupTypeHandler;
@@ -32,7 +33,6 @@ import java.util.Locale;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickCallback;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
@@ -67,8 +67,8 @@ public final class UiService {
     /** Groups shown in the hub for {@code search} (case-insensitive substring of name or owner). */
     public List<StorageGroup> hubGroups(Player player, GroupType type, String search) {
         String needle = search.trim().toLowerCase(Locale.ROOT);
-        return links.accessibleGroups(player.getUniqueId(), AccessService.hasBypass(player), type).stream()
-                .filter(g -> needle.isEmpty() || contains(g.name(), needle) || contains(LinkService.ownerName(g.owner()), needle))
+        return services.access().accessibleGroups(player.getUniqueId(), AccessService.hasBypass(player), type).stream()
+                .filter(g -> needle.isEmpty() || contains(g.name(), needle) || contains(PlayerNames.of(g.owner()), needle))
                 .toList();
     }
 
@@ -104,7 +104,7 @@ public final class UiService {
     }
 
     private ActionButton hubGroupButton(StorageGroup group) {
-        String owner = LinkService.ownerName(group.owner());
+        String owner = PlayerNames.of(group.owner());
         Component label = text(Message.MENU_HUB_GROUP_BUTTON,
                 Messages.text("group", group.name()),
                 Messages.text("owner", owner),
@@ -119,7 +119,7 @@ public final class UiService {
     public void openGroup(Player player, StorageGroup group) {
         if (!actions.canUse(player, group)) return;
         boolean manage = services.access().canManage(player.getUniqueId(), player, group);
-        String description = LinkService.ownerName(group.owner()) + " · " + summary(group) + " · " + services.nodes().count(group.id()) + " block(s)";
+        String description = PlayerNames.of(group.owner()) + " · " + summary(group) + " · " + services.nodes().count(group.id()) + " block(s)";
         DialogBase base = DialogBase.builder(text(Message.MENU_GROUP_TITLE, Messages.text("group", group.name())))
                 .canCloseWithEscape(true)
                 .body(List.of(DialogBody.item(icon(group)).description(DialogBody.plainMessage(Component.text(description))).build()))
@@ -198,7 +198,7 @@ public final class UiService {
             if (!name.isEmpty()) actions.addMember(p, g, name, () -> openMembers(p, g));
         })));
         for (UUID member : List.copyOf(group.members())) {
-            String name = LinkService.ownerName(member);
+            String name = PlayerNames.of(member);
             buttons.add(button(text(Message.MENU_MEMBERS_REMOVE, Messages.text("player", name)),
                     (view, p) -> withGroup(p, id, g -> actions.removeMember(p, g, name, () -> openMembers(p, g)))));
         }
@@ -217,7 +217,7 @@ public final class UiService {
             if (!name.isEmpty()) actions.trust(p, name, () -> openTrust(p, backTo));
         }));
         for (UUID trusted : List.copyOf(services.trust().trustedBy(player.getUniqueId()))) {
-            String name = LinkService.ownerName(trusted);
+            String name = PlayerNames.of(trusted);
             buttons.add(button(text(Message.MENU_TRUST_REMOVE, Messages.text("player", name)),
                     (view, p) -> actions.untrust(p, name, () -> openTrust(p, backTo))));
         }
@@ -239,7 +239,7 @@ public final class UiService {
             ItemStack icon = icon(group).clone();
             icon.setData(DataComponentTypes.ITEM_NAME, Component.text(group.name()));
             icon.setData(DataComponentTypes.LORE, ItemLore.lore(services.messages().lines(Message.MENU_GRID_ENTRY_LORE,
-                    Messages.text("owner", LinkService.ownerName(group.owner())),
+                    Messages.text("owner", PlayerNames.of(group.owner())),
                     Messages.text("items", summary(group)))));
             entries.add(new PaginatedMenu.Entry(icon, (p, click) -> withGroup(p, group.id(), g -> onGridClick(p, g, click))));
         }
@@ -315,7 +315,7 @@ public final class UiService {
     }
 
     private static String memberNames(StorageGroup group) {
-        return group.members().isEmpty() ? "-" : group.members().stream().map(LinkService::ownerName).collect(Collectors.joining(", "));
+        return group.members().isEmpty() ? "-" : PlayerNames.join(group.members());
     }
 
     private static String search(DialogResponseView view) {
