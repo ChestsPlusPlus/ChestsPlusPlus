@@ -13,8 +13,11 @@ public final class DisplayLayout {
 
     /** Which model the display sits on. */
     public enum Surface {
-        /** Chests: the front face is 1px inside the block. */
-        CHEST(1.0 / 16),
+        /**
+         * Chests: the body's front is 1px inside the block, but the latch sticks out 1px to the block boundary, so the
+         * display has to sit in front of the latch (a little past the boundary) or the latch pokes through it.
+         */
+        CHEST(-1.0 / 64),
         /** Barrels, crafting tables: full cubes. */
         FULL_BLOCK(0),
         /** Hopper bowl sides (filters), upper part of the block. */

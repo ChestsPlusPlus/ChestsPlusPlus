@@ -26,9 +26,14 @@ class DisplayLayoutTest {
     }
 
     @Test
-    void chestFaceIsInsetByOnePixel() {
+    void chestDisplaySitsInFrontOfTheLatch() {
         Placement south = DisplayLayout.nodeItem(Surface.CHEST, BlockFace.SOUTH);
-        assertThat(south.z()).isCloseTo(1 - 1.0 / 16 + DisplayLayout.FACE_GAP, within(1e-9));
+        // The latch reaches the block boundary (z = 1); the display must be in front of it, and further out than on a
+        // full block.
+        assertThat(south.z()).isGreaterThan(1 + DisplayLayout.FACE_GAP);
+        assertThat(south.z())
+                .isGreaterThan(DisplayLayout.nodeItem(Surface.FULL_BLOCK, BlockFace.SOUTH)
+                        .z());
         assertThat(south.yaw()).isEqualTo(DisplayLayout.ITEM_YAW_OFFSET);
     }
 
