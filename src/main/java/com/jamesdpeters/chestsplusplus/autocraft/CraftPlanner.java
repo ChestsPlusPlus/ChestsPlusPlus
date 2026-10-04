@@ -4,13 +4,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Predicate;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Plans one craft (plan §5.9): picks an input stack for every recipe slot without copying inventories, then checks
+ * Plans one craft: picks an input stack for every recipe slot without copying inventories, then checks
  * output capacity by scanning slots. Committing the plan is a separate, atomic step.
  */
 public final class CraftPlanner {
@@ -37,24 +38,27 @@ public final class CraftPlanner {
                 sources.add(null);
                 continue;
             }
-            Source found = null;
-            search : for (Inventory inventory : inputs) {
-                ItemStack[] contents = inventory.getStorageContents();
-                for (int slot = 0; slot < contents.length; slot++) {
-                    ItemStack item = contents[slot];
-                    if (item == null || item.isEmpty() || !wants.test(item)) continue;
-                    Source source = new Source(inventory, slot);
-                    if (used.getOrDefault(source, 0) >= item.getAmount()) continue;
-                    found = source;
-                    matrix[i] = item.asOne();
-                    break search;
-                }
-            }
+            Source found = findSource(wants, inputs, used);
             if (found == null) return null;
             used.merge(found, 1, Integer::sum);
             sources.add(found);
+            matrix[i] = Objects.requireNonNull(found.inventory().getItem(found.slot())).asOne();
         }
         return new Plan(sources, matrix);
+    }
+
+    /** The first input stack that {@code wants} accepts and that still has an item not already planned. */
+    private static @Nullable Source findSource(Predicate<ItemStack> wants, List<Inventory> inputs, Map<Source, Integer> used) {
+        for (Inventory inventory : inputs) {
+            ItemStack[] contents = inventory.getStorageContents();
+            for (int slot = 0; slot < contents.length; slot++) {
+                ItemStack item = contents[slot];
+                if (item == null || item.isEmpty() || !wants.test(item)) continue;
+                Source source = new Source(inventory, slot);
+                if (used.getOrDefault(source, 0) < item.getAmount()) return source;
+            }
+        }
+        return null;
     }
 
     /** Can {@code output} take all of {@code items}? Scans slots once per item type; no inventory copies. */

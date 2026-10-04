@@ -276,6 +276,36 @@ public final class LinkService {
     }
 
     /**
+     * The shared part of right-clicking a linked block of {@code type}: takes the click over from vanilla and checks the player may open the
+     * group. Returns the clicked node when the caller should open it. Sneaking with an item still places blocks, as in vanilla.
+     */
+    public @Nullable Node claimNodeClick(PlayerInteractEvent event, GroupType type) {
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK || firingSyntheticInteract) return null;
+        Block block = event.getClickedBlock();
+        Node node = block == null ? null : services.nodes().at(block);
+        StorageGroup group = node == null ? null : services.groups().byId(node.groupId());
+        if (group == null || group.type() != type) return null;
+        Player player = event.getPlayer();
+        if (player.isSneaking() && !player.getInventory().getItemInMainHand().isEmpty()) return null;
+        if (event.useInteractedBlock() == Event.Result.DENY) return null;
+        event.setUseInteractedBlock(Event.Result.DENY);
+        event.setUseItemInHand(Event.Result.DENY);
+        if (event.getHand() != EquipmentSlot.HAND) return null;
+
+        Message refusal = openRefusal(player, group, block);
+        if (refusal == null) return node;
+        services.messages().send(player, refusal, Messages.text("group", group.name()));
+        return null;
+    }
+
+    private @Nullable Message openRefusal(Player player, StorageGroup group, Block block) {
+        if (services.settings().isBlacklisted(block.getWorld().getName())) return Message.ERROR_WORLD_BLACKLISTED;
+        if (!player.hasPermission(Permissions.open(group.type()))) return Message.ERROR_NO_PERMISSION;
+        if (!services.access().canAccess(player.getUniqueId(), player, group)) return Message.ERROR_NO_ACCESS;
+        return null;
+    }
+
+    /**
      * Protection check for links that don't come from a real placement: fires a synthetic right-click and
      * requires that no plugin denied using the block.
      */

@@ -2,6 +2,7 @@ package com.jamesdpeters.chestsplusplus.autocraft;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
 import org.bukkit.Bukkit;
 import org.bukkit.Keyed;
@@ -71,7 +72,7 @@ public interface CraftingBackend {
     static List<@Nullable Predicate<ItemStack>> slotChoices(Recipe recipe, @Nullable ItemStack[] matrix) {
         List<RecipeChoice> choices = new ArrayList<>();
         switch (recipe) {
-            case ShapedRecipe shaped -> choices.addAll(shaped.getChoiceMap().values().stream().filter(c -> c != null).toList());
+            case ShapedRecipe shaped -> choices.addAll(shaped.getChoiceMap().values().stream().filter(Objects::nonNull).toList());
             case ShapelessRecipe shapeless -> choices.addAll(shapeless.getChoiceList());
             case TransmuteRecipe transmute -> {
                 choices.add(transmute.getInput());
@@ -87,15 +88,9 @@ public interface CraftingBackend {
                 slots.add(null);
                 continue;
             }
-            Predicate<ItemStack> chosen = null;
-            for (RecipeChoice choice : choices) {
-                if (choice.test(ghost)) {
-                    chosen = choice;
-                    break;
-                }
-            }
             ItemStack template = ghost.clone();
-            slots.add(chosen != null ? chosen : template::isSimilar);
+            slots.add(choices.stream().filter(choice -> choice.test(ghost)).<Predicate<ItemStack>>map(choice -> choice).findFirst()
+                    .orElse(template::isSimilar));
         }
         return slots;
     }

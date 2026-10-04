@@ -10,7 +10,7 @@ import org.bukkit.inventory.ItemStack;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The ghost-item recipe editor (plan §5.9): a crafting-table UI where slot 0 shows the result and slots 1-9 the
+ * The ghost-item recipe editor: a crafting-table UI where slot 0 shows the result and slots 1-9 the
  * matrix. Clicking a matrix slot with an item places a ghost copy (nothing is consumed); clicking with an empty
  * cursor clears it.
  */
