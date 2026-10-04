@@ -35,27 +35,27 @@ public final class Permissions {
     }
 
     public static String create(GroupType type) {
-        return type == GroupType.CHESTLINK ? CHESTLINK_CREATE : AUTOCRAFT_CREATE;
+        return type.pick(CHESTLINK_CREATE, AUTOCRAFT_CREATE);
     }
 
     public static String open(GroupType type) {
-        return type == GroupType.CHESTLINK ? CHESTLINK_OPEN : AUTOCRAFT_OPEN;
+        return type.pick(CHESTLINK_OPEN, AUTOCRAFT_OPEN);
     }
 
     public static String remote(GroupType type) {
-        return type == GroupType.CHESTLINK ? CHESTLINK_REMOTE : AUTOCRAFT_REMOTE;
+        return type.pick(CHESTLINK_REMOTE, AUTOCRAFT_REMOTE);
     }
 
     public static String menu(GroupType type) {
-        return type == GroupType.CHESTLINK ? CHESTLINK_MENU : AUTOCRAFT_MENU;
+        return type.pick(CHESTLINK_MENU, AUTOCRAFT_MENU);
     }
 
     public static String remove(GroupType type) {
-        return type == GroupType.CHESTLINK ? CHESTLINK_REMOVE : AUTOCRAFT_REMOVE;
+        return type.pick(CHESTLINK_REMOVE, AUTOCRAFT_REMOVE);
     }
 
     public static String members(GroupType type) {
-        return type == GroupType.CHESTLINK ? CHESTLINK_MEMBERS : AUTOCRAFT_MEMBERS;
+        return type.pick(CHESTLINK_MEMBERS, AUTOCRAFT_MEMBERS);
     }
 
     private Permissions() {}

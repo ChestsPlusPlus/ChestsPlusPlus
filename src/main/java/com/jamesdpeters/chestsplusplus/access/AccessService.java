@@ -5,7 +5,7 @@ import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import java.util.UUID;
 import org.bukkit.permissions.Permissible;
 
-/** The single access rule for groups (plan §5.8). */
+/** The single access rule for groups. */
 public final class AccessService {
 
     private final TrustService trust;

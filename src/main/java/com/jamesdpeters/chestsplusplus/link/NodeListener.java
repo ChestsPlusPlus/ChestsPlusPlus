@@ -105,7 +105,7 @@ public final class NodeListener implements Listener {
                 GroupTypeHandler handler = links.handler(group.type());
                 if (handler != null && handler.isValidBlock(block)) {
                     links.addNode(group, block, Holders.facing(player).getOppositeFace());
-                    services.messages().send(player, group.type() == GroupType.CHESTLINK ? Message.CHESTLINK_LINKED : Message.AUTOCRAFT_LINKED,
+                    services.messages().send(player, group.type().pick(Message.CHESTLINK_LINKED, Message.AUTOCRAFT_LINKED),
                             Messages.text("group", group.name()));
                     return;
                 }

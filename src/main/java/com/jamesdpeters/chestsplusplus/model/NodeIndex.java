@@ -90,8 +90,6 @@ public final class NodeIndex {
     }
 
     public int size() {
-        int size = 0;
-        for (Map<Long, Node> world : byPos.values()) size += world.size();
-        return size;
+        return byPos.values().stream().mapToInt(Map::size).sum();
     }
 }

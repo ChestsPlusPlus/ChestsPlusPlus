@@ -5,10 +5,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
@@ -18,9 +21,8 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The message catalogue: MiniMessage templates keyed by {@link Message}. English defaults ship in the jar; a
- * {@code messages.yml} in the data folder overrides individual keys. Localisation can later plug in through
- * Adventure's {@code MiniMessageTranslationStore} without changing call sites (plan §5.11).
+ * MiniMessage templates keyed by {@link Message}. English defaults ship in the jar; a {@code messages.yml} in the data folder overrides
+ * individual keys.
  */
 public final class Messages {
 
@@ -63,11 +65,11 @@ public final class Messages {
     }
 
     /** The message split into lines on {@code <newline>} (item lore can't contain line breaks), non-italic. */
-    public java.util.List<Component> lines(Message message, TagResolver... placeholders) {
+    public List<Component> lines(Message message, TagResolver... placeholders) {
         TagResolver resolver = TagResolver.resolver(prefix, TagResolver.resolver(placeholders));
-        java.util.List<Component> lines = new java.util.ArrayList<>();
+        List<Component> lines = new ArrayList<>();
         for (String line : templates.get(message).split("<newline>|<br>")) {
-            lines.add(MINI_MESSAGE.deserialize(line, resolver).decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false));
+            lines.add(MINI_MESSAGE.deserialize(line, resolver).decoration(TextDecoration.ITALIC, false));
         }
         return lines;
     }

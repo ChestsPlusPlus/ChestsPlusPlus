@@ -147,7 +147,7 @@ public final class UiService {
         }
 
         List<ActionButton> buttons = new ArrayList<>();
-        buttons.add(button(text(type == GroupType.AUTOCRAFT ? Message.MENU_GROUP_RECIPE : Message.MENU_GROUP_OPEN), null,
+        buttons.add(button(text(type.pick(Message.MENU_GROUP_OPEN, Message.MENU_GROUP_RECIPE)), null,
                 (view, p) -> withGroup(p, id, g -> actions.openRemote(p, g))));
         if (manage) {
             buttons.add(button(text(Message.MENU_GROUP_SAVE), null, (view, p) -> withGroup(p, id, g -> {

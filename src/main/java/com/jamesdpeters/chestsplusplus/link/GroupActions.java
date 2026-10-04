@@ -62,7 +62,7 @@ public final class GroupActions {
     public boolean remove(Player player, StorageGroup group) {
         if (!require(player, Permissions.remove(group.type())) || !canManage(player, group)) return false;
         links.removeGroup(group, player.getLocation());
-        services.messages().send(player, group.type() == GroupType.CHESTLINK ? Message.CHESTLINK_REMOVED : Message.AUTOCRAFT_REMOVED,
+        services.messages().send(player, group.type().pick(Message.CHESTLINK_REMOVED, Message.AUTOCRAFT_REMOVED),
                 Messages.text("group", group.name()));
         return true;
     }
@@ -75,7 +75,7 @@ public final class GroupActions {
     public boolean setPublic(Player player, StorageGroup group, boolean isPublic) {
         if (!canManage(player, group)) return false;
         links.setPublic(group, isPublic);
-        services.messages().send(player, group.type() == GroupType.CHESTLINK ? Message.CHESTLINK_PUBLIC : Message.AUTOCRAFT_PUBLIC,
+        services.messages().send(player, group.type().pick(Message.CHESTLINK_PUBLIC, Message.AUTOCRAFT_PUBLIC),
                 Messages.text("group", group.name()),
                 Messages.component("state", services.messages().get(isPublic ? Message.STATE_PUBLIC : Message.STATE_PRIVATE)));
         return true;

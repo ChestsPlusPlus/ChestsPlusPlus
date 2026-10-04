@@ -1,8 +1,8 @@
 package com.jamesdpeters.chestsplusplus.model;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -75,7 +75,7 @@ public final class GroupRegistry {
 
     public List<StorageGroup> ownedBy(UUID owner, GroupType type) {
         return byOwner.getOrDefault(owner, Set.of()).stream().filter(g -> g.type() == type)
-                .sorted(java.util.Comparator.comparing(StorageGroup::name, String.CASE_INSENSITIVE_ORDER)).toList();
+                .sorted(Comparator.comparing(StorageGroup::name, String.CASE_INSENSITIVE_ORDER)).toList();
     }
 
     public Set<StorageGroup> memberOf(UUID player) {
@@ -83,9 +83,7 @@ public final class GroupRegistry {
     }
 
     public List<StorageGroup> all(GroupType type) {
-        List<StorageGroup> out = new ArrayList<>();
-        for (StorageGroup group : byId.values()) if (group.type() == type) out.add(group);
-        return out;
+        return byId.values().stream().filter(group -> group.type() == type).toList();
     }
 
     public Collection<StorageGroup> all() {

@@ -39,9 +39,8 @@ public final class LinkItem {
             pdc.set(groupKey, PersistentDataType.LONG, group.id());
             pdc.set(typeKey, PersistentDataType.STRING, group.type().name());
         });
-        String typeName = group.type() == GroupType.CHESTLINK ? "ChestLink" : "AutoCraft";
         item.setData(DataComponentTypes.ITEM_NAME,
-                messages.get(Message.ITEM_LINKED_NAME, Messages.text("type", typeName), Messages.text("group", group.name())));
+                messages.get(Message.ITEM_LINKED_NAME, Messages.text("type", group.type().displayName()), Messages.text("group", group.name())));
         item.setData(DataComponentTypes.LORE, ItemLore.lore(List.of(messages.get(Message.ITEM_LINKED_LORE, Messages.text("group", group.name())))));
         return item;
     }

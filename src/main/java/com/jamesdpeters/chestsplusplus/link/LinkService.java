@@ -66,7 +66,7 @@ public final class LinkService {
 
     public boolean isFeatureEnabled(GroupType type) {
         var features = services.settings().features();
-        return handlers.containsKey(type) && (type == GroupType.CHESTLINK ? features.chestlinks() : features.autocraft());
+        return handlers.containsKey(type) && type.pick(features.chestlinks(), features.autocraft());
     }
 
     /** Is the synthetic protection-check interact event being fired right now? Listeners must ignore it. */
@@ -125,7 +125,7 @@ public final class LinkService {
             return null;
         }
         if (!handler.isValidBlock(block)) {
-            messages.send(player, Message.ERROR_INVALID_BLOCK, Messages.text("type", typeName(type)));
+            messages.send(player, Message.ERROR_INVALID_BLOCK, Messages.text("type", type.displayName()));
             return null;
         }
         Node existing = services.nodes().get(BlockPos.of(block));
@@ -152,7 +152,7 @@ public final class LinkService {
                 int limit = limit(player, type);
                 if (limit >= 0 && services.groups().ownedBy(player.getUniqueId(), type).size() >= limit) {
                     messages.send(player, Message.ERROR_LIMIT_REACHED, Messages.text("limit", Integer.toString(limit)),
-                            Messages.text("type", typeName(type)));
+                            Messages.text("type", type.displayName()));
                     return null;
                 }
                 group = handler.create(services.groups().nextId(), missing.owner(), missing.name());
@@ -162,7 +162,11 @@ public final class LinkService {
         }
         addNode(group, block, facing);
         int overflow = handler.onLinked(group, block);
-        messages.send(player, created ? created(type) : linked(type), Messages.text("group", group.name()));
+        messages.send(player,
+                created
+                        ? type.pick(Message.CHESTLINK_CREATED, Message.AUTOCRAFT_CREATED)
+                        : type.pick(Message.CHESTLINK_LINKED, Message.AUTOCRAFT_LINKED),
+                Messages.text("group", group.name()));
         if (overflow > 0) messages.send(player, Message.CHESTLINK_OVERFLOW, Messages.text("count", Integer.toString(overflow)));
         return group;
     }
@@ -223,7 +227,7 @@ public final class LinkService {
         if (handler != null) handler.onRenamed(group);
         services.persistence().markDirty(group);
         displays.requestUpdate(group);
-        messages.send(audience, group.type() == GroupType.CHESTLINK ? Message.CHESTLINK_RENAMED : Message.AUTOCRAFT_RENAMED,
+        messages.send(audience, group.type().pick(Message.CHESTLINK_RENAMED, Message.AUTOCRAFT_RENAMED),
                 Messages.text("old", old), Messages.text("new", newName));
         return true;
     }
@@ -265,7 +269,7 @@ public final class LinkService {
         }
         if (best != Integer.MIN_VALUE) return best;
         var limits = services.settings().limits();
-        return type == GroupType.CHESTLINK ? limits.chestlinkDefault() : limits.autocraftDefault();
+        return type.pick(limits.chestlinkDefault(), limits.autocraftDefault());
     }
 
     /**
@@ -313,18 +317,6 @@ public final class LinkService {
     public static String ownerName(UUID owner) {
         String name = Bukkit.getOfflinePlayer(owner).getName();
         return name == null ? owner.toString().substring(0, 8) : name;
-    }
-
-    public static String typeName(GroupType type) {
-        return type == GroupType.CHESTLINK ? "ChestLink" : "AutoCraft";
-    }
-
-    private static Message created(GroupType type) {
-        return type == GroupType.CHESTLINK ? Message.CHESTLINK_CREATED : Message.AUTOCRAFT_CREATED;
-    }
-
-    private static Message linked(GroupType type) {
-        return type == GroupType.CHESTLINK ? Message.CHESTLINK_LINKED : Message.AUTOCRAFT_LINKED;
     }
 
     /** Linked chests are always single (plan §5.2): split this chest and its partner. */

@@ -86,7 +86,7 @@ final class GroupCommands {
         BlockFace face = player.getTargetBlockFace(TARGET_RANGE);
         if (target == null) {
             current.messages().send(player, Message.ERROR_INVALID_BLOCK,
-                    com.jamesdpeters.chestsplusplus.message.Messages.text("type", LinkService.typeName(type)));
+                    com.jamesdpeters.chestsplusplus.message.Messages.text("type", type.displayName()));
             return;
         }
         current.get(LinkService.class).link(player, type, StringArgumentType.getString(context, "group"), target,

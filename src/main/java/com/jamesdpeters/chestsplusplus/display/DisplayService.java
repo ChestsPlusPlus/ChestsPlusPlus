@@ -179,7 +179,7 @@ public final class DisplayService {
         StorageGroup group = groups.byId(node.groupId());
         Content content = group == null ? null : contents.get(group.type());
         if (group == null || content == null) return;
-        Settings.Display config = group.type() == GroupType.CHESTLINK ? settings.get().chestlink().display() : settings.get().autocraft().display();
+        Settings.Display config = group.type().pick(settings.get().chestlink().display(), settings.get().autocraft().display());
         if (!config.enabled()) return;
         Block block = node.pos().block();
         if (block == null) return;
