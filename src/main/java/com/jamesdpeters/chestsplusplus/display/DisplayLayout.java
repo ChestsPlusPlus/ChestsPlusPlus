@@ -157,16 +157,24 @@ public final class DisplayLayout {
         Material type = item.getType();
         if (!type.isBlock()) return Shape.FLAT;
         if (type.isOccluding()) return Shape.BLOCK;
-        for (Tag<Material> tag : BLOCK_MODEL_TAGS) if (tag.isTagged(type)) return Shape.BLOCK;
-        return BLOCK_MODEL_MATERIALS.contains(type) ? Shape.BLOCK : Shape.FLAT;
+        for (Tag<Material> tag : BlockModels.TAGS) if (tag.isTagged(type)) return Shape.BLOCK;
+        return BlockModels.MATERIALS.contains(type) ? Shape.BLOCK : Shape.FLAT;
     }
 
-    /** Non-occluding blocks whose items still render as 3D models. */
-    private static final List<Tag<Material>> BLOCK_MODEL_TAGS = List.of(Tag.SLABS, Tag.STAIRS, Tag.WALLS, Tag.FENCES, Tag.FENCE_GATES, Tag.LEAVES,
-            Tag.IMPERMEABLE, Tag.SHULKER_BOXES);
+    /**
+     * The tag and material sets behind {@link #shapeOf}. Kept in a holder so they load on first use: {@link Tag} constants need a running
+     * server, and the rest of this class must stay loadable in plain unit tests.
+     */
+    private static final class BlockModels {
+        /** Non-occluding blocks whose items still render as 3D models. */
+        static final List<Tag<Material>> TAGS = List.of(Tag.SLABS, Tag.STAIRS, Tag.WALLS, Tag.FENCES, Tag.FENCE_GATES, Tag.LEAVES, Tag.IMPERMEABLE,
+                Tag.SHULKER_BOXES);
 
-    private static final Set<Material> BLOCK_MODEL_MATERIALS = Set.of(Material.CHEST, Material.TRAPPED_CHEST, Material.ENDER_CHEST, Material.GLASS,
-            Material.TINTED_GLASS, Material.SLIME_BLOCK, Material.HONEY_BLOCK, Material.ICE, Material.SNOW_BLOCK);
+        static final Set<Material> MATERIALS = Set.of(Material.CHEST, Material.TRAPPED_CHEST, Material.ENDER_CHEST, Material.GLASS,
+                Material.TINTED_GLASS, Material.SLIME_BLOCK, Material.HONEY_BLOCK, Material.ICE, Material.SNOW_BLOCK);
+
+        private BlockModels() {}
+    }
 
     /** Displays only sit on the four horizontal faces; up/down (e.g. barrels facing up) fall back to north. */
     public static BlockFace horizontal(BlockFace facing) {
