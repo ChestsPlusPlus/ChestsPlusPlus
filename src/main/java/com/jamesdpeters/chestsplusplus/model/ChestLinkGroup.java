@@ -1,6 +1,7 @@
 package com.jamesdpeters.chestsplusplus.model;
 
 import java.util.UUID;
+import lombok.Getter;
 import org.bukkit.inventory.Inventory;
 import org.jspecify.annotations.Nullable;
 
@@ -9,7 +10,7 @@ public final class ChestLinkGroup extends StorageGroup {
 
     public static final int SIZE = 54;
 
-    private SortMode sortMode = SortMode.OFF;
+    @Getter private SortMode sortMode = SortMode.OFF;
     private @Nullable Inventory inventory;
 
     public ChestLinkGroup(long id, UUID owner, String name, long createdAt) {
@@ -19,10 +20,6 @@ public final class ChestLinkGroup extends StorageGroup {
     @Override
     public GroupType type() {
         return GroupType.CHESTLINK;
-    }
-
-    public SortMode sortMode() {
-        return sortMode;
     }
 
     public void setSortMode(SortMode sortMode) {

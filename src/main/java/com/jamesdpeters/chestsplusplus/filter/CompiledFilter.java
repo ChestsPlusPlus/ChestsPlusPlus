@@ -1,6 +1,7 @@
 package com.jamesdpeters.chestsplusplus.filter;
 
 import java.util.List;
+import lombok.Getter;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 
@@ -12,7 +13,7 @@ public final class CompiledFilter {
 
     private record Entry(Material type, HopperFilter.Match match, ItemStack template) {}
 
-    private final List<HopperFilter> filters;
+    @Getter private final List<HopperFilter> filters;
     private final Entry[] allows;
     private final Entry[] denies;
     private final ItemGrouping grouping;
@@ -27,10 +28,6 @@ public final class CompiledFilter {
     private static Entry[] entries(List<HopperFilter> filters, HopperFilter.Mode mode) {
         return filters.stream().filter(f -> f.mode() == mode).map(f -> new Entry(f.template().getType(), f.match(), f.template()))
                 .toArray(Entry[]::new);
-    }
-
-    public List<HopperFilter> filters() {
-        return filters;
     }
 
     public boolean isEmpty() {

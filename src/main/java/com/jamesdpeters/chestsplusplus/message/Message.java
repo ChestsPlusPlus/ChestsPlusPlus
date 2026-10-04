@@ -1,5 +1,7 @@
 package com.jamesdpeters.chestsplusplus.message;
 
+import lombok.Getter;
+
 /** Message keys in {@code messages.yml}. {@code MessagesTest} checks every key has a bundled default. */
 public enum Message {
     PREFIX("prefix"),
@@ -117,13 +119,9 @@ public enum Message {
     ITEM_LINKED_LORE("item.linked-lore"),
     UPDATE_AVAILABLE("update.available");
 
-    private final String key;
+    @Getter private final String key;
 
     Message(String key) {
         this.key = key;
-    }
-
-    public String key() {
-        return key;
     }
 }

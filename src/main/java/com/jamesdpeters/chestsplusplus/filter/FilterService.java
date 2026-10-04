@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
+import lombok.Getter;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -39,7 +40,7 @@ public final class FilterService {
 
     private final Plugin plugin;
     private final FilterCodec codec;
-    private final ItemGrouping grouping;
+    @Getter private final ItemGrouping grouping;
     private final Supplier<Settings> settings;
     private final NamespacedKey marker;
     private final Map<UUID, Map<Long, CompiledFilter>> index = new HashMap<>();
@@ -51,10 +52,6 @@ public final class FilterService {
         this.grouping = grouping;
         this.settings = settings;
         this.marker = new NamespacedKey(plugin, "filter_display");
-    }
-
-    public ItemGrouping grouping() {
-        return grouping;
     }
 
     /** Hot path: the compiled filter for a hopper position, or null when it has none. */

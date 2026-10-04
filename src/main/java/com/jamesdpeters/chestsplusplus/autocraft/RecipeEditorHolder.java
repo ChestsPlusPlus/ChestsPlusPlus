@@ -2,6 +2,7 @@ package com.jamesdpeters.chestsplusplus.autocraft;
 
 import com.jamesdpeters.chestsplusplus.model.AutoCraftGroup;
 import com.jamesdpeters.chestsplusplus.ui.menu.GhostEditor;
+import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -20,7 +21,7 @@ public final class RecipeEditorHolder extends GhostEditor {
 
     public static final int RESULT_SLOT = 0;
 
-    private final AutoCraftGroup group;
+    @Getter private final AutoCraftGroup group;
     private final AutoCraftService autoCraft;
     private final Inventory inventory;
 
@@ -30,10 +31,6 @@ public final class RecipeEditorHolder extends GhostEditor {
         this.autoCraft = autoCraft;
         this.inventory = Bukkit.createInventory(this, InventoryType.WORKBENCH, title);
         render();
-    }
-
-    public AutoCraftGroup group() {
-        return group;
     }
 
     /** The matrix after clicking {@code slot} with {@code cursor}, or null if the click changes nothing. */

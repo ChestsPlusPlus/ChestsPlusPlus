@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -62,7 +63,7 @@ public final class Database implements AutoCloseable {
 
     public static final int SCHEMA_VERSION = MIGRATIONS.getLast().version();
 
-    private final Connection connection;
+    @Getter private final Connection connection;
 
     /** Opens (creating if needed) and migrates the database at a JDBC SQLite URL. */
     public static Database open(String jdbcUrl) throws SQLException {
@@ -81,10 +82,6 @@ public final class Database implements AutoCloseable {
             connection.close();
             throw e;
         }
-    }
-
-    public Connection connection() {
-        return connection;
     }
 
     public int userVersion() throws SQLException {

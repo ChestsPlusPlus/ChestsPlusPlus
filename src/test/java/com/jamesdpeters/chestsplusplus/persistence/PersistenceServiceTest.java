@@ -32,8 +32,7 @@ class PersistenceServiceTest extends PluginTestBase {
     private static final UUID FRIEND = UUID.randomUUID();
     private static final UUID WORLD = UUID.randomUUID();
 
-    @TempDir
-    Path dir;
+    @TempDir Path dir;
 
     private final ConcurrentLinkedQueue<Runnable> mainQueue = new ConcurrentLinkedQueue<>();
 

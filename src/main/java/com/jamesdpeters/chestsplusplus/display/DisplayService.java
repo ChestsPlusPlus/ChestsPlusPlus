@@ -17,6 +17,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import lombok.AccessLevel;
+import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -53,7 +55,7 @@ public final class DisplayService {
 
     private static final int UPDATE_INTERVAL_TICKS = 8;
 
-    private final Plugin plugin;
+    @Getter(AccessLevel.PACKAGE) private final Plugin plugin;
     private final GroupRegistry groups;
     private final NodeIndex nodes;
     private final Supplier<Settings> settings;
@@ -61,7 +63,8 @@ public final class DisplayService {
     private final Map<BlockPos, NodeDisplay> displays = new HashMap<>();
     private final Set<Long> pendingGroups = new LinkedHashSet<>();
     private final Set<ChunkRef> pendingChunks = new LinkedHashSet<>();
-    private final NamespacedKey marker;
+    /** Marks entities as ours, for cleanup and for tests. */
+    @Getter private final NamespacedKey marker;
     private Function<Block, DisplayLayout.Surface> surfaces = block -> DisplayLayout.Surface.FULL_BLOCK;
     private int tick;
 
@@ -81,11 +84,6 @@ public final class DisplayService {
 
     public void surfaces(Function<Block, DisplayLayout.Surface> surfaces) {
         this.surfaces = surfaces;
-    }
-
-    /** Marks entities as ours, for cleanup and for tests. */
-    public NamespacedKey marker() {
-        return marker;
     }
 
     /** Queues a group's displays to be refreshed on the next update tick (debounced). */
@@ -251,9 +249,5 @@ public final class DisplayService {
     /** Is this entity one of ours (by PDC marker)? */
     public boolean isOurs(Entity entity) {
         return entity.getPersistentDataContainer().has(marker, PersistentDataType.BOOLEAN);
-    }
-
-    Plugin plugin() {
-        return plugin;
     }
 }

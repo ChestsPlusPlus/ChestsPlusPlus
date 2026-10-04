@@ -13,6 +13,7 @@ import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import com.jamesdpeters.chestsplusplus.persistence.PersistenceService;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.Getter;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.block.Block;
@@ -22,14 +23,14 @@ import org.jspecify.annotations.Nullable;
 /** Service container, created on enable and discarded on disable. Settings and messages are swapped on reload. */
 public final class Services {
 
-    private final JavaPlugin plugin;
-    private final GroupRegistry groups = new GroupRegistry();
-    private final NodeIndex nodes = new NodeIndex();
-    private final TrustService trust = new TrustService();
-    private final AccessService access = new AccessService(trust, groups);
-    private final Tickers tickers;
-    private volatile Settings settings;
-    private volatile Messages messages;
+    @Getter private final JavaPlugin plugin;
+    @Getter private final GroupRegistry groups = new GroupRegistry();
+    @Getter private final NodeIndex nodes = new NodeIndex();
+    @Getter private final TrustService trust = new TrustService();
+    @Getter private final AccessService access = new AccessService(trust, groups);
+    @Getter private final Tickers tickers;
+    @Getter private volatile Settings settings;
+    @Getter private volatile Messages messages;
     private @Nullable PersistenceService persistence;
     private final Map<Class<?>, Object> components = new HashMap<>();
 
@@ -40,18 +41,6 @@ public final class Services {
         this.tickers = new Tickers(plugin);
     }
 
-    public JavaPlugin plugin() {
-        return plugin;
-    }
-
-    public Settings settings() {
-        return settings;
-    }
-
-    public Messages messages() {
-        return messages;
-    }
-
     public void send(Audience audience, Message message, TagResolver... placeholders) {
         messages.send(audience, message, placeholders);
     }
@@ -59,26 +48,6 @@ public final class Services {
     public void reconfigure(Settings settings, Messages messages) {
         this.settings = settings;
         this.messages = messages;
-    }
-
-    public GroupRegistry groups() {
-        return groups;
-    }
-
-    public NodeIndex nodes() {
-        return nodes;
-    }
-
-    public TrustService trust() {
-        return trust;
-    }
-
-    public AccessService access() {
-        return access;
-    }
-
-    public Tickers tickers() {
-        return tickers;
     }
 
     /** The group {@code block} is linked to, if any. */

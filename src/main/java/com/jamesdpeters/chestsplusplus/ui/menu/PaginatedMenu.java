@@ -2,6 +2,7 @@ package com.jamesdpeters.chestsplusplus.ui.menu;
 
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import java.util.List;
+import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
@@ -16,7 +17,7 @@ public class PaginatedMenu extends Menu {
     private final Component previous;
     private final Component next;
     private final int perPage;
-    private int page;
+    @Getter private int page;
 
     @SuppressWarnings("this-escape")
     public PaginatedMenu(int rows, Component title, List<Entry> entries, Component previous, Component next) {
@@ -26,10 +27,6 @@ public class PaginatedMenu extends Menu {
         this.next = next;
         this.perPage = (rows - 1) * 9;
         render();
-    }
-
-    public int page() {
-        return page;
     }
 
     public int pages() {

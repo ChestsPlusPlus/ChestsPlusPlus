@@ -7,6 +7,7 @@ import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.ItemLore;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -36,7 +37,7 @@ public final class FilterEditorHolder extends GhostEditor {
         SHIFT
     }
 
-    private final Block hopper;
+    @Getter private final Block hopper;
     private final Messages messages;
     private final FilterService filterService;
     private final List<HopperFilter> allows = new ArrayList<>();
@@ -54,10 +55,6 @@ public final class FilterEditorHolder extends GhostEditor {
         }
         this.inventory = Bukkit.createInventory(this, ROW * 3, messages.get(Message.FILTER_TITLE));
         render();
-    }
-
-    public Block hopper() {
-        return hopper;
     }
 
     /** All entries in priority order (allows, then denies), as saved. */

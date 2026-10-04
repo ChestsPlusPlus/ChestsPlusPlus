@@ -5,16 +5,17 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
+import lombok.Getter;
 
 /** A named group of linked blocks owned by a player. Mutated only on the main thread. */
 public abstract sealed class StorageGroup permits ChestLinkGroup, AutoCraftGroup {
 
-    private final long id;
-    private final UUID owner;
-    private final long createdAt;
+    @Getter private final long id;
+    @Getter private final UUID owner;
+    @Getter private final long createdAt;
     private final Set<UUID> members = new LinkedHashSet<>();
-    private String name;
-    private boolean isPublic;
+    @Getter private String name;
+    @Getter private boolean isPublic;
 
     protected StorageGroup(long id, UUID owner, String name, long createdAt) {
         this.id = id;
@@ -25,33 +26,13 @@ public abstract sealed class StorageGroup permits ChestLinkGroup, AutoCraftGroup
 
     public abstract GroupType type();
 
-    public long id() {
-        return id;
-    }
-
-    public UUID owner() {
-        return owner;
-    }
-
-    public String name() {
-        return name;
-    }
-
     /** Renames without re-indexing; use {@link GroupRegistry#rename}. */
     void setName(String name) {
         this.name = name;
     }
 
-    public boolean isPublic() {
-        return isPublic;
-    }
-
     public void setPublic(boolean isPublic) {
         this.isPublic = isPublic;
-    }
-
-    public long createdAt() {
-        return createdAt;
     }
 
     public Set<UUID> members() {
