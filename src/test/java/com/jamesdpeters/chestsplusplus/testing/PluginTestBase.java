@@ -25,6 +25,8 @@ public abstract class PluginTestBase {
         // MockBukkit doesn't implement TextDisplay#setBillboard; labels are covered by E2E instead.
         plugin.getConfig().set("chestlink.display.label", false);
         plugin.getConfig().set("autocraft.display.label", false);
+        plugin.getConfig().set("update-checker.enabled", false);
+        plugin.getConfig().set("metrics.enabled", false);
         plugin.saveConfig();
         try {
             plugin.reload();

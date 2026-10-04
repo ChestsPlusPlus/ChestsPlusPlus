@@ -14,6 +14,8 @@ import com.jamesdpeters.chestsplusplus.filter.FilterCodec;
 import com.jamesdpeters.chestsplusplus.filter.FilterListener;
 import com.jamesdpeters.chestsplusplus.filter.FilterService;
 import com.jamesdpeters.chestsplusplus.filter.ItemGrouping;
+import com.jamesdpeters.chestsplusplus.integration.MetricsService;
+import com.jamesdpeters.chestsplusplus.integration.UpdateChecker;
 import com.jamesdpeters.chestsplusplus.link.GroupActions;
 import com.jamesdpeters.chestsplusplus.link.LinkItem;
 import com.jamesdpeters.chestsplusplus.link.LinkService;
@@ -154,7 +156,14 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
             }
         });
 
-        // 6. Displays and filter index for chunks that are already loaded.
+        // 6. Integrations.
+        services.add(MetricsService.class, new MetricsService()).start(this, services);
+        UpdateChecker updates = services.add(
+                UpdateChecker.class, new UpdateChecker(services, getPluginMeta().getVersion()));
+        pluginManager.registerEvents(updates, this);
+        updates.start();
+
+        // 7. Displays and filter index for chunks that are already loaded.
         displays.refreshAll();
         filters.scanLoadedChunks();
         if (settings.features().hopperFilters()) warnIfMoveEventDisabled(services);
@@ -180,6 +189,8 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         services = null;
         if (current == null) return;
         current.tickers().stopAll();
+        current.get(UpdateChecker.class).stop();
+        current.get(MetricsService.class).stop();
         current.get(DisplayService.class).despawnAll();
         current.get(FilterService.class).despawnAll();
         current.persistence().close();
