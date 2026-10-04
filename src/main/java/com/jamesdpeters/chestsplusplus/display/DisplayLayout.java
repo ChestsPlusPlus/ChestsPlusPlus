@@ -20,27 +20,23 @@ public final class DisplayLayout {
     /** Which model the display sits on. Distances are from the block centre, in blocks. */
     public enum Surface {
         /**
-         * Chests: the body's front is 1px inside the block; the latch sticks out 1px to the block boundary. Displays sit
-         * in front of the latch, flush against it, so the latch never cuts into them.
+         * Chests: the body's front is 1px inside the block; the latch sticks out 1px to the block boundary. Blocks are
+         * centred on the body's front (half inset into the chest); flat items sit in front of the latch.
          */
-        CHEST(7.0 / 16, 8.0 / 16, true),
-        /** Barrels, crafting tables: full cubes. Block displays are centred on the face, half sticking out. */
-        FULL_BLOCK(0.5, 0.5, false),
+        CHEST(7.0 / 16, 8.0 / 16),
+        /** Barrels, crafting tables: full cubes. */
+        FULL_BLOCK(0.5, 0.5),
         /** Hopper bowl sides (filters), upper part of the block. */
-        HOPPER_SIDE(0.5, 0.5, false);
+        HOPPER_SIDE(0.5, 0.5);
 
         /** The model's front face. */
         private final double front;
         /** The furthest-forward part of the model (the chest latch). */
         private final double protrusion;
 
-        /** Whether block displays must sit entirely in front of the protrusion (rather than half inside the block). */
-        private final boolean blocksInFront;
-
-        Surface(double front, double protrusion, boolean blocksInFront) {
+        Surface(double front, double protrusion) {
             this.front = front;
             this.protrusion = protrusion;
-            this.blocksInFront = blocksInFront;
         }
     }
 
@@ -101,25 +97,12 @@ public final class DisplayLayout {
     private DisplayLayout() {}
 
     /**
-     * Half the depth of a block display: FIXED renders blocks at half size, so at {@link #NODE_ITEM_SCALE} a block is
-     * {@code NODE_ITEM_SCALE / 2} deep.
-     */
-    static final double NODE_BLOCK_HALF_DEPTH = NODE_ITEM_SCALE / 4.0;
-
-    /**
-     * Where a node's item display goes.
-     *
-     * <ul>
-     *   <li>Flat items (1px thick) sit just in front of the furthest-forward part of the model.
-     *   <li>Blocks on chests sit in front of the latch with their back flush against it.
-     *   <li>Blocks on full cubes (barrels, crafting tables) are centred on the face, so half sticks out.
-     * </ul>
+     * Where a node's item display goes. Blocks are centred on the model's front face, so half is inset into the
+     * container and half sticks out. Flat items are only 1px thick, so they sit just in front of the furthest-forward
+     * part of the model instead (otherwise the chest latch pokes through them).
      */
     public static Placement nodeItem(Surface surface, BlockFace facing, Shape shape) {
-        double out;
-        if (shape == Shape.FLAT) out = surface.protrusion + FACE_GAP;
-        else if (surface.blocksInFront) out = surface.protrusion + NODE_BLOCK_HALF_DEPTH + FACE_GAP / 2;
-        else out = surface.front;
+        double out = shape == Shape.BLOCK ? surface.front : surface.protrusion + FACE_GAP;
         return place(horizontal(facing), out, NODE_ITEM_HEIGHT);
     }
 

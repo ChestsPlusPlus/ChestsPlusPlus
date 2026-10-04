@@ -27,13 +27,11 @@ class DisplayLayoutTest {
     }
 
     @Test
-    void blocksSitFlushOnChestLatchesAndHalfOutOfFullBlocks() {
-        // On chests, a block sits in front of the latch (which reaches z = 1 on the south face), back flush against it.
-        double chestBlockBack = DisplayLayout.nodeItem(Surface.CHEST, BlockFace.SOUTH, Shape.BLOCK)
-                        .z()
-                - DisplayLayout.NODE_BLOCK_HALF_DEPTH;
-        assertThat(chestBlockBack).isGreaterThan(1.0).isCloseTo(1.0, within(0.02));
-        // Full blocks: centred on the face, so half sticks out.
+    void blocksAreCentredOnTheFrontFaceSoHalfIsInset() {
+        // Chest body front is 1px inside the block (z = 15/16 on the south face); full blocks at the boundary.
+        assertThat(DisplayLayout.nodeItem(Surface.CHEST, BlockFace.SOUTH, Shape.BLOCK)
+                        .z())
+                .isCloseTo(15.0 / 16, within(1e-9));
         assertThat(DisplayLayout.nodeItem(Surface.FULL_BLOCK, BlockFace.SOUTH, Shape.BLOCK)
                         .z())
                 .isCloseTo(1.0, within(1e-9));
