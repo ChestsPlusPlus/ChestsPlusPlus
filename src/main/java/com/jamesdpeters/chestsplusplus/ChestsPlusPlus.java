@@ -7,11 +7,16 @@ import com.jamesdpeters.chestsplusplus.config.Settings;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.display.DisplayLayout;
 import com.jamesdpeters.chestsplusplus.display.DisplayService;
+import com.jamesdpeters.chestsplusplus.filter.FilterCodec;
+import com.jamesdpeters.chestsplusplus.filter.FilterListener;
+import com.jamesdpeters.chestsplusplus.filter.FilterService;
+import com.jamesdpeters.chestsplusplus.filter.ItemGrouping;
 import com.jamesdpeters.chestsplusplus.link.GroupActions;
 import com.jamesdpeters.chestsplusplus.link.LinkItem;
 import com.jamesdpeters.chestsplusplus.link.LinkService;
 import com.jamesdpeters.chestsplusplus.link.NodeListener;
 import com.jamesdpeters.chestsplusplus.link.SignLinkListener;
+import com.jamesdpeters.chestsplusplus.message.Message;
 import com.jamesdpeters.chestsplusplus.message.Messages;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
@@ -71,6 +76,9 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         GroupActions actions = services.add(GroupActions.class, new GroupActions(services, links));
         MenuListener menus = services.add(MenuListener.class, new MenuListener(this));
         services.add(UiService.class, new UiService(services, links, actions, menus));
+        FilterService filters = services.add(
+                FilterService.class,
+                new FilterService(this, new FilterCodec(this), ItemGrouping.fromServerTags(), services::settings));
 
         // 3. Database and model.
         PersistenceService persistence;
@@ -114,6 +122,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         pluginManager.registerEvents(new ChestLinkListener(services, links, chestLinks), this);
         pluginManager.registerEvents(new HopperBridge(services), this);
         pluginManager.registerEvents(menus, this);
+        pluginManager.registerEvents(new FilterListener(services, filters, links), this);
 
         // 5. Central tickers (plan §9: no per-group tasks).
         services.tickers().every("persistence", 1, persistence::tick);
@@ -126,8 +135,24 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         });
         services.tickers().every("displays", 1, displays::tick);
 
-        // 6. Displays for chunks that are already loaded.
+        // 6. Displays and filter index for chunks that are already loaded.
         displays.refreshAll();
+        filters.scanLoadedChunks();
+        if (settings.features().hopperFilters()) warnIfMoveEventDisabled(services);
+    }
+
+    /** Diagnostics only: never let reading Paper's config files break enable. */
+    private void warnIfMoveEventDisabled(Services services) {
+        try {
+            for (String world : FilterService.worldsWithMoveEventDisabled(
+                    getServer().getWorldContainer(), getServer().getWorlds())) {
+                getSLF4JLogger()
+                        .warn(services.messages()
+                                .plain(Message.FILTER_MOVE_EVENT_DISABLED, Messages.text("world", world)));
+            }
+        } catch (RuntimeException e) {
+            getSLF4JLogger().debug("Could not check hopper.disable-move-event", e);
+        }
     }
 
     @Override
@@ -137,6 +162,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         if (current == null) return;
         current.tickers().stopAll();
         current.get(DisplayService.class).despawnAll();
+        current.get(FilterService.class).despawnAll();
         current.persistence().close();
     }
 
@@ -153,6 +179,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         ChestLinkService chestLinks = current.get(ChestLinkService.class);
         for (var group : current.groups().all(GroupType.CHESTLINK)) chestLinks.retitle((ChestLinkGroup) group);
         current.get(DisplayService.class).refreshAll();
+        current.get(FilterService.class).refreshDisplays();
     }
 
     @EventHandler

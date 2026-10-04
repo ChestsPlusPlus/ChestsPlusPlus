@@ -58,6 +58,38 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
                                                         .executes(this::displays))
                                                 .then(Commands.literal("reset").executes(this::reset))
                                                 .then(
+                                                        Commands.literal("filter")
+                                                                .then(
+                                                                        Commands.argument(
+                                                                                        "x",
+                                                                                        IntegerArgumentType.integer())
+                                                                                .then(
+                                                                                        Commands.argument(
+                                                                                                        "y",
+                                                                                                        IntegerArgumentType
+                                                                                                                .integer())
+                                                                                                .then(
+                                                                                                        Commands
+                                                                                                                .argument(
+                                                                                                                        "z",
+                                                                                                                        IntegerArgumentType
+                                                                                                                                .integer())
+                                                                                                                .then(
+                                                                                                                        Commands
+                                                                                                                                .argument(
+                                                                                                                                        "mode",
+                                                                                                                                        StringArgumentType
+                                                                                                                                                .word())
+                                                                                                                                .then(
+                                                                                                                                        Commands
+                                                                                                                                                .argument(
+                                                                                                                                                        "material",
+                                                                                                                                                        StringArgumentType
+                                                                                                                                                                .greedyString())
+                                                                                                                                                .executes(
+                                                                                                                                                        this
+                                                                                                                                                                ::filter)))))))
+                                                .then(
                                                         Commands.literal("link")
                                                                 .then(
                                                                         Commands.argument(
@@ -189,6 +221,30 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
         return reply(
                 context,
                 "cpptest link ok " + group.name() + " nodes=" + services.nodes().count(group.id()));
+    }
+
+    /** Fixture: {@code cpptest filter <x> <y> <z> <allow|deny> <material>} sets one TYPE filter on a hopper. */
+    private int filter(CommandContext<CommandSourceStack> context) {
+        Services services = services();
+        Block block = Bukkit.getWorlds()
+                .getFirst()
+                .getBlockAt(
+                        IntegerArgumentType.getInteger(context, "x"),
+                        IntegerArgumentType.getInteger(context, "y"),
+                        IntegerArgumentType.getInteger(context, "z"));
+        org.bukkit.Material material =
+                org.bukkit.Material.matchMaterial(StringArgumentType.getString(context, "material"));
+        if (material == null) return reply(context, "cpptest filter failed: unknown material");
+        var mode = com.jamesdpeters.chestsplusplus.filter.HopperFilter.Mode.valueOf(
+                StringArgumentType.getString(context, "mode").toUpperCase(Locale.ROOT));
+        var filters = services.get(com.jamesdpeters.chestsplusplus.filter.FilterService.class);
+        filters.write(
+                block,
+                List.of(new com.jamesdpeters.chestsplusplus.filter.HopperFilter(
+                        org.bukkit.inventory.ItemStack.of(material),
+                        mode,
+                        com.jamesdpeters.chestsplusplus.filter.HopperFilter.Match.TYPE)));
+        return reply(context, "cpptest filter ok indexed=" + (filters.get(block) != null));
     }
 
     /** Fixture: removes every group (contents are discarded, not dropped). */
