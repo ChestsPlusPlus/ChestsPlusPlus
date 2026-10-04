@@ -51,6 +51,12 @@ public final class UiService {
 
     static final int GROUPS_PER_PAGE = 10;
     private static final Duration CALLBACK_LIFETIME = Duration.ofMinutes(10);
+    /** Dialog input keys: each is defined on a {@link DialogInput} and read back from the {@link DialogResponseView}. */
+    private static final String SEARCH_INPUT = "search";
+    private static final String NAME_INPUT = "name";
+    private static final String PUBLIC_INPUT = "public";
+    private static final String SORT_INPUT = "sort";
+    private static final String PLAYER_INPUT = "player";
 
     private final Services services;
     private final LinkService links;
@@ -94,7 +100,7 @@ public final class UiService {
         if (current > 0) buttons.add(button(text(Message.MENU_HUB_PREVIOUS), (view, p) -> openHub(p, type, search(view), current - 1)));
         if (current < pages - 1) buttons.add(button(text(Message.MENU_HUB_NEXT), (view, p) -> openHub(p, type, search(view), current + 1)));
 
-        DialogInput searchInput = DialogInput.text("search", text(Message.MENU_HUB_SEARCH)).initial(search).maxLength(32).build();
+        DialogInput searchInput = DialogInput.text(SEARCH_INPUT, text(Message.MENU_HUB_SEARCH)).initial(search).maxLength(32).build();
         DialogBase base = DialogBase.builder(text(Message.MENU_HUB_TITLE))
                 .canCloseWithEscape(true)
                 .body(groups.isEmpty() ? List.of(DialogBody.plainMessage(text(Message.MENU_HUB_EMPTY))) : List.of())
@@ -130,15 +136,15 @@ public final class UiService {
 
     private List<DialogInput> groupInputs(Player player, StorageGroup group) {
         List<DialogInput> inputs = new ArrayList<>();
-        inputs.add(DialogInput.text("name", text(Message.MENU_GROUP_NEW_NAME)).initial(group.name()).maxLength(32).build());
-        inputs.add(DialogInput.bool("public", text(Message.MENU_GROUP_PUBLIC)).initial(group.isPublic()).build());
+        inputs.add(DialogInput.text(NAME_INPUT, text(Message.MENU_GROUP_NEW_NAME)).initial(group.name()).maxLength(32).build());
+        inputs.add(DialogInput.bool(PUBLIC_INPUT, text(Message.MENU_GROUP_PUBLIC)).initial(group.isPublic()).build());
         if (group instanceof ChestLinkGroup chest && player.hasPermission(Permissions.CHESTLINK_SORT)) {
             List<SingleOptionDialogInput.OptionEntry> modes = new ArrayList<>();
             for (SortMode mode : SortMode.values()) {
                 Component label = Component.text(mode.name().toLowerCase(Locale.ROOT));
                 modes.add(SingleOptionDialogInput.OptionEntry.create(mode.name(), label, mode == chest.sortMode()));
             }
-            inputs.add(DialogInput.singleOption("sort", text(Message.MENU_GROUP_SORT_MODE), modes).build());
+            inputs.add(DialogInput.singleOption(SORT_INPUT, text(Message.MENU_GROUP_SORT_MODE), modes).build());
         }
         return inputs;
     }
@@ -163,11 +169,11 @@ public final class UiService {
 
     /** Applies the group dialog's inputs: only what changed, each through {@link GroupActions}. */
     void save(Player player, StorageGroup group, DialogResponseView view) {
-        String name = view.getText("name");
+        String name = view.getText(NAME_INPUT);
         if (name != null && !name.isBlank() && !name.equals(group.name())) actions.rename(player, group, name.trim());
-        Boolean isPublic = view.getBoolean("public");
+        Boolean isPublic = view.getBoolean(PUBLIC_INPUT);
         if (isPublic != null && isPublic != group.isPublic()) actions.setPublic(player, group, isPublic);
-        SortMode mode = parseSortMode(view.getText("sort"));
+        SortMode mode = parseSortMode(view.getText(SORT_INPUT));
         if (mode != null && group instanceof ChestLinkGroup chest && mode != chest.sortMode()) actions.sort(player, chest, mode);
     }
 
@@ -228,7 +234,7 @@ public final class UiService {
     private Dialog playerListDialog(Component title, List<ActionButton> buttons) {
         DialogBase base = DialogBase.builder(title)
                 .canCloseWithEscape(true)
-                .inputs(List.of(DialogInput.text("player", text(Message.MENU_MEMBERS_PLAYER)).maxLength(16).build()))
+                .inputs(List.of(DialogInput.text(PLAYER_INPUT, text(Message.MENU_MEMBERS_PLAYER)).maxLength(16).build()))
                 .build();
         return multiAction(base, buttons, 1);
     }
@@ -319,12 +325,12 @@ public final class UiService {
     }
 
     private static String search(DialogResponseView view) {
-        String value = view.getText("search");
+        String value = view.getText(SEARCH_INPUT);
         return value == null ? "" : value;
     }
 
     private static String playerInput(DialogResponseView view) {
-        String value = view.getText("player");
+        String value = view.getText(PLAYER_INPUT);
         return value == null ? "" : value.trim();
     }
 }
