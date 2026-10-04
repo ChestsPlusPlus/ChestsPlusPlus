@@ -148,7 +148,10 @@ public final class FilterListener implements Listener {
             event.getWhoClicked().closeInventory();
             return;
         }
-        if (editor.click(event.getSlot(), event.getCursor(), event.isShiftClick())) {
+        FilterEditorHolder.Click click = event.isShiftClick()
+                ? FilterEditorHolder.Click.SHIFT
+                : event.isRightClick() ? FilterEditorHolder.Click.RIGHT : FilterEditorHolder.Click.LEFT;
+        if (editor.click(event.getSlot(), event.getCursor(), click)) {
             filters.write(editor.hopper(), editor.filters());
         }
     }

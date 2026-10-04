@@ -133,26 +133,39 @@ class FilterIntegrationTest extends PluginTestBase {
     }
 
     @Test
-    void editorAddsCyclesRemovesAndClears() {
+    void editorAddsCyclesMovesRemovesAndClears() {
         Block hopper = hopperAt(0);
         FilterEditorHolder editor =
                 new FilterEditorHolder(hopper, List.of(), plugin.services().messages());
+        var LEFT = FilterEditorHolder.Click.LEFT;
 
-        assertThat(editor.click(0, ItemStack.of(Material.STONE, 32), false)).isTrue();
-        assertThat(editor.click(9, ItemStack.of(Material.DIRT), false)).isTrue();
+        // Empty rows show coloured placeholders explaining what to do.
+        assertThat(editor.getInventory().getItem(0).getType()).isEqualTo(Material.LIME_STAINED_GLASS_PANE);
+        assertThat(editor.getInventory().getItem(9).getType()).isEqualTo(Material.RED_STAINED_GLASS_PANE);
+
+        assertThat(editor.click(0, ItemStack.of(Material.STONE, 32), LEFT)).isTrue();
+        assertThat(editor.click(12, ItemStack.of(Material.DIRT), LEFT)).isTrue(); // any empty Deny slot works
         assertThat(editor.filters())
                 .containsExactly(
                         filter(Material.STONE, Mode.ALLOW, Match.EXACT), filter(Material.DIRT, Mode.DENY, Match.EXACT));
+        assertThat(editor.getInventory().getItem(9).getType()).isEqualTo(Material.DIRT);
 
-        editor.click(0, null, false);
-        editor.click(0, null, false);
+        editor.click(0, null, LEFT);
+        editor.click(0, null, LEFT);
         assertThat(editor.filters().getFirst().match()).isEqualTo(Match.SIMILAR);
-        assertThat(editor.getInventory().getItem(0).getType()).isEqualTo(Material.STONE);
 
-        assertThat(editor.click(9, null, true)).isTrue();
+        // Right-click moves an entry to the other row, keeping its match.
+        assertThat(editor.click(0, null, FilterEditorHolder.Click.RIGHT)).isTrue();
+        assertThat(editor.filters())
+                .containsExactly(
+                        filter(Material.DIRT, Mode.DENY, Match.EXACT),
+                        filter(Material.STONE, Mode.DENY, Match.SIMILAR));
+
+        assertThat(editor.click(9, null, FilterEditorHolder.Click.SHIFT)).isTrue();
         assertThat(editor.filters()).hasSize(1);
-        assertThat(editor.click(5, null, false)).isFalse();
-        assertThat(editor.click(FilterEditorHolder.CLEAR_SLOT, null, false)).isTrue();
+        assertThat(editor.click(5, null, LEFT)).isFalse();
+        assertThat(editor.click(FilterEditorHolder.HELP_SLOT, null, LEFT)).isFalse();
+        assertThat(editor.click(FilterEditorHolder.CLEAR_SLOT, null, LEFT)).isTrue();
         assertThat(editor.filters()).isEmpty();
     }
 

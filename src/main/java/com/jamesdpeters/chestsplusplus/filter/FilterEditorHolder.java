@@ -6,6 +6,7 @@ import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.ItemLore;
 import java.util.ArrayList;
 import java.util.List;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -15,15 +16,23 @@ import org.bukkit.inventory.ItemStack;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The sneak-click filter editor (plan §5.5): row 1 holds Allow entries, row 2 Deny entries, row 3 controls. Clicking
- * a row with an item on the cursor adds a ghost copy (the item isn't consumed); clicking an entry cycles its match;
- * shift-click removes it; the barrier clears everything. Every change is saved straight to the hopper.
+ * The sneak-click filter editor (plan §5.5). Row 1 is the Allow row and row 2 the Deny row; empty slots are lime/red
+ * panes that say what clicking them does. Click a row with an item on the cursor to add a ghost copy (the item isn't
+ * consumed). On an entry: left-click cycles exact → type → similar, right-click moves it to the other row, shift-click
+ * removes it. Row 3 holds the help item and the clear button. Every change is saved straight to the hopper.
  */
 public final class FilterEditorHolder implements InventoryHolder {
 
     static final int ROW = 9;
-    static final int CLEAR_SLOT = 22;
     static final int HELP_SLOT = 18;
+    static final int CLEAR_SLOT = 26;
+
+    /** How the player clicked an editor slot. */
+    public enum Click {
+        LEFT,
+        RIGHT,
+        SHIFT
+    }
 
     private final Block hopper;
     private final Messages messages;
@@ -59,7 +68,7 @@ public final class FilterEditorHolder implements InventoryHolder {
      *
      * @param cursor the item on the player's cursor (null/empty for none)
      */
-    public boolean click(int slot, @Nullable ItemStack cursor, boolean shift) {
+    public boolean click(int slot, @Nullable ItemStack cursor, Click click) {
         if (slot == CLEAR_SLOT) {
             boolean changed = !allows.isEmpty() || !denies.isEmpty();
             allows.clear();
@@ -69,7 +78,7 @@ public final class FilterEditorHolder implements InventoryHolder {
         }
         if (slot < 0 || slot >= ROW * 2) return false;
         HopperFilter.Mode mode = slot < ROW ? HopperFilter.Mode.ALLOW : HopperFilter.Mode.DENY;
-        List<HopperFilter> row = mode == HopperFilter.Mode.ALLOW ? allows : denies;
+        List<HopperFilter> row = rowOf(mode);
         int index = slot % ROW;
         boolean hasCursor = cursor != null && !cursor.isEmpty();
         if (hasCursor) {
@@ -78,8 +87,19 @@ public final class FilterEditorHolder implements InventoryHolder {
             else if (row.size() < ROW) row.add(added);
             else return false;
         } else if (index < row.size()) {
-            if (shift) row.remove(index);
-            else row.set(index, row.get(index).withMatch(row.get(index).match().next()));
+            HopperFilter entry = row.get(index);
+            switch (click) {
+                case SHIFT -> row.remove(index);
+                case RIGHT -> {
+                    HopperFilter.Mode other =
+                            mode == HopperFilter.Mode.ALLOW ? HopperFilter.Mode.DENY : HopperFilter.Mode.ALLOW;
+                    List<HopperFilter> target = rowOf(other);
+                    if (target.size() >= ROW) return false;
+                    row.remove(index);
+                    target.add(new HopperFilter(entry.template(), other, entry.match()));
+                }
+                case LEFT -> row.set(index, entry.withMatch(entry.match().next()));
+            }
         } else {
             return false;
         }
@@ -87,38 +107,46 @@ public final class FilterEditorHolder implements InventoryHolder {
         return true;
     }
 
+    private List<HopperFilter> rowOf(HopperFilter.Mode mode) {
+        return mode == HopperFilter.Mode.ALLOW ? allows : denies;
+    }
+
     private void render() {
         inventory.clear();
-        for (int i = 0; i < allows.size(); i++) inventory.setItem(i, icon(allows.get(i)));
-        for (int i = 0; i < denies.size(); i++) inventory.setItem(ROW + i, icon(denies.get(i)));
-        inventory.setItem(HELP_SLOT, named(Material.PAPER, Message.FILTER_HELP));
-        inventory.setItem(CLEAR_SLOT, named(Material.BARRIER, Message.FILTER_CLEAR));
-        inventory.setItem(20, named(Material.LIME_STAINED_GLASS_PANE, Message.FILTER_ALLOW));
-        inventory.setItem(24, named(Material.RED_STAINED_GLASS_PANE, Message.FILTER_DENY));
+        for (int i = 0; i < ROW; i++) {
+            inventory.setItem(i, i < allows.size() ? icon(allows.get(i)) : placeholder(HopperFilter.Mode.ALLOW));
+            inventory.setItem(ROW + i, i < denies.size() ? icon(denies.get(i)) : placeholder(HopperFilter.Mode.DENY));
+        }
+        inventory.setItem(HELP_SLOT, named(Material.BOOK, Message.FILTER_HELP, Message.FILTER_HELP_LORE));
+        inventory.setItem(CLEAR_SLOT, named(Material.BARRIER, Message.FILTER_CLEAR, null));
+    }
+
+    private ItemStack placeholder(HopperFilter.Mode mode) {
+        return mode == HopperFilter.Mode.ALLOW
+                ? named(Material.LIME_STAINED_GLASS_PANE, Message.FILTER_ALLOW_EMPTY, Message.FILTER_ALLOW_EMPTY_LORE)
+                : named(Material.RED_STAINED_GLASS_PANE, Message.FILTER_DENY_EMPTY, Message.FILTER_DENY_EMPTY_LORE);
     }
 
     private ItemStack icon(HopperFilter filter) {
         ItemStack icon = filter.template().clone();
+        boolean allow = filter.mode() == HopperFilter.Mode.ALLOW;
         Message match = switch (filter.match()) {
             case EXACT -> Message.FILTER_MATCH_EXACT;
             case TYPE -> Message.FILTER_MATCH_TYPE;
             case SIMILAR -> Message.FILTER_MATCH_SIMILAR;
         };
-        icon.setData(
-                DataComponentTypes.LORE,
-                ItemLore.lore(List.of(
-                        messages.lines(
-                                        filter.mode() == HopperFilter.Mode.ALLOW
-                                                ? Message.FILTER_ALLOW
-                                                : Message.FILTER_DENY)
-                                .getFirst(),
-                        messages.lines(match).getFirst())));
+        List<Component> lore = new ArrayList<>();
+        lore.addAll(messages.lines(allow ? Message.FILTER_ALLOW : Message.FILTER_DENY));
+        lore.addAll(messages.lines(match));
+        lore.addAll(messages.lines(Message.FILTER_CONTROLS, Messages.text("other", allow ? "Deny" : "Allow")));
+        icon.setData(DataComponentTypes.LORE, ItemLore.lore(lore));
         return icon;
     }
 
-    private ItemStack named(Material material, Message name) {
+    private ItemStack named(Material material, Message name, @Nullable Message lore) {
         ItemStack item = ItemStack.of(material);
         item.setData(DataComponentTypes.ITEM_NAME, messages.get(name));
+        if (lore != null) item.setData(DataComponentTypes.LORE, ItemLore.lore(messages.lines(lore)));
         return item;
     }
 
