@@ -100,14 +100,12 @@ class GroupCommandsIntegrationTest extends PluginTestBase {
         assertThat(group.members()).isEmpty();
 
         run(alice, "cpp trust add Bob");
-        assertThat(plugin.services().trust().isTrusted(alice.getUniqueId(), bob.getUniqueId()))
-                .isTrue();
+        assertThat(plugin.services().trust().isTrusted(alice.getUniqueId(), bob.getUniqueId())).isTrue();
         assertThat(run(alice, "cpp trust list")).anyMatch(l -> l.contains("Bob"));
         run(bob, "cl open Alice:ores");
         assertThat(bob.getOpenInventory().getTopInventory()).isSameAs(group.inventory());
         run(alice, "cpp trust remove Bob");
-        assertThat(plugin.services().trust().isTrusted(alice.getUniqueId(), bob.getUniqueId()))
-                .isFalse();
+        assertThat(plugin.services().trust().isTrusted(alice.getUniqueId(), bob.getUniqueId())).isFalse();
         assertThat(run(alice, "cpp trust add Alice")).anyMatch(l -> l.contains("yourself"));
     }
 
@@ -119,10 +117,8 @@ class GroupCommandsIntegrationTest extends PluginTestBase {
         run(alice, "cl remove ores");
 
         assertThat(plugin.services().groups().byId(group.id())).isNull();
-        assertThat(plugin.services().nodes().get(BlockPos.of(world.getBlockAt(0, 64, 0))))
-                .isNull();
-        assertThat(world.getEntitiesByClass(Item.class))
-                .anyMatch(i -> i.getItemStack().getType() == Material.COAL);
+        assertThat(plugin.services().nodes().get(BlockPos.of(world.getBlockAt(0, 64, 0)))).isNull();
+        assertThat(world.getEntitiesByClass(Item.class)).anyMatch(i -> i.getItemStack().getType() == Material.COAL);
     }
 
     @Test
@@ -144,11 +140,8 @@ class GroupCommandsIntegrationTest extends PluginTestBase {
         assertThat(menu.getInventory().getItem(0).getType()).isEqualTo(Material.CHEST);
 
         server.getPluginManager()
-                .callEvent(new org.bukkit.event.inventory.InventoryClickEvent(
-                        alice.getOpenInventory(),
-                        org.bukkit.event.inventory.InventoryType.SlotType.CONTAINER,
-                        0,
-                        org.bukkit.event.inventory.ClickType.LEFT,
+                .callEvent(new org.bukkit.event.inventory.InventoryClickEvent(alice.getOpenInventory(),
+                        org.bukkit.event.inventory.InventoryType.SlotType.CONTAINER, 0, org.bukkit.event.inventory.ClickType.LEFT,
                         org.bukkit.event.inventory.InventoryAction.PICKUP_ALL));
         assertThat(alice.getOpenInventory().getTopInventory()).isSameAs(group.inventory());
     }
@@ -159,9 +152,7 @@ class GroupCommandsIntegrationTest extends PluginTestBase {
         create(alice, "wood", 2);
         UiService ui = plugin.services().get(UiService.class);
 
-        assertThat(ui.hubGroups(alice, GroupType.CHESTLINK, "OR"))
-                .extracting(g -> g.name())
-                .containsExactly("ores");
+        assertThat(ui.hubGroups(alice, GroupType.CHESTLINK, "OR")).extracting(g -> g.name()).containsExactly("ores");
         assertThat(ui.hubGroups(alice, GroupType.CHESTLINK, "alice")).hasSize(2);
         assertThat(ui.hubGroups(bob, GroupType.CHESTLINK, "")).isEmpty();
     }

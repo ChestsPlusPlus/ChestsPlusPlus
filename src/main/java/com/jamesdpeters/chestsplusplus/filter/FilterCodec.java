@@ -48,9 +48,7 @@ public final class FilterCodec {
             try {
                 ItemStack item = ItemStack.deserializeBytes(bytes);
                 if (item.isEmpty()) continue;
-                filters.add(new HopperFilter(
-                        item,
-                        HopperFilter.Mode.valueOf(mode.toUpperCase(Locale.ROOT)),
+                filters.add(new HopperFilter(item, HopperFilter.Mode.valueOf(mode.toUpperCase(Locale.ROOT)),
                         HopperFilter.Match.valueOf(match.toUpperCase(Locale.ROOT))));
             } catch (IllegalArgumentException ignored) {
                 // corrupt or unknown entry: skip it rather than losing the rest

@@ -17,8 +17,7 @@ class SettingsTest {
     @Test
     void bundledConfigMatchesDefaults() throws Exception {
         YamlConfiguration yaml = new YamlConfiguration();
-        try (var reader = new InputStreamReader(
-                Objects.requireNonNull(getClass().getResourceAsStream("/config.yml")), StandardCharsets.UTF_8)) {
+        try (var reader = new InputStreamReader(Objects.requireNonNull(getClass().getResourceAsStream("/config.yml")), StandardCharsets.UTF_8)) {
             yaml.load(reader);
         }
 

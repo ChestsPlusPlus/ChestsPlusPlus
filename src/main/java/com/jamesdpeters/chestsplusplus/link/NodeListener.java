@@ -53,8 +53,7 @@ public final class NodeListener implements Listener {
     }
 
     private @Nullable Node node(Block block) {
-        return services.nodes()
-                .get(block.getWorld().getUID(), BlockPos.packed(block.getX(), block.getY(), block.getZ()));
+        return services.nodes().get(block.getWorld().getUID(), BlockPos.packed(block.getX(), block.getY(), block.getZ()));
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -66,9 +65,7 @@ public final class NodeListener implements Listener {
         StorageGroup group = services.groups().byId(node.groupId());
         Location dropAt = block.getLocation().clone().add(0.5, 0.5, 0.5);
         ItemStack tool = player.getInventory().getItemInMainHand();
-        boolean silkTouch = player.getGameMode() != GameMode.CREATIVE
-                && tool.containsEnchantment(Enchantment.SILK_TOUCH)
-                && group != null;
+        boolean silkTouch = player.getGameMode() != GameMode.CREATIVE && tool.containsEnchantment(Enchantment.SILK_TOUCH) && group != null;
         if (silkTouch) {
             event.setDropItems(false);
             block.getWorld().dropItemNaturally(dropAt, linkItems.create(group, block.getType(), services.messages()));
@@ -108,13 +105,8 @@ public final class NodeListener implements Listener {
                 GroupTypeHandler handler = links.handler(group.type());
                 if (handler != null && handler.isValidBlock(block)) {
                     links.addNode(group, block, Holders.facing(player).getOppositeFace());
-                    services.messages()
-                            .send(
-                                    player,
-                                    group.type() == GroupType.CHESTLINK
-                                            ? Message.CHESTLINK_LINKED
-                                            : Message.AUTOCRAFT_LINKED,
-                                    Messages.text("group", group.name()));
+                    services.messages().send(player, group.type() == GroupType.CHESTLINK ? Message.CHESTLINK_LINKED : Message.AUTOCRAFT_LINKED,
+                            Messages.text("group", group.name()));
                     return;
                 }
             }
@@ -174,12 +166,9 @@ public final class NodeListener implements Listener {
         for (Node node : inChunk) {
             StorageGroup group = services.groups().byId(node.groupId());
             GroupTypeHandler handler = group == null ? null : links.handler(group.type());
-            Block block = event.getChunk()
-                    .getBlock(node.pos().x() & 15, node.pos().y(), node.pos().z() & 15);
+            Block block = event.getChunk().getBlock(node.pos().x() & 15, node.pos().y(), node.pos().z() & 15);
             if (handler != null && !handler.isValidBlock(block)) {
-                services.plugin()
-                        .getSLF4JLogger()
-                        .warn("Unlinking {} from {}: block is now {}", node.pos(), group.name(), block.getType());
+                services.plugin().getSLF4JLogger().warn("Unlinking {} from {}: block is now {}", node.pos(), group.name(), block.getType());
                 links.unlink(node.pos(), block.getLocation(), true);
             }
         }

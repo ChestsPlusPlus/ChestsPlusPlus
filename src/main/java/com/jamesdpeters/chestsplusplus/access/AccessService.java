@@ -16,10 +16,7 @@ public final class AccessService {
 
     /** Use (open, link, remote open): owner, public, member, trusted by the owner, or bypass. */
     public boolean canAccess(UUID player, boolean bypass, StorageGroup group) {
-        return bypass
-                || group.owner().equals(player)
-                || group.isPublic()
-                || group.members().contains(player)
+        return bypass || group.owner().equals(player) || group.isPublic() || group.members().contains(player)
                 || trust.isTrusted(group.owner(), player);
     }
 

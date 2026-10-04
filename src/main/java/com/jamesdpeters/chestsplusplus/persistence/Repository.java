@@ -45,13 +45,11 @@ public final class Repository {
                 ResultSet rs = st.executeQuery("SELECT group_id, world, x, y, z, facing FROM nodes ORDER BY rowid")) {
             while (rs.next()) {
                 nodes.computeIfAbsent(rs.getLong(1), k -> new ArrayList<>())
-                        .add(new NodeRecord(
-                                uuid(rs.getBytes(2)), rs.getInt(3), rs.getInt(4), rs.getInt(5), rs.getString(6)));
+                        .add(new NodeRecord(uuid(rs.getBytes(2)), rs.getInt(3), rs.getInt(4), rs.getInt(5), rs.getString(6)));
             }
         }
         Map<Long, byte[]> inventories = new HashMap<>();
-        try (Statement st = connection.createStatement();
-                ResultSet rs = st.executeQuery("SELECT group_id, items FROM chest_inventories")) {
+        try (Statement st = connection.createStatement(); ResultSet rs = st.executeQuery("SELECT group_id, items FROM chest_inventories")) {
             while (rs.next()) inventories.put(rs.getLong(1), rs.getBytes(2));
         }
         Map<Long, String> recipeKeys = new HashMap<>();
@@ -67,31 +65,18 @@ public final class Repository {
         }
         List<GroupRecord> groups = new ArrayList<>();
         try (Statement st = connection.createStatement();
-                ResultSet rs = st.executeQuery(
-                        "SELECT id, type, owner, name, is_public, sort_mode, created_at FROM groups ORDER BY id")) {
+                ResultSet rs = st.executeQuery("SELECT id, type, owner, name, is_public, sort_mode, created_at FROM groups ORDER BY id")) {
             while (rs.next()) {
                 long id = rs.getLong(1);
-                groups.add(new GroupRecord(
-                        id,
-                        GroupType.valueOf(rs.getString(2)),
-                        uuid(rs.getBytes(3)),
-                        rs.getString(4),
-                        rs.getInt(5) != 0,
-                        rs.getString(6),
-                        rs.getLong(7),
-                        List.copyOf(members.getOrDefault(id, List.of())),
-                        List.copyOf(nodes.getOrDefault(id, List.of())),
-                        inventories.get(id),
-                        recipeKeys.get(id),
-                        matrices.get(id)));
+                groups.add(new GroupRecord(id, GroupType.valueOf(rs.getString(2)), uuid(rs.getBytes(3)), rs.getString(4), rs.getInt(5) != 0,
+                        rs.getString(6), rs.getLong(7), List.copyOf(members.getOrDefault(id, List.of())),
+                        List.copyOf(nodes.getOrDefault(id, List.of())), inventories.get(id), recipeKeys.get(id), matrices.get(id)));
             }
         }
         Map<UUID, Set<UUID>> trust = new LinkedHashMap<>();
-        try (Statement st = connection.createStatement();
-                ResultSet rs = st.executeQuery("SELECT owner, trusted FROM trust ORDER BY rowid")) {
+        try (Statement st = connection.createStatement(); ResultSet rs = st.executeQuery("SELECT owner, trusted FROM trust ORDER BY rowid")) {
             while (rs.next()) {
-                trust.computeIfAbsent(uuid(rs.getBytes(1)), k -> new LinkedHashSet<>())
-                        .add(uuid(rs.getBytes(2)));
+                trust.computeIfAbsent(uuid(rs.getBytes(1)), k -> new LinkedHashSet<>()).add(uuid(rs.getBytes(2)));
             }
         }
         return new LoadedData(groups, trust);
@@ -140,8 +125,7 @@ public final class Repository {
             clear.setLong(1, g.id());
             clear.executeUpdate();
         }
-        try (PreparedStatement st =
-                connection.prepareStatement("INSERT INTO group_members (group_id, member) VALUES (?, ?)")) {
+        try (PreparedStatement st = connection.prepareStatement("INSERT INTO group_members (group_id, member) VALUES (?, ?)")) {
             for (UUID member : g.members()) {
                 st.setLong(1, g.id());
                 st.setBytes(2, bytes(member));
@@ -154,8 +138,8 @@ public final class Repository {
             clear.executeUpdate();
         }
         // OR REPLACE: a node may have moved to this group from another one not yet flushed.
-        try (PreparedStatement st = connection.prepareStatement(
-                "INSERT OR REPLACE INTO nodes (world, x, y, z, group_id, facing) VALUES (?, ?, ?, ?, ?, ?)")) {
+        try (PreparedStatement st = connection
+                .prepareStatement("INSERT OR REPLACE INTO nodes (world, x, y, z, group_id, facing) VALUES (?, ?, ?, ?, ?, ?)")) {
             for (NodeRecord node : g.nodes()) {
                 st.setBytes(1, bytes(node.world()));
                 st.setInt(2, node.x());
@@ -168,8 +152,8 @@ public final class Repository {
             st.executeBatch();
         }
         if (g.inventory() != null) {
-            try (PreparedStatement st = connection.prepareStatement(
-                    "INSERT OR REPLACE INTO chest_inventories (group_id, items, updated_at) VALUES (?, ?, ?)")) {
+            try (PreparedStatement st = connection
+                    .prepareStatement("INSERT OR REPLACE INTO chest_inventories (group_id, items, updated_at) VALUES (?, ?, ?)")) {
                 st.setLong(1, g.id());
                 st.setBytes(2, g.inventory());
                 st.setLong(3, System.currentTimeMillis());
@@ -177,8 +161,8 @@ public final class Repository {
             }
         }
         if (g.matrix() != null) {
-            try (PreparedStatement st = connection.prepareStatement(
-                    "INSERT OR REPLACE INTO autocraft_recipes (group_id, recipe_key, matrix) VALUES (?, ?, ?)")) {
+            try (PreparedStatement st = connection
+                    .prepareStatement("INSERT OR REPLACE INTO autocraft_recipes (group_id, recipe_key, matrix) VALUES (?, ?, ?)")) {
                 st.setLong(1, g.id());
                 st.setString(2, g.recipeKey());
                 st.setBytes(3, g.matrix());
@@ -203,10 +187,7 @@ public final class Repository {
     }
 
     static byte[] bytes(UUID uuid) {
-        return ByteBuffer.allocate(16)
-                .putLong(uuid.getMostSignificantBits())
-                .putLong(uuid.getLeastSignificantBits())
-                .array();
+        return ByteBuffer.allocate(16).putLong(uuid.getMostSignificantBits()).putLong(uuid.getLeastSignificantBits()).array();
     }
 
     static UUID uuid(byte[] bytes) {

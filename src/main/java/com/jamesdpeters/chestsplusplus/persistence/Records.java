@@ -18,19 +18,8 @@ public final class Records {
     public record NodeRecord(UUID world, int x, int y, int z, String facing) {}
 
     /** A full snapshot of one group; the I/O thread replaces everything stored for {@code id}. */
-    public record GroupRecord(
-            long id,
-            GroupType type,
-            UUID owner,
-            String name,
-            boolean isPublic,
-            @Nullable String sortMode,
-            long createdAt,
-            List<UUID> members,
-            List<NodeRecord> nodes,
-            byte @Nullable [] inventory,
-            @Nullable String recipeKey,
-            byte @Nullable [] matrix) {}
+    public record GroupRecord(long id, GroupType type, UUID owner, String name, boolean isPublic, @Nullable String sortMode, long createdAt,
+            List<UUID> members, List<NodeRecord> nodes, byte @Nullable [] inventory, @Nullable String recipeKey, byte @Nullable [] matrix) {}
 
     /**
      * One write-behind transaction: groups to upsert, group ids to delete, and owners whose trust list is replaced

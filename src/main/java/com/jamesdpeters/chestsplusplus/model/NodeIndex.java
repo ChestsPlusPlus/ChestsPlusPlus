@@ -25,9 +25,7 @@ public final class NodeIndex {
         Node previous = remove(node.pos());
         BlockPos pos = node.pos();
         byPos.computeIfAbsent(pos.world(), k -> new HashMap<>()).put(pos.packed(), node);
-        byChunk.computeIfAbsent(pos.world(), k -> new HashMap<>())
-                .computeIfAbsent(pos.chunkKey(), k -> new ArrayList<>(2))
-                .add(node);
+        byChunk.computeIfAbsent(pos.world(), k -> new HashMap<>()).computeIfAbsent(pos.chunkKey(), k -> new ArrayList<>(2)).add(node);
         byGroup.computeIfAbsent(node.groupId(), k -> new LinkedHashMap<>()).put(pos, node);
         return previous;
     }

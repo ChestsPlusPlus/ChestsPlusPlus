@@ -43,8 +43,7 @@ class CommandsIntegrationTest extends PluginTestBase {
         assertThat(server.dispatchCommand(player, "cpp reload")).isTrue();
 
         assertThat(nextPlain(player)).contains("reloaded");
-        assertThat(plugin.services().settings().storage().flushIntervalSeconds())
-                .isEqualTo(5);
+        assertThat(plugin.services().settings().storage().flushIntervalSeconds()).isEqualTo(5);
     }
 
     @Test

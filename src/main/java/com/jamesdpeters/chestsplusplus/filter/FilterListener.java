@@ -94,8 +94,7 @@ public final class FilterListener implements Listener {
             if (item == null || item.isEmpty() || !filter.accepts(item)) continue;
             ItemStack moving = item.asQuantity(Math.min(amount, item.getAmount()));
             Map<Integer, ItemStack> leftover = destination.addItem(moving.clone());
-            int moved = moving.getAmount()
-                    - leftover.values().stream().mapToInt(ItemStack::getAmount).sum();
+            int moved = moving.getAmount() - leftover.values().stream().mapToInt(ItemStack::getAmount).sum();
             if (moved <= 0) continue;
             item.setAmount(item.getAmount() - moved);
             source.setItem(slot, item.isEmpty() ? null : item);
@@ -194,10 +193,7 @@ public final class FilterListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     void onChunkUnload(ChunkUnloadEvent event) {
         filters.chunkUnloaded(event.getChunk());
-        lastManualMove
-                .keySet()
-                .removeIf(pos -> pos.chunkX() == event.getChunk().getX()
-                        && pos.chunkZ() == event.getChunk().getZ()
-                        && pos.world().equals(event.getWorld().getUID()));
+        lastManualMove.keySet().removeIf(pos -> pos.chunkX() == event.getChunk().getX() && pos.chunkZ() == event.getChunk().getZ()
+                && pos.world().equals(event.getWorld().getUID()));
     }
 }

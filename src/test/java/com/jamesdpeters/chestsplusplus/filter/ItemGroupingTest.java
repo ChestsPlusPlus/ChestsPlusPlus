@@ -12,16 +12,13 @@ import org.junit.jupiter.api.Test;
 @Tag(Tags.UNIT)
 class ItemGroupingTest {
 
-    private final ItemGrouping grouping = new ItemGrouping(List.of(
-            Set.of(Material.OAK_LOG, Material.BIRCH_LOG, Material.SPRUCE_LOG),
-            Set.of(Material.WHEAT_SEEDS, Material.BEETROOT_SEEDS),
-            Set.of(Material.DIAMOND))); // single-member groups are ignored
+    private final ItemGrouping grouping = new ItemGrouping(List.of(Set.of(Material.OAK_LOG, Material.BIRCH_LOG, Material.SPRUCE_LOG),
+            Set.of(Material.WHEAT_SEEDS, Material.BEETROOT_SEEDS), Set.of(Material.DIAMOND))); // single-member groups are ignored
 
     @Test
     void materialsInASharedGroupAreSimilar() {
         assertThat(grouping.similar(Material.OAK_LOG, Material.SPRUCE_LOG)).isTrue();
-        assertThat(grouping.similar(Material.WHEAT_SEEDS, Material.BEETROOT_SEEDS))
-                .isTrue();
+        assertThat(grouping.similar(Material.WHEAT_SEEDS, Material.BEETROOT_SEEDS)).isTrue();
     }
 
     @Test

@@ -54,10 +54,8 @@ public final class NameTagLinkListener implements Listener {
         event.setUseItemInHand(Event.Result.DENY);
 
         Player player = event.getPlayer();
-        if (links.link(player, type, name, block, NodeListener.facingFor(event.getBlockFace(), player), true) == null)
-            return;
-        if (services.settings().linking().consumeNameTags() && player.getGameMode() != GameMode.CREATIVE)
-            item.subtract();
+        if (links.link(player, type, name, block, NodeListener.facingFor(event.getBlockFace(), player), true) == null) return;
+        if (services.settings().linking().consumeNameTags() && player.getGameMode() != GameMode.CREATIVE) item.subtract();
     }
 
     /** The group type whose blocks include {@code block}, if its feature is enabled. */

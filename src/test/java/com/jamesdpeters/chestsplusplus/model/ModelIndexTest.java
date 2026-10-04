@@ -47,8 +47,7 @@ class ModelIndexTest {
         registry.add(new ChestLinkGroup(41, ALICE, "a", 0));
 
         assertThat(registry.nextId()).isEqualTo(42);
-        assertThatThrownBy(() -> registry.add(new ChestLinkGroup(50, ALICE, "A", 0)))
-                .isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> registry.add(new ChestLinkGroup(50, ALICE, "A", 0))).isInstanceOf(IllegalStateException.class);
         registry.add(new AutoCraftGroup(51, ALICE, "a", 0));
         assertThat(registry.size()).isEqualTo(2);
     }

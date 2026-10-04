@@ -79,20 +79,12 @@ public final class Commands {
 
     /** The {@code /chestsplusplus} tree. Builds nodes only, so it can be inspected in unit tests. */
     public LiteralCommandNode<CommandSourceStack> root() {
-        return literal(ROOT)
-                .executes(this::help)
-                .then(literal("help").executes(this::help))
-                .then(literal("version")
-                        .requires(source -> source.getSender().hasPermission(Permissions.ADMIN_VERSION))
-                        .executes(this::version))
-                .then(literal("reload")
-                        .requires(source -> source.getSender().hasPermission(Permissions.ADMIN_RELOAD))
-                        .executes(this::reload))
-                .then(literal("trust")
-                        .requires(source -> source.getSender().hasPermission(Permissions.TRUST))
+        return literal(ROOT).executes(this::help).then(literal("help").executes(this::help))
+                .then(literal("version").requires(source -> source.getSender().hasPermission(Permissions.ADMIN_VERSION)).executes(this::version))
+                .then(literal("reload").requires(source -> source.getSender().hasPermission(Permissions.ADMIN_RELOAD)).executes(this::reload))
+                .then(literal("trust").requires(source -> source.getSender().hasPermission(Permissions.TRUST))
                         .then(literal("add").then(player().executes(trustBody(true))))
-                        .then(literal("remove").then(player().executes(trustBody(false))))
-                        .then(literal("list").executes(context -> {
+                        .then(literal("remove").then(player().executes(trustBody(false)))).then(literal("list").executes(context -> {
                             if (!(context.getSource().getExecutor() instanceof Player p)) return playersOnly(context);
                             Services current = services(context);
                             if (current != null) current.get(GroupActions.class).listTrust(p);
@@ -117,8 +109,7 @@ public final class Commands {
     private int version(CommandContext<CommandSourceStack> context) {
         Services current = services(context);
         if (current == null) return 0;
-        current.messages()
-                .send(context.getSource().getSender(), Message.COMMAND_VERSION, Messages.text("version", version));
+        current.messages().send(context.getSource().getSender(), Message.COMMAND_VERSION, Messages.text("version", version));
         return Command.SINGLE_SUCCESS;
     }
 
@@ -129,9 +120,7 @@ public final class Commands {
         try {
             instance.reload();
         } catch (IOException | RuntimeException e) {
-            context.getSource()
-                    .getSender()
-                    .sendMessage(Component.text("Reload failed: " + e.getMessage(), NamedTextColor.RED));
+            context.getSource().getSender().sendMessage(Component.text("Reload failed: " + e.getMessage(), NamedTextColor.RED));
             return 0;
         }
         current.messages().send(context.getSource().getSender(), Message.COMMAND_RELOADED);
@@ -157,8 +146,7 @@ public final class Commands {
         return out;
     }
 
-    private static void collect(
-            CommandNode<CommandSourceStack> node, String path, CommandSourceStack source, List<String> out) {
+    private static void collect(CommandNode<CommandSourceStack> node, String path, CommandSourceStack source, List<String> out) {
         if (!node.canUse(source)) return;
         if (node.getCommand() != null) out.add(path);
         for (CommandNode<CommandSourceStack> child : node.getChildren()) {
@@ -170,9 +158,7 @@ public final class Commands {
     private @Nullable Services services(CommandContext<CommandSourceStack> context) {
         Services current = services.get();
         if (current == null) {
-            context.getSource()
-                    .getSender()
-                    .sendMessage(Component.text("ChestsPlusPlus is not enabled.", NamedTextColor.RED));
+            context.getSource().getSender().sendMessage(Component.text("ChestsPlusPlus is not enabled.", NamedTextColor.RED));
         }
         return current;
     }
@@ -184,15 +170,12 @@ public final class Commands {
     }
 
     private static com.mojang.brigadier.builder.RequiredArgumentBuilder<CommandSourceStack, String> player() {
-        return io.papermc.paper.command.brigadier.Commands.argument("player", StringArgumentType.word())
-                .suggests((context, builder) -> {
-                    String typed = builder.getRemaining().toLowerCase(Locale.ROOT);
-                    Bukkit.getOnlinePlayers().stream()
-                            .map(Player::getName)
-                            .filter(n -> n.toLowerCase(Locale.ROOT).startsWith(typed))
-                            .forEach(builder::suggest);
-                    return builder.buildFuture();
-                });
+        return io.papermc.paper.command.brigadier.Commands.argument("player", StringArgumentType.word()).suggests((context, builder) -> {
+            String typed = builder.getRemaining().toLowerCase(Locale.ROOT);
+            Bukkit.getOnlinePlayers().stream().map(Player::getName).filter(n -> n.toLowerCase(Locale.ROOT).startsWith(typed))
+                    .forEach(builder::suggest);
+            return builder.buildFuture();
+        });
     }
 
     static LiteralArgumentBuilder<CommandSourceStack> literal(String name) {

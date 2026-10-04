@@ -12,8 +12,7 @@ class PluginLifecycleTest extends PluginTestBase {
     void enablesCleanly() {
         assertThat(plugin.isEnabled()).isTrue();
         System.out.println("[probe] dataFolder=" + plugin.getDataFolder().getAbsolutePath());
-        System.out.println("[probe] version=" + plugin.getPluginMeta().getVersion() + " main="
-                + plugin.getPluginMeta().getMainClass());
+        System.out.println("[probe] version=" + plugin.getPluginMeta().getVersion() + " main=" + plugin.getPluginMeta().getMainClass());
     }
 
     @Test

@@ -55,9 +55,7 @@ public final class GroupArgument implements CustomArgumentType<String, String> {
     @Override
     public <S> CompletableFuture<Suggestions> listSuggestions(CommandContext<S> context, SuggestionsBuilder builder) {
         Services current = services.get();
-        if (current == null
-                || !(context.getSource() instanceof CommandSourceStack source)
-                || !(source.getExecutor() instanceof Player player)) {
+        if (current == null || !(context.getSource() instanceof CommandSourceStack source) || !(source.getExecutor() instanceof Player player)) {
             return builder.buildFuture();
         }
         String typed = builder.getRemaining().toLowerCase(Locale.ROOT);

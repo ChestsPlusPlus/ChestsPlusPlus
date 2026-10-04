@@ -41,8 +41,7 @@ public final class ChestLinkListener implements Listener {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK || links.isFiringSyntheticInteract()) return;
         Block block = event.getClickedBlock();
         if (block == null) return;
-        Node node = services.nodes()
-                .get(block.getWorld().getUID(), BlockPos.packed(block.getX(), block.getY(), block.getZ()));
+        Node node = services.nodes().get(block.getWorld().getUID(), BlockPos.packed(block.getX(), block.getY(), block.getZ()));
         if (node == null || !(services.groups().byId(node.groupId()) instanceof ChestLinkGroup group)) return;
         Player player = event.getPlayer();
         // Sneaking with an item places blocks against the chest, as in vanilla.

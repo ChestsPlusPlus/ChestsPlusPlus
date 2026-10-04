@@ -29,15 +29,9 @@ class DisplayLayoutTest {
     @Test
     void blocksAreCentredOnTheFrontFaceSoHalfIsInset() {
         // Chest body front is 1px inside the block (z = 15/16 on the south face); full blocks at the boundary.
-        assertThat(DisplayLayout.nodeItem(Surface.CHEST, BlockFace.SOUTH, Shape.BLOCK)
-                        .z())
-                .isCloseTo(15.0 / 16, within(1e-9));
-        assertThat(DisplayLayout.nodeItem(Surface.FULL_BLOCK, BlockFace.SOUTH, Shape.BLOCK)
-                        .z())
-                .isCloseTo(1.0, within(1e-9));
-        assertThat(DisplayLayout.nodeItem(Surface.FULL_BLOCK, BlockFace.NORTH, Shape.BLOCK)
-                        .z())
-                .isCloseTo(0.0, within(1e-9));
+        assertThat(DisplayLayout.nodeItem(Surface.CHEST, BlockFace.SOUTH, Shape.BLOCK).z()).isCloseTo(15.0 / 16, within(1e-9));
+        assertThat(DisplayLayout.nodeItem(Surface.FULL_BLOCK, BlockFace.SOUTH, Shape.BLOCK).z()).isCloseTo(1.0, within(1e-9));
+        assertThat(DisplayLayout.nodeItem(Surface.FULL_BLOCK, BlockFace.NORTH, Shape.BLOCK).z()).isCloseTo(0.0, within(1e-9));
     }
 
     @Test
@@ -45,10 +39,7 @@ class DisplayLayoutTest {
         Placement south = DisplayLayout.nodeItem(Surface.CHEST, BlockFace.SOUTH, Shape.FLAT);
         // In front of the chest body (z = 15/16 on the south face) and further out than a block display. The exact
         // depth is tuned by FLAT_ITEM_OFFSET and the CHEST protrusion.
-        assertThat(south.z())
-                .isGreaterThan(15.0 / 16)
-                .isGreaterThan(DisplayLayout.nodeItem(Surface.CHEST, BlockFace.SOUTH, Shape.BLOCK)
-                        .z());
+        assertThat(south.z()).isGreaterThan(15.0 / 16).isGreaterThan(DisplayLayout.nodeItem(Surface.CHEST, BlockFace.SOUTH, Shape.BLOCK).z());
         assertThat(south.yaw()).isEqualTo(DisplayLayout.ITEM_YAW_OFFSET);
     }
 
@@ -56,8 +47,7 @@ class DisplayLayoutTest {
     void verticalFacingsFallBackToNorth() {
         assertThat(DisplayLayout.horizontal(BlockFace.UP)).isEqualTo(BlockFace.NORTH);
         assertThat(DisplayLayout.nodeLabel(Surface.FULL_BLOCK, BlockFace.WEST).y())
-                .isLessThan(DisplayLayout.nodeItem(Surface.FULL_BLOCK, BlockFace.WEST, Shape.FLAT)
-                        .y());
+                .isLessThan(DisplayLayout.nodeItem(Surface.FULL_BLOCK, BlockFace.WEST, Shape.FLAT).y());
     }
 
     @Test
@@ -75,8 +65,7 @@ class DisplayLayoutTest {
         assertThat(second.x() - first.x()).isCloseTo(DisplayLayout.FILTER_COLUMN_PITCH, within(1e-9));
         assertThat(first.y() - nextRow.y()).isCloseTo(DisplayLayout.FILTER_ROW_PITCH, within(1e-9));
         // Looking at the north face you face south, so your left is east (larger x).
-        assertThat(DisplayLayout.filterCell(BlockFace.NORTH, 0, 0).x())
-                .isGreaterThan(DisplayLayout.filterCell(BlockFace.NORTH, 0, 1).x());
+        assertThat(DisplayLayout.filterCell(BlockFace.NORTH, 0, 0).x()).isGreaterThan(DisplayLayout.filterCell(BlockFace.NORTH, 0, 1).x());
         // Everything stays on the hopper bowl, within the block's width.
         for (int row = 0; row < DisplayLayout.FILTER_ROWS; row++) {
             for (int column = 0; column < DisplayLayout.FILTER_COLUMNS; column++) {

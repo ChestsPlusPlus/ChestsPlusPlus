@@ -195,7 +195,8 @@ tasks.register<Test>("integrationTest") {
 spotless {
     java {
         target("src/*/java/**/*.java")
-        palantirJavaFormat(libs.versions.palantirJavaFormat.get())
+        eclipse().configFile("config/eclipse-formatter.xml")
+        importOrder("\\#", "")
         removeUnusedImports()
         trimTrailingWhitespace()
         endWithNewline()

@@ -19,17 +19,10 @@ public final class MetricsService {
         if (!services.settings().metrics()) return;
         try {
             Metrics created = new Metrics(plugin, PLUGIN_ID);
-            created.addCustomChart(new SingleLineChart(
-                    "chestlinks",
-                    () -> services.groups().all(GroupType.CHESTLINK).size()));
-            created.addCustomChart(new SingleLineChart(
-                    "autocrafters",
-                    () -> services.groups().all(GroupType.AUTOCRAFT).size()));
-            created.addCustomChart(
-                    new SingleLineChart("linked_blocks", () -> services.nodes().size()));
-            created.addCustomChart(new SimplePie(
-                    "hopper_filters_enabled",
-                    () -> String.valueOf(services.settings().features().hopperFilters())));
+            created.addCustomChart(new SingleLineChart("chestlinks", () -> services.groups().all(GroupType.CHESTLINK).size()));
+            created.addCustomChart(new SingleLineChart("autocrafters", () -> services.groups().all(GroupType.AUTOCRAFT).size()));
+            created.addCustomChart(new SingleLineChart("linked_blocks", () -> services.nodes().size()));
+            created.addCustomChart(new SimplePie("hopper_filters_enabled", () -> String.valueOf(services.settings().features().hopperFilters())));
             metrics = created;
         } catch (RuntimeException | LinkageError e) {
             plugin.getSLF4JLogger().debug("bStats could not start", e);

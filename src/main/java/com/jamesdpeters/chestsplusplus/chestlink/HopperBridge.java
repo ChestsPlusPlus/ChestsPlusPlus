@@ -34,8 +34,7 @@ public final class HopperBridge implements Listener {
     @EventHandler(priority = EventPriority.NORMAL)
     void onSearch(HopperInventorySearchEvent event) {
         Block block = event.getSearchBlock();
-        Node node = services.nodes()
-                .get(block.getWorld().getUID(), BlockPos.packed(block.getX(), block.getY(), block.getZ()));
+        Node node = services.nodes().get(block.getWorld().getUID(), BlockPos.packed(block.getX(), block.getY(), block.getZ()));
         if (node == null || !(services.groups().byId(node.groupId()) instanceof ChestLinkGroup group)) return;
         event.setInventory(group.inventory());
         services.persistence().markHopperTouched(group);
@@ -51,10 +50,8 @@ public final class HopperBridge implements Listener {
         if (!(source instanceof Dropper) && !(source instanceof Crafter)) return;
         Location destination = event.getDestination().getLocation();
         if (destination == null || destination.getWorld() == null) return;
-        Node node = services.nodes()
-                .get(
-                        destination.getWorld().getUID(),
-                        BlockPos.packed(destination.getBlockX(), destination.getBlockY(), destination.getBlockZ()));
+        Node node = services.nodes().get(destination.getWorld().getUID(),
+                BlockPos.packed(destination.getBlockX(), destination.getBlockY(), destination.getBlockZ()));
         if (node == null || !(services.groups().byId(node.groupId()) instanceof ChestLinkGroup group)) return;
         event.setCancelled(true);
         ItemStack moving = event.getItem();

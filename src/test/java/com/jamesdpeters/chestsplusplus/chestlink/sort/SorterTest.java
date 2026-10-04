@@ -25,11 +25,7 @@ class SorterTest extends PluginTestBase {
     }
 
     private static int total(@Nullable ItemStack[] items, Material type) {
-        return Arrays.stream(items)
-                .filter(Objects::nonNull)
-                .filter(i -> i.getType() == type)
-                .mapToInt(ItemStack::getAmount)
-                .sum();
+        return Arrays.stream(items).filter(Objects::nonNull).filter(i -> i.getType() == type).mapToInt(ItemStack::getAmount).sum();
     }
 
     @Test
@@ -51,7 +47,7 @@ class SorterTest extends PluginTestBase {
 
         assertThat(desc[0].getType()).isEqualTo(Material.STONE);
         assertThat(asc[0].getType()).isEqualTo(Material.DIAMOND_SWORD);
-        for (Material type : new Material[] {Material.STONE, Material.DIRT, Material.DIAMOND_SWORD}) {
+        for (Material type : new Material[]{Material.STONE, Material.DIRT, Material.DIAMOND_SWORD}) {
             assertThat(total(desc, type)).isEqualTo(total(contents(), type));
             assertThat(total(asc, type)).isEqualTo(total(contents(), type));
         }

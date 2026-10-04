@@ -44,9 +44,7 @@ class MessagesTest {
 
         Messages messages = Messages.load(bundled(), override);
 
-        assertThat(messages.plain(Message.CHESTLINK_CREATED, Messages.text("group", "g")))
-                .isEqualTo("made g");
-        assertThat(messages.plain(Message.CHESTLINK_REMOVED, Messages.text("group", "g")))
-                .startsWith("[C++] Removed ChestLink g");
+        assertThat(messages.plain(Message.CHESTLINK_CREATED, Messages.text("group", "g"))).isEqualTo("made g");
+        assertThat(messages.plain(Message.CHESTLINK_REMOVED, Messages.text("group", "g"))).startsWith("[C++] Removed ChestLink g");
     }
 }

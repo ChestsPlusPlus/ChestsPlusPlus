@@ -18,57 +18,12 @@ import org.bukkit.Tag;
 public final class ItemGrouping {
 
     /** Item tags that make sensible "similar" groups (unknown keys are skipped, so this survives tag renames). */
-    static final List<String> GROUPING_TAGS = List.of(
-            "logs",
-            "planks",
-            "wooden_slabs",
-            "wooden_stairs",
-            "wooden_fences",
-            "wooden_doors",
-            "wooden_trapdoors",
-            "wooden_buttons",
-            "wooden_pressure_plates",
-            "saplings",
-            "leaves",
-            "wool",
-            "wool_carpets",
-            "beds",
-            "banners",
-            "candles",
-            "terracotta",
-            "small_flowers",
-            "flowers",
-            "coals",
-            "fishes",
-            "villager_plantable_seeds",
-            "boats",
-            "chest_boats",
-            "arrows",
-            "creeper_drop_music_discs",
-            "anvil",
-            "rails",
-            "sand",
-            "stone_bricks",
-            "copper",
-            "shulker_boxes",
-            "skulls",
-            "trim_templates",
-            "decorated_pot_sherds",
-            "harnesses",
-            "bundles",
-            "eggs",
-            "dyes",
-            "glass_panes",
-            "concrete_powder",
-            "smelts_to_glass",
-            "iron_ores",
-            "gold_ores",
-            "copper_ores",
-            "coal_ores",
-            "diamond_ores",
-            "emerald_ores",
-            "lapis_ores",
-            "redstone_ores");
+    static final List<String> GROUPING_TAGS = List.of("logs", "planks", "wooden_slabs", "wooden_stairs", "wooden_fences", "wooden_doors",
+            "wooden_trapdoors", "wooden_buttons", "wooden_pressure_plates", "saplings", "leaves", "wool", "wool_carpets", "beds", "banners",
+            "candles", "terracotta", "small_flowers", "flowers", "coals", "fishes", "villager_plantable_seeds", "boats", "chest_boats", "arrows",
+            "creeper_drop_music_discs", "anvil", "rails", "sand", "stone_bricks", "copper", "shulker_boxes", "skulls", "trim_templates",
+            "decorated_pot_sherds", "harnesses", "bundles", "eggs", "dyes", "glass_panes", "concrete_powder", "smelts_to_glass", "iron_ores",
+            "gold_ores", "copper_ores", "coal_ores", "diamond_ores", "emerald_ores", "lapis_ores", "redstone_ores");
 
     private static final BitSet EMPTY = new BitSet();
     private final Map<Material, BitSet> groups;
@@ -79,8 +34,7 @@ public final class ItemGrouping {
         int index = 0;
         for (Set<Material> group : materialGroups) {
             if (group.size() < 2) continue;
-            for (Material material : group)
-                map.computeIfAbsent(material, m -> new BitSet()).set(index);
+            for (Material material : group) map.computeIfAbsent(material, m -> new BitSet()).set(index);
             index++;
         }
         this.groups = map;

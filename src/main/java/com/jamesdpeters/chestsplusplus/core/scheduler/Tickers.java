@@ -22,19 +22,13 @@ public final class Tickers {
     }
 
     public void every(String name, long periodTicks, Runnable body) {
-        tasks.add(plugin.getServer()
-                .getScheduler()
-                .runTaskTimer(
-                        plugin,
-                        () -> {
-                            try {
-                                body.run();
-                            } catch (RuntimeException e) {
-                                logger.error("Ticker '{}' failed", name, e);
-                            }
-                        },
-                        periodTicks,
-                        periodTicks));
+        tasks.add(plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
+            try {
+                body.run();
+            } catch (RuntimeException e) {
+                logger.error("Ticker '{}' failed", name, e);
+            }
+        }, periodTicks, periodTicks));
     }
 
     public int count() {

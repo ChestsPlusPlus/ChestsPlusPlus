@@ -34,8 +34,8 @@ public final class Sorter {
             firstSlots.putIfAbsent(template, slot);
         }
         List<Pile> piles = new ArrayList<>(totals.size());
-        totals.forEach((template, total) -> piles.add(
-                new Pile(template, sortKey(template), total[0], firstSlots.getOrDefault(template, Integer.MAX_VALUE))));
+        totals.forEach((template, total) -> piles
+                .add(new Pile(template, sortKey(template), total[0], firstSlots.getOrDefault(template, Integer.MAX_VALUE))));
 
         Comparator<Pile> byName = Comparator.comparing(Pile::key);
         Comparator<Pile> order = switch (mode) {

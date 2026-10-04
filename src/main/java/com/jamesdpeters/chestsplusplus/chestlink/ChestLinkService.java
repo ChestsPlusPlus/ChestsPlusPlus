@@ -144,8 +144,7 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
         Inventory inventory = group.inventory();
         List.copyOf(inventory.getViewers()).forEach(HumanEntity::closeInventory);
         for (ItemStack item : inventory.getContents()) {
-            if (item != null && !item.isEmpty() && at.getWorld() != null)
-                at.getWorld().dropItemNaturally(at, item);
+            if (item != null && !item.isEmpty() && at.getWorld() != null) at.getWorld().dropItemNaturally(at, item);
         }
         inventory.clear();
     }

@@ -69,26 +69,22 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         Services services = new Services(this, settings, messages);
 
         // 2. Feature services.
-        DisplayService displays = services.add(
-                DisplayService.class,
+        DisplayService displays = services.add(DisplayService.class,
                 new DisplayService(this, services.groups(), services.nodes(), services::settings));
-        displays.surfaces(block -> block.getState(false) instanceof Chest
-                ? DisplayLayout.Surface.CHEST
-                : DisplayLayout.Surface.FULL_BLOCK);
+        displays.surfaces(block -> block.getState(false) instanceof Chest ? DisplayLayout.Surface.CHEST : DisplayLayout.Surface.FULL_BLOCK);
         LinkService links = services.add(LinkService.class, new LinkService(services, displays));
         LinkItem linkItems = services.add(LinkItem.class, new LinkItem(this));
         ChestLinkService chestLinks = services.add(ChestLinkService.class, new ChestLinkService(services, displays));
         links.register(chestLinks);
         displays.register(GroupType.CHESTLINK, chestLinks);
-        AutoCraftService autoCraft = services.add(
-                AutoCraftService.class, new AutoCraftService(services, displays, CraftingBackend.bukkit()));
+        AutoCraftService autoCraft = services.add(AutoCraftService.class,
+                new AutoCraftService(services, displays, CraftingBackend.bukkit()));
         links.register(autoCraft);
         displays.register(GroupType.AUTOCRAFT, autoCraft);
         GroupActions actions = services.add(GroupActions.class, new GroupActions(services, links));
         MenuListener menus = services.add(MenuListener.class, new MenuListener(this));
         services.add(UiService.class, new UiService(services, links, actions, menus));
-        FilterService filters = services.add(
-                FilterService.class,
+        FilterService filters = services.add(FilterService.class,
                 new FilterService(this, new FilterCodec(this), ItemGrouping.fromServerTags(), services::settings));
 
         // 3. Database and model.
@@ -97,16 +93,10 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
             File dataFolder = getDataFolder();
             if (!dataFolder.isDirectory() && !dataFolder.mkdirs()) throw new IOException("Cannot create " + dataFolder);
             Database database = Database.open("jdbc:sqlite:" + new File(dataFolder, DATABASE_FILE).getAbsolutePath());
-            persistence = new PersistenceService(
-                    database,
-                    services.groups(),
-                    services.nodes(),
-                    services.trust(),
-                    getSLF4JLogger(),
+            persistence = new PersistenceService(database, services.groups(), services.nodes(), services.trust(), getSLF4JLogger(),
                     task -> {
                         if (isEnabled()) getServer().getScheduler().runTask(this, task);
-                    },
-                    () -> services.settings().storage().maxSerialisationsPerTick());
+                    }, () -> services.settings().storage().maxSerialisationsPerTick());
             services.persistence(persistence);
             int loaded = persistence.load(loadedGroup -> {
                 if (loadedGroup.group() instanceof ChestLinkGroup chest) {
@@ -115,11 +105,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
                     autoCraft.resolveLoaded(craft);
                 }
             });
-            getSLF4JLogger()
-                    .info(
-                            "Loaded {} group(s) and {} linked block(s)",
-                            loaded,
-                            services.nodes().size());
+            getSLF4JLogger().info("Loaded {} group(s) and {} linked block(s)", loaded, services.nodes().size());
         } catch (IOException | SQLException e) {
             getSLF4JLogger().error("Could not open the ChestsPlusPlus database; disabling", e);
             getServer().getPluginManager().disablePlugin(this);
@@ -160,8 +146,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
 
         // 6. Integrations.
         services.add(MetricsService.class, new MetricsService()).start(this, services);
-        UpdateChecker updates = services.add(
-                UpdateChecker.class, new UpdateChecker(services, getPluginMeta().getVersion()));
+        UpdateChecker updates = services.add(UpdateChecker.class, new UpdateChecker(services, getPluginMeta().getVersion()));
         pluginManager.registerEvents(updates, this);
         updates.start();
 
@@ -174,11 +159,8 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
     /** Diagnostics only: never let reading Paper's config files break enable. */
     private void warnIfMoveEventDisabled(Services services) {
         try {
-            for (String world : FilterService.worldsWithMoveEventDisabled(
-                    getServer().getWorldContainer(), getServer().getWorlds())) {
-                getSLF4JLogger()
-                        .warn(services.messages()
-                                .plain(Message.FILTER_MOVE_EVENT_DISABLED, Messages.text("world", world)));
+            for (String world : FilterService.worldsWithMoveEventDisabled(getServer().getWorldContainer(), getServer().getWorlds())) {
+                getSLF4JLogger().warn(services.messages().plain(Message.FILTER_MOVE_EVENT_DISABLED, Messages.text("world", world)));
             }
         } catch (RuntimeException e) {
             getSLF4JLogger().debug("Could not check hopper.disable-move-event", e);

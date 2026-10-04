@@ -54,21 +54,17 @@ class FilterIntegrationTest extends PluginTestBase {
 
     @Test
     void semanticsDenyWinsAllowRestrictsEmptyPasses() {
-        assertThat(new CompiledFilter(List.of(), grouping).accepts(ItemStack.of(Material.DIRT)))
-                .isTrue();
+        assertThat(new CompiledFilter(List.of(), grouping).accepts(ItemStack.of(Material.DIRT))).isTrue();
 
-        CompiledFilter allowStone =
-                new CompiledFilter(List.of(filter(Material.STONE, Mode.ALLOW, Match.TYPE)), grouping);
+        CompiledFilter allowStone = new CompiledFilter(List.of(filter(Material.STONE, Mode.ALLOW, Match.TYPE)), grouping);
         assertThat(allowStone.accepts(ItemStack.of(Material.STONE, 5))).isTrue();
         assertThat(allowStone.accepts(ItemStack.of(Material.DIRT))).isFalse();
 
         CompiledFilter both = new CompiledFilter(
-                List.of(filter(Material.STONE, Mode.ALLOW, Match.TYPE), filter(Material.STONE, Mode.DENY, Match.TYPE)),
-                grouping);
+                List.of(filter(Material.STONE, Mode.ALLOW, Match.TYPE), filter(Material.STONE, Mode.DENY, Match.TYPE)), grouping);
         assertThat(both.accepts(ItemStack.of(Material.STONE))).isFalse();
 
-        CompiledFilter denyLogs =
-                new CompiledFilter(List.of(filter(Material.OAK_LOG, Mode.DENY, Match.SIMILAR)), grouping);
+        CompiledFilter denyLogs = new CompiledFilter(List.of(filter(Material.OAK_LOG, Mode.DENY, Match.SIMILAR)), grouping);
         assertThat(denyLogs.accepts(ItemStack.of(Material.BIRCH_LOG))).isFalse();
         assertThat(denyLogs.accepts(ItemStack.of(Material.DIRT))).isTrue();
     }
@@ -88,28 +84,21 @@ class FilterIntegrationTest extends PluginTestBase {
     @Test
     void filtersRoundTripThroughHopperPdcAndIndex() {
         Block hopper = hopperAt(0);
-        List<HopperFilter> stored = List.of(
-                filter(Material.STONE, Mode.ALLOW, Match.EXACT), filter(Material.OAK_LOG, Mode.DENY, Match.SIMILAR));
+        List<HopperFilter> stored = List.of(filter(Material.STONE, Mode.ALLOW, Match.EXACT), filter(Material.OAK_LOG, Mode.DENY, Match.SIMILAR));
 
         filters.write(hopper, stored);
 
         assertThat(filters.read(hopper)).isEqualTo(stored);
         assertThat(filters.get(hopper)).isNotNull();
         FilterCodec codec = new FilterCodec(plugin);
-        assertThat(codec.read(((Hopper) hopper.getState(false)).getPersistentDataContainer()))
-                .isEqualTo(stored);
+        assertThat(codec.read(((Hopper) hopper.getState(false)).getPersistentDataContainer())).isEqualTo(stored);
         // Per side: an Allow row (green pane + stone) and a Deny row (red pane + log); 4 sides; no glow outline.
         assertThat(filters.displayCount()).isEqualTo(16);
         var icons = world.getEntitiesByClass(org.bukkit.entity.ItemDisplay.class);
         assertThat(icons).noneMatch(e -> e.isGlowing());
-        assertThat(icons)
-                .allMatch(e -> e.getItemDisplayTransform() == org.bukkit.entity.ItemDisplay.ItemDisplayTransform.GUI);
-        assertThat(icons)
-                .filteredOn(e -> e.getItemStack().getType() == Material.LIME_STAINED_GLASS_PANE)
-                .hasSize(4);
-        assertThat(icons)
-                .filteredOn(e -> e.getItemStack().getType() == Material.RED_STAINED_GLASS_PANE)
-                .hasSize(4);
+        assertThat(icons).allMatch(e -> e.getItemDisplayTransform() == org.bukkit.entity.ItemDisplay.ItemDisplayTransform.GUI);
+        assertThat(icons).filteredOn(e -> e.getItemStack().getType() == Material.LIME_STAINED_GLASS_PANE).hasSize(4);
+        assertThat(icons).filteredOn(e -> e.getItemStack().getType() == Material.RED_STAINED_GLASS_PANE).hasSize(4);
 
         filters.write(hopper, List.of());
         assertThat(filters.get(hopper)).isNull();
@@ -127,8 +116,7 @@ class FilterIntegrationTest extends PluginTestBase {
         source.setItem(1, ItemStack.of(Material.STONE, 5));
 
         Inventory destination = inventoryOf(hopper);
-        InventoryMoveItemEvent event =
-                new InventoryMoveItemEvent(source, ItemStack.of(Material.DIRT), destination, false);
+        InventoryMoveItemEvent event = new InventoryMoveItemEvent(source, ItemStack.of(Material.DIRT), destination, false);
         server.getPluginManager().callEvent(event);
 
         assertThat(event.isCancelled()).isTrue();
@@ -137,8 +125,7 @@ class FilterIntegrationTest extends PluginTestBase {
         assertThat(source.getItem(1).getAmount()).isEqualTo(4);
         assertThat(source.getItem(0).getAmount()).isEqualTo(5);
 
-        InventoryMoveItemEvent accepted =
-                new InventoryMoveItemEvent(source, ItemStack.of(Material.STONE), destination, false);
+        InventoryMoveItemEvent accepted = new InventoryMoveItemEvent(source, ItemStack.of(Material.STONE), destination, false);
         server.getPluginManager().callEvent(accepted);
         assertThat(accepted.isCancelled()).isFalse();
     }
@@ -146,8 +133,7 @@ class FilterIntegrationTest extends PluginTestBase {
     @Test
     void editorAddsCyclesMovesRemovesAndClears() {
         Block hopper = hopperAt(0);
-        FilterEditorHolder editor =
-                new FilterEditorHolder(hopper, List.of(), plugin.services().messages());
+        FilterEditorHolder editor = new FilterEditorHolder(hopper, List.of(), plugin.services().messages());
         var LEFT = FilterEditorHolder.Click.LEFT;
 
         // Empty rows show coloured placeholders explaining what to do.
@@ -156,9 +142,7 @@ class FilterIntegrationTest extends PluginTestBase {
 
         assertThat(editor.click(0, ItemStack.of(Material.STONE, 32), LEFT)).isTrue();
         assertThat(editor.click(12, ItemStack.of(Material.DIRT), LEFT)).isTrue(); // any empty Deny slot works
-        assertThat(editor.filters())
-                .containsExactly(
-                        filter(Material.STONE, Mode.ALLOW, Match.EXACT), filter(Material.DIRT, Mode.DENY, Match.EXACT));
+        assertThat(editor.filters()).containsExactly(filter(Material.STONE, Mode.ALLOW, Match.EXACT), filter(Material.DIRT, Mode.DENY, Match.EXACT));
         assertThat(editor.getInventory().getItem(9).getType()).isEqualTo(Material.DIRT);
 
         editor.click(0, null, LEFT);
@@ -167,10 +151,7 @@ class FilterIntegrationTest extends PluginTestBase {
 
         // Right-click moves an entry to the other row, keeping its match.
         assertThat(editor.click(0, null, FilterEditorHolder.Click.RIGHT)).isTrue();
-        assertThat(editor.filters())
-                .containsExactly(
-                        filter(Material.DIRT, Mode.DENY, Match.EXACT),
-                        filter(Material.STONE, Mode.DENY, Match.SIMILAR));
+        assertThat(editor.filters()).containsExactly(filter(Material.DIRT, Mode.DENY, Match.EXACT), filter(Material.STONE, Mode.DENY, Match.SIMILAR));
 
         assertThat(editor.click(9, null, FilterEditorHolder.Click.SHIFT)).isTrue();
         assertThat(editor.filters()).hasSize(1);
@@ -186,8 +167,7 @@ class FilterIntegrationTest extends PluginTestBase {
         PlayerMock player = server.addPlayer();
         player.setSneaking(true);
 
-        PlayerInteractEvent event = new PlayerInteractEvent(
-                player, Action.RIGHT_CLICK_BLOCK, null, hopper, BlockFace.UP, EquipmentSlot.HAND);
+        PlayerInteractEvent event = new PlayerInteractEvent(player, Action.RIGHT_CLICK_BLOCK, null, hopper, BlockFace.UP, EquipmentSlot.HAND);
         server.getPluginManager().callEvent(event);
 
         assertThat(event.useInteractedBlock()).isEqualTo(org.bukkit.event.Event.Result.DENY);

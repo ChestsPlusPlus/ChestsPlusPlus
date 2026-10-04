@@ -69,14 +69,8 @@ public final class PersistenceService {
      * @param mainThread runs a task on the server thread (the scheduler); used for I/O completion callbacks
      * @param maxPerTick current {@code storage.max-serialisations-per-tick}
      */
-    public PersistenceService(
-            Database database,
-            GroupRegistry groups,
-            NodeIndex nodes,
-            TrustService trust,
-            Logger logger,
-            Consumer<Runnable> mainThread,
-            IntSupplier maxPerTick) {
+    public PersistenceService(Database database, GroupRegistry groups, NodeIndex nodes, TrustService trust, Logger logger,
+            Consumer<Runnable> mainThread, IntSupplier maxPerTick) {
         this.database = database;
         this.repository = new Repository(database);
         this.groups = groups;
@@ -97,16 +91,13 @@ public final class PersistenceService {
     public int load(Consumer<LoadedGroup> attach) throws SQLException {
         LoadedData data;
         try {
-            data = CompletableFuture.supplyAsync(
-                            () -> {
-                                try {
-                                    return repository.loadAll();
-                                } catch (SQLException e) {
-                                    throw new CompletionException(e);
-                                }
-                            },
-                            io)
-                    .join();
+            data = CompletableFuture.supplyAsync(() -> {
+                try {
+                    return repository.loadAll();
+                } catch (SQLException e) {
+                    throw new CompletionException(e);
+                }
+            }, io).join();
         } catch (CompletionException e) {
             if (e.getCause() instanceof SQLException sql) throw sql;
             throw e;
@@ -116,8 +107,7 @@ public final class PersistenceService {
             groups.add(group);
             record.members().forEach(member -> groups.addMember(group, member));
             ModelMapper.nodes(record).forEach(nodes::put);
-            @Nullable
-            ItemStack[] contents = record.inventory() == null ? null : ModelMapper.deserialize(record.inventory());
+            @Nullable ItemStack[] contents = record.inventory() == null ? null : ModelMapper.deserialize(record.inventory());
             attach.accept(new LoadedGroup(group, contents));
             if (group instanceof ChestLinkGroup chest && chest.hasInventory()) {
                 savedFingerprints.put(group.id(), fingerprint(chest.inventory().getContents()));
@@ -183,22 +173,18 @@ public final class PersistenceService {
         Map<UUID, Long> trustGenerations = new HashMap<>();
         batch.trust().keySet().forEach(owner -> trustGenerations.put(owner, dirtyTrust.get(owner)));
         batch.groups().forEach(g -> inFlight.add(g.id()));
-        CompletableFuture.runAsync(() -> write(batch), io)
-                .whenComplete((ok, error) -> mainThread.accept(() -> {
-                    batch.groups().forEach(g -> inFlight.remove(g.id()));
-                    if (error != null) {
-                        logger.error(
-                                "Failed to save {} ChestsPlusPlus group(s); will retry",
-                                batch.groups().size(),
-                                error);
-                        batch.deletedGroups().forEach(deleted::add);
-                        batch.trust().keySet().forEach(owner -> dirtyTrust.putIfAbsent(owner, ++generation));
-                        flushing = true;
-                        return;
-                    }
-                    generations.forEach((id, gen) -> dirty.remove(id, gen));
-                    trustGenerations.forEach((owner, gen) -> dirtyTrust.remove(owner, gen));
-                }));
+        CompletableFuture.runAsync(() -> write(batch), io).whenComplete((ok, error) -> mainThread.accept(() -> {
+            batch.groups().forEach(g -> inFlight.remove(g.id()));
+            if (error != null) {
+                logger.error("Failed to save {} ChestsPlusPlus group(s); will retry", batch.groups().size(), error);
+                batch.deletedGroups().forEach(deleted::add);
+                batch.trust().keySet().forEach(owner -> dirtyTrust.putIfAbsent(owner, ++generation));
+                flushing = true;
+                return;
+            }
+            generations.forEach((id, gen) -> dirty.remove(id, gen));
+            trustGenerations.forEach((owner, gen) -> dirtyTrust.remove(owner, gen));
+        }));
     }
 
     /** Stops the I/O thread, writes everything still dirty on the calling thread, and closes the database. */
@@ -243,7 +229,7 @@ public final class PersistenceService {
     /** Builds a batch of up to {@code limit} dirty groups (skipping in-flight ones), or null if there is nothing. */
     private @Nullable SaveBatch snapshot(int limit, boolean consumeDeletes) {
         List<GroupRecord> records = new ArrayList<>();
-        for (Iterator<Long> it = dirty.keySet().iterator(); it.hasNext() && records.size() < limit; ) {
+        for (Iterator<Long> it = dirty.keySet().iterator(); it.hasNext() && records.size() < limit;) {
             long id = it.next();
             if (inFlight.contains(id)) continue;
             StorageGroup group = groups.byId(id);

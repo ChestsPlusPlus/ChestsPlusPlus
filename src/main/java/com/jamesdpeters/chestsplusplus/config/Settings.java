@@ -7,17 +7,8 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.MemoryConfiguration;
 
 /** Immutable view of {@code config.yml}. Swapped atomically on {@code /cpp reload}. */
-public record Settings(
-        Features features,
-        Linking linking,
-        ChestLink chestlink,
-        AutoCraft autocraft,
-        Filters filters,
-        Limits limits,
-        Set<String> worldBlacklist,
-        Storage storage,
-        boolean updateChecker,
-        boolean metrics) {
+public record Settings(Features features, Linking linking, ChestLink chestlink, AutoCraft autocraft, Filters filters, Limits limits,
+        Set<String> worldBlacklist, Storage storage, boolean updateChecker, boolean metrics) {
 
     public record Features(boolean chestlinks, boolean autocraft, boolean hopperFilters) {}
 
@@ -40,28 +31,17 @@ public record Settings(
 
     public static Settings from(ConfigurationSection config) {
         return new Settings(
-                new Features(
-                        config.getBoolean("features.chestlinks", true),
-                        config.getBoolean("features.autocraft", true),
+                new Features(config.getBoolean("features.chestlinks", true), config.getBoolean("features.autocraft", true),
                         config.getBoolean("features.hopper-filters", true)),
                 new Linking(config.getBoolean("linking.consume-name-tags", true)),
-                new ChestLink(
-                        config.getBoolean("chestlink.animate-all-nodes", true), display(config, "chestlink.display")),
-                new AutoCraft(
-                        display(config, "autocraft.display"),
-                        clamp(config.getInt("autocraft.tick-interval", 20), 1, 1200)),
+                new ChestLink(config.getBoolean("chestlink.animate-all-nodes", true), display(config, "chestlink.display")),
+                new AutoCraft(display(config, "autocraft.display"), clamp(config.getInt("autocraft.tick-interval", 20), 1, 1200)),
                 new Filters(config.getBoolean("filters.displays", true)),
-                new Limits(
-                        Math.max(-1, config.getInt("limits.chestlink-default", -1)),
-                        Math.max(-1, config.getInt("limits.autocraft-default", -1))),
-                config.getStringList("worlds.blacklist").stream()
-                        .map(name -> name.toLowerCase(Locale.ROOT))
-                        .collect(Collectors.toUnmodifiableSet()),
-                new Storage(
-                        clamp(config.getInt("storage.flush-interval-seconds", 30), 1, 3600),
+                new Limits(Math.max(-1, config.getInt("limits.chestlink-default", -1)), Math.max(-1, config.getInt("limits.autocraft-default", -1))),
+                config.getStringList("worlds.blacklist").stream().map(name -> name.toLowerCase(Locale.ROOT)).collect(Collectors.toUnmodifiableSet()),
+                new Storage(clamp(config.getInt("storage.flush-interval-seconds", 30), 1, 3600),
                         clamp(config.getInt("storage.max-serialisations-per-tick", 16), 1, 1024)),
-                config.getBoolean("update-checker.enabled", true),
-                config.getBoolean("metrics.enabled", true));
+                config.getBoolean("update-checker.enabled", true), config.getBoolean("metrics.enabled", true));
     }
 
     public boolean isBlacklisted(String worldName) {
@@ -69,8 +49,8 @@ public record Settings(
     }
 
     private static Display display(ConfigurationSection config, String path) {
-        return new Display(config.getBoolean(path + ".enabled", true), config.getBoolean(path + ".label", true), (float)
-                Math.clamp(config.getDouble(path + ".view-range", 0.5), 0.05, 16.0));
+        return new Display(config.getBoolean(path + ".enabled", true), config.getBoolean(path + ".label", true),
+                (float) Math.clamp(config.getDouble(path + ".view-range", 0.5), 0.05, 16.0));
     }
 
     private static int clamp(int value, int min, int max) {

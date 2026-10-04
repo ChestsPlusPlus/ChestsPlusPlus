@@ -22,42 +22,14 @@ public final class ModelMapper {
 
     public static GroupRecord toRecord(StorageGroup group, List<Node> nodes) {
         List<NodeRecord> nodeRecords = nodes.stream()
-                .map(n -> new NodeRecord(
-                        n.pos().world(),
-                        n.pos().x(),
-                        n.pos().y(),
-                        n.pos().z(),
-                        n.facing().name()))
-                .toList();
+                .map(n -> new NodeRecord(n.pos().world(), n.pos().x(), n.pos().y(), n.pos().z(), n.facing().name())).toList();
         return switch (group) {
-            case ChestLinkGroup chest ->
-                new GroupRecord(
-                        chest.id(),
-                        chest.type(),
-                        chest.owner(),
-                        chest.name(),
-                        chest.isPublic(),
-                        chest.sortMode().name(),
-                        chest.createdAt(),
-                        List.copyOf(chest.members()),
-                        nodeRecords,
-                        chest.hasInventory() ? serialize(chest.inventory().getContents()) : serialize(new ItemStack[0]),
-                        null,
-                        null);
-            case AutoCraftGroup craft ->
-                new GroupRecord(
-                        craft.id(),
-                        craft.type(),
-                        craft.owner(),
-                        craft.name(),
-                        craft.isPublic(),
-                        null,
-                        craft.createdAt(),
-                        List.copyOf(craft.members()),
-                        nodeRecords,
-                        null,
-                        craft.recipeKey() == null ? null : craft.recipeKey().asString(),
-                        serialize(craft.matrix()));
+            case ChestLinkGroup chest -> new GroupRecord(chest.id(), chest.type(), chest.owner(), chest.name(), chest.isPublic(),
+                    chest.sortMode().name(), chest.createdAt(), List.copyOf(chest.members()), nodeRecords,
+                    chest.hasInventory() ? serialize(chest.inventory().getContents()) : serialize(new ItemStack[0]), null, null);
+            case AutoCraftGroup craft -> new GroupRecord(craft.id(), craft.type(), craft.owner(), craft.name(), craft.isPublic(), null,
+                    craft.createdAt(), List.copyOf(craft.members()), nodeRecords, null,
+                    craft.recipeKey() == null ? null : craft.recipeKey().asString(), serialize(craft.matrix()));
         };
     }
 
@@ -65,14 +37,12 @@ public final class ModelMapper {
     public static StorageGroup fromRecord(GroupRecord record) {
         StorageGroup group = switch (record.type()) {
             case CHESTLINK -> {
-                ChestLinkGroup chest =
-                        new ChestLinkGroup(record.id(), record.owner(), record.name(), record.createdAt());
+                ChestLinkGroup chest = new ChestLinkGroup(record.id(), record.owner(), record.name(), record.createdAt());
                 chest.setSortMode(parseSortMode(record.sortMode()));
                 yield chest;
             }
             case AUTOCRAFT -> {
-                AutoCraftGroup craft =
-                        new AutoCraftGroup(record.id(), record.owner(), record.name(), record.createdAt());
+                AutoCraftGroup craft = new AutoCraftGroup(record.id(), record.owner(), record.name(), record.createdAt());
                 @Nullable ItemStack[] matrix = new ItemStack[9];
                 if (record.matrix() != null) {
                     @Nullable ItemStack[] stored = deserialize(record.matrix());
@@ -89,9 +59,7 @@ public final class ModelMapper {
     }
 
     public static List<Node> nodes(GroupRecord record) {
-        return record.nodes().stream()
-                .map(n -> new Node(new BlockPos(n.world(), n.x(), n.y(), n.z()), parseFace(n.facing()), record.id()))
-                .toList();
+        return record.nodes().stream().map(n -> new Node(new BlockPos(n.world(), n.x(), n.y(), n.z()), parseFace(n.facing()), record.id())).toList();
     }
 
     public static byte[] serialize(@Nullable ItemStack[] items) {

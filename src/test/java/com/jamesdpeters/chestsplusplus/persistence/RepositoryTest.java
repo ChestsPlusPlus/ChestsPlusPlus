@@ -28,18 +28,7 @@ class RepositoryTest {
     private static final UUID MEMBER = UUID.randomUUID();
 
     private static GroupRecord chest(long id, String name, NodeRecord... nodes) {
-        return new GroupRecord(
-                id,
-                GroupType.CHESTLINK,
-                OWNER,
-                name,
-                true,
-                "NAME",
-                123L,
-                List.of(MEMBER),
-                List.of(nodes),
-                new byte[] {1, 2, 3},
-                null,
+        return new GroupRecord(id, GroupType.CHESTLINK, OWNER, name, true, "NAME", 123L, List.of(MEMBER), List.of(nodes), new byte[]{1, 2, 3}, null,
                 null);
     }
 
@@ -54,23 +43,10 @@ class RepositoryTest {
     void roundTripsGroupsNodesMembersInventoriesRecipesAndTrust(@TempDir Path dir) throws SQLException {
         String url = "jdbc:sqlite:" + dir.resolve("data.db");
         NodeRecord node = new NodeRecord(WORLD, 1, -60, 2, "NORTH");
-        GroupRecord craft = new GroupRecord(
-                2,
-                GroupType.AUTOCRAFT,
-                OWNER,
-                "torches",
-                false,
-                null,
-                5L,
-                List.of(),
-                List.of(new NodeRecord(WORLD, 5, 64, 5, "EAST")),
-                null,
-                "minecraft:torch",
-                new byte[] {9});
+        GroupRecord craft = new GroupRecord(2, GroupType.AUTOCRAFT, OWNER, "torches", false, null, 5L, List.of(),
+                List.of(new NodeRecord(WORLD, 5, 64, 5, "EAST")), null, "minecraft:torch", new byte[]{9});
         try (Database db = Database.open(url)) {
-            new Repository(db)
-                    .write(new SaveBatch(
-                            List.of(chest(1, "Ores", node), craft), List.of(), Map.of(OWNER, Set.of(MEMBER))));
+            new Repository(db).write(new SaveBatch(List.of(chest(1, "Ores", node), craft), List.of(), Map.of(OWNER, Set.of(MEMBER))));
         }
 
         LoadedData loaded;
@@ -111,8 +87,7 @@ class RepositoryTest {
 
             repo.write(new SaveBatch(List.of(), List.of(1L, 2L), Map.of()));
             assertThat(repo.loadAll().groups()).isEmpty();
-            try (Statement st = db.connection().createStatement();
-                    var rs = st.executeQuery("SELECT count(*) FROM nodes")) {
+            try (Statement st = db.connection().createStatement(); var rs = st.executeQuery("SELECT count(*) FROM nodes")) {
                 rs.next();
                 assertThat(rs.getInt(1)).isZero();
             }
@@ -122,8 +97,7 @@ class RepositoryTest {
     @Test
     void refusesNewerSchema(@TempDir Path dir) throws SQLException {
         String url = "jdbc:sqlite:" + dir.resolve("future.db");
-        try (Database db = Database.open(url);
-                Statement st = db.connection().createStatement()) {
+        try (Database db = Database.open(url); Statement st = db.connection().createStatement()) {
             st.execute("PRAGMA user_version = 999");
         }
 

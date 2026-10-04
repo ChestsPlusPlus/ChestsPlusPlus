@@ -32,8 +32,7 @@ public final class UpdateChecker implements Listener {
 
     private final Services services;
     private final String currentVersion;
-    private final HttpClient client =
-            HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
+    private final HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
     private volatile @Nullable String latest;
     private @Nullable BukkitTask task;
 
@@ -43,10 +42,7 @@ public final class UpdateChecker implements Listener {
     }
 
     public void start() {
-        task = services.plugin()
-                .getServer()
-                .getScheduler()
-                .runTaskTimerAsynchronously(services.plugin(), this::check, 20L * 10, RECHECK_TICKS);
+        task = services.plugin().getServer().getScheduler().runTaskTimerAsynchronously(services.plugin(), this::check, 20L * 10, RECHECK_TICKS);
     }
 
     public void stop() {
@@ -61,11 +57,8 @@ public final class UpdateChecker implements Listener {
     void check() {
         if (!services.settings().updateChecker()) return;
         try {
-            HttpRequest request = HttpRequest.newBuilder(URI.create(RELEASES_URL))
-                    .timeout(Duration.ofSeconds(10))
-                    .header("Accept", "application/vnd.github+json")
-                    .header("User-Agent", "ChestsPlusPlus/" + currentVersion)
-                    .build();
+            HttpRequest request = HttpRequest.newBuilder(URI.create(RELEASES_URL)).timeout(Duration.ofSeconds(10))
+                    .header("Accept", "application/vnd.github+json").header("User-Agent", "ChestsPlusPlus/" + currentVersion).build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() != 200) return;
             String tag = parseTag(response.body());
@@ -73,9 +66,7 @@ public final class UpdateChecker implements Listener {
                 boolean firstTime = latest == null;
                 latest = tag;
                 if (firstTime) {
-                    services.plugin()
-                            .getSLF4JLogger()
-                            .info("ChestsPlusPlus {} is available (running {}): {}", tag, currentVersion, DOWNLOAD_URL);
+                    services.plugin().getSLF4JLogger().info("ChestsPlusPlus {} is available (running {}): {}", tag, currentVersion, DOWNLOAD_URL);
                 }
             }
         } catch (InterruptedException e) {
@@ -94,16 +85,9 @@ public final class UpdateChecker implements Listener {
     void onJoin(PlayerJoinEvent event) {
         String version = latest;
         Player player = event.getPlayer();
-        if (version == null
-                || !services.settings().updateChecker()
-                || !player.hasPermission(Permissions.ADMIN_UPDATE)) {
+        if (version == null || !services.settings().updateChecker() || !player.hasPermission(Permissions.ADMIN_UPDATE)) {
             return;
         }
-        services.messages()
-                .send(
-                        player,
-                        Message.UPDATE_AVAILABLE,
-                        Messages.text("version", version),
-                        Messages.text("url", DOWNLOAD_URL));
+        services.messages().send(player, Message.UPDATE_AVAILABLE, Messages.text("version", version), Messages.text("url", DOWNLOAD_URL));
     }
 }

@@ -44,109 +44,39 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        getLifecycleManager()
-                .registerEventHandler(
-                        LifecycleEvents.COMMANDS,
-                        event -> event.registrar()
-                                .register(
-                                        Commands.literal("cpptest")
-                                                .requires(ChestsPlusPlusTestHarness::isConsole)
-                                                .then(Commands.literal("ping").executes(c -> reply(c, "cpptest pong")))
-                                                .then(Commands.literal("plugin").executes(this::pluginState))
-                                                .then(withGroupArgs(Commands.literal("group"), this::group))
-                                                .then(Commands.literal("displays")
-                                                        .executes(this::displays))
-                                                .then(Commands.literal("reset").executes(this::reset))
-                                                .then(Commands.literal("recipe")
-                                                        .then(Commands.argument("owner", StringArgumentType.word())
-                                                                .then(Commands.argument(
-                                                                                "name", StringArgumentType.word())
-                                                                        .then(Commands.argument(
-                                                                                        "matrix",
-                                                                                        StringArgumentType
-                                                                                                .greedyString())
-                                                                                .executes(this::recipe)))))
-                                                .then(
-                                                        Commands.literal("filter")
-                                                                .then(
-                                                                        Commands.argument(
-                                                                                        "x",
-                                                                                        IntegerArgumentType.integer())
-                                                                                .then(
-                                                                                        Commands.argument(
-                                                                                                        "y",
-                                                                                                        IntegerArgumentType
-                                                                                                                .integer())
-                                                                                                .then(
-                                                                                                        Commands
-                                                                                                                .argument(
-                                                                                                                        "z",
-                                                                                                                        IntegerArgumentType
-                                                                                                                                .integer())
-                                                                                                                .then(
-                                                                                                                        Commands
-                                                                                                                                .argument(
-                                                                                                                                        "mode",
-                                                                                                                                        StringArgumentType
-                                                                                                                                                .word())
-                                                                                                                                .then(
-                                                                                                                                        Commands
-                                                                                                                                                .argument(
-                                                                                                                                                        "material",
-                                                                                                                                                        StringArgumentType
-                                                                                                                                                                .greedyString())
-                                                                                                                                                .executes(
-                                                                                                                                                        this
-                                                                                                                                                                ::filter)))))))
-                                                .then(
-                                                        Commands.literal("link")
-                                                                .then(
-                                                                        Commands.argument(
-                                                                                        "type",
-                                                                                        StringArgumentType.word())
-                                                                                .then(
-                                                                                        Commands.argument(
-                                                                                                        "owner",
-                                                                                                        StringArgumentType
-                                                                                                                .word())
-                                                                                                .then(
-                                                                                                        Commands
-                                                                                                                .argument(
-                                                                                                                        "name",
-                                                                                                                        StringArgumentType
-                                                                                                                                .word())
-                                                                                                                .then(
-                                                                                                                        Commands
-                                                                                                                                .argument(
-                                                                                                                                        "x",
-                                                                                                                                        IntegerArgumentType
-                                                                                                                                                .integer())
-                                                                                                                                .then(
-                                                                                                                                        Commands
-                                                                                                                                                .argument(
-                                                                                                                                                        "y",
-                                                                                                                                                        IntegerArgumentType
-                                                                                                                                                                .integer())
-                                                                                                                                                .then(
-                                                                                                                                                        Commands
-                                                                                                                                                                .argument(
-                                                                                                                                                                        "z",
-                                                                                                                                                                        IntegerArgumentType
-                                                                                                                                                                                .integer())
-                                                                                                                                                                .executes(
-                                                                                                                                                                        this
-                                                                                                                                                                                ::link))))))))
-                                                .build(),
-                                        "ChestsPlusPlus E2E test harness (console only)"));
+        getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
+                event -> event.registrar().register(Commands.literal("cpptest").requires(ChestsPlusPlusTestHarness::isConsole)
+                        .then(Commands.literal("ping").executes(c -> reply(c, "cpptest pong")))
+                        .then(Commands.literal("plugin").executes(this::pluginState)).then(withGroupArgs(Commands.literal("group"), this::group))
+                        .then(Commands.literal("displays").executes(this::displays)).then(Commands.literal("reset").executes(this::reset))
+                        .then(Commands.literal("recipe")
+                                .then(Commands.argument("owner", StringArgumentType.word())
+                                        .then(Commands.argument("name", StringArgumentType.word())
+                                                .then(Commands.argument("matrix", StringArgumentType.greedyString()).executes(this::recipe)))))
+                        .then(Commands
+                                .literal(
+                                        "filter")
+                                .then(Commands.argument("x", IntegerArgumentType.integer())
+                                        .then(Commands.argument("y", IntegerArgumentType.integer())
+                                                .then(Commands.argument("z", IntegerArgumentType.integer())
+                                                        .then(Commands.argument("mode", StringArgumentType.word())
+                                                                .then(Commands.argument("material", StringArgumentType.greedyString())
+                                                                        .executes(this::filter)))))))
+                        .then(Commands.literal("link")
+                                .then(Commands.argument("type", StringArgumentType.word()).then(Commands.argument("owner", StringArgumentType.word())
+                                        .then(Commands.argument("name", StringArgumentType.word())
+                                                .then(Commands.argument("x", IntegerArgumentType.integer())
+                                                        .then(Commands.argument("y", IntegerArgumentType.integer()).then(
+                                                                Commands.argument("z", IntegerArgumentType.integer()).executes(this::link))))))))
+                        .build(), "ChestsPlusPlus E2E test harness (console only)"));
     }
 
     /** {@code <type> <owner> <name>} arguments, executing {@code command} at the end if given. */
-    private static ArgumentBuilder<CommandSourceStack, ?> withGroupArgs(
-            ArgumentBuilder<CommandSourceStack, ?> root, @Nullable Command<CommandSourceStack> command) {
+    private static ArgumentBuilder<CommandSourceStack, ?> withGroupArgs(ArgumentBuilder<CommandSourceStack, ?> root,
+            @Nullable Command<CommandSourceStack> command) {
         var name = Commands.argument("name", StringArgumentType.word());
         if (command != null) name.executes(command);
-        return root.then(Commands.argument("type", StringArgumentType.word())
-                .then(Commands.argument("owner", StringArgumentType.word()).then(name)));
+        return root.then(Commands.argument("type", StringArgumentType.word()).then(Commands.argument("owner", StringArgumentType.word()).then(name)));
     }
 
     private Services services() {
@@ -158,10 +88,7 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
 
     private int pluginState(CommandContext<CommandSourceStack> context) {
         ChestsPlusPlus plugin = JavaPlugin.getPlugin(ChestsPlusPlus.class);
-        return reply(
-                context,
-                "cpptest plugin enabled=" + plugin.isEnabled() + " version="
-                        + plugin.getPluginMeta().getVersion());
+        return reply(context, "cpptest plugin enabled=" + plugin.isEnabled() + " version=" + plugin.getPluginMeta().getVersion());
     }
 
     private static GroupType type(CommandContext<CommandSourceStack> context) {
@@ -169,8 +96,7 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
     }
 
     private static UUID owner(CommandContext<CommandSourceStack> context) {
-        return Bukkit.getOfflinePlayer(StringArgumentType.getString(context, "owner"))
-                .getUniqueId();
+        return Bukkit.getOfflinePlayer(StringArgumentType.getString(context, "owner")).getUniqueId();
     }
 
     /** {@code cpptest group <type> <owner> <name>} → {@code cpptest group <name> nodes=<n> items={MATERIAL=n, ...}}. */
@@ -182,15 +108,12 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
         String items = "-";
         if (group instanceof ChestLinkGroup chest) {
             Map<String, Integer> totals = new TreeMap<>();
-            Arrays.stream(chest.inventory().getContents())
-                    .filter(Objects::nonNull)
+            Arrays.stream(chest.inventory().getContents()).filter(Objects::nonNull)
                     .forEach(item -> totals.merge(item.getType().name(), item.getAmount(), Integer::sum));
             items = totals.toString();
         }
-        return reply(
-                context,
-                "cpptest group " + group.name() + " nodes=" + services.nodes().count(group.id()) + " public="
-                        + group.isPublic() + " dirty=" + services.persistence().isDirty(group) + " items=" + items);
+        return reply(context, "cpptest group " + group.name() + " nodes=" + services.nodes().count(group.id()) + " public=" + group.isPublic()
+                + " dirty=" + services.persistence().isDirty(group) + " items=" + items);
     }
 
     /** {@code cpptest displays} → counts of our display entities (by PDC marker) vs tracked displays. */
@@ -211,9 +134,7 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
         UUID owner = owner(context);
         String name = StringArgumentType.getString(context, "name");
         World world = Bukkit.getWorlds().getFirst();
-        Block block = world.getBlockAt(
-                IntegerArgumentType.getInteger(context, "x"),
-                IntegerArgumentType.getInteger(context, "y"),
+        Block block = world.getBlockAt(IntegerArgumentType.getInteger(context, "x"), IntegerArgumentType.getInteger(context, "y"),
                 IntegerArgumentType.getInteger(context, "z"));
         LinkService links = services.get(LinkService.class);
         GroupTypeHandler handler = links.handler(type);
@@ -227,9 +148,7 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
         }
         links.addNode(group, block, BlockFace.NORTH);
         handler.onLinked(group, block);
-        return reply(
-                context,
-                "cpptest link ok " + group.name() + " nodes=" + services.nodes().count(group.id()));
+        return reply(context, "cpptest link ok " + group.name() + " nodes=" + services.nodes().count(group.id()));
     }
 
     /**
@@ -238,8 +157,7 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
      */
     private int recipe(CommandContext<CommandSourceStack> context) {
         Services services = services();
-        StorageGroup group = services.groups()
-                .find(GroupType.AUTOCRAFT, owner(context), StringArgumentType.getString(context, "name"));
+        StorageGroup group = services.groups().find(GroupType.AUTOCRAFT, owner(context), StringArgumentType.getString(context, "name"));
         if (!(group instanceof com.jamesdpeters.chestsplusplus.model.AutoCraftGroup craft)) {
             return reply(context, "cpptest recipe failed: no such AutoCraft group");
         }
@@ -249,34 +167,22 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
             org.bukkit.Material material = org.bukkit.Material.matchMaterial(parts[i].trim());
             matrix[i] = material == null ? null : org.bukkit.inventory.ItemStack.of(material);
         }
-        var result = services.get(com.jamesdpeters.chestsplusplus.autocraft.AutoCraftService.class)
-                .setMatrix(craft, matrix, null);
-        return reply(
-                context,
-                "cpptest recipe result=" + (result == null ? "none" : result.getType() + "x" + result.getAmount()));
+        var result = services.get(com.jamesdpeters.chestsplusplus.autocraft.AutoCraftService.class).setMatrix(craft, matrix, null);
+        return reply(context, "cpptest recipe result=" + (result == null ? "none" : result.getType() + "x" + result.getAmount()));
     }
 
     /** Fixture: {@code cpptest filter <x> <y> <z> <allow|deny> <material>} sets one TYPE filter on a hopper. */
     private int filter(CommandContext<CommandSourceStack> context) {
         Services services = services();
-        Block block = Bukkit.getWorlds()
-                .getFirst()
-                .getBlockAt(
-                        IntegerArgumentType.getInteger(context, "x"),
-                        IntegerArgumentType.getInteger(context, "y"),
-                        IntegerArgumentType.getInteger(context, "z"));
-        org.bukkit.Material material =
-                org.bukkit.Material.matchMaterial(StringArgumentType.getString(context, "material"));
+        Block block = Bukkit.getWorlds().getFirst().getBlockAt(IntegerArgumentType.getInteger(context, "x"),
+                IntegerArgumentType.getInteger(context, "y"), IntegerArgumentType.getInteger(context, "z"));
+        org.bukkit.Material material = org.bukkit.Material.matchMaterial(StringArgumentType.getString(context, "material"));
         if (material == null) return reply(context, "cpptest filter failed: unknown material");
-        var mode = com.jamesdpeters.chestsplusplus.filter.HopperFilter.Mode.valueOf(
-                StringArgumentType.getString(context, "mode").toUpperCase(Locale.ROOT));
+        var mode = com.jamesdpeters.chestsplusplus.filter.HopperFilter.Mode
+                .valueOf(StringArgumentType.getString(context, "mode").toUpperCase(Locale.ROOT));
         var filters = services.get(com.jamesdpeters.chestsplusplus.filter.FilterService.class);
-        filters.write(
-                block,
-                List.of(new com.jamesdpeters.chestsplusplus.filter.HopperFilter(
-                        org.bukkit.inventory.ItemStack.of(material),
-                        mode,
-                        com.jamesdpeters.chestsplusplus.filter.HopperFilter.Match.TYPE)));
+        filters.write(block, List.of(new com.jamesdpeters.chestsplusplus.filter.HopperFilter(org.bukkit.inventory.ItemStack.of(material), mode,
+                com.jamesdpeters.chestsplusplus.filter.HopperFilter.Match.TYPE)));
         return reply(context, "cpptest filter ok indexed=" + (filters.get(block) != null));
     }
 

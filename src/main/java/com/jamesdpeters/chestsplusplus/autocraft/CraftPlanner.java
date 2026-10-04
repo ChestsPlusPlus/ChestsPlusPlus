@@ -21,8 +21,7 @@ public final class CraftPlanner {
     public record Source(Inventory inventory, int slot) {}
 
     /** A complete extraction plan: per matrix slot its source (null for empty slots) and the planned matrix. */
-    public record Plan(
-            List<@Nullable Source> sources, @Nullable ItemStack[] matrix) {}
+    public record Plan(List<@Nullable Source> sources, @Nullable ItemStack[] matrix) {}
 
     /**
      * Greedily assigns an input stack to each non-empty recipe slot, counting what each stack has already given so a
@@ -39,8 +38,7 @@ public final class CraftPlanner {
                 continue;
             }
             Source found = null;
-            search:
-            for (Inventory inventory : inputs) {
+            search : for (Inventory inventory : inputs) {
                 ItemStack[] contents = inventory.getStorageContents();
                 for (int slot = 0; slot < contents.length; slot++) {
                     ItemStack item = contents[slot];

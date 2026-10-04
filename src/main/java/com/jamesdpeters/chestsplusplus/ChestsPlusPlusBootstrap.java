@@ -16,8 +16,7 @@ public final class ChestsPlusPlusBootstrap implements PluginBootstrap {
     @Override
     public void bootstrap(BootstrapContext context) {
         Commands commands = new Commands(() -> plugin, context.getPluginMeta().getVersion());
-        context.getLifecycleManager()
-                .registerEventHandler(LifecycleEvents.COMMANDS, event -> commands.register(event.registrar()));
+        context.getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> commands.register(event.registrar()));
     }
 
     @Override

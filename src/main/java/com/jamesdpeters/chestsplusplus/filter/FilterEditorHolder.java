@@ -91,8 +91,7 @@ public final class FilterEditorHolder implements InventoryHolder {
             switch (click) {
                 case SHIFT -> row.remove(index);
                 case RIGHT -> {
-                    HopperFilter.Mode other =
-                            mode == HopperFilter.Mode.ALLOW ? HopperFilter.Mode.DENY : HopperFilter.Mode.ALLOW;
+                    HopperFilter.Mode other = mode == HopperFilter.Mode.ALLOW ? HopperFilter.Mode.DENY : HopperFilter.Mode.ALLOW;
                     List<HopperFilter> target = rowOf(other);
                     if (target.size() >= ROW) return false;
                     row.remove(index);

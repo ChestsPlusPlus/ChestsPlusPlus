@@ -20,14 +20,10 @@ public final class CompiledFilter {
     public CompiledFilter(List<HopperFilter> filters, ItemGrouping grouping) {
         this.filters = List.copyOf(filters);
         this.grouping = grouping;
-        this.allows = filters.stream()
-                .filter(f -> f.mode() == HopperFilter.Mode.ALLOW)
-                .map(f -> new Entry(f.template().getType(), f.match(), f.template()))
-                .toArray(Entry[]::new);
-        this.denies = filters.stream()
-                .filter(f -> f.mode() == HopperFilter.Mode.DENY)
-                .map(f -> new Entry(f.template().getType(), f.match(), f.template()))
-                .toArray(Entry[]::new);
+        this.allows = filters.stream().filter(f -> f.mode() == HopperFilter.Mode.ALLOW)
+                .map(f -> new Entry(f.template().getType(), f.match(), f.template())).toArray(Entry[]::new);
+        this.denies = filters.stream().filter(f -> f.mode() == HopperFilter.Mode.DENY)
+                .map(f -> new Entry(f.template().getType(), f.match(), f.template())).toArray(Entry[]::new);
     }
 
     public List<HopperFilter> filters() {

@@ -16,14 +16,7 @@ class BlockPosTest {
     private static final UUID WORLD = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
     @ParameterizedTest
-    @CsvSource({
-        "0,0,0",
-        "1,-64,-1",
-        "-1,319,1",
-        "30000000,2047,-30000000",
-        "-33554432,-2048,33554431",
-        "123456,-1,-654321"
-    })
+    @CsvSource({"0,0,0", "1,-64,-1", "-1,319,1", "30000000,2047,-30000000", "-33554432,-2048,33554431", "123456,-1,-654321"})
     void packRoundTrips(int x, int y, int z) {
         BlockPos pos = new BlockPos(WORLD, x, y, z);
 
@@ -32,8 +25,7 @@ class BlockPosTest {
 
     @Test
     void distinctPositionsPackDistinctly() {
-        assertThat(new BlockPos(WORLD, 1, 0, 0).packed())
-                .isNotEqualTo(new BlockPos(WORLD, 0, 1, 0).packed())
+        assertThat(new BlockPos(WORLD, 1, 0, 0).packed()).isNotEqualTo(new BlockPos(WORLD, 0, 1, 0).packed())
                 .isNotEqualTo(new BlockPos(WORLD, 0, 0, 1).packed());
         assertThat(new BlockPos(WORLD, -1, 0, 0).packed()).isNotEqualTo(new BlockPos(WORLD, 0, 0, -1).packed());
     }

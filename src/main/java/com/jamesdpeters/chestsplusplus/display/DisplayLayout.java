@@ -1,13 +1,12 @@
 package com.jamesdpeters.chestsplusplus.display;
 
+import java.util.List;
+import java.util.Set;
 import org.bukkit.Material;
 import org.bukkit.Tag;
 import org.bukkit.block.BlockFace;
 import org.bukkit.inventory.ItemStack;
 import org.jspecify.annotations.Nullable;
-
-import java.util.List;
-import java.util.Set;
 
 /**
  * Pure layout maths for node and filter displays: where, relative to the block's minimum corner, a display sits on a
@@ -127,11 +126,8 @@ public final class DisplayLayout {
         double alongRight = FILTER_FIRST_COLUMN + column * FILTER_COLUMN_PITCH; // from the viewer's left
         BlockFace right = rightOf(face);
         double out = Surface.HOPPER_SIDE.protrusion + FILTER_FACE_GAP;
-        return new Placement(
-                0.5 + face.getModX() * out + right.getModX() * alongRight,
-                FILTER_TOP_ROW_Y - row * FILTER_ROW_PITCH,
-                0.5 + face.getModZ() * out + right.getModZ() * alongRight,
-                yaw(face) + FILTER_YAW_OFFSET);
+        return new Placement(0.5 + face.getModX() * out + right.getModX() * alongRight, FILTER_TOP_ROW_Y - row * FILTER_ROW_PITCH,
+                0.5 + face.getModZ() * out + right.getModZ() * alongRight, yaw(face) + FILTER_YAW_OFFSET);
     }
 
     /** The direction to the right of someone looking at {@code face} from outside (they face the opposite way). */
@@ -148,8 +144,7 @@ public final class DisplayLayout {
     public static final BlockFace[] HORIZONTAL = {BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST};
 
     private static Placement place(BlockFace face, double out, double height) {
-        return new Placement(
-                0.5 + face.getModX() * out, height, 0.5 + face.getModZ() * out, yaw(face) + ITEM_YAW_OFFSET);
+        return new Placement(0.5 + face.getModX() * out, height, 0.5 + face.getModZ() * out, yaw(face) + ITEM_YAW_OFFSET);
     }
 
     /**
@@ -168,26 +163,11 @@ public final class DisplayLayout {
     }
 
     /** Non-occluding blocks whose items still render as 3D models. */
-    private static final List<Tag<Material>> BLOCK_MODEL_TAGS = List.of(
-            Tag.SLABS,
-            Tag.STAIRS,
-            Tag.WALLS,
-            Tag.FENCES,
-            Tag.FENCE_GATES,
-            Tag.LEAVES,
-            Tag.IMPERMEABLE,
-            Tag.SHULKER_BOXES);
+    private static final List<Tag<Material>> BLOCK_MODEL_TAGS = List.of(Tag.SLABS, Tag.STAIRS, Tag.WALLS, Tag.FENCES, Tag.FENCE_GATES, Tag.LEAVES,
+            Tag.IMPERMEABLE, Tag.SHULKER_BOXES);
 
-    private static final Set<Material> BLOCK_MODEL_MATERIALS = Set.of(
-            Material.CHEST,
-            Material.TRAPPED_CHEST,
-            Material.ENDER_CHEST,
-            Material.GLASS,
-            Material.TINTED_GLASS,
-            Material.SLIME_BLOCK,
-            Material.HONEY_BLOCK,
-            Material.ICE,
-            Material.SNOW_BLOCK);
+    private static final Set<Material> BLOCK_MODEL_MATERIALS = Set.of(Material.CHEST, Material.TRAPPED_CHEST, Material.ENDER_CHEST, Material.GLASS,
+            Material.TINTED_GLASS, Material.SLIME_BLOCK, Material.HONEY_BLOCK, Material.ICE, Material.SNOW_BLOCK);
 
     /** Displays only sit on the four horizontal faces; up/down (e.g. barrels facing up) fall back to north. */
     public static BlockFace horizontal(BlockFace facing) {

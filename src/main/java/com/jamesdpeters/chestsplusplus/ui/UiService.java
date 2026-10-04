@@ -73,12 +73,8 @@ public final class UiService {
     /** Groups shown in the hub for {@code search} (case-insensitive substring of name or owner). */
     public List<StorageGroup> hubGroups(Player player, GroupType type, String search) {
         String needle = search.trim().toLowerCase(Locale.ROOT);
-        return links.accessibleGroups(player.getUniqueId(), AccessService.hasBypass(player), type).stream()
-                .filter(g -> needle.isEmpty()
-                        || g.name().toLowerCase(Locale.ROOT).contains(needle)
-                        || LinkService.ownerName(g.owner())
-                                .toLowerCase(Locale.ROOT)
-                                .contains(needle))
+        return links.accessibleGroups(player.getUniqueId(), AccessService.hasBypass(player), type).stream().filter(g -> needle.isEmpty()
+                || g.name().toLowerCase(Locale.ROOT).contains(needle) || LinkService.ownerName(g.owner()).toLowerCase(Locale.ROOT).contains(needle))
                 .toList();
     }
 
@@ -93,60 +89,35 @@ public final class UiService {
         GroupTypeHandler handler = links.handler(type);
 
         List<ActionButton> buttons = new ArrayList<>();
-        buttons.add(button(
-                text(Message.MENU_HUB_SEARCH_BUTTON),
-                null,
-                (view, p) -> openHub(p, type, nonNull(view.getText("search")), 0)));
+        buttons.add(button(text(Message.MENU_HUB_SEARCH_BUTTON), null, (view, p) -> openHub(p, type, nonNull(view.getText("search")), 0)));
         buttons.add(button(text(Message.MENU_HUB_GRID_BUTTON), null, (view, p) -> openGrid(p, type)));
         if (player.hasPermission(Permissions.TRUST)) {
             buttons.add(button(text(Message.MENU_HUB_TRUST_BUTTON), null, (view, p) -> openTrust(p, type)));
         }
-        for (StorageGroup group :
-                groups.subList(current * GROUPS_PER_PAGE, Math.min(groups.size(), (current + 1) * GROUPS_PER_PAGE))) {
+        for (StorageGroup group : groups.subList(current * GROUPS_PER_PAGE, Math.min(groups.size(), (current + 1) * GROUPS_PER_PAGE))) {
             long id = group.id();
             buttons.add(button(
-                    text(
-                            Message.MENU_HUB_GROUP_BUTTON,
-                            Messages.text("group", group.name()),
+                    text(Message.MENU_HUB_GROUP_BUTTON, Messages.text("group", group.name()),
                             Messages.text("owner", LinkService.ownerName(group.owner())),
                             Messages.text("items", handler == null ? "" : handler.summary(group))),
-                    text(
-                            Message.MENU_HUB_GROUP_TOOLTIP,
-                            Messages.text("owner", LinkService.ownerName(group.owner())),
-                            Messages.component(
-                                    "public", text(group.isPublic() ? Message.STATE_PUBLIC : Message.STATE_PRIVATE)),
+                    text(Message.MENU_HUB_GROUP_TOOLTIP, Messages.text("owner", LinkService.ownerName(group.owner())),
+                            Messages.component("public", text(group.isPublic() ? Message.STATE_PUBLIC : Message.STATE_PRIVATE)),
                             Messages.text("members", memberNames(group))),
                     (view, p) -> withGroup(p, id, g -> openGroup(p, g))));
         }
         if (current > 0) {
-            buttons.add(button(
-                    text(Message.MENU_HUB_PREVIOUS),
-                    null,
-                    (view, p) -> openHub(p, type, nonNull(view.getText("search")), current - 1)));
+            buttons.add(button(text(Message.MENU_HUB_PREVIOUS), null, (view, p) -> openHub(p, type, nonNull(view.getText("search")), current - 1)));
         }
         if (current < pages - 1) {
-            buttons.add(button(
-                    text(Message.MENU_HUB_NEXT),
-                    null,
-                    (view, p) -> openHub(p, type, nonNull(view.getText("search")), current + 1)));
+            buttons.add(button(text(Message.MENU_HUB_NEXT), null, (view, p) -> openHub(p, type, nonNull(view.getText("search")), current + 1)));
         }
 
         List<DialogBody> body = new ArrayList<>();
         if (groups.isEmpty()) body.add(DialogBody.plainMessage(text(Message.MENU_HUB_EMPTY)));
         Dialog dialog = Dialog.create(factory -> factory.empty()
-                .base(DialogBase.builder(text(Message.MENU_HUB_TITLE))
-                        .canCloseWithEscape(true)
-                        .body(body)
-                        .inputs(List.of(DialogInput.text("search", text(Message.MENU_HUB_SEARCH))
-                                .initial(search)
-                                .maxLength(32)
-                                .build()))
-                        .build())
-                .type(DialogType.multiAction(buttons)
-                        .columns(1)
-                        .exitAction(
-                                ActionButton.builder(text(Message.MENU_CLOSE)).build())
-                        .build()));
+                .base(DialogBase.builder(text(Message.MENU_HUB_TITLE)).canCloseWithEscape(true).body(body)
+                        .inputs(List.of(DialogInput.text("search", text(Message.MENU_HUB_SEARCH)).initial(search).maxLength(32).build())).build())
+                .type(DialogType.multiAction(buttons).columns(1).exitAction(ActionButton.builder(text(Message.MENU_CLOSE)).build()).build()));
         player.showDialog(dialog);
     }
 
@@ -163,69 +134,48 @@ public final class UiService {
 
         List<DialogInput> inputs = new ArrayList<>();
         if (manage) {
-            inputs.add(DialogInput.text("name", text(Message.MENU_GROUP_NEW_NAME))
-                    .initial(group.name())
-                    .maxLength(32)
-                    .build());
-            inputs.add(DialogInput.bool("public", text(Message.MENU_GROUP_PUBLIC))
-                    .initial(group.isPublic())
-                    .build());
+            inputs.add(DialogInput.text("name", text(Message.MENU_GROUP_NEW_NAME)).initial(group.name()).maxLength(32).build());
+            inputs.add(DialogInput.bool("public", text(Message.MENU_GROUP_PUBLIC)).initial(group.isPublic()).build());
             if (group instanceof ChestLinkGroup chest && player.hasPermission(Permissions.CHESTLINK_SORT)) {
                 List<SingleOptionDialogInput.OptionEntry> modes = new ArrayList<>();
                 for (SortMode mode : SortMode.values()) {
-                    modes.add(SingleOptionDialogInput.OptionEntry.create(
-                            mode.name(),
-                            Component.text(mode.name().toLowerCase(Locale.ROOT)),
+                    modes.add(SingleOptionDialogInput.OptionEntry.create(mode.name(), Component.text(mode.name().toLowerCase(Locale.ROOT)),
                             mode == chest.sortMode()));
                 }
-                inputs.add(DialogInput.singleOption("sort", text(Message.MENU_GROUP_SORT_MODE), modes)
-                        .build());
+                inputs.add(DialogInput.singleOption("sort", text(Message.MENU_GROUP_SORT_MODE), modes).build());
             }
         }
 
         List<ActionButton> buttons = new ArrayList<>();
-        buttons.add(button(
-                text(type == GroupType.AUTOCRAFT ? Message.MENU_GROUP_RECIPE : Message.MENU_GROUP_OPEN),
-                null,
+        buttons.add(button(text(type == GroupType.AUTOCRAFT ? Message.MENU_GROUP_RECIPE : Message.MENU_GROUP_OPEN), null,
                 (view, p) -> withGroup(p, id, g -> actions.openRemote(p, g))));
         if (manage) {
-            buttons.add(button(
-                    text(Message.MENU_GROUP_SAVE),
-                    null,
-                    (view, p) -> withGroup(p, id, g -> {
-                        save(p, g, view);
-                        openGroup(p, g);
-                    })));
+            buttons.add(button(text(Message.MENU_GROUP_SAVE), null, (view, p) -> withGroup(p, id, g -> {
+                save(p, g, view);
+                openGroup(p, g);
+            })));
             if (player.hasPermission(Permissions.members(type))) {
-                buttons.add(button(
-                        text(Message.MENU_GROUP_MEMBERS), null, (view, p) -> withGroup(p, id, g -> openMembers(p, g))));
+                buttons.add(button(text(Message.MENU_GROUP_MEMBERS), null, (view, p) -> withGroup(p, id, g -> openMembers(p, g))));
             }
             if (player.hasPermission(Permissions.remove(type))) {
-                buttons.add(button(
-                        text(Message.MENU_GROUP_REMOVE),
-                        null,
-                        (view, p) -> withGroup(p, id, g -> confirmRemove(p, g))));
+                buttons.add(button(text(Message.MENU_GROUP_REMOVE), null, (view, p) -> withGroup(p, id, g -> confirmRemove(p, g))));
             }
         }
         buttons.add(button(text(Message.MENU_BACK), null, (view, p) -> openHub(p, type, "", 0)));
 
         ItemStack icon = handler == null ? ItemStack.of(Material.CHEST) : handler.icon(group);
-        Dialog dialog = Dialog.create(factory -> factory.empty()
-                .base(DialogBase.builder(text(Message.MENU_GROUP_TITLE, Messages.text("group", group.name())))
-                        .canCloseWithEscape(true)
-                        .body(List.of(DialogBody.item(icon)
-                                .description(DialogBody.plainMessage(
-                                        Component.text(LinkService.ownerName(group.owner()) + " · "
-                                                + (handler == null ? "" : handler.summary(group)) + " · "
-                                                + services.nodes().count(group.id()) + " block(s)")))
-                                .build()))
-                        .inputs(inputs)
-                        .build())
-                .type(DialogType.multiAction(buttons)
-                        .columns(2)
-                        .exitAction(
-                                ActionButton.builder(text(Message.MENU_CLOSE)).build())
-                        .build()));
+        Dialog dialog = Dialog.create(factory -> factory
+                .empty().base(
+                        DialogBase
+                                .builder(text(Message.MENU_GROUP_TITLE, Messages.text("group", group.name()))).canCloseWithEscape(
+                                        true)
+                                .body(List.of(DialogBody.item(icon)
+                                        .description(DialogBody.plainMessage(Component
+                                                .text(LinkService.ownerName(group.owner()) + " · " + (handler == null ? "" : handler.summary(group))
+                                                        + " · " + services.nodes().count(group.id()) + " block(s)")))
+                                        .build()))
+                                .inputs(inputs).build())
+                .type(DialogType.multiAction(buttons).columns(2).exitAction(ActionButton.builder(text(Message.MENU_CLOSE)).build()).build()));
         player.showDialog(dialog);
     }
 
@@ -250,18 +200,9 @@ public final class UiService {
         long id = group.id();
         Dialog dialog = Dialog.create(factory -> factory.empty()
                 .base(DialogBase.builder(text(Message.MENU_GROUP_REMOVE))
-                        .body(List.of(DialogBody.plainMessage(
-                                text(Message.MENU_CONFIRM_REMOVE, Messages.text("group", group.name())))))
-                        .build())
-                .type(DialogType.confirmation(
-                        button(
-                                text(Message.MENU_CONFIRM_YES),
-                                null,
-                                (view, p) -> withGroup(p, id, g -> actions.remove(p, g))),
-                        button(
-                                text(Message.MENU_CONFIRM_NO),
-                                null,
-                                (view, p) -> withGroup(p, id, g -> openGroup(p, g))))));
+                        .body(List.of(DialogBody.plainMessage(text(Message.MENU_CONFIRM_REMOVE, Messages.text("group", group.name()))))).build())
+                .type(DialogType.confirmation(button(text(Message.MENU_CONFIRM_YES), null, (view, p) -> withGroup(p, id, g -> actions.remove(p, g))),
+                        button(text(Message.MENU_CONFIRM_NO), null, (view, p) -> withGroup(p, id, g -> openGroup(p, g))))));
         player.showDialog(dialog);
     }
 
@@ -269,23 +210,17 @@ public final class UiService {
         if (!actions.canManage(player, group)) return;
         long id = group.id();
         List<ActionButton> buttons = new ArrayList<>();
-        buttons.add(button(
-                text(Message.MENU_MEMBERS_ADD),
-                null,
-                (view, p) -> withGroup(p, id, g -> {
-                    String name = nonNull(view.getText("player")).trim();
-                    if (!name.isEmpty()) actions.addMember(p, g, name, () -> openMembers(p, g));
-                })));
+        buttons.add(button(text(Message.MENU_MEMBERS_ADD), null, (view, p) -> withGroup(p, id, g -> {
+            String name = nonNull(view.getText("player")).trim();
+            if (!name.isEmpty()) actions.addMember(p, g, name, () -> openMembers(p, g));
+        })));
         for (UUID member : List.copyOf(group.members())) {
             String name = LinkService.ownerName(member);
-            buttons.add(button(
-                    text(Message.MENU_MEMBERS_REMOVE, Messages.text("player", name)),
-                    null,
+            buttons.add(button(text(Message.MENU_MEMBERS_REMOVE, Messages.text("player", name)), null,
                     (view, p) -> withGroup(p, id, g -> actions.removeMember(p, g, name, () -> openMembers(p, g)))));
         }
         buttons.add(button(text(Message.MENU_BACK), null, (view, p) -> withGroup(p, id, g -> openGroup(p, g))));
-        player.showDialog(
-                playerListDialog(text(Message.MENU_MEMBERS_TITLE, Messages.text("group", group.name())), buttons));
+        player.showDialog(playerListDialog(text(Message.MENU_MEMBERS_TITLE, Messages.text("group", group.name())), buttons));
     }
 
     public void openTrust(Player player, GroupType backTo) {
@@ -300,9 +235,7 @@ public final class UiService {
         }));
         for (UUID trusted : List.copyOf(services.trust().trustedBy(player.getUniqueId()))) {
             String name = LinkService.ownerName(trusted);
-            buttons.add(button(
-                    text(Message.MENU_TRUST_REMOVE, Messages.text("player", name)),
-                    null,
+            buttons.add(button(text(Message.MENU_TRUST_REMOVE, Messages.text("player", name)), null,
                     (view, p) -> actions.untrust(p, name, () -> openTrust(p, backTo))));
         }
         buttons.add(button(text(Message.MENU_BACK), null, (view, p) -> openHub(p, backTo, "", 0)));
@@ -311,17 +244,9 @@ public final class UiService {
 
     private Dialog playerListDialog(Component title, List<ActionButton> buttons) {
         return Dialog.create(factory -> factory.empty()
-                .base(DialogBase.builder(title)
-                        .canCloseWithEscape(true)
-                        .inputs(List.of(DialogInput.text("player", text(Message.MENU_MEMBERS_PLAYER))
-                                .maxLength(16)
-                                .build()))
-                        .build())
-                .type(DialogType.multiAction(buttons)
-                        .columns(1)
-                        .exitAction(
-                                ActionButton.builder(text(Message.MENU_CLOSE)).build())
-                        .build()));
+                .base(DialogBase.builder(title).canCloseWithEscape(true)
+                        .inputs(List.of(DialogInput.text("player", text(Message.MENU_MEMBERS_PLAYER)).maxLength(16).build())).build())
+                .type(DialogType.multiAction(buttons).columns(1).exitAction(ActionButton.builder(text(Message.MENU_CLOSE)).build()).build()));
     }
 
     // ---------------------------------------------------------------------------------------------------------------
@@ -335,29 +260,20 @@ public final class UiService {
             long id = group.id();
             ItemStack icon = (handler == null ? ItemStack.of(Material.CHEST) : handler.icon(group)).clone();
             icon.setData(DataComponentTypes.ITEM_NAME, Component.text(group.name()));
-            icon.setData(
-                    DataComponentTypes.LORE,
-                    ItemLore.lore(services.messages()
-                            .lines(
-                                    Message.MENU_GRID_ENTRY_LORE,
-                                    Messages.text("owner", LinkService.ownerName(group.owner())),
+            icon.setData(DataComponentTypes.LORE,
+                    ItemLore.lore(
+                            services.messages().lines(Message.MENU_GRID_ENTRY_LORE, Messages.text("owner", LinkService.ownerName(group.owner())),
                                     Messages.text("items", handler == null ? "" : handler.summary(group)))));
-            entries.add(new PaginatedMenu.Entry(
-                    icon,
-                    (p, click) -> withGroup(p, id, g -> {
-                        if (click == ClickType.RIGHT || click == ClickType.SHIFT_RIGHT) {
-                            p.closeInventory();
-                            openGroup(p, g);
-                        } else if (actions.openRemote(p, g)) {
-                            menus.returnTo(p, () -> openGrid(p, type));
-                        }
-                    })));
+            entries.add(new PaginatedMenu.Entry(icon, (p, click) -> withGroup(p, id, g -> {
+                if (click == ClickType.RIGHT || click == ClickType.SHIFT_RIGHT) {
+                    p.closeInventory();
+                    openGroup(p, g);
+                } else if (actions.openRemote(p, g)) {
+                    menus.returnTo(p, () -> openGrid(p, type));
+                }
+            })));
         }
-        PaginatedMenu menu = new PaginatedMenu(
-                6,
-                text(Message.MENU_GRID_TITLE),
-                entries,
-                text(Message.MENU_GRID_PREVIOUS),
+        PaginatedMenu menu = new PaginatedMenu(6, text(Message.MENU_GRID_TITLE), entries, text(Message.MENU_GRID_PREVIOUS),
                 text(Message.MENU_GRID_NEXT));
         menu.open(player);
         return menu;
@@ -381,30 +297,21 @@ public final class UiService {
      * A dialog button whose callback always runs on the main thread for an online player (spike S3: the callback
      * thread isn't confirmed yet, so this re-dispatches if needed). Single use, with an expiry (plan §5.7).
      */
-    private ActionButton button(
-            Component label, @Nullable Component tooltip, BiConsumer<DialogResponseView, Player> onClick) {
+    private ActionButton button(Component label, @Nullable Component tooltip, BiConsumer<DialogResponseView, Player> onClick) {
         ActionButton.Builder builder = ActionButton.builder(label).width(250);
         if (tooltip != null) builder.tooltip(tooltip);
-        return builder.action(DialogAction.customClick(
-                        (view, audience) -> {
-                            if (!(audience instanceof Player player)) return;
-                            Runnable run = () -> {
-                                if (player.isOnline() && services.plugin().isEnabled()) onClick.accept(view, player);
-                            };
-                            if (Bukkit.isPrimaryThread()) run.run();
-                            else Bukkit.getScheduler().runTask(services.plugin(), run);
-                        },
-                        ClickCallback.Options.builder()
-                                .uses(1)
-                                .lifetime(CALLBACK_LIFETIME)
-                                .build()))
-                .build();
+        return builder.action(DialogAction.customClick((view, audience) -> {
+            if (!(audience instanceof Player player)) return;
+            Runnable run = () -> {
+                if (player.isOnline() && services.plugin().isEnabled()) onClick.accept(view, player);
+            };
+            if (Bukkit.isPrimaryThread()) run.run();
+            else Bukkit.getScheduler().runTask(services.plugin(), run);
+        }, ClickCallback.Options.builder().uses(1).lifetime(CALLBACK_LIFETIME).build())).build();
     }
 
     private String memberNames(StorageGroup group) {
-        return group.members().isEmpty()
-                ? "-"
-                : group.members().stream().map(LinkService::ownerName).collect(Collectors.joining(", "));
+        return group.members().isEmpty() ? "-" : group.members().stream().map(LinkService::ownerName).collect(Collectors.joining(", "));
     }
 
     private static String nonNull(@Nullable String value) {

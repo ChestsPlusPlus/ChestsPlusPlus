@@ -62,11 +62,8 @@ public final class GroupActions {
     public boolean remove(Player player, StorageGroup group) {
         if (!require(player, Permissions.remove(group.type())) || !canManage(player, group)) return false;
         links.removeGroup(group, player.getLocation());
-        services.messages()
-                .send(
-                        player,
-                        group.type() == GroupType.CHESTLINK ? Message.CHESTLINK_REMOVED : Message.AUTOCRAFT_REMOVED,
-                        Messages.text("group", group.name()));
+        services.messages().send(player, group.type() == GroupType.CHESTLINK ? Message.CHESTLINK_REMOVED : Message.AUTOCRAFT_REMOVED,
+                Messages.text("group", group.name()));
         return true;
     }
 
@@ -78,14 +75,9 @@ public final class GroupActions {
     public boolean setPublic(Player player, StorageGroup group, boolean isPublic) {
         if (!canManage(player, group)) return false;
         links.setPublic(group, isPublic);
-        services.messages()
-                .send(
-                        player,
-                        group.type() == GroupType.CHESTLINK ? Message.CHESTLINK_PUBLIC : Message.AUTOCRAFT_PUBLIC,
-                        Messages.text("group", group.name()),
-                        Messages.component(
-                                "state",
-                                services.messages().get(isPublic ? Message.STATE_PUBLIC : Message.STATE_PRIVATE)));
+        services.messages().send(player, group.type() == GroupType.CHESTLINK ? Message.CHESTLINK_PUBLIC : Message.AUTOCRAFT_PUBLIC,
+                Messages.text("group", group.name()),
+                Messages.component("state", services.messages().get(isPublic ? Message.STATE_PUBLIC : Message.STATE_PRIVATE)));
         return true;
     }
 
@@ -95,12 +87,8 @@ public final class GroupActions {
         ChestLinkService chestLinks = services.get(ChestLinkService.class);
         chestLinks.sort(group);
         chestLinks.changed(group);
-        services.messages()
-                .send(
-                        player,
-                        Message.CHESTLINK_SORT_MODE,
-                        Messages.text("group", group.name()),
-                        Messages.text("mode", mode.name().toLowerCase(java.util.Locale.ROOT)));
+        services.messages().send(player, Message.CHESTLINK_SORT_MODE, Messages.text("group", group.name()),
+                Messages.text("mode", mode.name().toLowerCase(java.util.Locale.ROOT)));
         return true;
     }
 
@@ -112,12 +100,7 @@ public final class GroupActions {
                 return;
             }
             links.addMember(group, member);
-            services.messages()
-                    .send(
-                            player,
-                            Message.MEMBERS_ADDED,
-                            Messages.text("player", name),
-                            Messages.text("group", group.name()));
+            services.messages().send(player, Message.MEMBERS_ADDED, Messages.text("player", name), Messages.text("group", group.name()));
             if (after != null) after.run();
         });
     }
@@ -126,12 +109,7 @@ public final class GroupActions {
         if (!require(player, Permissions.members(group.type())) || !canManage(player, group)) return;
         lookup(player, name, member -> {
             links.removeMember(group, member);
-            services.messages()
-                    .send(
-                            player,
-                            Message.MEMBERS_REMOVED,
-                            Messages.text("player", name),
-                            Messages.text("group", group.name()));
+            services.messages().send(player, Message.MEMBERS_REMOVED, Messages.text("player", name), Messages.text("group", group.name()));
             if (after != null) after.run();
         });
     }
@@ -142,12 +120,8 @@ public final class GroupActions {
             services.messages().send(player, Message.MEMBERS_NONE, Messages.text("group", group.name()));
             return;
         }
-        services.messages()
-                .send(
-                        player,
-                        Message.MEMBERS_LIST,
-                        Messages.text("group", group.name()),
-                        Messages.text("players", names(List.copyOf(group.members()))));
+        services.messages().send(player, Message.MEMBERS_LIST, Messages.text("group", group.name()),
+                Messages.text("players", names(List.copyOf(group.members()))));
     }
 
     public void trust(Player player, String name, @Nullable Runnable after) {
@@ -192,16 +166,11 @@ public final class GroupActions {
         services.messages().send(player, chest ? Message.CHESTLINK_LIST_HEADER : Message.AUTOCRAFT_LIST_HEADER);
         GroupTypeHandler handler = links.handler(type);
         for (StorageGroup group : groups) {
-            services.messages()
-                    .send(
-                            player,
-                            chest ? Message.CHESTLINK_LIST_ENTRY : Message.AUTOCRAFT_LIST_ENTRY,
-                            Messages.text("group", group.name()),
-                            Messages.text("ref", LinkService.reference(player.getUniqueId(), group)),
-                            Messages.text("owner", LinkService.ownerName(group.owner())),
-                            Messages.text(
-                                    "nodes", Integer.toString(services.nodes().count(group.id()))),
-                            Messages.text("items", handler == null ? "" : handler.summary(group)));
+            services.messages().send(player, chest ? Message.CHESTLINK_LIST_ENTRY : Message.AUTOCRAFT_LIST_ENTRY,
+                    Messages.text("group", group.name()), Messages.text("ref", LinkService.reference(player.getUniqueId(), group)),
+                    Messages.text("owner", LinkService.ownerName(group.owner())),
+                    Messages.text("nodes", Integer.toString(services.nodes().count(group.id()))),
+                    Messages.text("items", handler == null ? "" : handler.summary(group)));
         }
     }
 
@@ -245,15 +214,13 @@ public final class GroupActions {
         }
         services.messages().send(requester, Message.TRUST_LOOKING_UP, Messages.text("player", name));
         PlayerProfile profile = Bukkit.createProfile(name);
-        profile.update()
-                .whenComplete((completed, error) -> Bukkit.getScheduler().runTask(services.plugin(), () -> {
-                    UUID id = error == null && completed != null && completed.isComplete() ? completed.getId() : null;
-                    if (id == null) {
-                        services.messages()
-                                .send(requester, Message.ERROR_PLAYER_NOT_FOUND, Messages.text("player", name));
-                    } else if (requester.isOnline()) {
-                        onFound.accept(id);
-                    }
-                }));
+        profile.update().whenComplete((completed, error) -> Bukkit.getScheduler().runTask(services.plugin(), () -> {
+            UUID id = error == null && completed != null && completed.isComplete() ? completed.getId() : null;
+            if (id == null) {
+                services.messages().send(requester, Message.ERROR_PLAYER_NOT_FOUND, Messages.text("player", name));
+            } else if (requester.isOnline()) {
+                onFound.accept(id);
+            }
+        }));
     }
 }

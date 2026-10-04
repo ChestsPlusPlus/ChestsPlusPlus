@@ -37,9 +37,7 @@ import org.jspecify.annotations.Nullable;
  */
 public final class AutoCraftService implements GroupTypeHandler, DisplayService.Content {
 
-    static final BlockFace[] INPUT_FACES = {
-        BlockFace.UP, BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST
-    };
+    static final BlockFace[] INPUT_FACES = {BlockFace.UP, BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST};
     static final int MAX_BACKOFF_TICKS = 200;
 
     private final Services services;
@@ -135,8 +133,7 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
     // ---------------------------------------------------------------------------------------------------------------
 
     public void openEditor(Player player, AutoCraftGroup group) {
-        player.openInventory(new RecipeEditorHolder(
-                        group, services.messages().get(Message.MENU_RECIPE_TITLE, Messages.text("group", group.name())))
+        player.openInventory(new RecipeEditorHolder(group, services.messages().get(Message.MENU_RECIPE_TITLE, Messages.text("group", group.name())))
                 .getInventory());
     }
 
@@ -146,8 +143,7 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
         World world = firstWorld();
         if (world == null) return;
         CraftingBackend.ResolvedRecipe resolved = backend.resolve(group.matrix(), world);
-        group.setRecipe(
-                group.matrix(), resolved == null ? null : resolved.key(), resolved == null ? null : resolved.result());
+        group.setRecipe(group.matrix(), resolved == null ? null : resolved.key(), resolved == null ? null : resolved.result());
         if (resolved != null) slotChoices.put(group.id(), resolved.slots());
     }
 
@@ -178,16 +174,13 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
     private static @Nullable RecipeEditorHolder editorOf(Player player) {
         // The top inventory can be null for players with nothing open on some platforms (MockBukkit).
         @Nullable Inventory top = player.getOpenInventory().getTopInventory();
-        return top != null && com.jamesdpeters.chestsplusplus.core.Holders.of(top) instanceof RecipeEditorHolder holder
-                ? holder
-                : null;
+        return top != null && com.jamesdpeters.chestsplusplus.core.Holders.of(top) instanceof RecipeEditorHolder holder ? holder : null;
     }
 
     private List<Player> openEditors(StorageGroup group) {
         List<Player> viewers = new ArrayList<>();
         for (Player player : services.plugin().getServer().getOnlinePlayers()) {
-            if (editorOf(player) instanceof RecipeEditorHolder holder
-                    && holder.group().id() == group.id()) {
+            if (editorOf(player) instanceof RecipeEditorHolder holder && holder.group().id() == group.id()) {
                 viewers.add(player);
             }
         }
@@ -214,8 +207,7 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
                 } else {
                     Backoff next = state != null ? state : new Backoff();
                     next.failures++;
-                    next.nextAttempt =
-                            tick + Math.min(MAX_BACKOFF_TICKS, (long) intervalTicks << Math.min(next.failures - 1, 8));
+                    next.nextAttempt = tick + Math.min(MAX_BACKOFF_TICKS, (long) intervalTicks << Math.min(next.failures - 1, 8));
                     backoff.put(node.pos(), next);
                 }
             }
@@ -286,8 +278,7 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
      * else the container's own inventory.
      */
     private @Nullable Inventory inventoryAt(Block block, AutoCraftGroup crafter) {
-        Node node = services.nodes()
-                .get(block.getWorld().getUID(), BlockPos.packed(block.getX(), block.getY(), block.getZ()));
+        Node node = services.nodes().get(block.getWorld().getUID(), BlockPos.packed(block.getX(), block.getY(), block.getZ()));
         if (node != null) {
             if (services.groups().byId(node.groupId()) instanceof ChestLinkGroup chest
                     && services.access().canAccess(crafter.owner(), false, chest)) {
@@ -299,8 +290,7 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
     }
 
     private void markChanged(Inventory inventory) {
-        if (com.jamesdpeters.chestsplusplus.core.Holders.of(inventory)
-                instanceof com.jamesdpeters.chestsplusplus.chestlink.ChestLinkHolder holder) {
+        if (com.jamesdpeters.chestsplusplus.core.Holders.of(inventory) instanceof com.jamesdpeters.chestsplusplus.chestlink.ChestLinkHolder holder) {
             services.persistence().markDirty(holder.group());
             displays.requestUpdate(holder.group());
         }

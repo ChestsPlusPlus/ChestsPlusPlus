@@ -45,11 +45,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
                 count++;
                 if (matrix[i].getType() == Material.COAL) coal = i;
             }
-            if (count != 2
-                    || coal < 0
-                    || coal + 3 > 8
-                    || matrix[coal + 3] == null
-                    || matrix[coal + 3].getType() != Material.STICK) {
+            if (count != 2 || coal < 0 || coal + 3 > 8 || matrix[coal + 3] == null || matrix[coal + 3].getType() != Material.STICK) {
                 return null;
             }
             List<@Nullable Predicate<ItemStack>> slots = new ArrayList<>();
@@ -76,8 +72,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         world = server.addSimpleWorld("world");
         world.loadChunk(0, 0);
         alice = server.addPlayer("Alice");
-        autoCraft = new AutoCraftService(
-                plugin.services(), plugin.services().get(DisplayService.class), new TorchBackend());
+        autoCraft = new AutoCraftService(plugin.services(), plugin.services().get(DisplayService.class), new TorchBackend());
     }
 
     private static @Nullable ItemStack[] torchMatrix() {
@@ -93,8 +88,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         table.setType(Material.CRAFTING_TABLE);
         LinkService links = plugin.services().get(LinkService.class);
         links.link(alice, GroupType.AUTOCRAFT, "torches", table, BlockFace.NORTH, true);
-        AutoCraftGroup group =
-                (AutoCraftGroup) plugin.services().groups().find(GroupType.AUTOCRAFT, alice.getUniqueId(), "torches");
+        AutoCraftGroup group = (AutoCraftGroup) plugin.services().groups().find(GroupType.AUTOCRAFT, alice.getUniqueId(), "torches");
         autoCraft.setMatrix(group, torchMatrix(), null);
         out[0] = group;
         return table;
@@ -114,11 +108,9 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         alice.getInventory().setItemInMainHand(tag);
 
         server.getPluginManager()
-                .callEvent(new PlayerInteractEvent(
-                        alice, Action.RIGHT_CLICK_BLOCK, tag, table, BlockFace.NORTH, EquipmentSlot.HAND));
+                .callEvent(new PlayerInteractEvent(alice, Action.RIGHT_CLICK_BLOCK, tag, table, BlockFace.NORTH, EquipmentSlot.HAND));
 
-        assertThat(plugin.services().groups().find(GroupType.AUTOCRAFT, alice.getUniqueId(), "torches"))
-                .isNotNull();
+        assertThat(plugin.services().groups().find(GroupType.AUTOCRAFT, alice.getUniqueId(), "torches")).isNotNull();
         assertThat(plugin.services().nodes().get(BlockPos.of(table))).isNotNull();
         assertThat(tag.isEmpty()).isTrue();
     }
@@ -138,10 +130,8 @@ class AutoCraftIntegrationTest extends PluginTestBase {
 
         Inventory output = container(world.getBlockAt(6, 64, 5), Material.HOPPER);
         for (int i = 0; i < 5; i++) output.setItem(i, ItemStack.of(Material.TORCH, 62));
-        assertThat(CraftPlanner.fits(output, List.of(ItemStack.of(Material.TORCH, 4))))
-                .isTrue();
-        assertThat(CraftPlanner.fits(output, List.of(ItemStack.of(Material.TORCH, 11))))
-                .isFalse();
+        assertThat(CraftPlanner.fits(output, List.of(ItemStack.of(Material.TORCH, 4)))).isTrue();
+        assertThat(CraftPlanner.fits(output, List.of(ItemStack.of(Material.TORCH, 11)))).isFalse();
     }
 
     @Test
@@ -166,8 +156,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
     void lockedHopperStopsCrafting() {
         AutoCraftGroup[] group = new AutoCraftGroup[1];
         Block table = crafter(group);
-        container(table.getRelative(BlockFace.UP), Material.CHEST)
-                .addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
+        container(table.getRelative(BlockFace.UP), Material.CHEST).addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
         Block below = table.getRelative(BlockFace.DOWN);
         container(below, Material.HOPPER);
         Hopper data = (Hopper) below.getBlockData();
@@ -187,13 +176,11 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         Block side = table.getRelative(BlockFace.EAST);
         side.setType(Material.CHEST);
         plugin.services().get(LinkService.class).link(alice, GroupType.CHESTLINK, "mats", side, BlockFace.EAST, true);
-        ChestLinkGroup mats =
-                (ChestLinkGroup) plugin.services().groups().find(GroupType.CHESTLINK, alice.getUniqueId(), "mats");
+        ChestLinkGroup mats = (ChestLinkGroup) plugin.services().groups().find(GroupType.CHESTLINK, alice.getUniqueId(), "mats");
         mats.inventory().addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
         Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
 
-        assertThat(autoCraft.craftAt(group[0], plugin.services().nodes().get(BlockPos.of(table))))
-                .isTrue();
+        assertThat(autoCraft.craftAt(group[0], plugin.services().nodes().get(BlockPos.of(table)))).isTrue();
         assertThat(output.contains(Material.TORCH, 4)).isTrue();
         assertThat(mats.inventory().isEmpty()).isTrue();
         assertThat(plugin.services().persistence().isDirty(mats)).isTrue();
@@ -219,8 +206,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         Block table = world.getBlockAt(0, 64, 0);
         table.setType(Material.CRAFTING_TABLE);
         plugin.services().get(LinkService.class).link(alice, GroupType.AUTOCRAFT, "t", table, BlockFace.NORTH, true);
-        AutoCraftGroup group =
-                (AutoCraftGroup) plugin.services().groups().find(GroupType.AUTOCRAFT, alice.getUniqueId(), "t");
+        AutoCraftGroup group = (AutoCraftGroup) plugin.services().groups().find(GroupType.AUTOCRAFT, alice.getUniqueId(), "t");
         RecipeEditorHolder editor = new RecipeEditorHolder(group, net.kyori.adventure.text.Component.text("t"));
 
         ItemStack[] matrix = editor.click(2, ItemStack.of(Material.COAL, 64));
@@ -229,8 +215,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         autoCraft.setMatrix(group, matrix, null);
         editor.render();
 
-        assertThat(editor.getInventory().getItem(RecipeEditorHolder.RESULT_SLOT))
-                .isEqualTo(ItemStack.of(Material.TORCH, 4));
+        assertThat(editor.getInventory().getItem(RecipeEditorHolder.RESULT_SLOT)).isEqualTo(ItemStack.of(Material.TORCH, 4));
         assertThat(editor.getInventory().getItem(2)).isEqualTo(ItemStack.of(Material.COAL));
         assertThat(group.recipeKey()).isEqualTo(NamespacedKey.minecraft("torch"));
         assertThat(plugin.services().persistence().isDirty(group)).isTrue();

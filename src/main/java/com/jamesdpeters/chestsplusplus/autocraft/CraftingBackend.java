@@ -71,16 +71,14 @@ public interface CraftingBackend {
     static List<@Nullable Predicate<ItemStack>> slotChoices(Recipe recipe, @Nullable ItemStack[] matrix) {
         List<RecipeChoice> choices = new ArrayList<>();
         switch (recipe) {
-            case ShapedRecipe shaped ->
-                choices.addAll(shaped.getChoiceMap().values().stream()
-                        .filter(c -> c != null)
-                        .toList());
+            case ShapedRecipe shaped -> choices.addAll(shaped.getChoiceMap().values().stream().filter(c -> c != null).toList());
             case ShapelessRecipe shapeless -> choices.addAll(shapeless.getChoiceList());
             case TransmuteRecipe transmute -> {
                 choices.add(transmute.getInput());
                 choices.add(transmute.getMaterial());
             }
-            default -> {}
+            default -> {
+            }
         }
         List<@Nullable Predicate<ItemStack>> slots = new ArrayList<>(9);
         for (int i = 0; i < 9; i++) {

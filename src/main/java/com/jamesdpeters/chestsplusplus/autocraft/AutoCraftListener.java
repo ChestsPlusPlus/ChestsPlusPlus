@@ -43,8 +43,7 @@ public final class AutoCraftListener implements Listener {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK || links.isFiringSyntheticInteract()) return;
         Block block = event.getClickedBlock();
         if (block == null) return;
-        Node node = services.nodes()
-                .get(block.getWorld().getUID(), BlockPos.packed(block.getX(), block.getY(), block.getZ()));
+        Node node = services.nodes().get(block.getWorld().getUID(), BlockPos.packed(block.getX(), block.getY(), block.getZ()));
         if (node == null || !(services.groups().byId(node.groupId()) instanceof AutoCraftGroup group)) return;
         Player player = event.getPlayer();
         if (player.isSneaking() && !player.getInventory().getItemInMainHand().isEmpty()) return;
@@ -79,11 +78,7 @@ public final class AutoCraftListener implements Listener {
         if (!(event.getWhoClicked() instanceof Player player)) return;
         // Viewing is allowed for anyone with access; changing the recipe is for managers only.
         if (!services.access().canManage(player.getUniqueId(), player, editor.group())) {
-            services.messages()
-                    .send(
-                            player,
-                            Message.ERROR_NOT_OWNER,
-                            Messages.text("group", editor.group().name()));
+            services.messages().send(player, Message.ERROR_NOT_OWNER, Messages.text("group", editor.group().name()));
             return;
         }
         ItemStack[] matrix = editor.click(event.getSlot(), event.getCursor());
@@ -91,13 +86,8 @@ public final class AutoCraftListener implements Listener {
         ItemStack result = autoCraft.setMatrix(editor.group(), matrix, player);
         editor.render();
         if (result != null) {
-            services.messages()
-                    .send(
-                            player,
-                            Message.AUTOCRAFT_RECIPE_SET,
-                            Messages.text("group", editor.group().name()),
-                            Messages.text(
-                                    "item", result.getType().getKey().getKey().replace('_', ' ')));
+            services.messages().send(player, Message.AUTOCRAFT_RECIPE_SET, Messages.text("group", editor.group().name()),
+                    Messages.text("item", result.getType().getKey().getKey().replace('_', ' ')));
         }
     }
 

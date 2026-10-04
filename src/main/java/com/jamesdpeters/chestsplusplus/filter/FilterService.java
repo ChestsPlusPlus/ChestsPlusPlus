@@ -69,9 +69,7 @@ public final class FilterService {
 
     /** The stored filters of a hopper (reads its PDC; for the editor). */
     public List<HopperFilter> read(Block hopper) {
-        return hopper.getState(false) instanceof Hopper state
-                ? codec.read(state.getPersistentDataContainer())
-                : List.of();
+        return hopper.getState(false) instanceof Hopper state ? codec.read(state.getPersistentDataContainer()) : List.of();
     }
 
     /** Saves filters to the hopper's PDC and refreshes the index and displays. */
@@ -177,10 +175,7 @@ public final class FilterService {
             List<ItemStack> row = new ArrayList<>();
             for (HopperFilter filter : filters) if (filter.mode() == mode) row.add(filter.template());
             if (row.isEmpty()) continue;
-            row.addFirst(ItemStack.of(
-                    mode == HopperFilter.Mode.ALLOW
-                            ? Material.LIME_STAINED_GLASS_PANE
-                            : Material.RED_STAINED_GLASS_PANE));
+            row.addFirst(ItemStack.of(mode == HopperFilter.Mode.ALLOW ? Material.LIME_STAINED_GLASS_PANE : Material.RED_STAINED_GLASS_PANE));
             rows.add(row.subList(0, Math.min(row.size(), DisplayLayout.FILTER_COLUMNS)));
         }
         List<Entity> spawned = new ArrayList<>();
@@ -198,11 +193,8 @@ public final class FilterService {
                         entity.setItemStack(icon);
                         entity.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.GUI);
                         float scale = DisplayLayout.FILTER_ITEM_SCALE;
-                        entity.setTransformation(new Transformation(
-                                new Vector3f(),
-                                new AxisAngle4f(),
-                                new Vector3f(scale, scale, 0.001f),
-                                new AxisAngle4f()));
+                        entity.setTransformation(
+                                new Transformation(new Vector3f(), new AxisAngle4f(), new Vector3f(scale, scale, 0.001f), new AxisAngle4f()));
                     }));
                 }
             }

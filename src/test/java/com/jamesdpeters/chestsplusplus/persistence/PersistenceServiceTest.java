@@ -45,14 +45,8 @@ class PersistenceServiceTest extends PluginTestBase {
         final PersistenceService persistence;
 
         Instance() throws Exception {
-            persistence = new PersistenceService(
-                    Database.open("jdbc:sqlite:" + dir.resolve("data.db")),
-                    groups,
-                    nodes,
-                    trust,
-                    LoggerFactory.getLogger("test"),
-                    mainQueue::add,
-                    () -> 1);
+            persistence = new PersistenceService(Database.open("jdbc:sqlite:" + dir.resolve("data.db")), groups, nodes, trust,
+                    LoggerFactory.getLogger("test"), mainQueue::add, () -> 1);
             persistence.load(loaded -> {
                 if (loaded.group() instanceof ChestLinkGroup chest) {
                     ChestLinkHolder.attach(chest, Component.text("t"), loaded.contents());
@@ -114,8 +108,7 @@ class PersistenceServiceTest extends PluginTestBase {
         assertThat(loaded.inventory().getItem(1)).isEqualTo(ItemStack.of(Material.EMERALD, 2));
         assertThat(loaded.inventory().getItem(2)).isNull();
         assertThat(loaded.inventory().getItem(53)).isEqualTo(ItemStack.of(Material.OAK_LOG, 64));
-        assertThat(second.nodes.nodesOf(chest.id()))
-                .containsExactly(new Node(new BlockPos(WORLD, 1, 2, 3), BlockFace.EAST, chest.id()));
+        assertThat(second.nodes.nodesOf(chest.id())).containsExactly(new Node(new BlockPos(WORLD, 1, 2, 3), BlockFace.EAST, chest.id()));
         AutoCraftGroup loadedCraft = (AutoCraftGroup) second.groups.find(GroupType.AUTOCRAFT, OWNER, "Torches");
         assertThat(loadedCraft.recipeKey()).isEqualTo(NamespacedKey.minecraft("torch"));
         assertThat(loadedCraft.matrix()[4]).isEqualTo(ItemStack.of(Material.STICK));

@@ -66,8 +66,7 @@ public final class LinkService {
 
     public boolean isFeatureEnabled(GroupType type) {
         var features = services.settings().features();
-        return handlers.containsKey(type)
-                && (type == GroupType.CHESTLINK ? features.chestlinks() : features.autocraft());
+        return handlers.containsKey(type) && (type == GroupType.CHESTLINK ? features.chestlinks() : features.autocraft());
     }
 
     /** Is the synthetic protection-check interact event being fired right now? Listeners must ignore it. */
@@ -87,12 +86,10 @@ public final class LinkService {
             String ownerName = input.substring(0, colon);
             owned = input.substring(colon + 1);
             OfflinePlayer player = Bukkit.getOfflinePlayerIfCached(ownerName);
-            if (player == null)
-                return new Resolved.Error(Message.ERROR_PLAYER_NOT_FOUND, Messages.text("player", ownerName));
+            if (player == null) return new Resolved.Error(Message.ERROR_PLAYER_NOT_FOUND, Messages.text("player", ownerName));
             owner = player.getUniqueId();
         }
-        if (!GroupNames.isValid(owned))
-            return new Resolved.Error(Message.ERROR_INVALID_NAME, Messages.text("name", owned));
+        if (!GroupNames.isValid(owned)) return new Resolved.Error(Message.ERROR_INVALID_NAME, Messages.text("name", owned));
         StorageGroup group = services.groups().find(type, owner, owned);
         if (group == null) {
             return owner.equals(requester)
@@ -112,8 +109,7 @@ public final class LinkService {
      * @param protectionChecked true when the block was just placed or edited by the player (e.g. a sign), so
      *     protection plugins already approved it; otherwise a synthetic interact event is fired first
      */
-    public @Nullable StorageGroup link(
-            Player player, GroupType type, String input, Block block, BlockFace facing, boolean protectionChecked) {
+    public @Nullable StorageGroup link(Player player, GroupType type, String input, Block block, BlockFace facing, boolean protectionChecked) {
         var messages = services.messages();
         GroupTypeHandler handler = handlers.get(type);
         if (handler == null || !isFeatureEnabled(type)) {
@@ -135,10 +131,7 @@ public final class LinkService {
         Node existing = services.nodes().get(BlockPos.of(block));
         if (existing != null) {
             StorageGroup linkedTo = services.groups().byId(existing.groupId());
-            messages.send(
-                    player,
-                    Message.ERROR_ALREADY_LINKED,
-                    Messages.text("group", linkedTo == null ? "?" : linkedTo.name()));
+            messages.send(player, Message.ERROR_ALREADY_LINKED, Messages.text("group", linkedTo == null ? "?" : linkedTo.name()));
             return null;
         }
         if (!protectionChecked && !passesProtection(player, block, facing)) {
@@ -157,12 +150,8 @@ public final class LinkService {
             }
             case Resolved.Missing missing -> {
                 int limit = limit(player, type);
-                if (limit >= 0
-                        && services.groups().ownedBy(player.getUniqueId(), type).size() >= limit) {
-                    messages.send(
-                            player,
-                            Message.ERROR_LIMIT_REACHED,
-                            Messages.text("limit", Integer.toString(limit)),
+                if (limit >= 0 && services.groups().ownedBy(player.getUniqueId(), type).size() >= limit) {
+                    messages.send(player, Message.ERROR_LIMIT_REACHED, Messages.text("limit", Integer.toString(limit)),
                             Messages.text("type", typeName(type)));
                     return null;
                 }
@@ -174,8 +163,7 @@ public final class LinkService {
         addNode(group, block, facing);
         int overflow = handler.onLinked(group, block);
         messages.send(player, created ? created(type) : linked(type), Messages.text("group", group.name()));
-        if (overflow > 0)
-            messages.send(player, Message.CHESTLINK_OVERFLOW, Messages.text("count", Integer.toString(overflow)));
+        if (overflow > 0) messages.send(player, Message.CHESTLINK_OVERFLOW, Messages.text("count", Integer.toString(overflow)));
         return group;
     }
 
@@ -235,11 +223,8 @@ public final class LinkService {
         if (handler != null) handler.onRenamed(group);
         services.persistence().markDirty(group);
         displays.requestUpdate(group);
-        messages.send(
-                audience,
-                group.type() == GroupType.CHESTLINK ? Message.CHESTLINK_RENAMED : Message.AUTOCRAFT_RENAMED,
-                Messages.text("old", old),
-                Messages.text("new", newName));
+        messages.send(audience, group.type() == GroupType.CHESTLINK ? Message.CHESTLINK_RENAMED : Message.AUTOCRAFT_RENAMED,
+                Messages.text("old", old), Messages.text("new", newName));
         return true;
     }
 
@@ -288,12 +273,7 @@ public final class LinkService {
      * requires that no plugin denied using the block.
      */
     public boolean passesProtection(Player player, Block block, BlockFace face) {
-        PlayerInteractEvent event = new PlayerInteractEvent(
-                player,
-                Action.RIGHT_CLICK_BLOCK,
-                player.getInventory().getItemInMainHand(),
-                block,
-                face,
+        PlayerInteractEvent event = new PlayerInteractEvent(player, Action.RIGHT_CLICK_BLOCK, player.getInventory().getItemInMainHand(), block, face,
                 EquipmentSlot.HAND);
         firingSyntheticInteract = true;
         try {
@@ -315,12 +295,10 @@ public final class LinkService {
         } else {
             found.addAll(services.groups().ownedBy(player, type));
             for (StorageGroup group : services.groups().memberOf(player)) if (group.type() == type) found.add(group);
-            for (UUID owner : services.trust().ownersTrusting(player))
-                found.addAll(services.groups().ownedBy(owner, type));
+            for (UUID owner : services.trust().ownersTrusting(player)) found.addAll(services.groups().ownedBy(owner, type));
             for (StorageGroup group : services.groups().all(type)) if (group.isPublic()) found.add(group);
         }
-        java.util.Comparator<StorageGroup> order = java.util.Comparator.<StorageGroup, Boolean>comparing(
-                        g -> !g.owner().equals(player))
+        java.util.Comparator<StorageGroup> order = java.util.Comparator.<StorageGroup, Boolean>comparing(g -> !g.owner().equals(player))
                 .thenComparing(g -> ownerName(g.owner()), String.CASE_INSENSITIVE_ORDER)
                 .thenComparing(StorageGroup::name, String.CASE_INSENSITIVE_ORDER);
         return found.stream().sorted(order).toList();

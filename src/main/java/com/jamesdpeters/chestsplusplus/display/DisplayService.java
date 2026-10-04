@@ -49,10 +49,7 @@ public final class DisplayService {
         Component label(StorageGroup group);
     }
 
-    private record NodeDisplay(
-            ItemDisplay item,
-            @Nullable TextDisplay label,
-            @Nullable ItemStack shown) {}
+    private record NodeDisplay(ItemDisplay item, @Nullable TextDisplay label, @Nullable ItemStack shown) {}
 
     private static final int UPDATE_INTERVAL_TICKS = 8;
 
@@ -174,8 +171,7 @@ public final class DisplayService {
                 display.item().setItemStack(item);
                 displays.put(node.pos(), new NodeDisplay(display.item(), display.label(), item));
             }
-            if (display.label() != null && !label.equals(display.label().text()))
-                display.label().text(label);
+            if (display.label() != null && !label.equals(display.label().text())) display.label().text(label);
         }
     }
 
@@ -183,9 +179,7 @@ public final class DisplayService {
         StorageGroup group = groups.byId(node.groupId());
         Content content = group == null ? null : contents.get(group.type());
         if (group == null || content == null) return;
-        Settings.Display config = group.type() == GroupType.CHESTLINK
-                ? settings.get().chestlink().display()
-                : settings.get().autocraft().display();
+        Settings.Display config = group.type() == GroupType.CHESTLINK ? settings.get().chestlink().display() : settings.get().autocraft().display();
         if (!config.enabled()) return;
         Block block = node.pos().block();
         if (block == null) return;
@@ -199,8 +193,7 @@ public final class DisplayService {
             prepare(entity, config.viewRange());
             entity.setItemStack(shown);
             entity.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
-            entity.setTransformation(
-                    scale(DisplayLayout.NODE_ITEM_SCALE, DisplayLayout.NODE_ITEM_SCALE, DisplayLayout.NODE_ITEM_SCALE));
+            entity.setTransformation(scale(DisplayLayout.NODE_ITEM_SCALE, DisplayLayout.NODE_ITEM_SCALE, DisplayLayout.NODE_ITEM_SCALE));
         });
 
         TextDisplay label = null;

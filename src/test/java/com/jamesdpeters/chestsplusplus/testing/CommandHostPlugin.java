@@ -15,13 +15,8 @@ public class CommandHostPlugin extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        getLifecycleManager()
-                .registerEventHandler(
-                        LifecycleEvents.COMMANDS,
-                        event -> new Commands(
-                                        () -> (ChestsPlusPlus)
-                                                getServer().getPluginManager().getPlugin("ChestsPlusPlus"),
-                                        TEST_VERSION)
-                                .register(event.registrar()));
+        getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
+                event -> new Commands(() -> (ChestsPlusPlus) getServer().getPluginManager().getPlugin("ChestsPlusPlus"), TEST_VERSION)
+                        .register(event.registrar()));
     }
 }

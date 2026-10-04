@@ -20,13 +20,11 @@ public final class ChestLinkHolder implements InventoryHolder {
     }
 
     /** Creates the shared inventory for {@code group}, fills it with {@code contents} and attaches it. */
-    public static ChestLinkHolder attach(
-            ChestLinkGroup group, Component title, @Nullable ItemStack @Nullable [] contents) {
+    public static ChestLinkHolder attach(ChestLinkGroup group, Component title, @Nullable ItemStack @Nullable [] contents) {
         ChestLinkHolder holder = new ChestLinkHolder(group);
         holder.inventory = Bukkit.createInventory(holder, ChestLinkGroup.SIZE, title);
         if (contents != null) {
-            for (int i = 0; i < Math.min(contents.length, ChestLinkGroup.SIZE); i++)
-                holder.inventory.setItem(i, contents[i]);
+            for (int i = 0; i < Math.min(contents.length, ChestLinkGroup.SIZE); i++) holder.inventory.setItem(i, contents[i]);
         }
         group.attachInventory(holder.inventory);
         return holder;

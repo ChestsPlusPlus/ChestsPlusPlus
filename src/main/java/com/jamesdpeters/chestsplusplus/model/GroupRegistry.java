@@ -34,9 +34,7 @@ public final class GroupRegistry {
         byId.put(group.id(), group);
         byName.put(key, group);
         byOwner.computeIfAbsent(group.owner(), k -> new HashSet<>()).add(group);
-        group.members()
-                .forEach(member ->
-                        byMember.computeIfAbsent(member, k -> new HashSet<>()).add(group));
+        group.members().forEach(member -> byMember.computeIfAbsent(member, k -> new HashSet<>()).add(group));
         nextId = Math.max(nextId, group.id() + 1);
     }
 
@@ -76,10 +74,8 @@ public final class GroupRegistry {
     }
 
     public List<StorageGroup> ownedBy(UUID owner, GroupType type) {
-        return byOwner.getOrDefault(owner, Set.of()).stream()
-                .filter(g -> g.type() == type)
-                .sorted(java.util.Comparator.comparing(StorageGroup::name, String.CASE_INSENSITIVE_ORDER))
-                .toList();
+        return byOwner.getOrDefault(owner, Set.of()).stream().filter(g -> g.type() == type)
+                .sorted(java.util.Comparator.comparing(StorageGroup::name, String.CASE_INSENSITIVE_ORDER)).toList();
     }
 
     public Set<StorageGroup> memberOf(UUID player) {

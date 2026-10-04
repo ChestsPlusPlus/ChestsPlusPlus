@@ -21,8 +21,7 @@ class VersionsTest {
 
     @Test
     void parsesTheReleaseTag() {
-        assertThat(UpdateChecker.parseTag("{\"url\":\"x\",\"tag_name\": \"v3.0.1\",\"name\":\"y\"}"))
-                .isEqualTo("v3.0.1");
+        assertThat(UpdateChecker.parseTag("{\"url\":\"x\",\"tag_name\": \"v3.0.1\",\"name\":\"y\"}")).isEqualTo("v3.0.1");
         assertThat(UpdateChecker.parseTag("{}")).isNull();
     }
 }

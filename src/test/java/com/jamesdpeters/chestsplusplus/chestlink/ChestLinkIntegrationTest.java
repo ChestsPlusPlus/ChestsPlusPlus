@@ -62,11 +62,8 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         WallSign data = (WallSign) sign.getBlockData();
         data.setFacing(BlockFace.NORTH);
         sign.setBlockData(data);
-        SignChangeEvent event = new SignChangeEvent(
-                sign,
-                player,
-                List.of(Component.text(header), Component.text(name), Component.empty(), Component.empty()),
-                org.bukkit.block.sign.Side.FRONT);
+        SignChangeEvent event = new SignChangeEvent(sign, player,
+                List.of(Component.text(header), Component.text(name), Component.empty(), Component.empty()), org.bukkit.block.sign.Side.FRONT);
         server.getPluginManager().callEvent(event);
         return event;
     }
@@ -77,8 +74,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
 
     private void rightClick(PlayerMock player, Block block) {
         server.getPluginManager()
-                .callEvent(new PlayerInteractEvent(
-                        player, Action.RIGHT_CLICK_BLOCK, null, block, BlockFace.NORTH, EquipmentSlot.HAND));
+                .callEvent(new PlayerInteractEvent(player, Action.RIGHT_CLICK_BLOCK, null, block, BlockFace.NORTH, EquipmentSlot.HAND));
     }
 
     @Test
@@ -105,8 +101,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
 
     private PlayerInteractEvent nameTag(PlayerMock player, Block block, ItemStack tag) {
         player.getInventory().setItemInMainHand(tag);
-        PlayerInteractEvent event = new PlayerInteractEvent(
-                player, Action.RIGHT_CLICK_BLOCK, tag, block, BlockFace.SOUTH, EquipmentSlot.HAND);
+        PlayerInteractEvent event = new PlayerInteractEvent(player, Action.RIGHT_CLICK_BLOCK, tag, block, BlockFace.SOUTH, EquipmentSlot.HAND);
         server.getPluginManager().callEvent(event);
         return event;
     }
@@ -157,8 +152,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         nameTag(alice, chest, namedTag("   ", 1));
 
         assertThat(plugin.services().nodes().get(BlockPos.of(chest))).isNull();
-        assertThat(plugin.services().groups().ownedBy(alice.getUniqueId(), GroupType.CHESTLINK))
-                .isEmpty();
+        assertThat(plugin.services().groups().ownedBy(alice.getUniqueId(), GroupType.CHESTLINK)).isEmpty();
     }
 
     @Test
@@ -171,8 +165,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
 
         assertThat(group(alice, "second")).isNull();
         assertThat(tag.getAmount()).isEqualTo(1);
-        assertThat(alice.getOpenInventory().getTopInventory())
-                .isSameAs(group(alice, "first").inventory());
+        assertThat(alice.getOpenInventory().getTopInventory()).isSameAs(group(alice, "first").inventory());
     }
 
     @Test
@@ -256,9 +249,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
 
         server.getPluginManager().callEvent(new BlockBreakEvent(b, alice));
         assertThat(group(alice, "g")).isNull();
-        int dropped = world.getEntitiesByClass(Item.class).stream()
-                .mapToInt(item -> item.getItemStack().getAmount())
-                .sum();
+        int dropped = world.getEntitiesByClass(Item.class).stream().mapToInt(item -> item.getItemStack().getAmount()).sum();
         assertThat(dropped).isEqualTo(20);
     }
 
@@ -277,21 +268,13 @@ class ChestLinkIntegrationTest extends PluginTestBase {
 
         assertThat(breakEvent.isDropItems()).isFalse();
         assertThat(group(alice, "portable")).isSameAs(group);
-        ItemStack linkItem =
-                world.getEntitiesByClass(Item.class).iterator().next().getItemStack();
+        ItemStack linkItem = world.getEntitiesByClass(Item.class).iterator().next().getItemStack();
         LinkItem.Link link = plugin.services().get(LinkItem.class).read(linkItem);
         assertThat(link).isEqualTo(new LinkItem.Link(group.id(), GroupType.CHESTLINK));
 
         Block placed = chestAt(9, 9);
-        server.getPluginManager()
-                .callEvent(new BlockPlaceEvent(
-                        placed,
-                        placed.getState(),
-                        placed.getRelative(BlockFace.DOWN),
-                        linkItem,
-                        alice,
-                        true,
-                        EquipmentSlot.HAND));
+        server.getPluginManager().callEvent(
+                new BlockPlaceEvent(placed, placed.getState(), placed.getRelative(BlockFace.DOWN), linkItem, alice, true, EquipmentSlot.HAND));
         assertThat(plugin.services().nodes().get(BlockPos.of(placed)).groupId()).isEqualTo(group.id());
         assertThat(group.inventory().contains(Material.GOLD_INGOT, 4)).isTrue();
     }
@@ -303,8 +286,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         sign(alice, linked, "[ChestLink]", "g");
         List<Block> blocks = new ArrayList<>(List.of(linked, plain));
 
-        server.getPluginManager()
-                .callEvent(new BlockExplodeEvent(plain, plain.getState(), blocks, 4f, ExplosionResult.DESTROY));
+        server.getPluginManager().callEvent(new BlockExplodeEvent(plain, plain.getState(), blocks, 4f, ExplosionResult.DESTROY));
 
         assertThat(blocks).containsExactly(plain);
     }
@@ -316,11 +298,8 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         Block hopper = world.getBlockAt(0, 65, 0);
         hopper.setType(Material.HOPPER);
 
-        HopperInventorySearchEvent event = new HopperInventorySearchEvent(
-                ((Container) chest.getState(false)).getInventory(),
-                HopperInventorySearchEvent.ContainerType.DESTINATION,
-                hopper,
-                chest);
+        HopperInventorySearchEvent event = new HopperInventorySearchEvent(((Container) chest.getState(false)).getInventory(),
+                HopperInventorySearchEvent.ContainerType.DESTINATION, hopper, chest);
         server.getPluginManager().callEvent(event);
 
         assertThat(event.getInventory()).isSameAs(group(alice, "g").inventory());
@@ -332,9 +311,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         DisplayService displays = plugin.services().get(DisplayService.class);
 
         assertThat(displays.count()).isEqualTo(1);
-        var itemDisplay = world.getEntitiesByClass(org.bukkit.entity.ItemDisplay.class)
-                .iterator()
-                .next();
+        var itemDisplay = world.getEntitiesByClass(org.bukkit.entity.ItemDisplay.class).iterator().next();
         assertThat(itemDisplay.isPersistent()).isFalse();
         assertThat(displays.isOurs(itemDisplay)).isTrue();
 
