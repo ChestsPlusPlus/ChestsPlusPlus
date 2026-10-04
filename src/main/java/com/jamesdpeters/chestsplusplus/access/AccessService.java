@@ -10,18 +10,15 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.bukkit.permissions.Permissible;
 
 /** The single access rule for groups. */
+@RequiredArgsConstructor
 public final class AccessService {
 
     private final TrustService trust;
     private final GroupRegistry groups;
-
-    public AccessService(TrustService trust, GroupRegistry groups) {
-        this.trust = trust;
-        this.groups = groups;
-    }
 
     /** Use (open, link, remote open): owner, public, member, trusted by the owner, or bypass. */
     public boolean canAccess(UUID player, boolean bypass, StorageGroup group) {

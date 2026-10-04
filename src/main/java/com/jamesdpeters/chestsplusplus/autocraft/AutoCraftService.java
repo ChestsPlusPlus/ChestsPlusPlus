@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Predicate;
+import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -37,6 +38,7 @@ import org.jspecify.annotations.Nullable;
  * AutoCraft: group type handler, display content, recipe editing, and the single central crafting ticker with per-node backoff so idle
  * crafters cost close to nothing.
  */
+@RequiredArgsConstructor
 public final class AutoCraftService implements GroupTypeHandler, DisplayService.Content {
 
     static final BlockFace[] INPUT_FACES = {BlockFace.UP, BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST};
@@ -54,12 +56,6 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
     private static final class Backoff {
         int failures;
         long nextAttempt;
-    }
-
-    public AutoCraftService(Services services, DisplayService displays, CraftingBackend backend) {
-        this.services = services;
-        this.displays = displays;
-        this.backend = backend;
     }
 
     @Override

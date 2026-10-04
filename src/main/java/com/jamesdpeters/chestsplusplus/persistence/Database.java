@@ -6,11 +6,14 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 
 /**
  * The SQLite connection, PRAGMAs and schema migrations (versioned with {@code PRAGMA user_version}). Uses the {@code sqlite-jdbc} driver
  * Paper bundles. Owned by the persistence I/O thread after opening.
  */
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class Database implements AutoCloseable {
 
     /** A schema step; {@link #version} becomes {@code user_version} once its statements commit. */
@@ -60,10 +63,6 @@ public final class Database implements AutoCloseable {
     public static final int SCHEMA_VERSION = MIGRATIONS.getLast().version();
 
     private final Connection connection;
-
-    private Database(Connection connection) {
-        this.connection = connection;
-    }
 
     /** Opens (creating if needed) and migrates the database at a JDBC SQLite URL. */
     public static Database open(String jdbcUrl) throws SQLException {

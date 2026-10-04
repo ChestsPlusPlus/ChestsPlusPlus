@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import java.util.function.Consumer;
+import lombok.RequiredArgsConstructor;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -25,17 +26,12 @@ import org.jspecify.annotations.Nullable;
  * Every user-facing group action with its server-side checks and messages. Commands and dialogs both go through here, so a dialog button
  * can never do more than the equivalent command.
  */
+@RequiredArgsConstructor
 public final class GroupActions {
 
     private final Services services;
     private final LinkService links;
     private final ChestLinkService chestLinks;
-
-    public GroupActions(Services services, LinkService links, ChestLinkService chestLinks) {
-        this.services = services;
-        this.links = links;
-        this.chestLinks = chestLinks;
-    }
 
     /** Resolves {@code input} for {@code player}; messages and returns null if it isn't an accessible group. */
     public @Nullable StorageGroup find(Player player, GroupType type, String input) {

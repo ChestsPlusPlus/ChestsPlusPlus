@@ -2,6 +2,7 @@ package com.jamesdpeters.chestsplusplus.link;
 
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import java.util.Locale;
+import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Material;
@@ -20,17 +21,13 @@ import org.jspecify.annotations.Nullable;
  * group ({@code name} or {@code owner:name}) on line 2 links the block it hangs on, then the sign is removed (it
  * becomes the node's display). Since this is a real placement, protection plugins already approved it.
  */
+@RequiredArgsConstructor
 public final class SignLinkListener implements Listener {
 
     private static final PlainTextComponentSerializer PLAIN = PlainTextComponentSerializer.plainText();
 
     private final Plugin plugin;
     private final LinkService links;
-
-    public SignLinkListener(Plugin plugin, LinkService links) {
-        this.plugin = plugin;
-        this.links = links;
-    }
 
     static @Nullable GroupType typeOf(String header) {
         return switch (header.trim().toLowerCase(Locale.ROOT)) {

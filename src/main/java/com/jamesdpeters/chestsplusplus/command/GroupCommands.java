@@ -28,6 +28,8 @@ import io.papermc.paper.command.brigadier.CommandSourceStack;
 import java.util.Locale;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.block.Block;
@@ -35,17 +37,13 @@ import org.bukkit.entity.Player;
 import org.jspecify.annotations.Nullable;
 
 /** The {@code /chestlink} and {@code /autocraft} trees; one builder for both group types. */
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 final class GroupCommands {
 
     private static final int TARGET_RANGE = 6;
 
     private final GroupType type;
     private final Supplier<@Nullable Services> services;
-
-    GroupCommands(GroupType type, Supplier<@Nullable Services> services) {
-        this.type = type;
-        this.services = services;
-    }
 
     LiteralCommandNode<CommandSourceStack> build(String name) {
         LiteralArgumentBuilder<CommandSourceStack> root = literal(name)

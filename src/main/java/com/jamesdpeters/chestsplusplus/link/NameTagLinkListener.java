@@ -3,6 +3,7 @@ package com.jamesdpeters.chestsplusplus.link;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import io.papermc.paper.datacomponent.DataComponentTypes;
+import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.GameMode;
@@ -24,17 +25,13 @@ import org.jspecify.annotations.Nullable;
  * Unnamed tags do nothing. Like a mob name tag, one is used up outside creative (configurable). Runs at HIGH so protection plugins
  * have already had their say on this real interaction.
  */
+@RequiredArgsConstructor
 public final class NameTagLinkListener implements Listener {
 
     private static final PlainTextComponentSerializer PLAIN = PlainTextComponentSerializer.plainText();
 
     private final Services services;
     private final LinkService links;
-
-    public NameTagLinkListener(Services services, LinkService links) {
-        this.services = services;
-        this.links = links;
-    }
 
     @EventHandler(priority = EventPriority.HIGH)
     void onInteract(PlayerInteractEvent event) {

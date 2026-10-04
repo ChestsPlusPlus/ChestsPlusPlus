@@ -6,6 +6,7 @@ import com.jamesdpeters.chestsplusplus.link.LinkService;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.Node;
+import lombok.RequiredArgsConstructor;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -16,17 +17,12 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
 /** Opening ChestLinks by clicking a node, viewer open/close bookkeeping, and dirty-marking hopper transfers. */
+@RequiredArgsConstructor
 public final class ChestLinkListener implements Listener {
 
     private final Services services;
     private final LinkService links;
     private final ChestLinkService chestLinks;
-
-    public ChestLinkListener(Services services, LinkService links, ChestLinkService chestLinks) {
-        this.services = services;
-        this.links = links;
-        this.chestLinks = chestLinks;
-    }
 
     @EventHandler(priority = EventPriority.HIGH)
     void onInteract(PlayerInteractEvent event) {

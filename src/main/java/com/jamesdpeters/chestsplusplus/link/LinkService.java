@@ -15,6 +15,7 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.Bukkit;
@@ -35,6 +36,7 @@ import org.jspecify.annotations.Nullable;
  * The shared linking lifecycle for both group types: resolve or create the target group, validate permission, world, limit, access and
  * protection, then link; unlink and remove; rename, public, members.
  */
+@RequiredArgsConstructor
 public final class LinkService {
 
     /** The outcome of resolving user input to a group. */
@@ -51,11 +53,6 @@ public final class LinkService {
     private final DisplayService displays;
     private final Map<GroupType, GroupTypeHandler> handlers = new EnumMap<>(GroupType.class);
     private boolean firingSyntheticInteract;
-
-    public LinkService(Services services, DisplayService displays) {
-        this.services = services;
-        this.displays = displays;
-    }
 
     public void register(GroupTypeHandler handler) {
         handlers.put(handler.type(), handler);

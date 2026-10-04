@@ -4,6 +4,7 @@ import com.jamesdpeters.chestsplusplus.core.Holders;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import org.bukkit.Location;
 import org.bukkit.block.Crafter;
 import org.bukkit.block.Dropper;
@@ -20,13 +21,10 @@ import org.bukkit.inventory.ItemStack;
  * block as source or destination, the group's inventory is substituted, so transfers are vanilla. This fires every
  * tick per idle hopper, so the handler is one hash lookup with no allocation.
  */
+@RequiredArgsConstructor
 public final class HopperBridge implements Listener {
 
     private final Services services;
-
-    public HopperBridge(Services services) {
-        this.services = services;
-    }
 
     @EventHandler(priority = EventPriority.NORMAL)
     void onSearch(HopperInventorySearchEvent event) {

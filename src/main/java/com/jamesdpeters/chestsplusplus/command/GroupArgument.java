@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
+import lombok.RequiredArgsConstructor;
 import org.bukkit.entity.Player;
 import org.jspecify.annotations.Nullable;
 
@@ -24,15 +25,11 @@ import org.jspecify.annotations.Nullable;
  * Parsed as raw text up to the next space (resolution and access checks happen when the command runs); suggestions
  * list the groups the sender can access.
  */
+@RequiredArgsConstructor
 public final class GroupArgument implements CustomArgumentType<String, String> {
 
     private final GroupType type;
     private final Supplier<@Nullable Services> services;
-
-    public GroupArgument(GroupType type, Supplier<@Nullable Services> services) {
-        this.type = type;
-        this.services = services;
-    }
 
     @Override
     public String parse(StringReader reader) {

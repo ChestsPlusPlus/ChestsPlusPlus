@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -41,6 +42,7 @@ import org.bukkit.inventory.ItemStack;
 import org.jspecify.annotations.Nullable;
 
 /** ChestLink-specific behaviour: the shared inventory, opening, lids, sorting, merging and dropping contents. */
+@RequiredArgsConstructor
 public final class ChestLinkService implements DisplayService.Content, GroupTypeHandler {
 
     private final Services services;
@@ -49,11 +51,6 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
     private final Map<Long, Set<BlockPos>> openLids = new HashMap<>();
     /** Node each viewer opened from (lid animation for non-"animate all" setups). */
     private final Map<UUID, BlockPos> openedFrom = new HashMap<>();
-
-    public ChestLinkService(Services services, DisplayService displays) {
-        this.services = services;
-        this.displays = displays;
-    }
 
     public static boolean isChestLinkBlock(Block block) {
         BlockState state = block.getState(false);

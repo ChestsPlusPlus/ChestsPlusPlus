@@ -9,6 +9,7 @@ import com.jamesdpeters.chestsplusplus.message.Messages;
 import com.jamesdpeters.chestsplusplus.model.Node;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bukkit.Chunk;
 import org.bukkit.GameMode;
@@ -40,19 +41,13 @@ import org.jspecify.annotations.Nullable;
  * index lookups.
  */
 @Slf4j(topic = ChestsPlusPlus.NAME)
+@RequiredArgsConstructor
 public final class NodeListener implements Listener {
 
     private final Services services;
     private final LinkService links;
     private final DisplayService displays;
     private final LinkItem linkItems;
-
-    public NodeListener(Services services, LinkService links, DisplayService displays, LinkItem linkItems) {
-        this.services = services;
-        this.links = links;
-        this.displays = displays;
-        this.linkItems = linkItems;
-    }
 
     private boolean isLinked(Block block) {
         return services.nodes().at(block) != null;

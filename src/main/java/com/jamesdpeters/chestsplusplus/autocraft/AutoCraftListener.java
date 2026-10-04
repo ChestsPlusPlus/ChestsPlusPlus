@@ -5,6 +5,7 @@ import com.jamesdpeters.chestsplusplus.link.LinkService;
 import com.jamesdpeters.chestsplusplus.model.AutoCraftGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.Node;
+import lombok.RequiredArgsConstructor;
 import org.bukkit.Location;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -14,17 +15,12 @@ import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 
 /** Opening the recipe editor from a crafter, and backoff resets when inputs change. */
+@RequiredArgsConstructor
 public final class AutoCraftListener implements Listener {
 
     private final Services services;
     private final LinkService links;
     private final AutoCraftService autoCraft;
-
-    public AutoCraftListener(Services services, LinkService links, AutoCraftService autoCraft) {
-        this.services = services;
-        this.links = links;
-        this.autoCraft = autoCraft;
-    }
 
     @EventHandler(priority = EventPriority.HIGH)
     void onInteract(PlayerInteractEvent event) {

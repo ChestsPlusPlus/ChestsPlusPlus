@@ -12,6 +12,7 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -26,6 +27,7 @@ import org.jspecify.annotations.Nullable;
  * when they join.
  */
 @Slf4j(topic = ChestsPlusPlus.NAME)
+@RequiredArgsConstructor
 public final class UpdateChecker implements Listener {
 
     static final String RELEASES_URL = "https://api.github.com/repos/ChestsPlusPlus/ChestsPlusPlus/releases/latest";
@@ -38,11 +40,6 @@ public final class UpdateChecker implements Listener {
     private final HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
     private volatile @Nullable String latest;
     private @Nullable BukkitTask task;
-
-    public UpdateChecker(Services services, String currentVersion) {
-        this.services = services;
-        this.currentVersion = currentVersion;
-    }
 
     public void start() {
         task = services.plugin().getServer().getScheduler().runTaskTimerAsynchronously(services.plugin(), this::check, 20L * 10, RECHECK_TICKS);

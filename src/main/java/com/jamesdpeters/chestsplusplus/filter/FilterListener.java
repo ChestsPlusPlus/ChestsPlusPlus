@@ -10,6 +10,7 @@ import com.jamesdpeters.chestsplusplus.link.LinkService;
 import com.jamesdpeters.chestsplusplus.message.Message;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Hopper;
@@ -33,6 +34,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 /** Hopper filter enforcement, the editor, and index upkeep. */
+@RequiredArgsConstructor
 public final class FilterListener implements Listener {
 
     /** Minimum ticks between manual stall-avoidance moves per hopper (vanilla hopper cooldown). */
@@ -43,13 +45,6 @@ public final class FilterListener implements Listener {
     private final LinkService links;
     private final ChestLinkService chestLinks;
     private final Map<BlockPos, Integer> lastManualMove = new HashMap<>();
-
-    public FilterListener(Services services, FilterService filters, LinkService links, ChestLinkService chestLinks) {
-        this.services = services;
-        this.filters = filters;
-        this.links = links;
-        this.chestLinks = chestLinks;
-    }
 
     private boolean enabled() {
         return services.settings().features().hopperFilters();

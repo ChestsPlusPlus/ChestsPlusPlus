@@ -5,20 +5,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.IntConsumer;
 import java.util.function.IntSupplier;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitTask;
 
 /** The plugin's central repeating tasks. Each body is guarded so one failure doesn't cancel the ticker. */
 @Slf4j(topic = ChestsPlusPlus.NAME)
+@RequiredArgsConstructor
 public final class Tickers {
 
     private final Plugin plugin;
     private final List<BukkitTask> tasks = new ArrayList<>();
-
-    public Tickers(Plugin plugin) {
-        this.plugin = plugin;
-    }
 
     public void every(String name, long periodTicks, Runnable body) {
         tasks.add(plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {

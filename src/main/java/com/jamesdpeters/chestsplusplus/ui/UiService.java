@@ -33,6 +33,7 @@ import java.util.Locale;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickCallback;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
@@ -47,6 +48,7 @@ import org.jspecify.annotations.Nullable;
  * Menus: the Dialog hub (search, paging, one button per group), the group, members, trust and confirm dialogs, and the icon grid. Every
  * action goes through {@link GroupActions}, which re-checks permissions.
  */
+@RequiredArgsConstructor
 public final class UiService {
 
     static final int GROUPS_PER_PAGE = 10;
@@ -62,13 +64,6 @@ public final class UiService {
     private final LinkService links;
     private final GroupActions actions;
     private final MenuListener menus;
-
-    public UiService(Services services, LinkService links, GroupActions actions, MenuListener menus) {
-        this.services = services;
-        this.links = links;
-        this.actions = actions;
-        this.menus = menus;
-    }
 
     /** Groups shown in the hub for {@code search} (case-insensitive substring of name or owner). */
     public List<StorageGroup> hubGroups(Player player, GroupType type, String search) {

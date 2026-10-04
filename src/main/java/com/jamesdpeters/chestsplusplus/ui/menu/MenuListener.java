@@ -4,6 +4,7 @@ import com.jamesdpeters.chestsplusplus.core.Holders;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -18,14 +19,11 @@ import org.bukkit.plugin.Plugin;
  * Dispatches menu clicks and handles "return to the menu you came from": when a player opens something from a menu
  * (e.g. a ChestLink), closing it reopens the menu. Tracked per viewer and cleared on quit.
  */
+@RequiredArgsConstructor
 public final class MenuListener implements Listener {
 
     private final Plugin plugin;
     private final Map<UUID, Runnable> returnTo = new HashMap<>();
-
-    public MenuListener(Plugin plugin) {
-        this.plugin = plugin;
-    }
 
     /** After {@code player} next closes a non-menu inventory, run {@code reopen} (e.g. show the grid again). */
     public void returnTo(Player player, Runnable reopen) {
