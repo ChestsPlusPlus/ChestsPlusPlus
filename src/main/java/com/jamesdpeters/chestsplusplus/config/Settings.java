@@ -9,6 +9,7 @@ import org.bukkit.configuration.MemoryConfiguration;
 /** Immutable view of {@code config.yml}. Swapped atomically on {@code /cpp reload}. */
 public record Settings(
         Features features,
+        Linking linking,
         ChestLink chestlink,
         AutoCraft autocraft,
         Filters filters,
@@ -19,6 +20,8 @@ public record Settings(
         boolean metrics) {
 
     public record Features(boolean chestlinks, boolean autocraft, boolean hopperFilters) {}
+
+    public record Linking(boolean consumeNameTags) {}
 
     public record Display(boolean enabled, boolean label, float viewRange) {}
 
@@ -41,6 +44,7 @@ public record Settings(
                         config.getBoolean("features.chestlinks", true),
                         config.getBoolean("features.autocraft", true),
                         config.getBoolean("features.hopper-filters", true)),
+                new Linking(config.getBoolean("linking.consume-name-tags", true)),
                 new ChestLink(
                         config.getBoolean("chestlink.animate-all-nodes", true), display(config, "chestlink.display")),
                 new AutoCraft(

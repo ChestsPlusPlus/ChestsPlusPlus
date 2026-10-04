@@ -5,6 +5,10 @@ features:
   autocraft: true
   hopper-filters: true
 
+linking:
+  # Use up one name tag each time a block is linked by right-clicking it with a named name tag (never in creative).
+  consume-name-tags: true
+
 chestlink:
   # Play the lid animation on every node of a group, not just the one that was opened.
   animate-all-nodes: true

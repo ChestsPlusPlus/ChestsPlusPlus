@@ -10,9 +10,11 @@ import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.Node;
 import com.jamesdpeters.chestsplusplus.testing.PluginTestBase;
+import io.papermc.paper.datacomponent.DataComponentTypes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
@@ -20,6 +22,9 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Container;
 import org.bukkit.block.data.type.Hopper;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.jspecify.annotations.Nullable;
@@ -98,6 +103,24 @@ class AutoCraftIntegrationTest extends PluginTestBase {
     private Inventory container(Block block, Material type) {
         block.setType(type);
         return ((Container) block.getState(false)).getInventory();
+    }
+
+    @Test
+    void namedTagOnCraftingTableCreatesAutoCraft() {
+        Block table = world.getBlockAt(0, 64, 0);
+        table.setType(Material.CRAFTING_TABLE);
+        ItemStack tag = ItemStack.of(Material.NAME_TAG);
+        tag.setData(DataComponentTypes.CUSTOM_NAME, Component.text("torches"));
+        alice.getInventory().setItemInMainHand(tag);
+
+        server.getPluginManager()
+                .callEvent(new PlayerInteractEvent(
+                        alice, Action.RIGHT_CLICK_BLOCK, tag, table, BlockFace.NORTH, EquipmentSlot.HAND));
+
+        assertThat(plugin.services().groups().find(GroupType.AUTOCRAFT, alice.getUniqueId(), "torches"))
+                .isNotNull();
+        assertThat(plugin.services().nodes().get(BlockPos.of(table))).isNotNull();
+        assertThat(tag.isEmpty()).isTrue();
     }
 
     @Test

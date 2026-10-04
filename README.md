@@ -24,8 +24,9 @@ Paper plugin that enhances chests and hoppers, with ChestLinks, Auto-Crafting an
 
 - **Create a ChestLink:** place a wall sign on a chest or barrel and write `[ChestLink]` on the first line and a group
   name on the second (use `owner:group` to join someone else's group you have access to). The sign turns into a
-  floating label. Alternatively, look at the block and run `/cl add <group>`.
-- **Create an AutoCrafter:** the same, with `[AutoCraft]` on a crafting table. Right-click the table to set its recipe:
+  floating label. Or rename a name tag to the group name in an anvil and right-click the block with it (by default one
+  tag is used up; see `linking.consume-name-tags`). Alternatively, look at the block and run `/cl add <group>`.
+- **Create an AutoCrafter:** the same, with `[AutoCraft]` on a crafting table (or a named name tag). Right-click the table to set its recipe:
   click slots with items to place ghost copies (nothing is used up).
 - **Move a linked block:** break it with a Silk Touch tool. The item you get re-links wherever you place it.
 

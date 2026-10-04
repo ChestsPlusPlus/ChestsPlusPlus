@@ -19,6 +19,7 @@ import com.jamesdpeters.chestsplusplus.integration.UpdateChecker;
 import com.jamesdpeters.chestsplusplus.link.GroupActions;
 import com.jamesdpeters.chestsplusplus.link.LinkItem;
 import com.jamesdpeters.chestsplusplus.link.LinkService;
+import com.jamesdpeters.chestsplusplus.link.NameTagLinkListener;
 import com.jamesdpeters.chestsplusplus.link.NodeListener;
 import com.jamesdpeters.chestsplusplus.link.SignLinkListener;
 import com.jamesdpeters.chestsplusplus.message.Message;
@@ -131,6 +132,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         pluginManager.registerEvents(this, this);
         pluginManager.registerEvents(new NodeListener(services, links, displays, linkItems), this);
         pluginManager.registerEvents(new SignLinkListener(this, links), this);
+        pluginManager.registerEvents(new NameTagLinkListener(services, links), this);
         pluginManager.registerEvents(new ChestLinkListener(services, links, chestLinks), this);
         pluginManager.registerEvents(new HopperBridge(services), this);
         pluginManager.registerEvents(menus, this);

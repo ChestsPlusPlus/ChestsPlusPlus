@@ -6,6 +6,7 @@ A ground-up rewrite for **Paper 26.x** (Java 25). Not compatible with v2 data, c
 
 ### New
 - **Sign → display:** linking signs turn into floating item and label displays; no more fake-air sign packets.
+- **Name tag linking:** right-click a chest, barrel or crafting table with a named name tag to link it to that group.
 - **Hopper filter editor:** sneak + right-click a hopper to set allow/deny filters (exact item, same type, or
   similar items). Filters live in the hopper itself, shown as small icons on every side: a green-pane row of allowed items and a red-pane row of denied ones.
 - **Dialog menus:** a searchable hub with per-group dialogs (rename, public, sort mode, members, remove) and a trust

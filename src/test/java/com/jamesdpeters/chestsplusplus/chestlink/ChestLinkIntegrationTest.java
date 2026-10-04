@@ -9,6 +9,7 @@ import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.Node;
 import com.jamesdpeters.chestsplusplus.testing.PluginTestBase;
+import io.papermc.paper.datacomponent.DataComponentTypes;
 import java.util.ArrayList;
 import java.util.List;
 import net.kyori.adventure.text.Component;
@@ -100,6 +101,78 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         assertThat(((Container) chest.getState(false)).getInventory().isEmpty()).isTrue();
         assertThat(plugin.services().persistence().isDirty(group)).isTrue();
         assertThat(nextPlain(alice)).contains("Created ChestLink ores");
+    }
+
+    private PlayerInteractEvent nameTag(PlayerMock player, Block block, ItemStack tag) {
+        player.getInventory().setItemInMainHand(tag);
+        PlayerInteractEvent event = new PlayerInteractEvent(
+                player, Action.RIGHT_CLICK_BLOCK, tag, block, BlockFace.SOUTH, EquipmentSlot.HAND);
+        server.getPluginManager().callEvent(event);
+        return event;
+    }
+
+    private static ItemStack namedTag(String name, int amount) {
+        ItemStack tag = ItemStack.of(Material.NAME_TAG, amount);
+        tag.setData(DataComponentTypes.CUSTOM_NAME, Component.text(name));
+        return tag;
+    }
+
+    @Test
+    void namedTagLinksBlockAndIsUsedUp() {
+        Block barrel = world.getBlockAt(0, 64, 0);
+        barrel.setType(Material.BARREL);
+        ItemStack tag = namedTag("ores", 2);
+
+        PlayerInteractEvent event = nameTag(alice, barrel, tag);
+
+        ChestLinkGroup group = group(alice, "ores");
+        assertThat(group).isNotNull();
+        Node node = plugin.services().nodes().get(BlockPos.of(barrel));
+        assertThat(node).isNotNull();
+        assertThat(node.facing()).isEqualTo(BlockFace.SOUTH);
+        assertThat(event.useInteractedBlock()).isEqualTo(org.bukkit.event.Event.Result.DENY);
+        assertThat(tag.getAmount()).isEqualTo(1);
+        assertThat(nextPlain(alice)).contains("Created ChestLink ores");
+    }
+
+    @Test
+    void namedTagIsKeptWhenConsumptionIsDisabled() {
+        plugin.getConfig().set("linking.consume-name-tags", false);
+        plugin.saveConfig();
+        reloadPlugin();
+        Block chest = chestAt(0, 0);
+        ItemStack tag = namedTag("ores", 1);
+
+        nameTag(alice, chest, tag);
+
+        assertThat(plugin.services().nodes().get(BlockPos.of(chest))).isNotNull();
+        assertThat(tag.getAmount()).isEqualTo(1);
+    }
+
+    @Test
+    void unnamedOrBlankTagDoesNothing() {
+        Block chest = chestAt(0, 0);
+
+        nameTag(alice, chest, ItemStack.of(Material.NAME_TAG));
+        nameTag(alice, chest, namedTag("   ", 1));
+
+        assertThat(plugin.services().nodes().get(BlockPos.of(chest))).isNull();
+        assertThat(plugin.services().groups().ownedBy(alice.getUniqueId(), GroupType.CHESTLINK))
+                .isEmpty();
+    }
+
+    @Test
+    void namedTagOnLinkedChestOpensIt() {
+        Block chest = chestAt(0, 0);
+        sign(alice, chest, "[ChestLink]", "first");
+        ItemStack tag = namedTag("second", 1);
+
+        nameTag(alice, chest, tag);
+
+        assertThat(group(alice, "second")).isNull();
+        assertThat(tag.getAmount()).isEqualTo(1);
+        assertThat(alice.getOpenInventory().getTopInventory())
+                .isSameAs(group(alice, "first").inventory());
     }
 
     @Test
