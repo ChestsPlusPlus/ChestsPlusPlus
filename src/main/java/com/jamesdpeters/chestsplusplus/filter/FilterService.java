@@ -212,7 +212,6 @@ public final class FilterService {
 
     private void prepare(Display entity) {
         entity.setPersistent(false);
-        entity.setBrightness(new Display.Brightness(15, 15));
         entity.setViewRange(0.3f);
         entity.getPersistentDataContainer().set(marker, PersistentDataType.BOOLEAN, true);
     }

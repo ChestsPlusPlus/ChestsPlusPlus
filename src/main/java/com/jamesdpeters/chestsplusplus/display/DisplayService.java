@@ -209,6 +209,8 @@ public final class DisplayService {
             Component text = content.label(group);
             label = world.spawn(at(block, labelAt), TextDisplay.class, entity -> {
                 prepare(entity, config.viewRange() / 2);
+                // Labels stay fully lit so names are readable at night; item displays use the world's lighting.
+                entity.setBrightness(new Display.Brightness(15, 15));
                 entity.text(text);
                 entity.setBillboard(Display.Billboard.FIXED);
                 entity.setDefaultBackground(false);
@@ -223,7 +225,6 @@ public final class DisplayService {
 
     private void prepare(Display entity, float viewRange) {
         entity.setPersistent(false);
-        entity.setBrightness(new Display.Brightness(15, 15));
         entity.setViewRange(viewRange);
         entity.getPersistentDataContainer().set(marker, PersistentDataType.BOOLEAN, true);
     }

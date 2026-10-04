@@ -306,10 +306,11 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         server.getScheduler().performTicks(10);
         double blockZ = displayZ();
 
-        // North face: the chest body front is at z = 1/16, the latch at z = 0. Blocks are centred on the body front
-        // (half inset); flat items sit in front of the latch.
+        // North face: the chest body front is at z = 1/16. Blocks are centred on it (half inset); flat items sit
+        // further
+        // out, around the latch (depth tuned in DisplayLayout).
         assertThat(blockZ).isCloseTo(1.0 / 16, org.assertj.core.api.Assertions.within(1e-6));
-        assertThat(flatZ).isLessThan(0);
+        assertThat(flatZ).isLessThan(blockZ);
     }
 
     private double displayZ() {

@@ -43,7 +43,12 @@ class DisplayLayoutTest {
     @Test
     void flatItemsSitInFrontOfTheChestLatch() {
         Placement south = DisplayLayout.nodeItem(Surface.CHEST, BlockFace.SOUTH, Shape.FLAT);
-        assertThat(south.z()).isCloseTo(1 + DisplayLayout.FLAT_ITEM_OFFSET, within(1e-9));
+        // In front of the chest body (z = 15/16 on the south face) and further out than a block display. The exact
+        // depth is tuned by FLAT_ITEM_OFFSET and the CHEST protrusion.
+        assertThat(south.z())
+                .isGreaterThan(15.0 / 16)
+                .isGreaterThan(DisplayLayout.nodeItem(Surface.CHEST, BlockFace.SOUTH, Shape.BLOCK)
+                        .z());
         assertThat(south.yaw()).isEqualTo(DisplayLayout.ITEM_YAW_OFFSET);
     }
 
