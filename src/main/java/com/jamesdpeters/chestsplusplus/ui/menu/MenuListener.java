@@ -38,7 +38,14 @@ public final class MenuListener implements Listener {
 
     @EventHandler(priority = EventPriority.LOW)
     void onClick(InventoryClickEvent event) {
-        if (!(Holders.of(event.getInventory()) instanceof Menu menu)) return;
+        switch (Holders.of(event.getInventory())) {
+            case Menu menu -> onMenuClick(event, menu);
+            case GhostEditor editor -> onEditorClick(event, editor);
+            case null, default -> {}
+        }
+    }
+
+    private void onMenuClick(InventoryClickEvent event, Menu menu) {
         event.setCancelled(true);
         if (!(event.getWhoClicked() instanceof Player player)) return;
         if (event.getClickedInventory() != event.getView().getTopInventory()) return;
@@ -46,9 +53,26 @@ public final class MenuListener implements Listener {
         if (button != null) button.handler().onClick(player, event.getClick());
     }
 
+    /** Clicks in the player's own inventory work as normal, except shift-clicks, which would move items into the editor. */
+    private void onEditorClick(InventoryClickEvent event, GhostEditor editor) {
+        if (event.getClickedInventory() != event.getView().getTopInventory()) {
+            if (event.isShiftClick()) event.setCancelled(true);
+            return;
+        }
+        event.setCancelled(true);
+        if (event.getWhoClicked() instanceof Player player) editor.onClick(player, event.getSlot(), event.getCursor(), event.getClick());
+    }
+
     @EventHandler(priority = EventPriority.LOW)
     void onDrag(InventoryDragEvent event) {
-        if (Holders.of(event.getInventory()) instanceof Menu) event.setCancelled(true);
+        switch (Holders.of(event.getInventory())) {
+            case Menu _ -> event.setCancelled(true);
+            case GhostEditor _ -> {
+                int topSize = event.getView().getTopInventory().getSize();
+                if (event.getRawSlots().stream().anyMatch(slot -> slot < topSize)) event.setCancelled(true);
+            }
+            case null, default -> {}
+        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

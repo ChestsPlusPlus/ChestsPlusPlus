@@ -133,7 +133,7 @@ class FilterIntegrationTest extends PluginTestBase {
     @Test
     void editorAddsCyclesMovesRemovesAndClears() {
         Block hopper = hopperAt(0);
-        FilterEditorHolder editor = new FilterEditorHolder(hopper, List.of(), plugin.services().messages());
+        FilterEditorHolder editor = new FilterEditorHolder(hopper, List.of(), plugin.services().messages(), filters);
         var LEFT = FilterEditorHolder.Click.LEFT;
 
         // Empty rows show coloured placeholders explaining what to do.

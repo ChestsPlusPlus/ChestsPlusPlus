@@ -207,7 +207,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         table.setType(Material.CRAFTING_TABLE);
         plugin.services().get(LinkService.class).link(alice, GroupType.AUTOCRAFT, "t", table, BlockFace.NORTH, true);
         AutoCraftGroup group = (AutoCraftGroup) plugin.services().groups().find(GroupType.AUTOCRAFT, alice.getUniqueId(), "t");
-        RecipeEditorHolder editor = new RecipeEditorHolder(group, net.kyori.adventure.text.Component.text("t"));
+        RecipeEditorHolder editor = new RecipeEditorHolder(group, net.kyori.adventure.text.Component.text("t"), autoCraft);
 
         ItemStack[] matrix = editor.click(2, ItemStack.of(Material.COAL, 64));
         autoCraft.setMatrix(group, matrix, null);

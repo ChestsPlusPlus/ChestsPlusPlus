@@ -78,8 +78,7 @@ public interface CraftingBackend {
                 choices.add(transmute.getInput());
                 choices.add(transmute.getMaterial());
             }
-            default -> {
-            }
+            default -> {}
         }
         List<@Nullable Predicate<ItemStack>> slots = new ArrayList<>(9);
         for (int i = 0; i < 9; i++) {

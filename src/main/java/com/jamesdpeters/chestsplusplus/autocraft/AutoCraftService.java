@@ -128,7 +128,24 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
 
     public void openEditor(Player player, AutoCraftGroup group) {
         Component title = services.messages().get(Message.MENU_RECIPE_TITLE, Messages.text("group", group.name()));
-        player.openInventory(new RecipeEditorHolder(group, title).getInventory());
+        player.openInventory(new RecipeEditorHolder(group, title, this).getInventory());
+    }
+
+    /** A click on a recipe editor slot. Anyone with access may look, but only managers may change the recipe. */
+    void edit(Player player, RecipeEditorHolder editor, int slot, @Nullable ItemStack cursor) {
+        AutoCraftGroup group = editor.group();
+        if (!services.access().canManage(player.getUniqueId(), player, group)) {
+            services.messages().send(player, Message.ERROR_NOT_OWNER, Messages.text("group", group.name()));
+            return;
+        }
+        @Nullable ItemStack[] matrix = editor.click(slot, cursor);
+        if (matrix == null) return;
+        ItemStack result = setMatrix(group, matrix, player);
+        editor.render();
+        if (result != null) {
+            services.messages().send(player, Message.AUTOCRAFT_RECIPE_SET, Messages.text("group", group.name()),
+                    Messages.text("item", itemName(result)));
+        }
     }
 
     /** Re-resolves a loaded group's stored matrix against the live recipe list (results aren't persisted). */

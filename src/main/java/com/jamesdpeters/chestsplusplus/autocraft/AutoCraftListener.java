@@ -1,26 +1,19 @@
 package com.jamesdpeters.chestsplusplus.autocraft;
 
-import com.jamesdpeters.chestsplusplus.core.Holders;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.link.LinkService;
-import com.jamesdpeters.chestsplusplus.message.Message;
-import com.jamesdpeters.chestsplusplus.message.Messages;
 import com.jamesdpeters.chestsplusplus.model.AutoCraftGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.Node;
 import org.bukkit.Location;
-import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
-import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.inventory.ItemStack;
 
-/** Opening the recipe editor from a crafter, editor clicks, and backoff resets when inputs change. */
+/** Opening the recipe editor from a crafter, and backoff resets when inputs change. */
 public final class AutoCraftListener implements Listener {
 
     private final Services services;
@@ -37,39 +30,6 @@ public final class AutoCraftListener implements Listener {
     void onInteract(PlayerInteractEvent event) {
         Node node = links.claimNodeClick(event, GroupType.AUTOCRAFT);
         if (node != null && services.groups().byId(node.groupId()) instanceof AutoCraftGroup group) autoCraft.openEditor(event.getPlayer(), group);
-    }
-
-    @EventHandler(priority = EventPriority.LOW)
-    void onEditorClick(InventoryClickEvent event) {
-        if (!(Holders.of(event.getInventory()) instanceof RecipeEditorHolder editor)) return;
-        boolean top = event.getClickedInventory() == event.getView().getTopInventory();
-        if (!top) {
-            if (event.isShiftClick()) event.setCancelled(true);
-            return;
-        }
-        event.setCancelled(true);
-        if (!(event.getWhoClicked() instanceof Player player)) return;
-        // Viewing is allowed for anyone with access; changing the recipe is for managers only.
-        if (!services.access().canManage(player.getUniqueId(), player, editor.group())) {
-            services.messages().send(player, Message.ERROR_NOT_OWNER, Messages.text("group", editor.group().name()));
-            return;
-        }
-        ItemStack[] matrix = editor.click(event.getSlot(), event.getCursor());
-        if (matrix == null) return;
-        ItemStack result = autoCraft.setMatrix(editor.group(), matrix, player);
-        editor.render();
-        if (result != null) {
-            services.messages().send(player, Message.AUTOCRAFT_RECIPE_SET, Messages.text("group", editor.group().name()),
-                    Messages.text("item", AutoCraftService.itemName(result)));
-        }
-    }
-
-    @EventHandler(priority = EventPriority.LOW)
-    void onEditorDrag(InventoryDragEvent event) {
-        if (Holders.of(event.getInventory()) instanceof RecipeEditorHolder) {
-            int topSize = event.getView().getTopInventory().getSize();
-            if (event.getRawSlots().stream().anyMatch(slot -> slot < topSize)) event.setCancelled(true);
-        }
     }
 
     /** Items arriving next to a crafter end its backoff. */

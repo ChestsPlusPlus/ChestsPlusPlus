@@ -1,11 +1,13 @@
 package com.jamesdpeters.chestsplusplus.autocraft;
 
 import com.jamesdpeters.chestsplusplus.model.AutoCraftGroup;
+import com.jamesdpeters.chestsplusplus.ui.menu.GhostEditor;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.jspecify.annotations.Nullable;
 
@@ -14,16 +16,18 @@ import org.jspecify.annotations.Nullable;
  * matrix. Clicking a matrix slot with an item places a ghost copy (nothing is consumed); clicking with an empty
  * cursor clears it.
  */
-public final class RecipeEditorHolder implements InventoryHolder {
+public final class RecipeEditorHolder extends GhostEditor {
 
     public static final int RESULT_SLOT = 0;
 
     private final AutoCraftGroup group;
+    private final AutoCraftService autoCraft;
     private final Inventory inventory;
 
     @SuppressWarnings("this-escape") // a custom holder must pass itself to createInventory
-    public RecipeEditorHolder(AutoCraftGroup group, Component title) {
+    public RecipeEditorHolder(AutoCraftGroup group, Component title, AutoCraftService autoCraft) {
         this.group = group;
+        this.autoCraft = autoCraft;
         this.inventory = Bukkit.createInventory(this, InventoryType.WORKBENCH, title);
         render();
     }
@@ -41,6 +45,11 @@ public final class RecipeEditorHolder implements InventoryHolder {
         if (!hasCursor && current == null) return null;
         matrix[slot - 1] = hasCursor ? cursor.asOne() : null;
         return matrix;
+    }
+
+    @Override
+    public void onClick(Player player, int slot, @Nullable ItemStack cursor, ClickType click) {
+        autoCraft.edit(player, this, slot, cursor);
     }
 
     public void render() {

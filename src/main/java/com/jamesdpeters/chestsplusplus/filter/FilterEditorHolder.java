@@ -2,6 +2,7 @@ package com.jamesdpeters.chestsplusplus.filter;
 
 import com.jamesdpeters.chestsplusplus.message.Message;
 import com.jamesdpeters.chestsplusplus.message.Messages;
+import com.jamesdpeters.chestsplusplus.ui.menu.GhostEditor;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.ItemLore;
 import java.util.ArrayList;
@@ -10,8 +11,9 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.jspecify.annotations.Nullable;
 
@@ -21,7 +23,7 @@ import org.jspecify.annotations.Nullable;
  * consumed). On an entry: left-click cycles exact → type → similar, right-click moves it to the other row, shift-click
  * removes it. Row 3 holds the help item and the clear button. Every change is saved straight to the hopper.
  */
-public final class FilterEditorHolder implements InventoryHolder {
+public final class FilterEditorHolder extends GhostEditor {
 
     static final int ROW = 9;
     static final int HELP_SLOT = 18;
@@ -36,14 +38,16 @@ public final class FilterEditorHolder implements InventoryHolder {
 
     private final Block hopper;
     private final Messages messages;
+    private final FilterService filterService;
     private final List<HopperFilter> allows = new ArrayList<>();
     private final List<HopperFilter> denies = new ArrayList<>();
     private final Inventory inventory;
 
     @SuppressWarnings("this-escape") // a custom holder must pass itself to createInventory
-    public FilterEditorHolder(Block hopper, List<HopperFilter> filters, Messages messages) {
+    public FilterEditorHolder(Block hopper, List<HopperFilter> filters, Messages messages, FilterService filterService) {
         this.hopper = hopper;
         this.messages = messages;
+        this.filterService = filterService;
         for (HopperFilter filter : filters) {
             List<HopperFilter> row = filter.mode() == HopperFilter.Mode.ALLOW ? allows : denies;
             if (row.size() < ROW) row.add(filter);
@@ -61,6 +65,17 @@ public final class FilterEditorHolder implements InventoryHolder {
         List<HopperFilter> all = new ArrayList<>(allows);
         all.addAll(denies);
         return all;
+    }
+
+    /** Applies the click and saves the result straight to the hopper. The editor closes if the hopper has gone. */
+    @Override
+    public void onClick(Player player, int slot, @Nullable ItemStack cursor, ClickType type) {
+        if (hopper.getType() != Material.HOPPER) {
+            player.closeInventory();
+            return;
+        }
+        Click click = type.isShiftClick() ? Click.SHIFT : type.isRightClick() ? Click.RIGHT : Click.LEFT;
+        if (click(slot, cursor, click)) filterService.write(hopper, filters());
     }
 
     /**

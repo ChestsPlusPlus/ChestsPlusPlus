@@ -35,6 +35,8 @@
 <setting id="org.eclipse.jdt.core.formatter.keep_code_block_on_one_line" value="one_line_if_empty"/>
 <setting id="org.eclipse.jdt.core.formatter.keep_loop_body_block_on_one_line" value="one_line_if_empty"/>
 <setting id="org.eclipse.jdt.core.formatter.keep_if_then_body_block_on_one_line" value="one_line_never"/>
+<setting id="org.eclipse.jdt.core.formatter.keep_switch_body_block_on_one_line" value="one_line_if_empty"/>
+<setting id="org.eclipse.jdt.core.formatter.keep_switch_case_with_arrow_on_one_line" value="one_line_if_empty"/>
 <setting id="org.eclipse.jdt.core.formatter.insert_new_line_after_type_annotation" value="do not insert"/>
 <setting id="org.eclipse.jdt.core.formatter.insert_new_line_after_annotation_on_local_variable" value="do not insert"/>
 <setting id="org.eclipse.jdt.core.formatter.insert_new_line_after_annotation_on_parameter" value="do not insert"/>

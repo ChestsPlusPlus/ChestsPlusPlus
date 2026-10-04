@@ -22,8 +22,6 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.event.inventory.InventoryType;
@@ -118,36 +116,7 @@ public final class FilterListener implements Listener {
                         ? Message.ERROR_WORLD_BLACKLISTED
                         : null;
         if (refusal != null) services.messages().send(player, refusal);
-        else player.openInventory(new FilterEditorHolder(block, filters.read(block), services.messages()).getInventory());
-    }
-
-    @EventHandler(priority = EventPriority.LOW)
-    void onEditorClick(InventoryClickEvent event) {
-        if (!(Holders.of(event.getInventory()) instanceof FilterEditorHolder editor)) return;
-        boolean top = event.getClickedInventory() == event.getView().getTopInventory();
-        // Bottom-inventory clicks pick items up onto the cursor; only shift-clicks (which would move items in) and
-        // anything touching the top inventory are cancelled.
-        if (!top) {
-            if (event.isShiftClick()) event.setCancelled(true);
-            return;
-        }
-        event.setCancelled(true);
-        if (editor.hopper().getType() != Material.HOPPER) {
-            event.getWhoClicked().closeInventory();
-            return;
-        }
-        FilterEditorHolder.Click click = event.isShiftClick()
-                ? FilterEditorHolder.Click.SHIFT
-                : event.isRightClick() ? FilterEditorHolder.Click.RIGHT : FilterEditorHolder.Click.LEFT;
-        if (editor.click(event.getSlot(), event.getCursor(), click)) filters.write(editor.hopper(), editor.filters());
-    }
-
-    @EventHandler(priority = EventPriority.LOW)
-    void onEditorDrag(InventoryDragEvent event) {
-        if (Holders.of(event.getInventory()) instanceof FilterEditorHolder) {
-            int topSize = event.getView().getTopInventory().getSize();
-            if (event.getRawSlots().stream().anyMatch(slot -> slot < topSize)) event.setCancelled(true);
-        }
+        else player.openInventory(new FilterEditorHolder(block, filters.read(block), services.messages(), filters).getInventory());
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
