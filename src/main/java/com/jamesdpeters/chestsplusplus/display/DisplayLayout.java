@@ -15,27 +15,34 @@ public final class DisplayLayout {
 
     /** Which model the display sits on. Distances are from the block centre, in blocks. */
     public enum Surface {
-        /** Chests: the body's front is 1px inside the block; the latch sticks out 1px to the block boundary. */
-        CHEST(7.0 / 16, 8.0 / 16),
-        /** Barrels, crafting tables: full cubes. */
-        FULL_BLOCK(0.5, 0.5),
+        /**
+         * Chests: the body's front is 1px inside the block; the latch sticks out 1px to the block boundary. Displays sit
+         * in front of the latch, flush against it, so the latch never cuts into them.
+         */
+        CHEST(7.0 / 16, 8.0 / 16, true),
+        /** Barrels, crafting tables: full cubes. Block displays are centred on the face, half sticking out. */
+        FULL_BLOCK(0.5, 0.5, false),
         /** Hopper bowl sides (filters), upper part of the block. */
-        HOPPER_SIDE(0.5, 0.5);
+        HOPPER_SIDE(0.5, 0.5, false);
 
         /** The model's front face. */
         private final double front;
         /** The furthest-forward part of the model (the chest latch). */
         private final double protrusion;
 
-        Surface(double front, double protrusion) {
+        /** Whether block displays must sit entirely in front of the protrusion (rather than half inside the block). */
+        private final boolean blocksInFront;
+
+        Surface(double front, double protrusion, boolean blocksInFront) {
             this.front = front;
             this.protrusion = protrusion;
+            this.blocksInFront = blocksInFront;
         }
     }
 
     /** How a node's item renders at {@link #NODE_ITEM_SCALE}, which decides where it can sit. */
     public enum Shape {
-        /** Rendered as a 3D model (cubes, stairs, chests...): centred on the front face, so half of it sticks out. */
+        /** Rendered as a 3D model (cubes, stairs, hoppers...). */
         BLOCK,
         /** Rendered as a flat 1px sheet (most items): placed in front of anything protruding, like the chest latch. */
         FLAT
@@ -90,12 +97,25 @@ public final class DisplayLayout {
     private DisplayLayout() {}
 
     /**
-     * Where a node's item display goes. Blocks are centred exactly on the model's front face, so 50% of the block sticks
-     * out. Flat items are only 1px thick, so they sit just in front of the furthest-forward part of the model instead
-     * (otherwise the chest latch pokes through them).
+     * Half the depth of a block display: FIXED renders blocks at half size, so at {@link #NODE_ITEM_SCALE} a block is
+     * {@code NODE_ITEM_SCALE / 2} deep.
+     */
+    static final double NODE_BLOCK_HALF_DEPTH = NODE_ITEM_SCALE / 4.0;
+
+    /**
+     * Where a node's item display goes.
+     *
+     * <ul>
+     *   <li>Flat items (1px thick) sit just in front of the furthest-forward part of the model.
+     *   <li>Blocks on chests sit in front of the latch with their back flush against it.
+     *   <li>Blocks on full cubes (barrels, crafting tables) are centred on the face, so half sticks out.
+     * </ul>
      */
     public static Placement nodeItem(Surface surface, BlockFace facing, Shape shape) {
-        double out = shape == Shape.BLOCK ? surface.front : surface.protrusion + FACE_GAP;
+        double out;
+        if (shape == Shape.FLAT) out = surface.protrusion + FACE_GAP;
+        else if (surface.blocksInFront) out = surface.protrusion + NODE_BLOCK_HALF_DEPTH + FACE_GAP / 2;
+        else out = surface.front;
         return place(horizontal(facing), out, NODE_ITEM_HEIGHT);
     }
 

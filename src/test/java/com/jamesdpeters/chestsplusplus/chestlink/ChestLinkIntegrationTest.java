@@ -276,7 +276,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
     }
 
     @Test
-    void blocksStickHalfOutAndFlatItemsSitInFrontOfTheLatch() {
+    void chestDisplaysSitInFrontOfTheLatch() {
         assertThat(com.jamesdpeters.chestsplusplus.display.DisplayLayout.shapeOf(ItemStack.of(Material.COBBLESTONE)))
                 .isEqualTo(com.jamesdpeters.chestsplusplus.display.DisplayLayout.Shape.BLOCK);
         assertThat(com.jamesdpeters.chestsplusplus.display.DisplayLayout.shapeOf(ItemStack.of(Material.DIAMOND)))
@@ -299,9 +299,10 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         server.getScheduler().performTicks(10);
         double blockZ = displayZ();
 
-        // North face: the chest body front is at z = 1/16, the latch at z = 0. Blocks centre on the body front.
-        assertThat(blockZ).isCloseTo(1.0 / 16, org.assertj.core.api.Assertions.within(1e-6));
+        // North face: the latch reaches z = 0. Both sit in front of it; a block's back rests against the latch.
         assertThat(flatZ).isLessThan(0);
+        assertThat(blockZ).isLessThan(flatZ);
+        assertThat(blockZ + 0.125).isCloseTo(0, org.assertj.core.api.Assertions.within(0.02));
     }
 
     private double displayZ() {
