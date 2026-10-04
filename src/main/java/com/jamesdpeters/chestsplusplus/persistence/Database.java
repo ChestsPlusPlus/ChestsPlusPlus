@@ -8,8 +8,8 @@ import java.sql.Statement;
 import java.util.List;
 
 /**
- * The SQLite connection, PRAGMAs and schema migrations (versioned with {@code PRAGMA user_version}). Uses the
- * {@code sqlite-jdbc} driver Paper bundles (spike S2). Owned by the persistence I/O thread after opening.
+ * The SQLite connection, PRAGMAs and schema migrations (versioned with {@code PRAGMA user_version}). Uses the {@code sqlite-jdbc} driver
+ * Paper bundles. Owned by the persistence I/O thread after opening.
  */
 public final class Database implements AutoCloseable {
 
@@ -68,23 +68,20 @@ public final class Database implements AutoCloseable {
     /** Opens (creating if needed) and migrates the database at a JDBC SQLite URL. */
     public static Database open(String jdbcUrl) throws SQLException {
         Connection connection = DriverManager.getConnection(jdbcUrl);
-        try (Statement statement = connection.createStatement()) {
-            statement.execute("PRAGMA journal_mode=WAL");
-            statement.execute("PRAGMA synchronous=NORMAL");
-            statement.execute("PRAGMA foreign_keys=ON");
-            statement.execute("PRAGMA busy_timeout=5000");
-        } catch (SQLException e) {
-            connection.close();
-            throw e;
-        }
-        Database database = new Database(connection);
         try {
+            try (Statement statement = connection.createStatement()) {
+                statement.execute("PRAGMA journal_mode=WAL");
+                statement.execute("PRAGMA synchronous=NORMAL");
+                statement.execute("PRAGMA foreign_keys=ON");
+                statement.execute("PRAGMA busy_timeout=5000");
+            }
+            Database database = new Database(connection);
             database.migrate();
+            return database;
         } catch (SQLException e) {
             connection.close();
             throw e;
         }
-        return database;
     }
 
     public Connection connection() {

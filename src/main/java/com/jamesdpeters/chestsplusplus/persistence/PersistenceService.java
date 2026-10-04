@@ -3,7 +3,6 @@ package com.jamesdpeters.chestsplusplus.persistence;
 import com.jamesdpeters.chestsplusplus.access.TrustService;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupRegistry;
-import com.jamesdpeters.chestsplusplus.model.Node;
 import com.jamesdpeters.chestsplusplus.model.NodeIndex;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import com.jamesdpeters.chestsplusplus.persistence.Records.GroupRecord;
@@ -33,9 +32,9 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 /**
- * Write-behind persistence (plan §4.3). The in-memory model is authoritative; dirty groups are snapshotted on the main
- * thread, a bounded number per tick, and written by a single I/O thread. A dirty flag is cleared only once its write
- * has committed. {@link #close()} drains everything synchronously.
+ * Write-behind persistence. The in-memory model is authoritative; dirty groups are snapshotted on the main thread, a bounded number per
+ * tick, and written by a single I/O thread. A dirty flag is cleared only once its write has committed. {@link #close()} drains everything
+ * synchronously.
  */
 public final class PersistenceService {
 
@@ -89,9 +88,23 @@ public final class PersistenceService {
      * @return the number of groups loaded
      */
     public int load(Consumer<LoadedGroup> attach) throws SQLException {
-        LoadedData data;
+        LoadedData data = loadAllOnIoThread();
+        for (GroupRecord record : data.groups()) {
+            StorageGroup group = ModelMapper.fromRecord(record);
+            groups.add(group);
+            record.members().forEach(member -> groups.addMember(group, member));
+            ModelMapper.nodes(record).forEach(nodes::put);
+            @Nullable ItemStack[] contents = record.inventory() == null ? null : ModelMapper.deserialize(record.inventory());
+            attach.accept(new LoadedGroup(group, contents));
+            rememberFingerprint(group);
+        }
+        trust.load(data.trust());
+        return data.groups().size();
+    }
+
+    private LoadedData loadAllOnIoThread() throws SQLException {
         try {
-            data = CompletableFuture.supplyAsync(() -> {
+            return CompletableFuture.supplyAsync(() -> {
                 try {
                     return repository.loadAll();
                 } catch (SQLException e) {
@@ -102,19 +115,6 @@ public final class PersistenceService {
             if (e.getCause() instanceof SQLException sql) throw sql;
             throw e;
         }
-        for (GroupRecord record : data.groups()) {
-            StorageGroup group = ModelMapper.fromRecord(record);
-            groups.add(group);
-            record.members().forEach(member -> groups.addMember(group, member));
-            ModelMapper.nodes(record).forEach(nodes::put);
-            @Nullable ItemStack[] contents = record.inventory() == null ? null : ModelMapper.deserialize(record.inventory());
-            attach.accept(new LoadedGroup(group, contents));
-            if (group instanceof ChestLinkGroup chest && chest.hasInventory()) {
-                savedFingerprints.put(group.id(), fingerprint(chest.inventory().getContents()));
-            }
-        }
-        trust.load(data.trust());
-        return data.groups().size();
     }
 
     /** A freshly loaded group and its stored ChestLink contents (null for AutoCraft groups). */
@@ -140,7 +140,7 @@ public final class PersistenceService {
 
     /**
      * A hopper moved items through this group via the hopper bridge. With Paper's {@code hopper.disable-move-event}
-     * no move event fires (spike S1), so such groups are compared against their last saved fingerprint at flush time.
+     * no move event fires, so such groups are compared against their last saved fingerprint at flush time.
      */
     public void markHopperTouched(ChestLinkGroup group) {
         hopperTouched.add(group.id());
@@ -173,24 +173,38 @@ public final class PersistenceService {
         Map<UUID, Long> trustGenerations = new HashMap<>();
         batch.trust().keySet().forEach(owner -> trustGenerations.put(owner, dirtyTrust.get(owner)));
         batch.groups().forEach(g -> inFlight.add(g.id()));
-        CompletableFuture.runAsync(() -> write(batch), io).whenComplete((ok, error) -> mainThread.accept(() -> {
-            batch.groups().forEach(g -> inFlight.remove(g.id()));
-            if (error != null) {
-                logger.error("Failed to save {} ChestsPlusPlus group(s); will retry", batch.groups().size(), error);
-                batch.deletedGroups().forEach(deleted::add);
-                batch.trust().keySet().forEach(owner -> dirtyTrust.putIfAbsent(owner, ++generation));
-                flushing = true;
-                return;
-            }
-            generations.forEach((id, gen) -> dirty.remove(id, gen));
-            trustGenerations.forEach((owner, gen) -> dirtyTrust.remove(owner, gen));
-        }));
+        CompletableFuture.runAsync(() -> write(batch), io)
+                .whenComplete((ok, error) -> mainThread.accept(() -> onWritten(batch, generations, trustGenerations, error)));
+    }
+
+    /** Clears the dirty flags the batch covered, unless they changed again meanwhile. On failure, re-queues the batch. */
+    private void onWritten(SaveBatch batch, Map<Long, Long> generations, Map<UUID, Long> trustGenerations, @Nullable Throwable error) {
+        batch.groups().forEach(g -> inFlight.remove(g.id()));
+        if (error != null) {
+            logger.error("Failed to save {} ChestsPlusPlus group(s); will retry", batch.groups().size(), error);
+            deleted.addAll(batch.deletedGroups());
+            batch.trust().keySet().forEach(owner -> dirtyTrust.putIfAbsent(owner, ++generation));
+            flushing = true;
+            return;
+        }
+        generations.forEach(dirty::remove);
+        trustGenerations.forEach(dirtyTrust::remove);
     }
 
     /** Stops the I/O thread, writes everything still dirty on the calling thread, and closes the database. */
     public void close() {
         if (closed) return;
         closed = true;
+        stopIoThread();
+        writeEverythingNow();
+        try {
+            database.close();
+        } catch (SQLException e) {
+            logger.warn("Closing the ChestsPlusPlus database failed", e);
+        }
+    }
+
+    private void stopIoThread() {
         io.shutdown();
         try {
             if (!io.awaitTermination(30, TimeUnit.SECONDS)) {
@@ -200,6 +214,9 @@ public final class PersistenceService {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
+    }
+
+    private void writeEverythingNow() {
         inFlight.clear();
         promoteHopperTouched();
         SaveBatch batch = snapshot(Integer.MAX_VALUE, false);
@@ -210,11 +227,6 @@ public final class PersistenceService {
             dirtyTrust.clear();
         } catch (SQLException e) {
             logger.error("Final save of ChestsPlusPlus data failed; recent changes may be lost", e);
-        }
-        try {
-            database.close();
-        } catch (SQLException e) {
-            logger.warn("Closing the ChestsPlusPlus database failed", e);
         }
     }
 
@@ -237,11 +249,8 @@ public final class PersistenceService {
                 it.remove();
                 continue;
             }
-            List<Node> groupNodes = nodes.nodesOf(id);
-            records.add(ModelMapper.toRecord(group, groupNodes));
-            if (group instanceof ChestLinkGroup chest && chest.hasInventory()) {
-                savedFingerprints.put(id, fingerprint(chest.inventory().getContents()));
-            }
+            records.add(ModelMapper.toRecord(group, nodes.nodesOf(id)));
+            rememberFingerprint(group);
         }
         List<Long> deletes = List.copyOf(deleted);
         Map<UUID, Set<UUID>> trustChanges = new LinkedHashMap<>();
@@ -249,6 +258,12 @@ public final class PersistenceService {
         if (consumeDeletes) deleted.clear();
         SaveBatch batch = new SaveBatch(records, deletes, trustChanges);
         return batch.isEmpty() ? null : batch;
+    }
+
+    private void rememberFingerprint(StorageGroup group) {
+        if (group instanceof ChestLinkGroup chest && chest.hasInventory()) {
+            savedFingerprints.put(group.id(), fingerprint(chest.inventory().getContents()));
+        }
     }
 
     private void promoteHopperTouched() {

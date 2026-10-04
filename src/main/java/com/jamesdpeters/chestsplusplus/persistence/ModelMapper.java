@@ -66,7 +66,7 @@ public final class ModelMapper {
         return ItemStack.serializeItemsAsBytes(items);
     }
 
-    /** Deserialises and normalises empty stacks to {@code null} (spike S2: nulls come back as AIR x0). */
+    /** Deserialises and normalises empty stacks to {@code null} (nulls come back as AIR x0). */
     public static @Nullable ItemStack[] deserialize(byte[] bytes) {
         @Nullable ItemStack[] items = ItemStack.deserializeItemsFromBytes(bytes);
         for (int i = 0; i < items.length; i++) {

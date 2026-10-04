@@ -7,10 +7,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
-/**
- * Immutable rows exchanged with the persistence I/O thread. Nothing in here references Bukkit objects, so batches can
- * cross threads safely (plan §3.3).
- */
+/** Immutable rows exchanged with the persistence I/O thread. Nothing in here references Bukkit objects, so batches can cross threads safely. */
 public final class Records {
 
     private Records() {}
