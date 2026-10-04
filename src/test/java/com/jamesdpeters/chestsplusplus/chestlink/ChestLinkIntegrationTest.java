@@ -269,7 +269,45 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         group.inventory().addItem(ItemStack.of(Material.COBBLESTONE, 64), ItemStack.of(Material.DIRT, 3));
         displays.requestUpdate(group);
         server.getScheduler().performTicks(10);
-        assertThat(itemDisplay.getItemStack().getType()).isEqualTo(Material.COBBLESTONE);
+        // Empty (flat) -> cobblestone (block) moves the display, so it is respawned: fetch it again.
+        var updated = world.getEntitiesByClass(org.bukkit.entity.ItemDisplay.class);
+        assertThat(updated).hasSize(1);
+        assertThat(updated.iterator().next().getItemStack().getType()).isEqualTo(Material.COBBLESTONE);
+    }
+
+    @Test
+    void blocksStickHalfOutAndFlatItemsSitInFrontOfTheLatch() {
+        assertThat(com.jamesdpeters.chestsplusplus.display.DisplayLayout.shapeOf(ItemStack.of(Material.COBBLESTONE)))
+                .isEqualTo(com.jamesdpeters.chestsplusplus.display.DisplayLayout.Shape.BLOCK);
+        assertThat(com.jamesdpeters.chestsplusplus.display.DisplayLayout.shapeOf(ItemStack.of(Material.DIAMOND)))
+                .isEqualTo(com.jamesdpeters.chestsplusplus.display.DisplayLayout.Shape.FLAT);
+        assertThat(com.jamesdpeters.chestsplusplus.display.DisplayLayout.shapeOf(ItemStack.of(Material.TORCH)))
+                .isEqualTo(com.jamesdpeters.chestsplusplus.display.DisplayLayout.Shape.FLAT);
+
+        sign(alice, chestAt(0, 0), "[ChestLink]", "g"); // display on the north face (z = 0 side)
+        ChestLinkGroup group = group(alice, "g");
+        DisplayService displays = plugin.services().get(DisplayService.class);
+
+        group.inventory().addItem(ItemStack.of(Material.DIAMOND, 10));
+        displays.requestUpdate(group);
+        server.getScheduler().performTicks(10);
+        double flatZ = displayZ();
+
+        group.inventory().clear();
+        group.inventory().addItem(ItemStack.of(Material.COBBLESTONE, 10));
+        displays.requestUpdate(group);
+        server.getScheduler().performTicks(10);
+        double blockZ = displayZ();
+
+        // North face: the chest body front is at z = 1/16, the latch at z = 0. Blocks centre on the body front.
+        assertThat(blockZ).isCloseTo(1.0 / 16, org.assertj.core.api.Assertions.within(1e-6));
+        assertThat(flatZ).isLessThan(0);
+    }
+
+    private double displayZ() {
+        var displays = world.getEntitiesByClass(org.bukkit.entity.ItemDisplay.class);
+        assertThat(displays).hasSize(1);
+        return displays.iterator().next().getLocation().getZ();
     }
 
     private void reloadPlugin() {

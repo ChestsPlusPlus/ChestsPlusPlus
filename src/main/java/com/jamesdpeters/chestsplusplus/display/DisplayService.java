@@ -166,6 +166,10 @@ public final class DisplayService {
                 spawn(node);
                 continue;
             }
+            if (DisplayLayout.shapeOf(display.shown()) != DisplayLayout.shapeOf(item)) {
+                spawn(node); // block <-> flat item moves the display (see DisplayLayout#nodeItem)
+                continue;
+            }
             if (!Objects.equals(display.shown(), item)) {
                 display.item().setItemStack(item);
                 displays.put(node.pos(), new NodeDisplay(display.item(), display.label(), item));
@@ -190,7 +194,7 @@ public final class DisplayService {
         DisplayLayout.Surface surface = surfaces.apply(block);
 
         @Nullable ItemStack shown = normalise(content.item(group));
-        DisplayLayout.Placement itemAt = DisplayLayout.nodeItem(surface, node.facing());
+        DisplayLayout.Placement itemAt = DisplayLayout.nodeItem(surface, node.facing(), DisplayLayout.shapeOf(shown));
         ItemDisplay item = world.spawn(at(block, itemAt), ItemDisplay.class, entity -> {
             prepare(entity, config.viewRange());
             entity.setItemStack(shown);
