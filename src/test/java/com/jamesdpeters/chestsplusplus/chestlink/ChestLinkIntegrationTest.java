@@ -146,6 +146,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
     @Test
     void limitsBlacklistAndInvalidNamesAreEnforced() {
         plugin.getConfig().set("limits.chestlink-default", 1);
+        plugin.getConfig().set("chestlink.display.label", false);
         plugin.getConfig().set("worlds.blacklist", List.of("nether"));
         plugin.saveConfig();
         reloadPlugin();

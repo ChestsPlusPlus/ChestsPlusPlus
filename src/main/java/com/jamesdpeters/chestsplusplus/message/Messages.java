@@ -63,6 +63,18 @@ public final class Messages {
                 templates.get(message), TagResolver.resolver(prefix, TagResolver.resolver(placeholders)));
     }
 
+    /** The message split into lines on {@code <newline>} (item lore can't contain line breaks), non-italic. */
+    public java.util.List<Component> lines(Message message, TagResolver... placeholders) {
+        TagResolver resolver = TagResolver.resolver(prefix, TagResolver.resolver(placeholders));
+        java.util.List<Component> lines = new java.util.ArrayList<>();
+        for (String line : templates.get(message).split("<newline>|<br>")) {
+            lines.add(MINI_MESSAGE
+                    .deserialize(line, resolver)
+                    .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false));
+        }
+        return lines;
+    }
+
     public String plain(Message message, TagResolver... placeholders) {
         return PlainTextComponentSerializer.plainText().serialize(get(message, placeholders));
     }

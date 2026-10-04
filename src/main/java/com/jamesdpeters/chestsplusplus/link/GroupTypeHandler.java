@@ -5,6 +5,8 @@ import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import java.util.UUID;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 /** Type-specific hooks used by the shared {@link LinkService} (ChestLink, AutoCraft). */
 public interface GroupTypeHandler {
@@ -25,4 +27,13 @@ public interface GroupTypeHandler {
 
     /** The group was renamed or its access changed. */
     void onRenamed(StorageGroup group);
+
+    /** Opens the group for a player away from its blocks (command, menu, dialog); checks are done by the caller. */
+    void openRemote(Player player, StorageGroup group);
+
+    /** Icon for menus and dialogs. */
+    ItemStack icon(StorageGroup group);
+
+    /** Short contents summary for menus and listings, e.g. "1,234 items" or "Torch". */
+    String summary(StorageGroup group);
 }

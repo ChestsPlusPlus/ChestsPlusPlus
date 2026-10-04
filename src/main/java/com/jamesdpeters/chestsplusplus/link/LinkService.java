@@ -304,6 +304,39 @@ public final class LinkService {
         return event.useInteractedBlock() != Event.Result.DENY;
     }
 
+    /**
+     * Groups of {@code type} the player can use: their own, member-of, owners who trust them, public ones (and all
+     * groups with bypass). Own groups first, then by owner name and group name.
+     */
+    public java.util.List<StorageGroup> accessibleGroups(UUID player, boolean bypass, GroupType type) {
+        java.util.Set<StorageGroup> found = new java.util.LinkedHashSet<>();
+        if (bypass) {
+            found.addAll(services.groups().all(type));
+        } else {
+            found.addAll(services.groups().ownedBy(player, type));
+            for (StorageGroup group : services.groups().memberOf(player)) if (group.type() == type) found.add(group);
+            for (UUID owner : services.trust().ownersTrusting(player))
+                found.addAll(services.groups().ownedBy(owner, type));
+            for (StorageGroup group : services.groups().all(type)) if (group.isPublic()) found.add(group);
+        }
+        java.util.Comparator<StorageGroup> order = java.util.Comparator.<StorageGroup, Boolean>comparing(
+                        g -> !g.owner().equals(player))
+                .thenComparing(g -> ownerName(g.owner()), String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(StorageGroup::name, String.CASE_INSENSITIVE_ORDER);
+        return found.stream().sorted(order).toList();
+    }
+
+    /** How {@code requester} refers to a group in commands: {@code name}, or {@code owner:name} if not theirs. */
+    public static String reference(UUID requester, StorageGroup group) {
+        return group.owner().equals(requester) ? group.name() : ownerName(group.owner()) + ":" + group.name();
+    }
+
+    /** The owner's last known name (never a blocking lookup). */
+    public static String ownerName(UUID owner) {
+        String name = Bukkit.getOfflinePlayer(owner).getName();
+        return name == null ? owner.toString().substring(0, 8) : name;
+    }
+
     public static String typeName(GroupType type) {
         return type == GroupType.CHESTLINK ? "ChestLink" : "AutoCraft";
     }

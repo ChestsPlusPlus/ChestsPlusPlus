@@ -12,6 +12,7 @@ import org.mockbukkit.mockbukkit.ServerMock;
  * test, torn down afterwards. MockBukkit gives each loaded plugin a data folder in a temporary directory.
  */
 @Tag(Tags.INTEGRATION)
+@org.junit.jupiter.api.extension.ExtendWith(FailOnUnimplemented.class)
 public abstract class PluginTestBase {
 
     protected ServerMock server;
@@ -21,6 +22,15 @@ public abstract class PluginTestBase {
     void setUpServer() {
         server = MockBukkit.mock();
         plugin = MockBukkit.load(ChestsPlusPlus.class);
+        // MockBukkit doesn't implement TextDisplay#setBillboard; labels are covered by E2E instead.
+        plugin.getConfig().set("chestlink.display.label", false);
+        plugin.getConfig().set("autocraft.display.label", false);
+        plugin.saveConfig();
+        try {
+            plugin.reload();
+        } catch (java.io.IOException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     @AfterEach

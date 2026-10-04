@@ -83,6 +83,24 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
     }
 
     @Override
+    public void openRemote(Player player, StorageGroup group) {
+        if (group instanceof ChestLinkGroup chest) open(player, chest, null);
+    }
+
+    @Override
+    public ItemStack icon(StorageGroup group) {
+        ItemStack common = group instanceof ChestLinkGroup chest && chest.hasInventory() ? mostCommon(chest) : null;
+        return common == null ? ItemStack.of(Material.CHEST) : common;
+    }
+
+    @Override
+    public String summary(StorageGroup group) {
+        return group instanceof ChestLinkGroup chest && chest.hasInventory()
+                ? String.format(java.util.Locale.ROOT, "%,d items", itemCount(chest))
+                : "0 items";
+    }
+
+    @Override
     public ChestLinkGroup create(long id, UUID owner, String name) {
         ChestLinkGroup group = new ChestLinkGroup(id, owner, name, System.currentTimeMillis());
         ChestLinkHolder.attach(group, title(group), null);

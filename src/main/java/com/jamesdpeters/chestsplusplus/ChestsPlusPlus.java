@@ -7,6 +7,7 @@ import com.jamesdpeters.chestsplusplus.config.Settings;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.display.DisplayLayout;
 import com.jamesdpeters.chestsplusplus.display.DisplayService;
+import com.jamesdpeters.chestsplusplus.link.GroupActions;
 import com.jamesdpeters.chestsplusplus.link.LinkItem;
 import com.jamesdpeters.chestsplusplus.link.LinkService;
 import com.jamesdpeters.chestsplusplus.link.NodeListener;
@@ -16,6 +17,8 @@ import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.persistence.Database;
 import com.jamesdpeters.chestsplusplus.persistence.PersistenceService;
+import com.jamesdpeters.chestsplusplus.ui.UiService;
+import com.jamesdpeters.chestsplusplus.ui.menu.MenuListener;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -65,6 +68,9 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         ChestLinkService chestLinks = services.add(ChestLinkService.class, new ChestLinkService(services, displays));
         links.register(chestLinks);
         displays.register(GroupType.CHESTLINK, chestLinks);
+        GroupActions actions = services.add(GroupActions.class, new GroupActions(services, links));
+        MenuListener menus = services.add(MenuListener.class, new MenuListener(this));
+        services.add(UiService.class, new UiService(services, links, actions, menus));
 
         // 3. Database and model.
         PersistenceService persistence;
@@ -107,6 +113,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         pluginManager.registerEvents(new SignLinkListener(this, links), this);
         pluginManager.registerEvents(new ChestLinkListener(services, links, chestLinks), this);
         pluginManager.registerEvents(new HopperBridge(services), this);
+        pluginManager.registerEvents(menus, this);
 
         // 5. Central tickers (plan §9: no per-group tasks).
         services.tickers().every("persistence", 1, persistence::tick);

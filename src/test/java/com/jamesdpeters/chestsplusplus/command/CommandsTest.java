@@ -25,7 +25,7 @@ class CommandsTest {
     @Test
     void treeHasNoDebugOrTestLiterals() {
         List<String> names = new ArrayList<>();
-        collect(new Commands(() -> null, "3.0.0-test").root(), names);
+        new Commands(() -> null, "3.0.0-test").trees().forEach(tree -> collect(tree, names));
 
         assertThat(names).isNotEmpty().noneMatch(name -> name.contains("debug") || name.contains("test"));
     }
