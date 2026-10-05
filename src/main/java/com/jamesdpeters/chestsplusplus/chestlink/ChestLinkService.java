@@ -13,6 +13,7 @@ import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.Node;
 import com.jamesdpeters.chestsplusplus.model.SortMode;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
+import com.jamesdpeters.chestsplusplus.persistence.Change;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
@@ -134,7 +135,7 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
         Map<Integer, ItemStack> overflow = group.inventory().addItem(moving.toArray(ItemStack[]::new));
         Location dropAt = block.getLocation().clone().add(0.5, 1.0, 0.5);
         overflow.values().forEach(item -> block.getWorld().dropItemNaturally(dropAt, item));
-        services.persistence().markDirty(group);
+        services.persistence().markDirty(group, Change.CONTENTS);
         displays.requestUpdate(group);
         return overflow.size();
     }
@@ -182,7 +183,7 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
     /** InventoryCloseEvent for a ChestLink inventory: persist, sort, refresh displays, close lids when last out. */
     public void viewerClosed(ChestLinkGroup group, HumanEntity viewer) {
         openedFrom.remove(viewer.getUniqueId());
-        services.persistence().markDirty(group);
+        services.persistence().markDirty(group, Change.CONTENTS);
         displays.requestUpdate(group);
         boolean lastViewer = group.inventory().getViewers().stream().allMatch(v -> v.equals(viewer));
         if (!lastViewer) return;
@@ -198,6 +199,13 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
         }
     }
 
+    public void setSortMode(ChestLinkGroup group, SortMode mode) {
+        group.setSortMode(mode);
+        services.persistence().markDirty(group, Change.META);
+        sort(group);
+        changed(group);
+    }
+
     public void sort(ChestLinkGroup group) {
         if (group.sortMode() == SortMode.OFF) return;
         Inventory inventory = group.inventory();
@@ -205,7 +213,7 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
     }
 
     public void changed(ChestLinkGroup group) {
-        services.persistence().markDirty(group);
+        services.persistence().markDirty(group, Change.CONTENTS);
         displays.requestUpdate(group);
     }
 

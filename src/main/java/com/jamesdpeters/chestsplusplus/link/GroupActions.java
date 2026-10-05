@@ -82,9 +82,7 @@ public final class GroupActions {
 
     public boolean sort(Player player, ChestLinkGroup group, SortMode mode) {
         if (!require(player, Permissions.CHESTLINK_SORT) || !canManage(player, group)) return false;
-        group.setSortMode(mode);
-        chestLinks.sort(group);
-        chestLinks.changed(group);
+        chestLinks.setSortMode(group, mode);
         services.send(player, Message.CHESTLINK_SORT_MODE, Messages.group(group),
                 Messages.text("mode", mode.name().toLowerCase(Locale.ROOT)));
         return true;

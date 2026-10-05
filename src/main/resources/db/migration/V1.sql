@@ -1,0 +1,46 @@
+CREATE TABLE groups (
+  id          INTEGER PRIMARY KEY,
+  type        TEXT    NOT NULL,
+  owner       BLOB    NOT NULL,
+  name        TEXT    NOT NULL COLLATE NOCASE,
+  is_public   INTEGER NOT NULL DEFAULT 0,
+  sort_mode   TEXT,
+  created_at  INTEGER NOT NULL,
+  UNIQUE (type, owner, name)
+);
+
+CREATE TABLE group_members (
+  group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
+  member   BLOB    NOT NULL,
+  PRIMARY KEY (group_id, member)
+);
+
+CREATE TABLE nodes (
+  world    BLOB    NOT NULL,
+  x        INTEGER NOT NULL,
+  y        INTEGER NOT NULL,
+  z        INTEGER NOT NULL,
+  group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
+  facing   TEXT    NOT NULL,
+  PRIMARY KEY (world, x, y, z)
+);
+
+CREATE INDEX nodes_group ON nodes(group_id);
+
+CREATE TABLE chest_inventories (
+  group_id   INTEGER PRIMARY KEY REFERENCES groups ON DELETE CASCADE,
+  items      BLOB    NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+
+CREATE TABLE autocraft_recipes (
+  group_id   INTEGER PRIMARY KEY REFERENCES groups ON DELETE CASCADE,
+  recipe_key TEXT,
+  matrix     BLOB    NOT NULL
+);
+
+CREATE TABLE trust (
+  owner   BLOB NOT NULL,
+  trusted BLOB NOT NULL,
+  PRIMARY KEY (owner, trusted)
+);

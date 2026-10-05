@@ -31,7 +31,13 @@ java {
 // ---------------------------------------------------------------------------------------------------------------
 val testHarness: SourceSet = sourceSets.create("testHarness")
 
+// Libraries Paper downloads at startup (ChestsPlusPlusLoader reads paper-libraries.txt) instead of us shading them.
+val paperLibrary: Configuration by configurations.creating
+configurations.compileOnly { extendsFrom(paperLibrary) }
+configurations.testImplementation { extendsFrom(paperLibrary) }
+
 dependencies {
+    paperLibrary(libs.jdbi.sqlobject)
     compileOnly(libs.paper.api)
     compileOnly(libs.jspecify)
     compileOnly(libs.lombok)
@@ -58,8 +64,18 @@ tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
     // -classfile: paper-api's JOML dependency (used by Display transformations) trips it on every use.
     // -processing: Lombok is the only annotation processor, so every other annotation is "unclaimed".
-    options.compilerArgs.addAll(listOf("-Xlint:all,-classfile,-processing", "-Werror"))
+    // -parameters: JDBI binds :named SQL parameters and maps columns onto records by parameter name.
+    options.compilerArgs.addAll(listOf("-Xlint:all,-classfile,-processing", "-Werror", "-parameters"))
 }
+
+val paperLibrariesDir = layout.buildDirectory.dir("generated/paperLibraries")
+val writePaperLibraries = tasks.register("writePaperLibraries") {
+    val coordinates = paperLibrary.dependencies.map { "${it.group}:${it.name}:${it.version}" }
+    inputs.property("coordinates", coordinates)
+    outputs.dir(paperLibrariesDir)
+    doLast { paperLibrariesDir.get().file("paper-libraries.txt").asFile.writeText(coordinates.joinToString("\n", postfix = "\n")) }
+}
+sourceSets.main { resources.srcDir(writePaperLibraries) }
 
 // ---------------------------------------------------------------------------------------------------------------
 // paper-plugin.yml (generated)
@@ -68,6 +84,7 @@ paperPluginYaml {
     name = "ChestsPlusPlus"
     main = "$pluginPackage.ChestsPlusPlus"
     bootstrapper = "$pluginPackage.ChestsPlusPlusBootstrap"
+    loader = "$pluginPackage.ChestsPlusPlusLoader"
     apiVersion = "26.3"
     authors.add("James Peters")
     website = "https://github.com/ChestsPlusPlus/ChestsPlusPlus"

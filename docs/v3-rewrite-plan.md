@@ -11,7 +11,7 @@ v3 is a ground-up rewrite of ChestsPlusPlus as a native **Paper plugin**. It kee
 | Topic | Decision |
 |---|---|
 | Platform | **Paper 26.x only**, Java 25, `paper-plugin.yml`. No Spigot fallback, reflection or NMS. Folia is not a target. |
-| Persistence | **SQLite** using the `sqlite-jdbc` driver Paper bundles. The live model stays in memory; SQLite is a write-behind save layer. |
+| Persistence | **SQLite** using the `sqlite-jdbc` driver Paper bundles, accessed through **JDBI** (downloaded at startup by `ChestsPlusPlusLoader`). The live model stays in memory; SQLite is a write-behind save layer. |
 | Signs | **Sign → display.** Placing a `[ChestLink]`/`[AutoCraft]` sign still creates the link. The sign is then removed and replaced by a non-persistent `ItemDisplay` and a `TextDisplay` label. |
 | ChestLink menu | **Dialog hub + GUI grid.** A Dialog-based manager (search, per-group actions) plus a lightweight in-house icon grid for visual browsing. |
 | Sharing | **Trust lists** (owner-wide) plus per-group members. The party/invite system is removed. |
@@ -118,8 +118,8 @@ command/
   Commands                     Brigadier trees for /chestlink, /autocraft, /chestsplusplus
   arguments/GroupArgument      custom argument with suggestions (incl. owner:group for shared groups)
 persistence/
-  Database                     SQLite connection, PRAGMAs, migrations (user_version)
-  Repositories                 GroupRepo, NodeRepo, InventoryRepo, RecipeRepo, TrustRepo
+  Database                     JDBI handle, PRAGMAs, migrations (db/migration/V<n>.sql, user_version)
+  Repository                   JDBI SQL Object: batched reads and writes for every table
   PersistenceService           load-on-enable, dirty tracking, write-behind flush, final flush
 integration/
   Metrics (bStats), UpdateChecker (Modrinth/Hangar via java.net.http)
@@ -173,11 +173,13 @@ CREATE TABLE chest_inventories (group_id INTEGER PRIMARY KEY REFERENCES groups O
 CREATE TABLE autocraft_recipes (group_id INTEGER PRIMARY KEY REFERENCES groups ON DELETE CASCADE, recipe_key TEXT, matrix BLOB NOT NULL);
 CREATE TABLE trust (owner BLOB, trusted BLOB, PRIMARY KEY (owner, trusted));
 ```
-Migrations are versioned with `PRAGMA user_version`, using numbered migration classes.
+Migrations are versioned with `PRAGMA user_version`, using numbered SQL files (`src/main/resources/db/migration/V<n>.sql`). A shipped file is never edited.
 
 ### 4.3 Write-behind
 - **What marks a group dirty:** metadata changes (immediately), viewer close, `InventoryMoveItemEvent` at MONITOR where either side's holder is a `ChestLinkHolder`, AutoCraft output, and programmatic changes.
-- **Hopper-attached groups (S1):** groups that `HopperBridge` has substituted since the last flush are also re-checked at flush time against a cheap contents fingerprint (type + amount per slot). This covers servers with `hopper.disable-move-event: true`, where the move event never fires.
+- **Partial saves:** `markDirty` takes the part that changed (`META`, `MEMBERS`, `NODES`, `CONTENTS`), and a save rewrites only those rows. A group not yet in the database is always saved in full.
+- **Unchanged contents:** contents are still serialised at flush, but the write is skipped when their SHA-256 matches the last committed save. Hashing the bytes rather than `ItemStack.hashCode` catches changes to any item data.
+- **Hopper-attached groups (S1):** groups that `HopperBridge` has substituted since the last flush are marked `CONTENTS` at flush time, so the check above decides whether they're written. This covers servers with `hopper.disable-move-event: true`, where the move event never fires.
 - **Flush ticker** (default every 30 s, configurable, plus on `WorldSaveEvent`):
   - Serialise up to *N* dirty groups per tick on main. This is amortised, so a burst never causes a spike.
   - Hand the `byte[]` batch to the I/O thread, which runs one transaction per batch.

@@ -82,8 +82,8 @@ class PersistenceServiceTest extends PluginTestBase {
         first.groups.add(craft);
         first.trust.trust(OWNER, FRIEND);
 
-        first.persistence.markDirty(chest);
-        first.persistence.markDirty(craft);
+        first.persistence.markDirty(chest, Change.CONTENTS);
+        first.persistence.markDirty(craft, Change.CONTENTS);
         first.persistence.requestFlush();
         // One group per tick (maxPerTick = 1), written asynchronously, acknowledged on the "main thread".
         for (int i = 0; i < 3; i++) first.persistence.tick();
@@ -92,7 +92,7 @@ class PersistenceServiceTest extends PluginTestBase {
 
         // A change after the flush is written by the final synchronous flush on close.
         chest.inventory().setItem(1, ItemStack.of(Material.EMERALD, 2));
-        first.persistence.markDirty(chest);
+        first.persistence.markDirty(chest, Change.CONTENTS);
         first.persistence.close();
 
         Instance second = new Instance();
@@ -128,19 +128,85 @@ class PersistenceServiceTest extends PluginTestBase {
         ChestLinkGroup chest = new ChestLinkGroup(instance.groups.nextId(), OWNER, "g", 0);
         instance.groups.add(chest);
         ChestLinkHolder.attach(chest, Component.text("t"), null);
-        instance.persistence.markDirty(chest);
+        instance.persistence.markDirty(chest, Change.CONTENTS);
         instance.persistence.requestFlush();
         instance.persistence.tick();
         drainUntil(() -> instance.persistence.pendingCount() == 0);
 
         instance.persistence.markHopperTouched(chest);
         instance.persistence.requestFlush();
+        instance.persistence.tick();
         assertThat(instance.persistence.isDirty(chest)).isFalse();
 
         chest.inventory().addItem(ItemStack.of(Material.COBBLESTONE, 3));
         instance.persistence.markHopperTouched(chest);
         instance.persistence.requestFlush();
+        instance.persistence.tick();
+        // Still dirty while the write is in flight; cleared once it commits.
         assertThat(instance.persistence.isDirty(chest)).isTrue();
+        drainUntil(() -> !instance.persistence.isDirty(chest));
+        assertThat(instance.persistence.isDirty(chest)).isFalse();
         instance.persistence.close();
+    }
+
+    @Test
+    void unchangedContentsAreNotRewritten() throws Exception {
+        Instance instance = new Instance();
+        ChestLinkGroup chest = savedChest(instance);
+
+        instance.persistence.markDirty(chest, Change.CONTENTS);
+        instance.persistence.requestFlush();
+        instance.persistence.tick();
+
+        assertThat(instance.persistence.isDirty(chest)).isFalse();
+        instance.persistence.close();
+    }
+
+    @Test
+    void contentsWithSameTypeAndAmountButDifferentDataAreRewritten() throws Exception {
+        Instance first = new Instance();
+        ChestLinkGroup chest = savedChest(first);
+        ItemStack named = ItemStack.of(Material.DIAMOND_SWORD);
+        named.editMeta(meta -> meta.displayName(Component.text("Excalibur")));
+
+        chest.inventory().setItem(0, named);
+        first.persistence.markDirty(chest, Change.CONTENTS);
+        first.persistence.close();
+
+        Instance second = new Instance();
+        ChestLinkGroup loaded = (ChestLinkGroup) second.groups.byId(chest.id());
+        assertThat(loaded.inventory().getItem(0)).isEqualTo(named);
+        second.persistence.close();
+    }
+
+    @Test
+    void metaOnlyChangeKeepsNodesAndContents() throws Exception {
+        Instance first = new Instance();
+        ChestLinkGroup chest = savedChest(first);
+
+        chest.setPublic(true);
+        first.persistence.markDirty(chest, Change.META);
+        first.persistence.close();
+
+        Instance second = new Instance();
+        ChestLinkGroup loaded = (ChestLinkGroup) second.groups.byId(chest.id());
+        assertThat(loaded.isPublic()).isTrue();
+        assertThat(loaded.inventory().getItem(0)).isEqualTo(ItemStack.of(Material.DIAMOND_SWORD));
+        assertThat(second.nodes.nodesOf(chest.id())).hasSize(1);
+        second.persistence.close();
+    }
+
+    /** A ChestLink with one node and a plain sword in slot 0, already written to the database. */
+    private ChestLinkGroup savedChest(Instance instance) throws InterruptedException {
+        ChestLinkGroup chest = new ChestLinkGroup(instance.groups.nextId(), OWNER, "g", 0);
+        instance.groups.add(chest);
+        ChestLinkHolder.attach(chest, Component.text("t"), null);
+        chest.inventory().setItem(0, ItemStack.of(Material.DIAMOND_SWORD));
+        instance.nodes.put(new Node(new BlockPos(WORLD, 1, 2, 3), BlockFace.EAST, chest.id()));
+        instance.persistence.markDirty(chest, Change.NODES);
+        instance.persistence.requestFlush();
+        instance.persistence.tick();
+        drainUntil(() -> instance.persistence.pendingCount() == 0);
+        return chest;
     }
 }

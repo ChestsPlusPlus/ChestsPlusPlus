@@ -1,18 +1,18 @@
 package com.jamesdpeters.chestsplusplus.persistence;
 
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.toCollection;
+import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toUnmodifiableList;
+
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.persistence.Records.GroupRecord;
+import com.jamesdpeters.chestsplusplus.persistence.Records.GroupSave;
 import com.jamesdpeters.chestsplusplus.persistence.Records.LoadedData;
 import com.jamesdpeters.chestsplusplus.persistence.Records.NodeRecord;
 import com.jamesdpeters.chestsplusplus.persistence.Records.SaveBatch;
-import java.nio.ByteBuffer;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -20,141 +20,169 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.stream.Stream;
+import org.jdbi.v3.sqlobject.config.RegisterConstructorMapper;
+import org.jdbi.v3.sqlobject.customizer.BindMethods;
+import org.jdbi.v3.sqlobject.statement.SqlBatch;
+import org.jdbi.v3.sqlobject.statement.SqlQuery;
+import org.jdbi.v3.sqlobject.transaction.Transaction;
 import org.jspecify.annotations.Nullable;
 
 /**
- * All SQL for the plugin: reads everything at startup and applies {@link SaveBatch}es transactionally. Runs only on the persistence I/O
- * thread (or synchronously during the final flush).
+ * All SQL for the plugin: reads everything at startup and applies {@link SaveBatch}es transactionally. Obtained from
+ * {@link Database#repository()}; runs only on the persistence I/O thread (or synchronously during the final flush).
  */
-public final class Repository {
+public interface Repository {
 
-    private interface RowReader {
-        void read(ResultSet row) throws SQLException;
+    record GroupRow(long id, GroupType type, UUID owner, String name, boolean isPublic, @Nullable String sortMode, long createdAt) {
+
+        GroupRecord toRecord(List<UUID> members, List<NodeRecord> nodes, byte @Nullable [] inventory, @Nullable RecipeRow recipe) {
+            return new GroupRecord(id, type, owner, name, isPublic, sortMode, createdAt, members, nodes, inventory,
+                    recipe == null ? null : recipe.recipeKey(), recipe == null ? null : recipe.matrix());
+        }
     }
 
-    private final Connection connection;
+    record MemberRow(long groupId, UUID member) {}
 
-    public Repository(Database database) {
-        this.connection = database.connection();
+    record NodeRow(long groupId, UUID world, int x, int y, int z, String facing) {
+
+        static NodeRow of(long groupId, NodeRecord node) {
+            return new NodeRow(groupId, node.world(), node.x(), node.y(), node.z(), node.facing());
+        }
+
+        NodeRecord node() {
+            return new NodeRecord(world, x, y, z, facing);
+        }
     }
 
-    public LoadedData loadAll() throws SQLException {
-        Map<Long, List<UUID>> members = new HashMap<>();
-        forEachRow("SELECT group_id, member FROM group_members ORDER BY rowid",
-                row -> members.computeIfAbsent(row.getLong(1), k -> new ArrayList<>()).add(uuid(row.getBytes(2))));
+    record InventoryRow(long groupId, byte[] items, long updatedAt) {}
 
-        Map<Long, List<NodeRecord>> nodes = new HashMap<>();
-        forEachRow("SELECT group_id, world, x, y, z, facing FROM nodes ORDER BY rowid",
-                row -> nodes.computeIfAbsent(row.getLong(1), k -> new ArrayList<>())
-                        .add(new NodeRecord(uuid(row.getBytes(2)), row.getInt(3), row.getInt(4), row.getInt(5), row.getString(6))));
+    record RecipeRow(long groupId, @Nullable String recipeKey, byte[] matrix) {}
 
-        Map<Long, byte[]> inventories = new HashMap<>();
-        forEachRow("SELECT group_id, items FROM chest_inventories", row -> inventories.put(row.getLong(1), row.getBytes(2)));
+    record TrustRow(UUID owner, UUID trusted) {}
 
-        Map<Long, String> recipeKeys = new HashMap<>();
-        Map<Long, byte[]> matrices = new HashMap<>();
-        forEachRow("SELECT group_id, recipe_key, matrix FROM autocraft_recipes", row -> {
-            long id = row.getLong(1);
-            String key = row.getString(2);
-            if (key != null) recipeKeys.put(id, key);
-            matrices.put(id, row.getBytes(3));
-        });
+    @SqlQuery("SELECT id, type, owner, name, is_public, sort_mode, created_at FROM groups ORDER BY id")
+    @RegisterConstructorMapper(GroupRow.class)
+    List<GroupRow> groups();
 
-        List<GroupRecord> groups = new ArrayList<>();
-        forEachRow("SELECT id, type, owner, name, is_public, sort_mode, created_at FROM groups ORDER BY id", row -> {
-            long id = row.getLong(1);
-            groups.add(new GroupRecord(id, GroupType.valueOf(row.getString(2)), uuid(row.getBytes(3)), row.getString(4), row.getInt(5) != 0,
-                    row.getString(6), row.getLong(7), List.copyOf(members.getOrDefault(id, List.of())),
-                    List.copyOf(nodes.getOrDefault(id, List.of())), inventories.get(id), recipeKeys.get(id), matrices.get(id)));
-        });
+    @SqlQuery("SELECT group_id, member FROM group_members ORDER BY rowid")
+    @RegisterConstructorMapper(MemberRow.class)
+    List<MemberRow> members();
 
-        Map<UUID, Set<UUID>> trust = new LinkedHashMap<>();
-        forEachRow("SELECT owner, trusted FROM trust ORDER BY rowid",
-                row -> trust.computeIfAbsent(uuid(row.getBytes(1)), k -> new LinkedHashSet<>()).add(uuid(row.getBytes(2))));
+    @SqlQuery("SELECT group_id, world, x, y, z, facing FROM nodes ORDER BY rowid")
+    @RegisterConstructorMapper(NodeRow.class)
+    List<NodeRow> nodes();
+
+    @SqlQuery("SELECT group_id, items, updated_at FROM chest_inventories")
+    @RegisterConstructorMapper(InventoryRow.class)
+    List<InventoryRow> inventories();
+
+    @SqlQuery("SELECT group_id, recipe_key, matrix FROM autocraft_recipes")
+    @RegisterConstructorMapper(RecipeRow.class)
+    List<RecipeRow> recipes();
+
+    @SqlQuery("SELECT owner, trusted FROM trust ORDER BY rowid")
+    @RegisterConstructorMapper(TrustRow.class)
+    List<TrustRow> trust();
+
+    @SqlBatch("DELETE FROM groups WHERE id = :id")
+    void deleteGroups(List<Long> id);
+
+    @SqlBatch("""
+            INSERT INTO groups (id, type, owner, name, is_public, sort_mode, created_at)
+            VALUES (:id, :type, :owner, :name, :isPublic, :sortMode, :createdAt)
+            ON CONFLICT (id) DO UPDATE SET name = excluded.name, is_public = excluded.is_public, sort_mode = excluded.sort_mode""")
+    void upsertGroups(@BindMethods List<GroupRecord> groups);
+
+    @SqlBatch("DELETE FROM group_members WHERE group_id = :groupId")
+    void deleteMembers(List<Long> groupId);
+
+    @SqlBatch("INSERT INTO group_members (group_id, member) VALUES (:groupId, :member)")
+    void insertMembers(@BindMethods List<MemberRow> rows);
+
+    @SqlBatch("DELETE FROM nodes WHERE group_id = :groupId")
+    void deleteNodes(List<Long> groupId);
+
+    // OR REPLACE: a node may have moved here from a group that hasn't been saved since.
+    @SqlBatch("INSERT OR REPLACE INTO nodes (world, x, y, z, group_id, facing) VALUES (:world, :x, :y, :z, :groupId, :facing)")
+    void insertNodes(@BindMethods List<NodeRow> rows);
+
+    @SqlBatch("INSERT OR REPLACE INTO chest_inventories (group_id, items, updated_at) VALUES (:groupId, :items, :updatedAt)")
+    void upsertInventories(@BindMethods List<InventoryRow> rows);
+
+    @SqlBatch("INSERT OR REPLACE INTO autocraft_recipes (group_id, recipe_key, matrix) VALUES (:groupId, :recipeKey, :matrix)")
+    void upsertRecipes(@BindMethods List<RecipeRow> rows);
+
+    @SqlBatch("DELETE FROM trust WHERE owner = :owner")
+    void deleteTrust(List<UUID> owner);
+
+    @SqlBatch("INSERT INTO trust (owner, trusted) VALUES (:owner, :trusted)")
+    void insertTrust(@BindMethods List<TrustRow> rows);
+
+    default LoadedData loadAll() {
+        Map<Long, List<UUID>> members = byGroup(members(), MemberRow::groupId, MemberRow::member);
+        Map<Long, List<NodeRecord>> nodes = byGroup(nodes(), NodeRow::groupId, NodeRow::node);
+        Map<Long, byte[]> inventories = inventories().stream().collect(toMap(InventoryRow::groupId, InventoryRow::items));
+        Map<Long, RecipeRow> recipes = recipes().stream().collect(toMap(RecipeRow::groupId, recipe -> recipe));
+        List<GroupRecord> groups = groups().stream()
+                .map(g -> g.toRecord(members.getOrDefault(g.id(), List.of()), nodes.getOrDefault(g.id(), List.of()), inventories.get(g.id()),
+                        recipes.get(g.id())))
+                .toList();
+        Map<UUID, Set<UUID>> trust = trust().stream()
+                .collect(groupingBy(TrustRow::owner, LinkedHashMap::new, mapping(TrustRow::trusted, toCollection(LinkedHashSet::new))));
         return new LoadedData(groups, trust);
     }
 
-    /** Applies a batch in one transaction: deletes first, then group upserts, then trust replacements. */
-    public void write(SaveBatch batch) throws SQLException {
+    /**
+     * Applies a batch in one transaction: deletes first, then each group's changed parts, then trust replacements. Each statement runs once
+     * for the whole batch; clearing every group's nodes before inserting any keeps a node that moved between two groups in this batch with
+     * the group listed last.
+     */
+    @Transaction
+    default void write(SaveBatch batch) {
         if (batch.isEmpty()) return;
-        boolean autoCommit = connection.getAutoCommit();
-        connection.setAutoCommit(false);
-        try {
-            updateEach("DELETE FROM groups WHERE id = ?", batch.deletedGroups(), id -> new Object[]{id});
-            for (GroupRecord group : batch.groups()) writeGroup(group);
-            for (var entry : batch.trust().entrySet()) writeTrust(entry.getKey(), entry.getValue());
-            connection.commit();
-        } catch (SQLException | RuntimeException e) {
-            connection.rollback();
-            throw e;
-        } finally {
-            connection.setAutoCommit(autoCommit);
-        }
+        deleteGroups(batch.deletedGroups());
+        upsertGroups(changed(batch, Change.META));
+        replaceMembers(changed(batch, Change.MEMBERS));
+        replaceNodes(changed(batch, Change.NODES));
+        upsertContents(changed(batch, Change.CONTENTS));
+        replaceTrust(batch.trust());
     }
 
-    private void writeGroup(GroupRecord g) throws SQLException {
-        update("""
-                INSERT INTO groups (id, type, owner, name, is_public, sort_mode, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT (id) DO UPDATE SET name = excluded.name, is_public = excluded.is_public,
-                  sort_mode = excluded.sort_mode""", g.id(), g.type().name(), bytes(g.owner()), g.name(), g.isPublic() ? 1 : 0, g.sortMode(),
-                g.createdAt());
-
-        update("DELETE FROM group_members WHERE group_id = ?", g.id());
-        updateEach("INSERT INTO group_members (group_id, member) VALUES (?, ?)", g.members(), member -> new Object[]{g.id(), bytes(member)});
-
-        update("DELETE FROM nodes WHERE group_id = ?", g.id());
-        // OR REPLACE: a node may have moved to this group from another one not yet flushed.
-        updateEach("INSERT OR REPLACE INTO nodes (world, x, y, z, group_id, facing) VALUES (?, ?, ?, ?, ?, ?)", g.nodes(),
-                node -> new Object[]{bytes(node.world()), node.x(), node.y(), node.z(), g.id(), node.facing()});
-
-        if (g.inventory() != null) {
-            update("INSERT OR REPLACE INTO chest_inventories (group_id, items, updated_at) VALUES (?, ?, ?)", g.id(), g.inventory(),
-                    System.currentTimeMillis());
-        }
-        if (g.matrix() != null) {
-            update("INSERT OR REPLACE INTO autocraft_recipes (group_id, recipe_key, matrix) VALUES (?, ?, ?)", g.id(), g.recipeKey(), g.matrix());
-        }
+    private void replaceMembers(List<GroupRecord> groups) {
+        deleteMembers(ids(groups));
+        insertMembers(rows(groups, g -> g.members().stream().map(member -> new MemberRow(g.id(), member))));
     }
 
-    private void writeTrust(UUID owner, Set<UUID> trusted) throws SQLException {
-        update("DELETE FROM trust WHERE owner = ?", bytes(owner));
-        updateEach("INSERT INTO trust (owner, trusted) VALUES (?, ?)", trusted, player -> new Object[]{bytes(owner), bytes(player)});
+    private void replaceNodes(List<GroupRecord> groups) {
+        deleteNodes(ids(groups));
+        insertNodes(rows(groups, g -> g.nodes().stream().map(node -> NodeRow.of(g.id(), node))));
     }
 
-    private void forEachRow(String sql, RowReader reader) throws SQLException {
-        try (Statement st = connection.createStatement(); ResultSet rs = st.executeQuery(sql)) {
-            while (rs.next()) reader.read(rs);
-        }
+    private void upsertContents(List<GroupRecord> groups) {
+        long now = System.currentTimeMillis();
+        upsertInventories(rows(groups, g -> Stream.ofNullable(g.inventory()).map(items -> new InventoryRow(g.id(), items, now))));
+        upsertRecipes(rows(groups, g -> Stream.ofNullable(g.matrix()).map(matrix -> new RecipeRow(g.id(), g.recipeKey(), matrix))));
     }
 
-    private void update(String sql, @Nullable Object... params) throws SQLException {
-        try (PreparedStatement st = connection.prepareStatement(sql)) {
-            bind(st, params);
-            st.executeUpdate();
-        }
+    private void replaceTrust(Map<UUID, Set<UUID>> trust) {
+        deleteTrust(List.copyOf(trust.keySet()));
+        insertTrust(rows(trust.entrySet(), e -> e.getValue().stream().map(trusted -> new TrustRow(e.getKey(), trusted))));
     }
 
-    private <T> void updateEach(String sql, Iterable<T> items, Function<T, @Nullable Object[]> params) throws SQLException {
-        try (PreparedStatement st = connection.prepareStatement(sql)) {
-            for (T item : items) {
-                bind(st, params.apply(item));
-                st.addBatch();
-            }
-            st.executeBatch();
-        }
+    private static List<GroupRecord> changed(SaveBatch batch, Change change) {
+        return batch.groups().stream().filter(save -> save.changes().contains(change)).map(GroupSave::group).toList();
     }
 
-    private static void bind(PreparedStatement st, @Nullable Object[] params) throws SQLException {
-        for (int i = 0; i < params.length; i++) st.setObject(i + 1, params[i]);
+    private static List<Long> ids(List<GroupRecord> groups) {
+        return groups.stream().map(GroupRecord::id).toList();
     }
 
-    static byte[] bytes(UUID uuid) {
-        return ByteBuffer.allocate(16).putLong(uuid.getMostSignificantBits()).putLong(uuid.getLeastSignificantBits()).array();
+    private static <T, R> List<R> rows(Collection<T> items, Function<T, Stream<R>> toRows) {
+        return items.stream().flatMap(toRows).toList();
     }
 
-    static UUID uuid(byte[] bytes) {
-        ByteBuffer buffer = ByteBuffer.wrap(bytes);
-        return new UUID(buffer.getLong(), buffer.getLong());
+    private static <R, V> Map<Long, List<V>> byGroup(List<R> rows, Function<R, Long> groupId, Function<R, V> value) {
+        return rows.stream().collect(groupingBy(groupId, mapping(value, toUnmodifiableList())));
     }
 }

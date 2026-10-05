@@ -1,6 +1,7 @@
 package com.jamesdpeters.chestsplusplus.persistence;
 
 import com.jamesdpeters.chestsplusplus.model.GroupType;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -14,15 +15,23 @@ public final class Records {
 
     public record NodeRecord(UUID world, int x, int y, int z, String facing) {}
 
-    /** A full snapshot of one group; the I/O thread replaces everything stored for {@code id}. */
+    /** A snapshot of one group. {@code inventory} and {@code matrix} are only filled in when the contents are being saved. */
     public record GroupRecord(long id, GroupType type, UUID owner, String name, boolean isPublic, @Nullable String sortMode, long createdAt,
             List<UUID> members, List<NodeRecord> nodes, byte @Nullable [] inventory, @Nullable String recipeKey, byte @Nullable [] matrix) {}
 
+    /** A group to save; the I/O thread replaces only the rows for {@code changes}. */
+    public record GroupSave(GroupRecord group, Set<Change> changes) {
+
+        public static GroupSave full(GroupRecord group) {
+            return new GroupSave(group, EnumSet.allOf(Change.class));
+        }
+    }
+
     /**
-     * One write-behind transaction: groups to upsert, group ids to delete, and owners whose trust list is replaced
+     * One write-behind transaction: groups to save, group ids to delete, and owners whose trust list is replaced
      * (an empty set deletes it).
      */
-    public record SaveBatch(List<GroupRecord> groups, List<Long> deletedGroups, Map<UUID, Set<UUID>> trust) {
+    public record SaveBatch(List<GroupSave> groups, List<Long> deletedGroups, Map<UUID, Set<UUID>> trust) {
 
         public boolean isEmpty() {
             return groups.isEmpty() && deletedGroups.isEmpty() && trust.isEmpty();

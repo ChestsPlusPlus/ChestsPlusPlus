@@ -72,8 +72,14 @@ comments, no repeated logic.
 | Repeating work | `Tickers.every` / `Tickers.everyInterval`. Never one task per group or node. |
 | Ghost-item inventories | extend `GhostEditor`; `MenuListener` enforces the no-real-items rules |
 | Clickable chest menus | `Menu` / `PaginatedMenu` |
-| SQL | `Repository.forEachRow`, `update`, `updateEach` |
+| Save a model change | `services.persistence().markDirty(group, Change.X)` with the part that changed (`META`, `MEMBERS`, `NODES`, `CONTENTS`); a save only rewrites those rows |
+| SQL | a `@SqlQuery`/`@SqlBatch` method on `Repository`; schema changes go in a new `db/migration/V<n>.sql` (bump `Database.SCHEMA_VERSION`) |
 | Command tree pieces | `Commands.literal`, `argument`, `permission`, `playerArgument` |
+
+## Runtime libraries
+
+- Add a library Paper should download at startup (rather than shading it) as `paperLibrary(...)` in `build.gradle.kts`.
+  `ChestsPlusPlusLoader` resolves everything in that configuration from Paper's Maven Central mirror.
 
 ## Runtime rules
 

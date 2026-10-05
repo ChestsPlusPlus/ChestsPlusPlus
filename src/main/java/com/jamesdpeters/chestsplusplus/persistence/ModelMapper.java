@@ -20,16 +20,17 @@ public final class ModelMapper {
 
     private ModelMapper() {}
 
-    public static GroupRecord toRecord(StorageGroup group, List<Node> nodes) {
+    /** Snapshots a group; serialising the contents is the expensive part, so it's skipped unless {@code withContents}. */
+    public static GroupRecord toRecord(StorageGroup group, List<Node> nodes, boolean withContents) {
         List<NodeRecord> nodeRecords = nodes.stream()
                 .map(n -> new NodeRecord(n.pos().world(), n.pos().x(), n.pos().y(), n.pos().z(), n.facing().name())).toList();
         return switch (group) {
             case ChestLinkGroup chest -> new GroupRecord(chest.id(), chest.type(), chest.owner(), chest.name(), chest.isPublic(),
                     chest.sortMode().name(), chest.createdAt(), List.copyOf(chest.members()), nodeRecords,
-                    chest.hasInventory() ? serialize(chest.inventory().getContents()) : serialize(new ItemStack[0]), null, null);
+                    withContents ? serialize(chest.hasInventory() ? chest.inventory().getContents() : new ItemStack[0]) : null, null, null);
             case AutoCraftGroup craft -> new GroupRecord(craft.id(), craft.type(), craft.owner(), craft.name(), craft.isPublic(), null,
                     craft.createdAt(), List.copyOf(craft.members()), nodeRecords, null,
-                    craft.recipeKey() == null ? null : craft.recipeKey().asString(), serialize(craft.matrix()));
+                    craft.recipeKey() == null ? null : craft.recipeKey().asString(), withContents ? serialize(craft.matrix()) : null);
         };
     }
 

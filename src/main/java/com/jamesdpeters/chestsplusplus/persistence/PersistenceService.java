@@ -7,11 +7,15 @@ import com.jamesdpeters.chestsplusplus.model.GroupRegistry;
 import com.jamesdpeters.chestsplusplus.model.NodeIndex;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import com.jamesdpeters.chestsplusplus.persistence.Records.GroupRecord;
+import com.jamesdpeters.chestsplusplus.persistence.Records.GroupSave;
 import com.jamesdpeters.chestsplusplus.persistence.Records.LoadedData;
 import com.jamesdpeters.chestsplusplus.persistence.Records.SaveBatch;
-import java.sql.SQLException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -30,12 +34,13 @@ import java.util.function.Consumer;
 import java.util.function.IntSupplier;
 import lombok.extern.slf4j.Slf4j;
 import org.bukkit.inventory.ItemStack;
+import org.jdbi.v3.core.JdbiException;
 import org.jspecify.annotations.Nullable;
 
 /**
  * Write-behind persistence. The in-memory model is authoritative; dirty groups are snapshotted on the main thread, a bounded number per
- * tick, and written by a single I/O thread. A dirty flag is cleared only once its write has committed. {@link #close()} drains everything
- * synchronously.
+ * tick, and written by a single I/O thread. A save rewrites only the parts of a group that changed, and skips contents whose serialised
+ * bytes match the last save. A dirty flag is cleared only once its write has committed. {@link #close()} drains everything synchronously.
  */
 @Slf4j(topic = ChestsPlusPlus.NAME)
 public final class PersistenceService {
@@ -53,17 +58,28 @@ public final class PersistenceService {
         return thread;
     });
 
-    /** Group id → generation of its latest change. */
-    private final Map<Long, Long> dirty = new LinkedHashMap<>();
-
+    private final Map<Long, Pending> dirty = new LinkedHashMap<>();
+    /** Groups with a row in the database; any other group is saved in full, whatever changed. */
+    private final Set<Long> persisted = new HashSet<>();
     private final Set<Long> deleted = new LinkedHashSet<>();
     private final Map<UUID, Long> dirtyTrust = new LinkedHashMap<>();
     private final Set<Long> inFlight = new HashSet<>();
     private final Set<Long> hopperTouched = new HashSet<>();
-    private final Map<Long, Integer> savedFingerprints = new HashMap<>();
+    /**
+     * SHA-256 of each group's contents as last committed. Hashing the bytes, not the items, catches every change to item data. Only
+     * updated once a write commits, so a failed write is never skipped on retry.
+     */
+    private final Map<Long, byte[]> savedDigests = new HashMap<>();
+    private final Map<Long, byte[]> writingDigests = new HashMap<>();
     private long generation;
     private boolean flushing;
     private boolean closed;
+
+    /** What changed in a group since its last save, and the generation of its latest change. */
+    private static final class Pending {
+        private long generation;
+        private final EnumSet<Change> changes = EnumSet.noneOf(Change.class);
+    }
 
     /**
      * @param mainThread runs a task on the server thread (the scheduler); used for I/O completion callbacks
@@ -72,7 +88,7 @@ public final class PersistenceService {
     public PersistenceService(Database database, GroupRegistry groups, NodeIndex nodes, TrustService trust,
             Consumer<Runnable> mainThread, IntSupplier maxPerTick) {
         this.database = database;
-        this.repository = new Repository(database);
+        this.repository = database.repository();
         this.groups = groups;
         this.nodes = nodes;
         this.trust = trust;
@@ -87,7 +103,7 @@ public final class PersistenceService {
      *
      * @return the number of groups loaded
      */
-    public int load(Consumer<LoadedGroup> attach) throws SQLException {
+    public int load(Consumer<LoadedGroup> attach) {
         LoadedData data = loadAllOnIoThread();
         for (GroupRecord record : data.groups()) {
             StorageGroup group = ModelMapper.fromRecord(record);
@@ -96,41 +112,43 @@ public final class PersistenceService {
             ModelMapper.nodes(record).forEach(nodes::put);
             @Nullable ItemStack[] contents = record.inventory() == null ? null : ModelMapper.deserialize(record.inventory());
             attach.accept(new LoadedGroup(group, contents));
-            rememberFingerprint(group);
+            persisted.add(group.id());
+            byte[] digest = digest(record);
+            if (digest != null) savedDigests.put(group.id(), digest);
         }
         trust.load(data.trust());
         return data.groups().size();
     }
 
-    private LoadedData loadAllOnIoThread() throws SQLException {
+    private LoadedData loadAllOnIoThread() {
         try {
-            return CompletableFuture.supplyAsync(() -> {
-                try {
-                    return repository.loadAll();
-                } catch (SQLException e) {
-                    throw new CompletionException(e);
-                }
-            }, io).join();
+            return CompletableFuture.supplyAsync(repository::loadAll, io).join();
         } catch (CompletionException e) {
-            if (e.getCause() instanceof SQLException sql) throw sql;
-            throw e;
+            throw e.getCause() instanceof JdbiException jdbi ? jdbi : e;
         }
     }
 
     /** A freshly loaded group and its stored ChestLink contents (null for AutoCraft groups). */
     public record LoadedGroup(StorageGroup group, @Nullable ItemStack @Nullable [] contents) {}
 
-    public void markDirty(StorageGroup group) {
-        if (closed) return;
-        dirty.put(group.id(), ++generation);
+    public void markDirty(StorageGroup group, Change change) {
+        if (!closed) mark(group.id(), change);
+    }
+
+    private void mark(long id, Change change) {
+        Pending pending = dirty.computeIfAbsent(id, k -> new Pending());
+        pending.generation = ++generation;
+        pending.changes.add(change);
     }
 
     public void markDeleted(StorageGroup group) {
         if (closed) return;
-        dirty.remove(group.id());
-        hopperTouched.remove(group.id());
-        savedFingerprints.remove(group.id());
-        deleted.add(group.id());
+        long id = group.id();
+        dirty.remove(id);
+        persisted.remove(id);
+        hopperTouched.remove(id);
+        savedDigests.remove(id);
+        deleted.add(id);
     }
 
     public void markTrustDirty(UUID owner) {
@@ -139,8 +157,8 @@ public final class PersistenceService {
     }
 
     /**
-     * A hopper moved items through this group via the hopper bridge. With Paper's {@code hopper.disable-move-event}
-     * no move event fires, so such groups are compared against their last saved fingerprint at flush time.
+     * A hopper moved items through this group via the hopper bridge. With Paper's {@code hopper.disable-move-event} no move event fires,
+     * so such groups are marked dirty at flush time and their contents compared with the last save.
      */
     public void markHopperTouched(ChestLinkGroup group) {
         hopperTouched.add(group.id());
@@ -169,26 +187,36 @@ public final class PersistenceService {
             return;
         }
         Map<Long, Long> generations = new HashMap<>();
-        batch.groups().forEach(g -> generations.put(g.id(), dirty.get(g.id())));
+        batch.groups().forEach(save -> generations.put(save.group().id(), dirty.get(save.group().id()).generation));
         Map<UUID, Long> trustGenerations = new HashMap<>();
         batch.trust().keySet().forEach(owner -> trustGenerations.put(owner, dirtyTrust.get(owner)));
-        batch.groups().forEach(g -> inFlight.add(g.id()));
-        CompletableFuture.runAsync(() -> write(batch), io)
+        inFlight.addAll(generations.keySet());
+        CompletableFuture.runAsync(() -> repository.write(batch), io)
                 .whenComplete((ok, error) -> mainThread.accept(() -> onWritten(batch, generations, trustGenerations, error)));
     }
 
     /** Clears the dirty flags the batch covered, unless they changed again meanwhile. On failure, re-queues the batch. */
     private void onWritten(SaveBatch batch, Map<Long, Long> generations, Map<UUID, Long> trustGenerations, @Nullable Throwable error) {
-        batch.groups().forEach(g -> inFlight.remove(g.id()));
+        inFlight.removeAll(generations.keySet());
         if (error != null) {
             log.error("Failed to save {} ChestsPlusPlus group(s); will retry", batch.groups().size(), error);
+            generations.keySet().forEach(writingDigests::remove);
             deleted.addAll(batch.deletedGroups());
             batch.trust().keySet().forEach(owner -> dirtyTrust.putIfAbsent(owner, ++generation));
             flushing = true;
             return;
         }
-        generations.forEach(dirty::remove);
+        generations.forEach(this::onGroupSaved);
         trustGenerations.forEach(dirtyTrust::remove);
+    }
+
+    private void onGroupSaved(long id, long savedGeneration) {
+        byte[] digest = writingDigests.remove(id);
+        if (groups.byId(id) == null) return;
+        persisted.add(id);
+        if (digest != null) savedDigests.put(id, digest);
+        Pending pending = dirty.get(id);
+        if (pending != null && pending.generation == savedGeneration) dirty.remove(id);
     }
 
     /** Stops the I/O thread, writes everything still dirty on the calling thread, and closes the database. */
@@ -199,7 +227,7 @@ public final class PersistenceService {
         writeEverythingNow();
         try {
             database.close();
-        } catch (SQLException e) {
+        } catch (JdbiException e) {
             log.warn("Closing the ChestsPlusPlus database failed", e);
         }
     }
@@ -225,67 +253,75 @@ public final class PersistenceService {
             dirty.clear();
             deleted.clear();
             dirtyTrust.clear();
-        } catch (SQLException e) {
+        } catch (JdbiException e) {
             log.error("Final save of ChestsPlusPlus data failed; recent changes may be lost", e);
         }
     }
 
-    private void write(SaveBatch batch) {
-        try {
-            repository.write(batch);
-        } catch (SQLException e) {
-            throw new CompletionException(e);
-        }
-    }
-
-    /** Builds a batch of up to {@code limit} dirty groups (skipping in-flight ones), or null if there is nothing. */
+    /**
+     * Builds a batch from up to {@code limit} dirty groups (skipping in-flight ones), or null if there is nothing. The limit counts groups
+     * snapshotted, not saved, since snapshotting is the main-thread cost. Groups left with nothing to save are no longer dirty.
+     */
     private @Nullable SaveBatch snapshot(int limit, boolean consumeDeletes) {
-        List<GroupRecord> records = new ArrayList<>();
-        for (Iterator<Long> it = dirty.keySet().iterator(); it.hasNext() && records.size() < limit;) {
-            long id = it.next();
-            if (inFlight.contains(id)) continue;
-            StorageGroup group = groups.byId(id);
-            if (group == null) {
+        List<GroupSave> saves = new ArrayList<>();
+        int snapshotted = 0;
+        for (Iterator<Map.Entry<Long, Pending>> it = dirty.entrySet().iterator(); it.hasNext() && snapshotted < limit;) {
+            Map.Entry<Long, Pending> entry = it.next();
+            if (inFlight.contains(entry.getKey())) continue;
+            StorageGroup group = groups.byId(entry.getKey());
+            if (group != null) snapshotted++;
+            GroupSave save = group == null ? null : snapshotGroup(group, entry.getValue());
+            if (save == null) {
                 it.remove();
                 continue;
             }
-            records.add(ModelMapper.toRecord(group, nodes.nodesOf(id)));
-            rememberFingerprint(group);
+            saves.add(save);
         }
         List<Long> deletes = List.copyOf(deleted);
         Map<UUID, Set<UUID>> trustChanges = new LinkedHashMap<>();
         dirtyTrust.keySet().forEach(owner -> trustChanges.put(owner, Set.copyOf(trust.trustedBy(owner))));
         if (consumeDeletes) deleted.clear();
-        SaveBatch batch = new SaveBatch(records, deletes, trustChanges);
+        SaveBatch batch = new SaveBatch(saves, deletes, trustChanges);
         return batch.isEmpty() ? null : batch;
     }
 
-    private void rememberFingerprint(StorageGroup group) {
-        if (group instanceof ChestLinkGroup chest && chest.hasInventory()) {
-            savedFingerprints.put(group.id(), fingerprint(chest.inventory().getContents()));
+    /** Everything for a group not yet in the database; otherwise what changed, minus contents that match the last save. Null if nothing. */
+    private @Nullable GroupSave snapshotGroup(StorageGroup group, Pending pending) {
+        long id = group.id();
+        boolean inDatabase = persisted.contains(id);
+        EnumSet<Change> changes = inDatabase ? EnumSet.copyOf(pending.changes) : EnumSet.allOf(Change.class);
+        GroupRecord record = ModelMapper.toRecord(group, nodes.nodesOf(id), changes.contains(Change.CONTENTS));
+        byte[] digest = digest(record);
+        if (digest != null && inDatabase && Arrays.equals(digest, savedDigests.get(id))) {
+            changes.remove(Change.CONTENTS);
+        } else if (digest != null) {
+            writingDigests.put(id, digest);
         }
+        return changes.isEmpty() ? null : new GroupSave(record, changes);
     }
 
     private void promoteHopperTouched() {
         for (long id : hopperTouched) {
-            if (groups.byId(id) instanceof ChestLinkGroup chest && chest.hasInventory()) {
-                int now = fingerprint(chest.inventory().getContents());
-                Integer saved = savedFingerprints.get(id);
-                if (saved == null || saved != now) dirty.putIfAbsent(id, ++generation);
-            }
+            if (groups.byId(id) != null) mark(id, Change.CONTENTS);
         }
         hopperTouched.clear();
     }
 
-    /** Cheap contents fingerprint: material and amount per slot. */
-    static int fingerprint(@Nullable ItemStack[] contents) {
-        int[] parts = new int[contents.length * 2];
-        for (int i = 0; i < contents.length; i++) {
-            ItemStack item = contents[i];
-            if (item == null || item.isEmpty()) continue;
-            parts[i * 2] = item.getType().ordinal() + 1;
-            parts[i * 2 + 1] = item.getAmount();
+    /** SHA-256 of the record's serialised contents (inventory, or recipe key and matrix), or null when it carries none. */
+    private static byte @Nullable [] digest(GroupRecord record) {
+        byte[] contents = record.inventory() != null ? record.inventory() : record.matrix();
+        if (contents == null) return null;
+        MessageDigest sha256 = sha256();
+        sha256.update(contents);
+        if (record.recipeKey() != null) sha256.update(record.recipeKey().getBytes(StandardCharsets.UTF_8));
+        return sha256.digest();
+    }
+
+    private static MessageDigest sha256() {
+        try {
+            return MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("Every JVM must provide SHA-256", e);
         }
-        return Arrays.hashCode(parts);
     }
 }

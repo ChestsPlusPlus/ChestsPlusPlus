@@ -32,18 +32,19 @@ import com.jamesdpeters.chestsplusplus.persistence.Database;
 import com.jamesdpeters.chestsplusplus.persistence.PersistenceService;
 import com.jamesdpeters.chestsplusplus.ui.UiService;
 import com.jamesdpeters.chestsplusplus.ui.menu.MenuListener;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.sql.SQLException;
-import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.bukkit.block.Chest;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.world.WorldSaveEvent;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.jdbi.v3.core.JdbiException;
 import org.jspecify.annotations.Nullable;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
 
 /** Plugin entry point. {@code /cpp reload} only swaps settings and messages; it never re-runs enable. */
 @Slf4j(topic = ChestsPlusPlus.NAME)
@@ -63,7 +64,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
             services = new Services(this, loadSettings(), loadMessages());
             registerFeatures(services);
             openDatabase(services);
-        } catch (IOException | SQLException e) {
+        } catch (IOException | JdbiException | IllegalStateException e) {
             log.error("Could not start ChestsPlusPlus; disabling", e);
             getServer().getPluginManager().disablePlugin(this);
             return;
@@ -76,8 +77,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
     }
 
     private void registerFeatures(Services services) {
-        DisplayService displays = services.add(DisplayService.class,
-                new DisplayService(this, services.groups(), services.nodes(), services::settings));
+        DisplayService displays = services.add(DisplayService.class, new DisplayService(this, services.groups(), services.nodes(), services::settings));
         displays.surfaces(block -> block.getState(false) instanceof Chest ? Surface.CHEST : Surface.FULL_BLOCK);
         LinkService links = services.add(LinkService.class, new LinkService(services, displays));
         services.add(LinkItem.class, new LinkItem(this));
@@ -96,7 +96,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         services.add(FilterService.class, new FilterService(this, new FilterCodec(this), ItemGrouping.fromServerTags(), services::settings));
     }
 
-    private void openDatabase(Services services) throws IOException, SQLException {
+    private void openDatabase(Services services) throws IOException {
         File dataFolder = getDataFolder();
         if (!dataFolder.isDirectory() && !dataFolder.mkdirs()) throw new IOException("Cannot create " + dataFolder);
         Database database = Database.open("jdbc:sqlite:" + new File(dataFolder, DATABASE_FILE).getAbsolutePath());
