@@ -1,7 +1,8 @@
 # Persistence cleanup: SQL migration files + JDBI
 
-Status: implemented. The SQL Object kept the name `Repository` (it covers trust as well as groups), and runtime libraries are declared
-as `paperLibrary(...)` in the build, which writes `paper-libraries.txt` for `ChestsPlusPlusLoader`.
+Status: implemented, then superseded by [persistence-stores-plan.md](persistence-stores-plan.md): the `Repository` SQL Object and
+`PersistenceService` were replaced by per-store tables and a generic write-behind engine. Runtime libraries are declared as
+`paperLibrary(...)` in the build, which writes `paper-libraries.txt` for `ChestsPlusPlusLoader`.
 
 Scope: `persistence` package, its wiring in `ChestsPlusPlus`, build config, and persistence tests.
 

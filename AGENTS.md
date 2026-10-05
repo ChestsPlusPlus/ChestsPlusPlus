@@ -72,8 +72,9 @@ comments, no repeated logic.
 | Repeating work | `Tickers.every` / `Tickers.everyInterval`. Never one task per group or node. |
 | Ghost-item inventories | extend `GhostEditor`; `MenuListener` enforces the no-real-items rules |
 | Clickable chest menus | `Menu` / `PaginatedMenu` |
-| Save a model change | `services.persistence().markDirty(group, Change.X)` with the part that changed (`META`, `MEMBERS`, `NODES`, `CONTENTS`); a save only rewrites those rows |
-| SQL | a `@SqlQuery`/`@SqlBatch` method on `Repository`; schema changes go in a new `db/migration/V<n>.sql` (bump `Database.SCHEMA_VERSION`) |
+| Save a model change | `services.groupStore().markDirty(group)` (or `trustStore().markDirty(owner)`); the next flush saves the whole group |
+| SQL | a `RecordTable` in the store that owns the table; anything it can't do is a plain JDBI call in that store. Schema: edit `V1.sql` until v3 ships (then clear your dev database), afterwards a new `db/migration/V<n>.sql` with `Database.SCHEMA_VERSION` bumped |
+| Persist a new kind of thing | a row record, its `CREATE TABLE`, a `Store` of about 15 lines using `RecordTable`, `persistence.register(store)` in `ChestsPlusPlus`, and `markDirty` wherever the data changes |
 | Command tree pieces | `Commands.literal`, `argument`, `permission`, `playerArgument` |
 
 ## Runtime libraries
@@ -83,6 +84,8 @@ comments, no repeated logic.
 
 ## Runtime rules
 
-- The model (groups, nodes, trust) is main-thread only. Only `PersistenceService`'s I/O thread touches the database.
+- The model (groups, nodes, trust) is main-thread only. Only `Persistence`'s I/O thread touches the database, apart from loading at
+  startup. A store's `snapshot` runs on the main thread and must copy what it needs: clone `ItemStack`s, since `getContents()` returns
+  live mirrors and items are serialised on the I/O thread.
 - Hot paths run every tick per hopper, so keep them to a few hash lookups with no allocation. These are
   `HopperBridge.onSearch` and `FilterListener.onMove`.

@@ -1,6 +1,9 @@
 # Persistence rework: generic engine, a store per kind of thing, a table per store
 
-Status: proposed. Replaces the partial-save design (`Change`, per-part dirty tracking, content hashes) that followed the JDBI move.
+Status: implemented. Replaces the partial-save design (`Change`, per-part dirty tracking, content hashes) that followed the JDBI move.
+Steps 3 and 4 landed as one commit, because the old `PersistenceService` could not run on the rewritten `V1.sql`. With no SQL Object
+left, the runtime library is `jdbi3-core` rather than `jdbi3-sqlobject`. Schema tests live in `DatabaseTest`, and `ItemsBlob` has its own
+MockBukkit test, since serialising items needs a server.
 
 ## Why
 

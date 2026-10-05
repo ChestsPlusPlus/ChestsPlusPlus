@@ -119,21 +119,22 @@ command/
   arguments/GroupArgument      custom argument with suggestions (incl. owner:group for shared groups)
 persistence/
   Database                     JDBI handle, PRAGMAs, migrations (db/migration/V<n>.sql, user_version)
-  Repository                   JDBI SQL Object: batched reads and writes for every table
-  PersistenceService           load-on-enable, dirty tracking, write-behind flush, final flush
+  Persistence                  write-behind engine: dirty keys per store, flush on the I/O thread, final flush
+  GroupStore, TrustStore       how each kind of thing is snapshotted, written, deleted and loaded (Store)
+  RecordTable                  generated upsert/delete/select SQL for a record-shaped table
 integration/
   Metrics (bStats), UpdateChecker (Modrinth/Hangar via java.net.http)
 ```
 
 ### 3.3 Threading model
 - **Main thread:** all world, entity, inventory and model mutation. Dialog and click callbacks are re-dispatched to the main thread if Paper delivers them off-thread (spike S3).
-- **`persistence-io` (single thread):** all JDBC. It receives immutable `SaveBatch` records (ids, primitives, `byte[]` item blobs). Because there is one writer, there is no locking.
+- **`persistence-io` (single thread):** all JDBC writes. It receives immutable snapshots (ids, primitives, cloned `ItemStack`s, which it serialises). Because there is one writer, there is no locking.
 - **Async pool (Paper scheduler):** update checks only.
 
 ### 3.4 Plugin lifecycle
 - `paper-plugin.yml` declares the bootstrapper (commands) and the main class. Commands are registered through `LifecycleEvents.COMMANDS`, so the plugin has no `plugin.yml` command section.
-- **Enable** (fixed order): load settings → load messages → open DB → load model (rows read on the I/O thread, items deserialised on main) → build indexes → register listeners → start tickers → spawn displays for already-loaded chunks.
-- **Disable:** stop tickers → despawn displays → synchronous final flush → close DB.
+- **Enable** (fixed order): load settings → load messages → open DB → load model (each store reads its rows on the main thread, before anything is flushed) → build indexes → register listeners → start tickers → spawn displays for already-loaded chunks.
+- **Disable:** stop tickers → despawn displays → final flush, waiting for the I/O thread → close DB.
 - **Reload** (`/cpp reload`) only re-reads `config.yml` and messages and re-applies them (display toggles, limits, blacklist, intervals). It never re-runs enable.
 
 ---
@@ -159,6 +160,8 @@ CREATE TABLE groups (
   is_public   INTEGER NOT NULL DEFAULT 0,
   sort_mode   TEXT,                        -- chestlink only
   created_at  INTEGER NOT NULL,
+  items       BLOB,                        -- a ChestLink's inventory or an AutoCraft matrix
+  recipe_key  TEXT,                        -- autocraft only
   UNIQUE (type, owner, name)
 );
 CREATE TABLE group_members (group_id INTEGER REFERENCES groups ON DELETE CASCADE, member BLOB, PRIMARY KEY (group_id, member));
@@ -169,22 +172,17 @@ CREATE TABLE nodes (
   PRIMARY KEY (world, x, y, z)
 );
 CREATE INDEX nodes_group ON nodes(group_id);
-CREATE TABLE chest_inventories (group_id INTEGER PRIMARY KEY REFERENCES groups ON DELETE CASCADE, items BLOB NOT NULL, updated_at INTEGER NOT NULL);
-CREATE TABLE autocraft_recipes (group_id INTEGER PRIMARY KEY REFERENCES groups ON DELETE CASCADE, recipe_key TEXT, matrix BLOB NOT NULL);
 CREATE TABLE trust (owner BLOB, trusted BLOB, PRIMARY KEY (owner, trusted));
 ```
-Migrations are versioned with `PRAGMA user_version`, using numbered SQL files (`src/main/resources/db/migration/V<n>.sql`). A shipped file is never edited.
+Migrations are versioned with `PRAGMA user_version`, using numbered SQL files (`src/main/resources/db/migration/V<n>.sql`). Until v3 first ships, `V1.sql` is edited in place (clear dev databases when it changes); after that a shipped file is never edited.
 
 ### 4.3 Write-behind
-- **What marks a group dirty:** metadata changes (immediately), viewer close, `InventoryMoveItemEvent` at MONITOR where either side's holder is a `ChestLinkHolder`, AutoCraft output, and programmatic changes.
-- **Partial saves:** `markDirty` takes the part that changed (`META`, `MEMBERS`, `NODES`, `CONTENTS`), and a save rewrites only those rows. A group not yet in the database is always saved in full.
-- **Unchanged contents:** contents are still serialised at flush, but the write is skipped when their SHA-256 matches the last committed save. Hashing the bytes rather than `ItemStack.hashCode` catches changes to any item data.
-- **Hopper-attached groups (S1):** groups that `HopperBridge` has substituted since the last flush are marked `CONTENTS` at flush time, so the check above decides whether they're written. This covers servers with `hopper.disable-move-event: true`, where the move event never fires.
-- **Flush ticker** (default every 30 s, configurable, plus on `WorldSaveEvent`):
-  - Serialise up to *N* dirty groups per tick on main. This is amortised, so a burst never causes a spike.
-  - Hand the `byte[]` batch to the I/O thread, which runs one transaction per batch.
-- **Final flush:** on disable, synchronously drain all dirty groups.
-- **Retries:** failed writes are retried and logged loudly. The dirty flag is cleared only after the commit is acknowledged.
+- **Stores:** each kind of thing (groups, trust) is a `Store` that says how to snapshot, write, delete and load it. The `Persistence` engine knows nothing about chests; it keeps a dirty key set per store.
+- **What marks a group dirty:** metadata, member and node changes, viewer close, `InventoryMoveItemEvent` at MONITOR where either side's holder is a `ChestLinkHolder`, AutoCraft output, programmatic changes, and every `HopperBridge` substitution (S1), which covers servers with `hopper.disable-move-event: true`, where the move event never fires. A dirty group is saved whole.
+- **Flush** (default every 30 s, configurable, plus on `WorldSaveEvent`): take and clear the dirty keys, snapshot them on main (a removed group snapshots to null and is deleted; item stacks are cloned), and write everything in one transaction on the I/O thread, where the clones are serialised.
+- **Ordering:** the single I/O thread runs batches in order, so a group that changes while its batch is being written is simply saved again by the next flush.
+- **Retries:** a failed batch is logged and its keys are marked dirty again, so the retry writes their current state.
+- **Final flush:** on disable, flush, wait up to 30 s for the I/O thread, then close the database.
 
 ### 4.4 Not in the DB
 Hopper filters live in the hopper block entity's PDC. They travel with the block (schematics, WorldEdit) and need no index rebuild beyond chunk load.
@@ -342,7 +340,7 @@ autocraft: { display: { enabled: true, label: true } , tick-interval: 20 }
 filters:   { displays: true }
 limits:    { chestlink-default: -1, autocraft-default: -1 }   # -1 = unlimited; overridden by permissions
 worlds:    { blacklist: [] }
-storage:   { flush-interval-seconds: 30, max-serialisations-per-tick: 16 }
+storage:   { flush-interval-seconds: 30 }
 update-checker: { enabled: true, notify-permission: chestsplusplus.admin.update }
 metrics:   { enabled: true }
 ```
@@ -743,8 +741,8 @@ failures, only the 26.3-guarded test skipped) and `./gradlew e2e` (all scenarios
 | 6. Polish & release | Partly done | bStats, update checker, README, `docs/testing.md`, CHANGELOG and a tag-driven draft-release workflow are done. The rest is listed below. |
 
 ### Deviations from the plan (and why)
-- **Repositories (§3.2):** one `Repository` class holds all SQL instead of five repo classes; it's small and is only
-  used by the I/O thread.
+- **Repositories (§3.2):** no repository classes. Each store (`GroupStore`, `TrustStore`) owns its tables, with
+  `RecordTable` generating the routine SQL; see [persistence-stores-plan.md](persistence-stores-plan.md).
 - **Recipe choice-cycling animation (§5.9):** not implemented. Ghost items are the concrete items the player placed;
   tag recipes still accept any matching item when crafting (per-slot recipe choices).
 - **Update checker (§3.2, §5.12):** uses GitHub Releases, because no Modrinth or Hangar project exists.
