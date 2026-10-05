@@ -13,7 +13,7 @@ import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 
 /**
- * Release guard (plan §10.3): the shipped jar must not contain the test harness, spikes or any debug entry point.
+ * Release guard: the shipped jar must not contain the test harness, spikes or any debug entry point.
  */
 @CacheableTask
 abstract class VerifyReleaseJar : DefaultTask() {
