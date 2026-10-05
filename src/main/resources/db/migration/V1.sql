@@ -7,8 +7,7 @@ CREATE TABLE groups (
   sort_mode   TEXT,
   created_at  INTEGER NOT NULL,
   items       BLOB,
-  recipe_key  TEXT,
-  UNIQUE (type, owner, name)
+  recipe_key  TEXT
 );
 
 CREATE TABLE group_members (

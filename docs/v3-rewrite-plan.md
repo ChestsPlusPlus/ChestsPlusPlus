@@ -161,8 +161,7 @@ CREATE TABLE groups (
   sort_mode   TEXT,                        -- chestlink only
   created_at  INTEGER NOT NULL,
   items       BLOB,                        -- a ChestLink's inventory or an AutoCraft matrix
-  recipe_key  TEXT,                        -- autocraft only
-  UNIQUE (type, owner, name)
+  recipe_key  TEXT                         -- autocraft only
 );
 CREATE TABLE group_members (group_id INTEGER REFERENCES groups ON DELETE CASCADE, member BLOB, PRIMARY KEY (group_id, member));
 CREATE TABLE nodes (
@@ -174,6 +173,8 @@ CREATE TABLE nodes (
 CREATE INDEX nodes_group ON nodes(group_id);
 CREATE TABLE trust (owner BLOB, trusted BLOB, PRIMARY KEY (owner, trusted));
 ```
+Names are unique per type and owner in `GroupRegistry`, not in the database: a save can rename several groups at once, and a `UNIQUE` constraint would reject one taking a name another still holds earlier in the same transaction.
+
 Migrations are versioned with `PRAGMA user_version`, using numbered SQL files (`src/main/resources/db/migration/V<n>.sql`). Until v3 first ships, `V1.sql` is edited in place (clear dev databases when it changes); after that a shipped file is never edited.
 
 ### 4.3 Write-behind

@@ -180,6 +180,28 @@ class GroupStoreTest extends PluginTestBase {
     }
 
     @Test
+    void groupTakingAnotherGroupsOldNameInOneFlushIsSaved() throws Exception {
+        Instance first = new Instance();
+        ChestLinkGroup ores = first.chest("ores");
+        ChestLinkGroup stuff = first.chest("stuff");
+        first.flushAndWait();
+
+        // stuff is dirty first, so it is written first, while the database still has ores under its old name.
+        first.groupStore.markDirty(stuff);
+        first.groups.rename(ores, "old-ores");
+        first.groupStore.markDirty(ores);
+        first.groups.rename(stuff, "ores");
+        first.flushAndWait();
+        assertThat(first.groupStore.isDirty(stuff)).isFalse();
+        first.persistence.close();
+
+        Instance second = new Instance();
+        assertThat(second.groups.byId(ores.id()).name()).isEqualTo("old-ores");
+        assertThat(second.groups.byId(stuff.id()).name()).isEqualTo("ores");
+        second.persistence.close();
+    }
+
+    @Test
     void renamedSwordInTheSameSlotSurvivesRestart() throws Exception {
         Instance first = new Instance();
         ChestLinkGroup chest = first.chest("g");
