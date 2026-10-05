@@ -95,7 +95,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         // Existing contents move into the group; the physical chest is emptied.
         assertThat(group.inventory().contains(Material.DIAMOND, 5)).isTrue();
         assertThat(((Container) chest.getState(false)).getInventory().isEmpty()).isTrue();
-        assertThat(plugin.services().persistence().isDirty(group)).isTrue();
+        assertThat(plugin.services().groupStore().isDirty(group)).isTrue();
         assertThat(nextPlain(alice)).contains("Created ChestLink ores");
     }
 

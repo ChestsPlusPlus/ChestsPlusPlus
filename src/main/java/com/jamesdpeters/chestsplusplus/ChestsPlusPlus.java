@@ -29,13 +29,17 @@ import com.jamesdpeters.chestsplusplus.model.AutoCraftGroup;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.persistence.Database;
-import com.jamesdpeters.chestsplusplus.persistence.PersistenceService;
+import com.jamesdpeters.chestsplusplus.persistence.GroupStore;
+import com.jamesdpeters.chestsplusplus.persistence.GroupStore.LoadedGroup;
+import com.jamesdpeters.chestsplusplus.persistence.Persistence;
+import com.jamesdpeters.chestsplusplus.persistence.TrustStore;
 import com.jamesdpeters.chestsplusplus.ui.UiService;
 import com.jamesdpeters.chestsplusplus.ui.menu.MenuListener;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import org.bukkit.block.Chest;
 import org.bukkit.event.EventHandler;
@@ -100,19 +104,26 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         File dataFolder = getDataFolder();
         if (!dataFolder.isDirectory() && !dataFolder.mkdirs()) throw new IOException("Cannot create " + dataFolder);
         Database database = Database.open("jdbc:sqlite:" + new File(dataFolder, DATABASE_FILE).getAbsolutePath());
-        PersistenceService persistence = new PersistenceService(database, services.groups(), services.nodes(), services.trust(),
-                this::runOnMainThread, () -> services.settings().storage().maxSerialisationsPerTick());
-        services.persistence(persistence);
+        Persistence persistence = new Persistence(database, this::runOnMainThread);
+        GroupStore groupStore = new GroupStore(persistence, services.groups(), services.nodes(), attachLoaded(services));
+        TrustStore trustStore = new TrustStore(persistence, services.trust());
+        persistence.register(groupStore);
+        persistence.register(trustStore);
+        services.trust().onChange(trustStore::markDirty);
+        services.persistence(persistence, groupStore, trustStore);
+        persistence.load();
+        log.info("Loaded {} group(s) and {} linked block(s)", services.groups().size(), services.nodes().size());
+    }
 
+    private static Consumer<LoadedGroup> attachLoaded(Services services) {
         ChestLinkService chestLinks = services.get(ChestLinkService.class);
         AutoCraftService autoCraft = services.get(AutoCraftService.class);
-        int loaded = persistence.load(loadedGroup -> {
-            switch (loadedGroup.group()) {
-                case ChestLinkGroup chest -> chestLinks.attachLoaded(chest, loadedGroup.contents());
+        return loaded -> {
+            switch (loaded.group()) {
+                case ChestLinkGroup chest -> chestLinks.attachLoaded(chest, loaded.items());
                 case AutoCraftGroup craft -> autoCraft.resolveLoaded(craft);
             }
-        });
-        log.info("Loaded {} group(s) and {} linked block(s)", loaded, services.nodes().size());
+        };
     }
 
     private void runOnMainThread(Runnable task) {
@@ -137,10 +148,8 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
     /** A few central tickers rather than one task per group. */
     private void startTickers(Services services) {
         Tickers tickers = services.tickers();
-        PersistenceService persistence = services.persistence();
-        tickers.every("persistence", 1, persistence::tick);
-        tickers.everyInterval("persistence-flush", () -> services.settings().storage().flushIntervalSeconds() * 20,
-                ticks -> persistence.requestFlush());
+        Persistence persistence = services.persistence();
+        tickers.everyInterval("persistence-flush", () -> services.settings().storage().flushIntervalSeconds() * 20, ticks -> persistence.flush());
         tickers.every("displays", 1, services.get(DisplayService.class)::tick);
         tickers.everyInterval("autocraft", () -> services.settings().autocraft().tickInterval(), services.get(AutoCraftService.class)::tick);
     }
@@ -201,7 +210,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
     @EventHandler
     void onWorldSave(WorldSaveEvent event) {
         Services current = services;
-        if (current != null) current.persistence().requestFlush();
+        if (current != null) current.persistence().flush();
     }
 
     private Settings loadSettings() {

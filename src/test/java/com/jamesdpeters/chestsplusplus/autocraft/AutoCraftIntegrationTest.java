@@ -183,7 +183,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         assertThat(autoCraft.craftAt(group[0], plugin.services().nodes().get(BlockPos.of(table)))).isTrue();
         assertThat(output.contains(Material.TORCH, 4)).isTrue();
         assertThat(mats.inventory().isEmpty()).isTrue();
-        assertThat(plugin.services().persistence().isDirty(mats)).isTrue();
+        assertThat(plugin.services().groupStore().isDirty(mats)).isTrue();
     }
 
     @Test
@@ -218,7 +218,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         assertThat(editor.getInventory().getItem(RecipeEditorHolder.RESULT_SLOT)).isEqualTo(ItemStack.of(Material.TORCH, 4));
         assertThat(editor.getInventory().getItem(2)).isEqualTo(ItemStack.of(Material.COAL));
         assertThat(group.recipeKey()).isEqualTo(NamespacedKey.minecraft("torch"));
-        assertThat(plugin.services().persistence().isDirty(group)).isTrue();
+        assertThat(plugin.services().groupStore().isDirty(group)).isTrue();
         assertThat(editor.click(9, null)).isNull();
     }
 }

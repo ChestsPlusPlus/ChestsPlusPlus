@@ -11,7 +11,6 @@ import com.jamesdpeters.chestsplusplus.model.GroupNames;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.Node;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
-import com.jamesdpeters.chestsplusplus.persistence.Change;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
@@ -173,7 +172,7 @@ public final class LinkService {
         if (block.getBlockData() instanceof Chest) DoubleChests.split(block);
         Node node = new Node(BlockPos.of(block), facing, group.id());
         services.nodes().put(node);
-        services.persistence().markDirty(group, Change.NODES);
+        services.groupStore().markDirty(group);
         displays.nodeAdded(node);
         displays.requestUpdate(group);
         return node;
@@ -192,7 +191,7 @@ public final class LinkService {
         if (!keepGroup && services.nodes().count(group.id()) == 0) {
             removeGroup(group, dropAt);
         } else {
-            services.persistence().markDirty(group, Change.NODES);
+            services.groupStore().markDirty(group);
         }
         return group;
     }
@@ -203,7 +202,7 @@ public final class LinkService {
         if (handler != null) handler.onRemoved(group, dropAt);
         for (Node node : services.nodes().removeGroup(group.id())) displays.nodeRemoved(node);
         services.groups().remove(group);
-        services.persistence().markDeleted(group);
+        services.groupStore().markDirty(group);
     }
 
     /** Renames a group, messaging {@code audience} on failure. */
@@ -221,7 +220,7 @@ public final class LinkService {
         services.groups().rename(group, newName);
         GroupTypeHandler handler = handlers.get(group.type());
         if (handler != null) handler.onRenamed(group);
-        services.persistence().markDirty(group, Change.META);
+        services.groupStore().markDirty(group);
         displays.requestUpdate(group);
         services.send(audience, group.type().pick(Message.CHESTLINK_RENAMED, Message.AUTOCRAFT_RENAMED),
                 Messages.text("old", old), Messages.text("new", newName));
@@ -230,18 +229,18 @@ public final class LinkService {
 
     public void setPublic(StorageGroup group, boolean isPublic) {
         group.setPublic(isPublic);
-        services.persistence().markDirty(group, Change.META);
+        services.groupStore().markDirty(group);
     }
 
     public boolean addMember(StorageGroup group, UUID member) {
         if (member.equals(group.owner()) || !services.groups().addMember(group, member)) return false;
-        services.persistence().markDirty(group, Change.MEMBERS);
+        services.groupStore().markDirty(group);
         return true;
     }
 
     public boolean removeMember(StorageGroup group, UUID member) {
         if (!services.groups().removeMember(group, member)) return false;
-        services.persistence().markDirty(group, Change.MEMBERS);
+        services.groupStore().markDirty(group);
         return true;
     }
 

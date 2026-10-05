@@ -10,7 +10,9 @@ import com.jamesdpeters.chestsplusplus.model.GroupRegistry;
 import com.jamesdpeters.chestsplusplus.model.Node;
 import com.jamesdpeters.chestsplusplus.model.NodeIndex;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
-import com.jamesdpeters.chestsplusplus.persistence.PersistenceService;
+import com.jamesdpeters.chestsplusplus.persistence.GroupStore;
+import com.jamesdpeters.chestsplusplus.persistence.Persistence;
+import com.jamesdpeters.chestsplusplus.persistence.TrustStore;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.Getter;
@@ -31,7 +33,9 @@ public final class Services {
     @Getter private final Tickers tickers;
     @Getter private volatile Settings settings;
     @Getter private volatile Messages messages;
-    private @Nullable PersistenceService persistence;
+    private @Nullable Persistence persistence;
+    private @Nullable GroupStore groupStore;
+    private @Nullable TrustStore trustStore;
     private final Map<Class<?>, Object> components = new HashMap<>();
 
     public Services(JavaPlugin plugin, Settings settings, Messages messages) {
@@ -56,13 +60,27 @@ public final class Services {
         return node == null ? null : groups.byId(node.groupId());
     }
 
-    public PersistenceService persistence() {
-        if (persistence == null) throw new IllegalStateException("Persistence not started");
-        return persistence;
+    public Persistence persistence() {
+        return started(persistence);
     }
 
-    public void persistence(PersistenceService persistence) {
+    public GroupStore groupStore() {
+        return started(groupStore);
+    }
+
+    public TrustStore trustStore() {
+        return started(trustStore);
+    }
+
+    public void persistence(Persistence persistence, GroupStore groupStore, TrustStore trustStore) {
         this.persistence = persistence;
+        this.groupStore = groupStore;
+        this.trustStore = trustStore;
+    }
+
+    private static <T> T started(@Nullable T persistencePart) {
+        if (persistencePart == null) throw new IllegalStateException("Persistence not started");
+        return persistencePart;
     }
 
     public <T> T add(Class<T> type, T component) {

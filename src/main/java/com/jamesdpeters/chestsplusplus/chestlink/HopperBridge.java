@@ -3,7 +3,6 @@ package com.jamesdpeters.chestsplusplus.chestlink;
 import com.jamesdpeters.chestsplusplus.core.Holders;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
-import com.jamesdpeters.chestsplusplus.persistence.Change;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.bukkit.Location;
@@ -31,7 +30,7 @@ public final class HopperBridge implements Listener {
     void onSearch(HopperInventorySearchEvent event) {
         if (!(services.groupAt(event.getSearchBlock()) instanceof ChestLinkGroup group)) return;
         event.setInventory(group.inventory());
-        services.persistence().markHopperTouched(group);
+        services.groupStore().markDirty(group);
     }
 
     /**
@@ -52,6 +51,6 @@ public final class HopperBridge implements Listener {
         int moved = moving.getAmount() - notMoved;
         if (moved <= 0) return;
         event.getSource().removeItem(moving.asQuantity(moved));
-        services.persistence().markDirty(group, Change.CONTENTS);
+        services.groupStore().markDirty(group);
     }
 }

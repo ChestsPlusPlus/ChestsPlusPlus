@@ -25,7 +25,7 @@ public record Settings(Features features, Linking linking, ChestLink chestlink, 
     /** {@code -1} means unlimited. */
     public record Limits(int chestlinkDefault, int autocraftDefault) {}
 
-    public record Storage(int flushIntervalSeconds, int maxSerialisationsPerTick) {}
+    public record Storage(int flushIntervalSeconds) {}
 
     public static final Settings DEFAULTS = from(new MemoryConfiguration());
 
@@ -39,8 +39,7 @@ public record Settings(Features features, Linking linking, ChestLink chestlink, 
                 new Filters(config.getBoolean("filters.displays", true)),
                 new Limits(Math.max(-1, config.getInt("limits.chestlink-default", -1)), Math.max(-1, config.getInt("limits.autocraft-default", -1))),
                 config.getStringList("worlds.blacklist").stream().map(name -> name.toLowerCase(Locale.ROOT)).collect(Collectors.toUnmodifiableSet()),
-                new Storage(Math.clamp(config.getInt("storage.flush-interval-seconds", 30), 1, 3600),
-                        Math.clamp(config.getInt("storage.max-serialisations-per-tick", 16), 1, 1024)),
+                new Storage(Math.clamp(config.getInt("storage.flush-interval-seconds", 30), 1, 3600)),
                 config.getBoolean("update-checker.enabled", true), config.getBoolean("metrics.enabled", true));
     }
 

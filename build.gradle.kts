@@ -37,7 +37,7 @@ configurations.compileOnly { extendsFrom(paperLibrary) }
 configurations.testImplementation { extendsFrom(paperLibrary) }
 
 dependencies {
-    paperLibrary(libs.jdbi.sqlobject)
+    paperLibrary(libs.jdbi.core)
     compileOnly(libs.paper.api)
     compileOnly(libs.jspecify)
     compileOnly(libs.lombok)

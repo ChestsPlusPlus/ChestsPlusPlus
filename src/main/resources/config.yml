@@ -41,7 +41,6 @@ worlds:
 
 storage:
   flush-interval-seconds: 30
-  max-serialisations-per-tick: 16
 
 update-checker:
   enabled: true

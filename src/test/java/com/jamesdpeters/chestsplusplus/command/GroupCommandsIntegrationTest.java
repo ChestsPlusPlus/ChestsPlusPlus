@@ -86,7 +86,7 @@ class GroupCommandsIntegrationTest extends PluginTestBase {
         assertThat(group.isPublic()).isFalse();
         run(alice, "cl sort metals amount_desc");
         assertThat(group.sortMode()).isEqualTo(SortMode.AMOUNT_DESC);
-        assertThat(plugin.services().persistence().isDirty(group)).isTrue();
+        assertThat(plugin.services().groupStore().isDirty(group)).isTrue();
     }
 
     @Test

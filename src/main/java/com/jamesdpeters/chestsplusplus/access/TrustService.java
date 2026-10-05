@@ -1,5 +1,6 @@
 package com.jamesdpeters.chestsplusplus.access;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -57,7 +58,7 @@ public final class TrustService {
     }
 
     /** Replaces all state (used on load). Does not fire change notifications. */
-    public void load(Map<UUID, Set<UUID>> data) {
+    public void load(Map<UUID, ? extends Collection<UUID>> data) {
         trusted.clear();
         trustedBy.clear();
         data.forEach((owner, players) -> players.forEach(player -> {

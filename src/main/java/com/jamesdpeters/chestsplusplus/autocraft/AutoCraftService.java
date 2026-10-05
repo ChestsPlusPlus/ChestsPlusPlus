@@ -13,7 +13,6 @@ import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.Node;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
-import com.jamesdpeters.chestsplusplus.persistence.Change;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -162,7 +161,7 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
         CraftingBackend.ResolvedRecipe resolved = world == null ? null : backend.resolve(matrix, world);
         applyRecipe(group, matrix, resolved);
         resetBackoff(group);
-        services.persistence().markDirty(group, Change.CONTENTS);
+        services.groupStore().markDirty(group);
         displays.requestUpdate(group);
         if (editor != null && resolved != null) editor.playSound(editor.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.6f, 1.4f);
         for (Player viewer : openEditors(group)) {
@@ -304,7 +303,7 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
 
     private void markChanged(Inventory inventory) {
         if (Holders.of(inventory) instanceof ChestLinkHolder holder) {
-            services.persistence().markDirty(holder.group(), Change.CONTENTS);
+            services.groupStore().markDirty(holder.group());
             displays.requestUpdate(holder.group());
         }
     }

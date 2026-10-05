@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.JdbiException;
-import org.jdbi.v3.sqlobject.SqlObjectPlugin;
 
 /**
  * The SQLite handle, PRAGMAs and schema migrations ({@code db/migration/V<n>.sql}, versioned with {@code PRAGMA user_version}). Uses the
@@ -21,7 +20,7 @@ public final class Database implements AutoCloseable {
 
     private static final List<String> PRAGMAS = List.of("journal_mode=WAL", "synchronous=NORMAL", "foreign_keys=ON", "busy_timeout=5000");
 
-    /** Not thread-safe: only the persistence I/O thread uses it, or the final flush once that thread has stopped. */
+    /** Not thread-safe: only the persistence I/O thread uses it, apart from loading at startup before anything is flushed. */
     @Getter private final Handle handle;
 
     /**
@@ -30,7 +29,7 @@ public final class Database implements AutoCloseable {
      * @throws IllegalStateException if the schema is newer than this plugin or a migration fails
      */
     public static Database open(String jdbcUrl) {
-        Jdbi jdbi = Jdbi.create(jdbcUrl).installPlugin(new SqlObjectPlugin());
+        Jdbi jdbi = Jdbi.create(jdbcUrl);
         UuidBlob.register(jdbi);
         ItemsBlob.register(jdbi);
         // One handle for the plugin's lifetime: PRAGMAs such as foreign_keys only apply to the connection they ran on.
@@ -44,10 +43,6 @@ public final class Database implements AutoCloseable {
             handle.close();
             throw e;
         }
-    }
-
-    public Repository repository() {
-        return handle.attach(Repository.class);
     }
 
     public int userVersion() {

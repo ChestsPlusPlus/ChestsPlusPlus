@@ -6,6 +6,8 @@ CREATE TABLE groups (
   is_public   INTEGER NOT NULL DEFAULT 0,
   sort_mode   TEXT,
   created_at  INTEGER NOT NULL,
+  items       BLOB,
+  recipe_key  TEXT,
   UNIQUE (type, owner, name)
 );
 
@@ -26,18 +28,6 @@ CREATE TABLE nodes (
 );
 
 CREATE INDEX nodes_group ON nodes(group_id);
-
-CREATE TABLE chest_inventories (
-  group_id   INTEGER PRIMARY KEY REFERENCES groups ON DELETE CASCADE,
-  items      BLOB    NOT NULL,
-  updated_at INTEGER NOT NULL
-);
-
-CREATE TABLE autocraft_recipes (
-  group_id   INTEGER PRIMARY KEY REFERENCES groups ON DELETE CASCADE,
-  recipe_key TEXT,
-  matrix     BLOB    NOT NULL
-);
 
 CREATE TABLE trust (
   owner   BLOB NOT NULL,

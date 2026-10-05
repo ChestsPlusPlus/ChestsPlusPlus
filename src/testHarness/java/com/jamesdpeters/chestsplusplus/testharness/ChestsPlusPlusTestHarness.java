@@ -113,7 +113,7 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
             items = totals.toString();
         }
         return reply(context, "cpptest group " + group.name() + " nodes=" + services.nodes().count(group.id()) + " public=" + group.isPublic()
-                + " dirty=" + services.persistence().isDirty(group) + " items=" + items);
+                + " dirty=" + services.groupStore().isDirty(group) + " items=" + items);
     }
 
     /** {@code cpptest displays} → counts of our display entities (by PDC marker) vs tracked displays. */
