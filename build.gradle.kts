@@ -169,8 +169,9 @@ val verifyReleaseJar = tasks.register<VerifyReleaseJar>("verifyReleaseJar") {
     forbiddenStrings = listOf("cpptest", "testharness", "spike")
     expectedMain = "$pluginPackage.ChestsPlusPlus"
     expectedBootstrapper = "$pluginPackage.ChestsPlusPlusBootstrap"
+    expectedLoader = "$pluginPackage.ChestsPlusPlusLoader"
     allowedDescriptorKeys =
-        listOf("api-version", "name", "version", "main", "bootstrapper", "description", "authors", "website", "permissions")
+        listOf("api-version", "name", "version", "main", "bootstrapper", "loader", "description", "authors", "website", "permissions")
     report = layout.buildDirectory.file("reports/verifyReleaseJar.txt")
 }
 

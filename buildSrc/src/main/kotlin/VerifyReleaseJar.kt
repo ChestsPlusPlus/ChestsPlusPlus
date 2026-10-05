@@ -27,6 +27,7 @@ abstract class VerifyReleaseJar : DefaultTask() {
 
     @get:Input abstract val expectedMain: Property<String>
     @get:Input abstract val expectedBootstrapper: Property<String>
+    @get:Input abstract val expectedLoader: Property<String>
 
     /** Top-level paper-plugin.yml keys the release descriptor may declare. */
     @get:Input abstract val allowedDescriptorKeys: ListProperty<String>
@@ -61,11 +62,9 @@ abstract class VerifyReleaseJar : DefaultTask() {
                 .map { it.substringBefore(':').trim() }
                 .toList()
             (keys - allowedDescriptorKeys.get().toSet()).forEach { problems += "paper-plugin.yml declares unexpected key '$it'" }
-            if (value(yaml, "main") != expectedMain.get()) {
-                problems += "paper-plugin.yml main is ${value(yaml, "main")}, expected ${expectedMain.get()}"
-            }
-            if (value(yaml, "bootstrapper") != expectedBootstrapper.get()) {
-                problems += "paper-plugin.yml bootstrapper is ${value(yaml, "bootstrapper")}, expected ${expectedBootstrapper.get()}"
+            mapOf("main" to expectedMain, "bootstrapper" to expectedBootstrapper, "loader" to expectedLoader).forEach { (key, expected) ->
+                val actual = value(yaml, key)
+                if (actual != expected.get()) problems += "paper-plugin.yml $key is $actual, expected ${expected.get()}"
             }
         }
         val out = report.get().asFile
