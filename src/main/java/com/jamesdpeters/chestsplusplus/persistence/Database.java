@@ -32,6 +32,7 @@ public final class Database implements AutoCloseable {
     public static Database open(String jdbcUrl) {
         Jdbi jdbi = Jdbi.create(jdbcUrl).installPlugin(new SqlObjectPlugin());
         UuidBlob.register(jdbi);
+        ItemsBlob.register(jdbi);
         // One handle for the plugin's lifetime: PRAGMAs such as foreign_keys only apply to the connection they ran on.
         Handle handle = jdbi.open();
         try {

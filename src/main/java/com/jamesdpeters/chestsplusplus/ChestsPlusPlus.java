@@ -32,6 +32,10 @@ import com.jamesdpeters.chestsplusplus.persistence.Database;
 import com.jamesdpeters.chestsplusplus.persistence.PersistenceService;
 import com.jamesdpeters.chestsplusplus.ui.UiService;
 import com.jamesdpeters.chestsplusplus.ui.menu.MenuListener;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.bukkit.block.Chest;
 import org.bukkit.event.EventHandler;
@@ -40,11 +44,6 @@ import org.bukkit.event.world.WorldSaveEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jdbi.v3.core.JdbiException;
 import org.jspecify.annotations.Nullable;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.List;
 
 /** Plugin entry point. {@code /cpp reload} only swaps settings and messages; it never re-runs enable. */
 @Slf4j(topic = ChestsPlusPlus.NAME)
@@ -77,7 +76,8 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
     }
 
     private void registerFeatures(Services services) {
-        DisplayService displays = services.add(DisplayService.class, new DisplayService(this, services.groups(), services.nodes(), services::settings));
+        DisplayService displays = services.add(DisplayService.class,
+                new DisplayService(this, services.groups(), services.nodes(), services::settings));
         displays.surfaces(block -> block.getState(false) instanceof Chest ? Surface.CHEST : Surface.FULL_BLOCK);
         LinkService links = services.add(LinkService.class, new LinkService(services, displays));
         services.add(LinkItem.class, new LinkItem(this));
