@@ -225,11 +225,34 @@ spotless {
 }
 
 // ---------------------------------------------------------------------------------------------------------------
-// Dev server: ./gradlew runServer (Paper 26.3, plugin only)
+// Dev server: ./gradlew runServer (Paper 26.3, plugin only). While it runs, `./gradlew classes` (or an IntelliJ build)
+// hot-swaps the changed classes: the JetBrains Runtime allows structural changes and devAgent watches the class output.
 // ---------------------------------------------------------------------------------------------------------------
+val devAgent: SourceSet = sourceSets.create("devAgent")
+
+val devAgentJar = tasks.register<Jar>("devAgentJar") {
+    group = "build"
+    description = "Builds the hot-swap agent for runServer (dev only, never shipped)."
+    archiveBaseName = "ChestsPlusPlus-DevAgent"
+    from(devAgent.output)
+    manifest.attributes("Premain-Class" to "$pluginPackage.devagent.HotSwapAgent", "Can-Redefine-Classes" to "true")
+}
+
+val jetBrainsRuntime = javaToolchains.launcherFor {
+    languageVersion = JavaLanguageVersion.of(javaVersion)
+    vendor = JvmVendorSpec.JETBRAINS
+}
+
 tasks.runServer {
     minecraftVersion(libs.versions.paperServer.get())
     build(libs.versions.paperServerBuild.get().toInt())
+    javaLauncher = jetBrainsRuntime
+    dependsOn(devAgentJar)
+    val agent = devAgentJar.flatMap { it.archiveFile }
+    val classes = sourceSets.main.get().java.destinationDirectory
+    jvmArgumentProviders.add {
+        listOf("-XX:+AllowEnhancedClassRedefinition", "-javaagent:${agent.get().asFile}=${classes.get().asFile}")
+    }
 }
 
 // ---------------------------------------------------------------------------------------------------------------

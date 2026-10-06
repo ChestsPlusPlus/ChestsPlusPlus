@@ -8,6 +8,11 @@ comments, no repeated logic.
 - `./gradlew spotlessApply` formats the code. Run it before committing: CI runs `./gradlew build`, which fails on unformatted code.
 - `./gradlew unitTest integrationTest` runs the JVM tests. See [docs/testing.md](docs/testing.md) for E2E and the manual checklist.
 - The compiler runs with `-Xlint:all -Werror`, so any warning fails the build.
+- `./gradlew runServer` runs on the JetBrains Runtime with a hot-swap agent. While it runs, `./gradlew classes` (or `-t classes`,
+  or an IntelliJ build) swaps changed classes into the live server, including added methods, fields and classes. New static
+  fields get their initialisers run, but new instance fields stay null on objects that already exist. Restart for
+  anything that only runs in `onEnable` (new listeners, commands, tickers) and for resource changes. On Windows, the server locks
+  the plugin jar, so don't run `build` or `shadowJar` while it's up.
 
 ## Formatting
 
