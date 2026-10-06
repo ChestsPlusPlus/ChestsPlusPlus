@@ -10,8 +10,10 @@ import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.Node;
 import com.jamesdpeters.chestsplusplus.testing.PluginTestBase;
 import io.papermc.paper.datacomponent.DataComponentTypes;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BooleanSupplier;
 import net.kyori.adventure.text.Component;
 import org.bukkit.ExplosionResult;
 import org.bukkit.Material;
@@ -31,9 +33,14 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.SignChangeEvent;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.HopperInventorySearchEvent;
+import org.bukkit.event.inventory.InventoryAction;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -215,6 +222,32 @@ class ChestLinkIntegrationTest extends PluginTestBase {
 
         assertThat(plugin.services().nodes().count(group.id())).isEqualTo(2);
         assertThat(alice.getOpenInventory().getTopInventory()).isSameAs(group.inventory());
+    }
+
+    @Test
+    void shiftClickIntoAnOpenChestLinkMarksItDirtyBeforeClose() throws InterruptedException {
+        Block chest = chestAt(0, 0);
+        sign(alice, chest, "[ChestLink]", "open");
+        ChestLinkGroup group = group(alice, "open");
+        plugin.services().persistence().flush();
+        tickUntil(() -> !plugin.services().groupStore().isDirty(group));
+        rightClick(alice, chest);
+        InventoryView view = alice.getOpenInventory();
+
+        server.getPluginManager().callEvent(new InventoryClickEvent(view, InventoryType.SlotType.CONTAINER, view.getTopInventory().getSize(),
+                ClickType.SHIFT_LEFT, InventoryAction.MOVE_TO_OTHER_INVENTORY));
+
+        assertThat(alice.getOpenInventory().getTopInventory()).isSameAs(group.inventory());
+        assertThat(plugin.services().groupStore().isDirty(group)).isTrue();
+    }
+
+    private void tickUntil(BooleanSupplier done) throws InterruptedException {
+        long deadline = System.nanoTime() + Duration.ofSeconds(10).toNanos();
+        while (!done.getAsBoolean() && System.nanoTime() < deadline) {
+            server.getScheduler().performOneTick();
+            Thread.sleep(5);
+        }
+        assertThat(done.getAsBoolean()).as("condition reached within 10s").isTrue();
     }
 
     @Test

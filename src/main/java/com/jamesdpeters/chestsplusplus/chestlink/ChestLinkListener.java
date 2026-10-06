@@ -10,13 +10,16 @@ import lombok.RequiredArgsConstructor;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.inventory.InventoryView;
 
-/** Opening ChestLinks by clicking a node, viewer open/close bookkeeping, and dirty-marking hopper transfers. */
+/** Opening ChestLinks by clicking a node, viewer open/close bookkeeping, and dirty-marking player edits and hopper transfers. */
 @RequiredArgsConstructor
 public final class ChestLinkListener implements Listener {
 
@@ -42,6 +45,24 @@ public final class ChestLinkListener implements Listener {
         if (Holders.of(event.getInventory()) instanceof ChestLinkHolder holder) {
             chestLinks.viewerClosed(holder.group(), event.getPlayer());
         }
+    }
+
+    /**
+     * Player edits mark an open ChestLink dirty, so a crash before close still saves them. Checks the top inventory, since a shift-click
+     * into the ChestLink clicks the player's own inventory.
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    void onClick(InventoryClickEvent event) {
+        edited(event.getView());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    void onDrag(InventoryDragEvent event) {
+        edited(event.getView());
+    }
+
+    private void edited(InventoryView view) {
+        if (Holders.of(view.getTopInventory()) instanceof ChestLinkHolder holder) chestLinks.changed(holder.group());
     }
 
     /** Hopper transfers in or out of a ChestLink mark it dirty and refresh its display. */
