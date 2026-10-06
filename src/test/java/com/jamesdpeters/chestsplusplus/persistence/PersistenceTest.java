@@ -23,12 +23,25 @@ class PersistenceTest {
 
     public record Entry(String name, String value) {}
 
-    /** An in-memory model of name → value pairs, saved to an {@code entries} table. */
+    /** An in-memory model of name → value pairs, saved to its own table ({@code entries} by default). */
     private static final class EntryStore implements Store<String, Entry> {
 
-        private final RecordTable<Entry> table = new RecordTable<>(Entry.class, "entries", "name");
+        private final String tableName;
+        private final RecordTable<Entry> table;
         final Map<String, String> values = new LinkedHashMap<>();
         volatile boolean failNextWrite;
+        volatile boolean failEveryWrite;
+        volatile @Nullable String failingName;
+
+        EntryStore() {
+            this("entries");
+        }
+
+        EntryStore(String tableName) {
+            this.tableName = tableName;
+            this.table = new RecordTable<>(Entry.class, tableName, "name");
+        }
+
         volatile CountDownLatch gate = new CountDownLatch(0);
 
         @Override
@@ -48,6 +61,9 @@ class PersistenceTest {
                 failNextWrite = false;
                 throw new IllegalStateException("simulated failure");
             }
+            if (failEveryWrite || snapshots.stream().anyMatch(entry -> entry.name().equals(failingName))) {
+                throw new IllegalStateException("simulated failure");
+            }
             table.upsert(handle, snapshots);
         }
 
@@ -58,7 +74,7 @@ class PersistenceTest {
 
         @Override
         public void load(Handle handle) {
-            handle.execute("CREATE TABLE IF NOT EXISTS entries (name TEXT PRIMARY KEY, value TEXT NOT NULL)");
+            handle.execute("CREATE TABLE IF NOT EXISTS " + tableName + " (name TEXT PRIMARY KEY, value TEXT NOT NULL)");
             table.all(handle).forEach(entry -> values.put(entry.name(), entry.value()));
         }
 
@@ -77,11 +93,16 @@ class PersistenceTest {
         return Database.open("jdbc:sqlite:" + dir.resolve("data.db"));
     }
 
-    private Persistence start(Database database, EntryStore store) {
+    private Persistence start(Database database, EntryStore... stores) {
         Persistence persistence = new Persistence(database, mainQueue::add);
-        persistence.register(store);
+        for (EntryStore store : stores) persistence.register(store);
         persistence.load();
         return persistence;
+    }
+
+    private void flushAndWait(Persistence persistence) throws InterruptedException {
+        var flushed = persistence.flush();
+        drainUntil(flushed::isDone);
     }
 
     private void drainUntil(BooleanSupplier done) throws InterruptedException {
@@ -95,8 +116,13 @@ class PersistenceTest {
     }
 
     private static Map<String, String> rows(Database database) {
+        return rows(database, "entries");
+    }
+
+    private static Map<String, String> rows(Database database, String table) {
         Map<String, String> rows = new LinkedHashMap<>();
-        database.handle().createQuery("SELECT name, value FROM entries ORDER BY rowid").map((rs, ctx) -> rows.put(rs.getString(1), rs.getString(2)))
+        database.handle().createQuery("SELECT name, value FROM " + table + " ORDER BY rowid")
+                .map((rs, ctx) -> rows.put(rs.getString(1), rs.getString(2)))
                 .list();
         return rows;
     }
@@ -174,6 +200,69 @@ class PersistenceTest {
             drainUntil(() -> persistence.pending() == 0);
 
             assertThat(rows(database)).containsExactly(Map.entry("a", "2"));
+        }
+    }
+
+    @Test
+    void keyThatCannotBeWrittenDoesNotBlockOtherKeysOrStores() throws InterruptedException {
+        EntryStore store = new EntryStore();
+        EntryStore other = new EntryStore("others");
+        try (Database database = database()) {
+            Persistence persistence = start(database, store, other);
+            store.failingName = "bad";
+            store.set(persistence, "a", "1");
+            store.set(persistence, "bad", "2");
+            other.set(persistence, "x", "3");
+            flushAndWait(persistence);
+            assertThat(persistence.pending()).isEqualTo(3);
+
+            flushAndWait(persistence);
+
+            assertThat(rows(database)).containsExactly(Map.entry("a", "1"));
+            assertThat(rows(database, "others")).containsExactly(Map.entry("x", "3"));
+            assertThat(persistence.isDirty(store, "bad")).isTrue();
+            assertThat(persistence.pending()).isEqualTo(1);
+        }
+    }
+
+    @Test
+    void keyIsGivenUpOnAfterTheRetryLimitUntilItChangesAgain() throws InterruptedException {
+        EntryStore store = new EntryStore();
+        try (Database database = database()) {
+            Persistence persistence = start(database, store);
+            store.failingName = "bad";
+            store.set(persistence, "bad", "1");
+            for (int attempt = 0; attempt <= Persistence.MAX_ATTEMPTS; attempt++) {
+                assertThat(persistence.isDirty(store, "bad")).isTrue();
+                store.set(persistence, "good" + attempt, "1");
+                flushAndWait(persistence);
+            }
+            assertThat(persistence.pending()).isZero();
+            assertThat(rows(database)).containsOnlyKeys("good0", "good1", "good2", "good3");
+
+            store.failingName = null;
+            store.set(persistence, "bad", "2");
+            flushAndWait(persistence);
+
+            assertThat(rows(database)).containsEntry("bad", "2");
+        }
+    }
+
+    @Test
+    void databaseWideFailureIsRetriedRatherThanGivenUpOn() throws InterruptedException {
+        EntryStore store = new EntryStore();
+        try (Database database = database()) {
+            Persistence persistence = start(database, store);
+            store.failEveryWrite = true;
+            store.set(persistence, "a", "1");
+            store.set(persistence, "b", "2");
+            for (int attempt = 0; attempt <= Persistence.MAX_ATTEMPTS; attempt++) flushAndWait(persistence);
+            assertThat(persistence.pending()).isEqualTo(2);
+
+            store.failEveryWrite = false;
+            flushAndWait(persistence);
+
+            assertThat(rows(database)).containsExactly(Map.entry("a", "1"), Map.entry("b", "2"));
         }
     }
 
