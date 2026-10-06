@@ -200,7 +200,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
                 new SignLinkListener(this, links),
                 new NameTagLinkListener(services, links),
                 new ChestLinkListener(services, links, services.get(ChestLinkService.class)),
-                new HopperBridge(services),
+                new HopperBridge(this, services, services.get(ChestLinkService.class)),
                 new GolemBridge(services, services.get(ChestLinkService.class)),
                 services.get(MenuListener.class),
                 new AutoCraftListener(services, links, services.get(AutoCraftService.class)),
