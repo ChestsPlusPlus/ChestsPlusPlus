@@ -19,7 +19,8 @@ import org.jspecify.annotations.Nullable;
 /**
  * Sign → link conversion: a wall sign reading {@code [ChestLink]} / {@code [AutoCraft]} on line 1 and a
  * group ({@code name} or {@code owner:name}) on line 2 links the block it hangs on, then the sign is removed (it
- * becomes the node's display). Since this is a real placement, protection plugins already approved it.
+ * becomes the node's display). Protection plugins approved placing the sign, not using the block behind it (lock
+ * plugins usually allow signs on locked chests), so the target still gets the protection check.
  */
 @RequiredArgsConstructor
 public final class SignLinkListener implements Listener {
@@ -47,7 +48,7 @@ public final class SignLinkListener implements Listener {
         Block target = sign.getRelative(facing.getOppositeFace());
         String input = plain(event.line(1)).trim();
 
-        if (links.link(event.getPlayer(), type, input, target, facing, true) == null) return;
+        if (links.link(event.getPlayer(), type, input, target, facing, false) == null) return;
         event.setCancelled(true);
         // Remove the sign once the edit has been processed; the display replaces it.
         plugin.getServer().getScheduler().runTask(plugin, () -> {

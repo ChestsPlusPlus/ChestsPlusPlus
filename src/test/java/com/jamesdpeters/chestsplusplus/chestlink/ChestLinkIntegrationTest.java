@@ -23,6 +23,9 @@ import org.bukkit.block.data.Directional;
 import org.bukkit.block.data.type.WallSign;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Item;
+import org.bukkit.event.Event;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockExplodeEvent;
@@ -34,6 +37,7 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
 class ChestLinkIntegrationTest extends PluginTestBase {
@@ -98,6 +102,32 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         assertThat(((Container) chest.getState(false)).getInventory().isEmpty()).isTrue();
         assertThat(plugin.services().groupStore().isDirty(group)).isTrue();
         assertThat(nextPlain(alice)).contains("Created ChestLink ores");
+    }
+
+    @Test
+    void signOnProtectedChestIsRefused() {
+        Block chest = chestAt(0, 0);
+        ((Container) chest.getState(false)).getInventory().addItem(ItemStack.of(Material.DIAMOND, 5));
+        denyInteract(chest);
+
+        SignChangeEvent event = sign(alice, chest, "[ChestLink]", "loot");
+        server.getScheduler().performTicks(1);
+
+        assertThat(event.isCancelled()).isFalse();
+        assertThat(group(alice, "loot")).isNull();
+        assertThat(plugin.services().nodes().get(BlockPos.of(chest))).isNull();
+        assertThat(((Container) chest.getState(false)).getInventory().contains(Material.DIAMOND, 5)).isTrue();
+        assertThat(nextPlain(alice)).contains("You can't use that block here");
+    }
+
+    /** Mimics a container-lock plugin: sign placement is allowed, but using {@code locked} is denied. */
+    private void denyInteract(Block locked) {
+        server.getPluginManager().registerEvents(new Listener() {
+            @EventHandler
+            void onInteract(PlayerInteractEvent event) {
+                if (locked.equals(event.getClickedBlock())) event.setUseInteractedBlock(Event.Result.DENY);
+            }
+        }, MockBukkit.createMockPlugin());
     }
 
     private PlayerInteractEvent nameTag(PlayerMock player, Block block, ItemStack tag) {

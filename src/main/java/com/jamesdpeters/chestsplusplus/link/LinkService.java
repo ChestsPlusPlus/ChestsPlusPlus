@@ -105,8 +105,8 @@ public final class LinkService {
      * Links {@code block} to the group named by {@code input}, creating it when it is the player's own and missing.
      * All checks happen here; failures are messaged to the player. Returns the group on success.
      *
-     * @param protectionChecked true when the block was just placed or edited by the player (e.g. a sign), so
-     *     protection plugins already approved it; otherwise a synthetic interact event is fired first
+     * @param protectionChecked true only when this comes from a real right-click on {@code block} that no plugin denied, so
+     *     protection plugins already approved using it; otherwise a synthetic interact event is fired first
      */
     public @Nullable StorageGroup link(Player player, GroupType type, String input, Block block, BlockFace facing, boolean protectionChecked) {
         Resolved.Error refusal = linkRefusal(player, type, block, facing, protectionChecked);
