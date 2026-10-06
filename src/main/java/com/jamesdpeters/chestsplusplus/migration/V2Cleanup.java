@@ -12,10 +12,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 
-/**
- * Every block an import has linked. A repeated import skips them, so a block a player has since unlinked isn't linked again. Those whose
- * world cleanup (facing, v2 sign, armour stands, double chest) waits for their chunk to load are pending. Main thread only.
- */
+/** Imported blocks, flagged while their world cleanup waits for a chunk. Main thread only. */
 public final class V2Cleanup {
 
     /** A chunk with blocks waiting. */
@@ -54,6 +51,11 @@ public final class V2Cleanup {
         if (set.isEmpty()) pending.remove(chunk);
         size--;
         onChange.accept(pos);
+    }
+
+    public void forget(BlockPos pos) {
+        remove(pos);
+        if (imported.remove(pos)) onChange.accept(pos);
     }
 
     public boolean wasImported(BlockPos pos) {

@@ -1,7 +1,8 @@
 # v2 → v3 migration plan
 
-v3 imports a v2 install's data automatically the first time it starts, and admins can run the same import again with
-`/cpp migrate v2`. The rewrite plan (§1) said v2 compatibility was not a goal. This changes that for **data and config only**.
+v3 imports a v2 install's data once, automatically on its first start. `/cpp migrate v2` previews data before import;
+`confirm` applies it once. After completion, both commands report completion without reading YAML.
+The rewrite plan (§1) said v2 compatibility was not a goal. This changes that for **data and config only**.
 Commands, permissions and language files still start fresh, and the upgrade guide documents the differences.
 
 **Status:** implemented in the `migration` package, with the test bed in §8.1. Where the code differs from the first draft of this
@@ -57,7 +58,9 @@ migration/
   V2ConfigMigrator        rewrites a v2 config.yml into v3 layout before Settings load
   V2Cleanup(+Store)       every imported block, flagged while its world cleanup is pending, persisted in v2_blocks
   V2WorldCleanup          per-chunk cleanup: facing fix, sign and armour-stand removal, double-chest split
-  MigrationState(+Store)  the filter migration state, persisted in migration_state
+  V2PendingLocations(+Store) original group IDs and unresolved world locations, persisted in v2_pending_locations
+  V2LocationRecovery      attach deferred locations on world/chunk load against the current group state
+  MigrationState(+Store)  one-time import completion and filter state, persisted in migration_state
   V2FilterMigration       per-chunk item frame → filter conversion
   V2FilterConversion      the convert-all job; RegionFiles lists the chunks it loads
   WorldUids               world name → UUID (loaded world, else <container>/<name>/uid.dat)
@@ -75,25 +78,36 @@ like any other change.
 
 1. Parse the file (§3).
 2. Build the plan against the live `GroupRegistry`/`NodeIndex`/`TrustService` (§4).
-3. For a dry run, return the report. Otherwise `adopt` each group, `trust` each party member, then `persistence.flush()`.
-4. Once the flush has been written, rename `storage.yml` → `storage.yml.v2-migrated` (startup only, see §6).
+3. For a dry run, return the report without mutation. Otherwise adopt groups, trust party members, record unresolved locations
+   and mark the import complete, then flush them together. A synchronous partial-adoption failure rolls back the model before retry.
+4. After the database transaction commits, rename the source to `<source>.v2-migrated` and report completion. Rename/report-file
+   failures do not invalidate the import. A failed database batch is requeued; the model stays gated and retries save current state.
 
 For step 4, `Persistence.flush()` returns a `CompletableFuture<Void>` that completes on the main thread after the batch commits.
 Nothing else changes.
 
-### Idempotency: `groups.v2_source`
+### One-time import and development database support
 
-Add a nullable column, `groups.v2_source TEXT`, set to `chestlink:<ownerUUID>:<v2 name>` or `autocraft:…`. Until v3 ships we
-edit `V1.sql` in place. It's written in the same transaction as the group, so:
+`migration_state.v2_import = COMPLETE` is written in the same transaction as groups, members, nodes, trust, cleanup and pending
+locations. It survives deleting every imported group and revoking party trust. Every import entry point checks the gate before
+reading data, including preview and explicit filenames. `.v2-migrated` files are backup/reference files and cannot be selected for
+import, including via an explicit filename. Copying a backup back to `storage.yml` cannot bypass completion.
 
-- If the server crashes before the flush, nothing is saved and the file isn't renamed, so the next start imports again from scratch.
-- If it crashes after the flush but before the rename, the next start finds every `v2_source` and skips them all.
-- When the command runs again, already-imported groups are recognised and **their items are never imported a second time**, so
-  items can't be duplicated. Locations that were skipped last time (unloaded world, position taken) are still added to the
-  existing group.
+A crash before commit leaves no imported data or completion, so startup can retry. A crash after commit but before rename is safe:
+the database gate prevents replay. The renamed YAML is retained; renaming is not the safety mechanism. Group `v2_source` remains
+provenance only, rather than a record that grants permission to import again.
 
-`StorageGroup` gets a `@Getter private @Nullable String v2Source` that `GroupRow` round-trips. The registry keeps a
-`byV2Source` map only while an import is running. There's no need for a permanent index.
+Schema v2 is deliberately an additive migration so existing development databases are preserved without clearing user data. It
+creates `v2_pending_locations` and records `LEGACY` completion where old imported groups, `v2_blocks`, or filter migration state
+provide evidence of a previous import. Startup also treats an existing `data/storage.yml.v2-migrated` backup as legacy evidence.
+`status` distinguishes `LEGACY`, `COMPLETE` and `NOT_IMPORTED`.
+
+Old code did not save unresolved locations or party-import history. Those missing facts cannot be reconstructed reliably from
+current groups/trust. Legacy imports are blocked from replay; unresolved locations lost by that code need administrator recovery
+against the current groups, using the YAML only as reference. A party-only old import with a failed rename, no blocks/groups and no
+filter state has no detectable history: administrators of such development databases must record `v2_import = LEGACY` in
+`migration_state` offline before this version starts. Do not delete or reset a database to recover missing locations. No automatic
+reimport or permanent party/group history is provided.
 
 ---
 
@@ -129,8 +143,13 @@ A broken entry is logged and skipped. It never stops the rest of the import.
 ### 4.1 Worlds
 
 `WorldUids.resolve(name)` checks `Bukkit.getWorld(name)` first, then reads `<worldContainer>/<name>/uid.dat` (two longs), which
-works for Multiverse worlds that load after us. A location whose world can't be found is reported as **unresolved** and left
-out. Running `/cpp migrate v2` again once the world exists picks it up (see §2, idempotency).
+works for Multiverse worlds that load after us. A location whose world can't be found is reported as **unresolved** and saved in
+`v2_pending_locations(group_id, world_name, x, y, z)`, keyed by all five columns, with `group_id REFERENCES groups ON DELETE CASCADE`.
+It contains no items or party data. Startup/already-loaded worlds, WorldLoadEvent and ChunkLoadEvent recover pending locations
+without rereading YAML or starting per-location tasks. Recovery waits for the relevant chunk, checks the original group still exists
+and the block is valid for its type and unclaimed, then attaches it to the group's current state and runs normal cleanup. Group rename
+preserves identity; deletion discards pending rows in memory and SQLite, so a replacement with the same name cannot inherit them.
+Stale/occupied locations are logged and discarded permanently. Node attachment and pending-row removal share a transaction.
 
 ### 4.2 Nodes
 
@@ -174,8 +193,7 @@ Some of the cleanup needs the world itself: facing, signs, armour stands and dou
 take tens of seconds on a large server, so this runs on chunk load instead.
 
 - **State:** a small `v2_blocks(world BLOB, x, y, z, pending, PRIMARY KEY …)` table of every block an import linked, owned by a
-  `V2CleanupStore` (a `RecordTable`, per AGENTS.md). `pending` marks the ones still waiting for cleanup. A repeated import skips
-  every recorded block, so one a player has unlinked since isn't linked again. It's loaded into `V2Cleanup`, with the pending
+  `V2CleanupStore` (a `RecordTable`, per AGENTS.md). `pending` marks the ones still waiting for cleanup. Recovery skips every recorded block, so one a player has unlinked since isn't linked again. It's loaded into `V2Cleanup`, with the pending
   blocks indexed by chunk, and is empty on servers that never imported. Once nothing is pending, the listeners return after one
   `isEmpty()` check.
 - **`ChunkLoadEvent`**, which must run before `NodeListener`/`DisplayService` spawn displays (`EventPriority.LOWEST`). For each
@@ -201,7 +219,8 @@ chunks. That costs something, so nothing is scanned until an admin asks for it.
 
 - A successful data import sets `PENDING`, if it was `NONE` and `features.hopper-filters` is on.
 - `ON_LOAD`: chunks are converted as they load.
-- `DONE`: a full conversion has finished, or an admin dismissed it. The listener stops looking.
+- `DONE`: a successful global conversion of all loaded worlds has finished with no known unresolved worlds, or an admin dismissed it. The listener stops looking.
+  Op join warnings apply only to `PENDING`, not `ON_LOAD`.
 
 **Warning while `PENDING`.**
 
@@ -230,7 +249,12 @@ chunks. That costs something, so nothing is scanned until an admin asks for it.
     Then the ticket is released and the chunk unloads normally.
   - **Progress:** one run at a time. Progress goes to the sender and the console every 5%. `/cpp migrate v2 filters cancel`
     stops the run, and running the command again resumes it, because the chunk markers skip the work already done.
-  - **Finishing:** when every world finishes, the state becomes `DONE`. Loading those chunks also clears the node cleanup
+  - **Finishing:** only a successful global run sets `DONE`. Single-world runs, failed scans/loads and chunks whose entities
+    time out after 200 ticks retain `ON_LOAD`. Timed-out chunks are not read or marked; tickets are released, unfinished work
+    is reported, and an entity-load event or later scan can retry. No synchronous entity load is forced. The global scan covers
+    worlds loaded when it starts (including their already-loaded chunks); known missing worlds or worlds loaded during the run
+    prevent completion. Worlds unknown to the import cannot be enumerated; load all desired worlds before a global scan,
+    or keep `on-load` enabled for later worlds. Loading those chunks also clears the node cleanup
     above, as a side effect.
 - `/cpp migrate v2 filters dismiss` sets `DONE` without converting anything, for servers that never used filters.
 
@@ -278,11 +302,11 @@ importV2Data(services);      // no-op unless data/storage.yml exists
   This has to happen before `loadSettings()`. Otherwise `saveDefaultConfig()` sees the v2 file, keeps it, and v3 runs on
   defaults with stale keys left in the file.
 
-- **`importV2Data()`**: runs only when `data/storage.yml` exists. It runs synchronously on the main
+- **`importV2Data()`**: runs only when eligible YAML exists and the completion gate is absent. It runs synchronously on the main
   thread before the listeners register, so nothing can link or open a group halfway through. It logs the report summary,
-  writes the full report to `data/v2-migration-<timestamp>.log`, and renames the file once the flush has finished. If the
+  writes the full report to `v2-migration-<timestamp>.log`, and renames the file once the flush has finished. If the
   import throws, it logs the error and **leaves the file where it is**. The plugin still starts with whatever v3 data it already
-  has, and an admin can fix the problem and run the command.
+  has, and an admin can retry a rolled-back adoption after fixing the problem. Database-write failures retry current snapshots through persistence.
 
 Before importing, copy the data folder (except v3's `data.db` and earlier backups) to `v2-backup-<timestamp>/` inside it, so a
 server can always go back to v2.
@@ -296,16 +320,16 @@ Added to the root tree in `Commands`, gated by a new `chestsplusplus.admin.migra
 | Command | Does |
 |---|---|
 | `/cpp migrate v2` | **Dry run.** Parses the file and replies with the report (groups, nodes, items, trust, renames, skips, unresolved worlds). Changes nothing. |
-| `/cpp migrate v2 confirm` | Runs the import into the live model (§2), then shows the report. Safe to run more than once. |
-| `/cpp migrate v2 status` | How many chunks are still waiting for cleanup, and whether frame scanning is on. |
+| `/cpp migrate v2 confirm` | Runs the import into the live model (§2), then shows the report after commit. After completion it reports the gate and does not read YAML. |
+| `/cpp migrate v2 status` | Import completion, unresolved locations, blocks waiting for cleanup and filter state. |
 | `/cpp migrate v2 cleanup [radius]` | Loads waiting chunks near the sender (players only). |
 | `/cpp migrate v2 filters on-load` | Converts v2 hopper item frames in each chunk as it loads (§5). |
 | `/cpp migrate v2 filters convert-all [world]` | Loads every chunk that has entities and converts it, with progress reports. Can be resumed. |
 | `/cpp migrate v2 filters cancel` | Stops a running `convert-all`. |
 | `/cpp migrate v2 filters dismiss` | Marks filter migration done without converting, which stops the warnings. |
 
-- The file is looked up as `data/storage.yml`, then `data/storage.yml.v2-migrated`. An optional
-  `file <name>` argument, relative to the data folder, covers backups.
+- The only default candidate is `data/storage.yml`. An optional `file <name>` argument stays inside the data folder and
+  also honors the completion gate. `.v2-migrated` files are never eligible, including explicit filenames.
 - At runtime, groups are adopted straight into the live model on the main thread, which is fine because the import is pure
   computation plus a handful of `adopt` calls. If a v2 file ever turns out to be very large, parse it on an async task and do
   only the plan and apply on the main thread.
@@ -417,7 +441,7 @@ The tester is `T`; the second player is `Alex` and never needs to join.
 
 `docs/testing.md` gets a **v2 upgrade** section that copies this table as a checklist. It also covers:
 
-- running `/cpp migrate v2` (dry run), then `confirm` again after the upgrade, and checking nothing is duplicated;
+- running preview and `confirm` after completion, restoring YAML, deleting groups and revoking trust, and checking replay is blocked;
 - running `resetV2Upgrade`, then killing the server mid-upgrade and restarting it;
 - checking that `v2-backup-*` is enough to roll back to v2 with `runV2Server`.
 

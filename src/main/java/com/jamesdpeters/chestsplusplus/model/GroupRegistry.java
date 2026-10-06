@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.LongConsumer;
 import org.jspecify.annotations.Nullable;
 
 /** All groups, indexed by id, by type + owner + lower-cased name, by owner and by member. Main thread only. */
@@ -22,6 +23,11 @@ public final class GroupRegistry {
     private final Map<UUID, Set<StorageGroup>> byOwner = new HashMap<>();
     private final Map<UUID, Set<StorageGroup>> byMember = new HashMap<>();
     private long nextId = 1;
+    private LongConsumer onRemove = id -> {};
+
+    public void onRemove(LongConsumer listener) {
+        onRemove = listener;
+    }
 
     public long nextId() {
         return nextId++;
@@ -43,6 +49,7 @@ public final class GroupRegistry {
         byName.remove(key(group.type(), group.owner(), group.name()));
         removeFrom(byOwner, group.owner(), group);
         group.members().forEach(member -> removeFrom(byMember, member, group));
+        onRemove.accept(group.id());
     }
 
     public void rename(StorageGroup group, String newName) {

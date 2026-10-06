@@ -17,6 +17,7 @@ public final class MigrationState {
     }
 
     static final String FILTERS = "filters";
+    static final String IMPORT = "v2_import";
 
     private final Map<String, String> values = new HashMap<>();
     private Consumer<String> onChange = key -> {};
@@ -36,6 +37,22 @@ public final class MigrationState {
 
     public void setFilters(Filters filters) {
         set(FILTERS, filters.name());
+    }
+
+    public boolean importCompleted() {
+        return values.containsKey(IMPORT);
+    }
+
+    public String importStatus() {
+        return values.getOrDefault(IMPORT, "NOT_IMPORTED");
+    }
+
+    public void completeImport() {
+        set(IMPORT, "COMPLETE");
+    }
+
+    public void legacyImport() {
+        set(IMPORT, "LEGACY");
     }
 
     @Nullable

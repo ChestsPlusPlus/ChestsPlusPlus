@@ -3,6 +3,7 @@ package com.jamesdpeters.chestsplusplus.migration;
 import static com.jamesdpeters.chestsplusplus.migration.V2Fixtures.ALICE;
 import static com.jamesdpeters.chestsplusplus.migration.V2Fixtures.BOB;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.jamesdpeters.chestsplusplus.access.TrustService;
 import com.jamesdpeters.chestsplusplus.chestlink.ChestLinkHolder;
@@ -19,6 +20,7 @@ import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import com.jamesdpeters.chestsplusplus.persistence.Database;
 import com.jamesdpeters.chestsplusplus.persistence.GroupStore;
 import com.jamesdpeters.chestsplusplus.persistence.Persistence;
+import com.jamesdpeters.chestsplusplus.persistence.TrustStore;
 import com.jamesdpeters.chestsplusplus.testing.PluginTestBase;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -27,6 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
@@ -50,23 +53,44 @@ class V2ImporterTest extends PluginTestBase {
     private final GroupRegistry groups = new GroupRegistry();
     private final NodeIndex nodes = new NodeIndex();
     private final TrustService trust = new TrustService();
+    private final MigrationState state = new MigrationState();
+    private final V2PendingLocations pending = new V2PendingLocations();
     private final V2Cleanup cleanup = new V2Cleanup();
     private final List<Node> spawned = new ArrayList<>();
+    private Database database;
     private Persistence persistence;
     private GroupStore groupStore;
     private V2Importer importer;
+    private boolean failAttach;
     private Settings settings = Settings.DEFAULTS;
 
     @BeforeEach
     void setUp() {
         world = server.addSimpleWorld("world");
-        persistence = new Persistence(Database.open("jdbc:sqlite:" + dir.resolve("data.db")), Runnable::run);
+        database = Database.open("jdbc:sqlite:" + dir.resolve("data.db"));
+        persistence = new Persistence(database, Runnable::run);
         groupStore = new GroupStore(persistence, groups, nodes, loaded -> {
+            if (failAttach && loaded.group().name().equals("iron")) throw new IllegalStateException("simulated attach failure");
             if (loaded.group() instanceof ChestLinkGroup chest) ChestLinkHolder.attach(chest, Component.text("t"), loaded.items());
         });
         persistence.register(groupStore);
+        V2CleanupStore cleanupStore = new V2CleanupStore(persistence, cleanup);
+        MigrationStateStore stateStore = new MigrationStateStore(persistence, state);
+        V2PendingLocationStore pendingStore = new V2PendingLocationStore(persistence, groups, pending);
+        TrustStore trustStore = new TrustStore(persistence,
+                trust);
+        persistence.register(trustStore);
+        persistence.register(cleanupStore);
+        persistence.register(stateStore);
+        persistence.register(pendingStore);
+        trust.onChange(trustStore::markDirty);
+        cleanup.onChange(cleanupStore::markDirty);
+        state.onChange(stateStore::markDirty);
+        pending.onChange(pendingStore::markDirty);
+        groups.onRemove(pending::removeGroup);
         persistence.load();
-        importer = new V2Importer(groups, nodes, trust, groupStore, cleanup, new WorldUids(server, () -> dir.toFile()), () -> settings, spawned::add);
+        importer = new V2Importer(groups, nodes, trust, groupStore, cleanup, new WorldUids(server, () -> dir.toFile()), state, pending,
+                () -> settings, spawned::add);
         server.addRecipe(new ShapedRecipe(NamespacedKey.minecraft("torch"), ItemStack.of(Material.TORCH, 4)).shape("C", "S")
                 .setIngredient('C', Material.COAL)
                 .setIngredient('S', Material.STICK));
@@ -155,10 +179,13 @@ class V2ImporterTest extends PluginTestBase {
         assertThat(nodes.size()).isZero();
         assertThat(trust.trustedBy(ALICE)).isEmpty();
         assertThat(cleanup.isEmpty()).isTrue();
+        assertThat(pending.isEmpty()).isTrue();
+        assertThat(state.importCompleted()).isFalse();
+        assertThat(persistence.pending()).isZero();
     }
 
     @Test
-    void importingAgainAddsOnlySkippedBlocksAndNeverDuplicatesItems() throws IOException {
+    void importingAgainDoesNotReplayAnything() throws IOException {
         importFixture(true);
         ChestLinkGroup ore = chest(ALICE, "Iron Ore");
         int groupCount = groups.size();
@@ -170,10 +197,10 @@ class V2ImporterTest extends PluginTestBase {
         assertThat(groups.size()).isEqualTo(groupCount);
         assertThat(again.groups()).isZero();
         assertThat(again.trusted()).isZero();
-        assertThat(nodes.nodesOf(ore.id())).extracting(Node::pos).containsExactlyInAnyOrder(at(0, 64, 0), new BlockPos(lostWorld, 5, 64, 5));
+        assertThat(nodes.nodesOf(ore.id())).extracting(Node::pos).containsExactly(at(0, 64, 0));
         assertThat(ore.inventory().getItem(0)).isEqualTo(ItemStack.of(Material.DIAMOND, 5));
         assertThat(ore.inventory().getItem(1)).isNull();
-        assertThat(again.lines().getFirst()).contains("6 group(s) had been imported before; added 1 block(s)");
+        assertThat(again.lines().getFirst()).contains("one-time v2 import is complete");
     }
 
     @Test
@@ -186,7 +213,7 @@ class V2ImporterTest extends PluginTestBase {
 
         assertThat(nodes.nodesOf(iron.id())).isEmpty();
         assertThat(again.nodes()).isZero();
-        assertThat(again.lines().getFirst()).contains("nothing new to add");
+        assertThat(again.lines().getFirst()).contains("one-time v2 import is complete");
     }
 
     @Test
@@ -212,6 +239,58 @@ class V2ImporterTest extends PluginTestBase {
         ImportReport report = importFixture(false);
 
         assertThat(report.lines()).anyMatch(line -> line.contains("now has 3 ChestLinks, more than the default limit of 2"));
+    }
+
+    @Test
+    void failedPartialAdoptionRollsBackAndCanRetry() {
+        failAttach = true;
+        assertThatThrownBy(() -> importFixture(true)).hasMessageContaining("simulated attach failure");
+        assertThat(groups.size()).isZero();
+        assertThat(nodes.size()).isZero();
+        assertThat(pending.size()).isZero();
+        assertThat(cleanup.size()).isZero();
+        assertThat(state.importCompleted()).isFalse();
+        failAttach = false;
+        assertThat(importFixture(true).groups()).isEqualTo(6);
+        assertThat(chest(ALICE, "Iron Ore").inventory().getItem(0)).isEqualTo(ItemStack.of(Material.DIAMOND, 5));
+    }
+
+    @Test
+    void completionAndUnresolvedLocationsSurviveDatabaseReload() {
+        importFixture(true);
+        trust.untrust(ALICE, BOB);
+        persistence.flush().join();
+        pending.load(List.of());
+        state.load(Map.of());
+        List.copyOf(groups.all()).forEach(groups::remove);
+        List.copyOf(nodes.all()).forEach(node -> nodes.remove(node.pos()));
+        persistence.load();
+        assertThat(state.importCompleted()).isTrue();
+        assertThat(pending.all()).hasSize(1).allMatch(row -> row.groupId() == chest(ALICE, "Iron Ore").id());
+        assertThat(importFixture(true).groups()).isZero();
+        assertThat(trust.isTrusted(ALICE, BOB)).isFalse();
+    }
+
+    @Test
+    void failedDatabaseTransactionKeepsCompletionAndPendingWithTheImportForRetry() {
+        database.handle()
+                .execute("CREATE TRIGGER fail_import BEFORE INSERT ON migration_state BEGIN SELECT RAISE(FAIL, 'simulated disk failure'); END");
+        importFixture(true);
+        assertThatThrownBy(() -> persistence.flush().join()).hasCauseInstanceOf(RuntimeException.class);
+        assertThat(database.handle().createQuery("SELECT count(*) FROM groups").mapTo(int.class).one()).isZero();
+        assertThat(database.handle().createQuery("SELECT count(*) FROM migration_state").mapTo(int.class).one()).isZero();
+        assertThat(database.handle().createQuery("SELECT count(*) FROM v2_pending_locations").mapTo(int.class).one()).isZero();
+        assertThat(importFixture(true).groups()).isZero();
+        trust.untrust(ALICE, BOB);
+        ChestLinkGroup ore = chest(ALICE, "Iron Ore");
+        ore.inventory().setItem(0, ItemStack.of(Material.COAL, 2));
+        database.handle().execute("DROP TRIGGER fail_import");
+        persistence.flush().join();
+        assertThat(database.handle().createQuery("SELECT value FROM migration_state WHERE key = 'v2_import'").mapTo(String.class).one())
+                .isEqualTo("COMPLETE");
+        assertThat(database.handle().createQuery("SELECT count(*) FROM groups").mapTo(int.class).one()).isEqualTo(6);
+        assertThat(database.handle().createQuery("SELECT count(*) FROM v2_pending_locations").mapTo(int.class).one()).isEqualTo(1);
+        assertThat(database.handle().createQuery("SELECT count(*) FROM trust").mapTo(int.class).one()).isZero();
     }
 
     private static void writeUid(Path file, UUID uuid) throws IOException {

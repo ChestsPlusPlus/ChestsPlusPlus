@@ -130,7 +130,24 @@ and says what should happen. "Alex" is a second player who never joins.
       at x=2004 converts, `Distant` at x=2000 gets its display on the right face, and the state becomes `done`.
 - [ ] `/cpp migrate v2 filters cancel` mid-run, then `convert-all` again, carries on where it stopped.
 - [ ] `/cpp migrate v2 cleanup 32` near x=2000 finishes `Distant` without visiting it.
-- [ ] `resetV2Upgrade`, `kill -9` the server straight after the import message, then restart: the import runs again (or is
-      skipped as already imported) and nothing is duplicated.
+- [ ] `resetV2Upgrade`, `kill -9` the server straight after the import message, then restart: a transaction committed before the crash
+      is gated by durable completion; an uncommitted transaction retries from scratch, with no duplication.
 - [ ] Rolling back: copy `v2-backup-<time>/*` over `plugins/ChestsPlusPlus`, rename `config-v2.yml` to `config.yml`, and
       `runV2Server` shows the v2 world working as before.
+
+### Migration regressions
+
+- [ ] Delete an imported group through `/cl remove`, revoke imported party trust, then restore `storage.yml` from its backup.
+      Restart and try preview/confirm and an explicit `.v2-migrated` filename: the group/items/trust never return.
+- [ ] Leave a world unavailable at import, rename/edit the imported group, restart, then load the world and its relevant chunk:
+      its original group receives the location and keeps current items/members. Deleted/recreated names inherit nothing.
+- [ ] Break or claim a deferred block before its chunk loads: the pending location is reported and discarded permanently.
+- [ ] Obstruct the YAML rename after import: completion remains durable and the original file cannot replay.
+- [ ] `filters convert-all <world>` keeps `on-load`. A failed scan/load or entity timeout releases tickets, leaves unscanned chunks
+      available for retry and retains `on-load`; a successful global scan of all loaded worlds can become `done`.
+- [ ] Click the rendered `/cl list` and `/ac list` entries for own and other-owner names containing spaces.
+
+SQLite transaction failure/retry, durable completion and pending rows, synchronous adoption rollback, delayed entities,
+timeout/event retry without duplicate drops, conversion scope and cancellation are also covered by JVM regression tests.
+Existing custom `chestlink.list-entry` and `autocraft.list-entry` overrides should use `<open>...</open>` for the command link,
+matching the bundled defaults. MiniMessage does not substitute `<ref>` inside a quoted click-event argument.

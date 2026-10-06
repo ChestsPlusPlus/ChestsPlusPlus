@@ -5,7 +5,7 @@
 Paper plugin that enhances chests and hoppers, with ChestLinks, Auto-Crafting and Hopper filters.
 
 > **This is the `v3` branch: a ground-up rewrite for Paper 26.x and Java 25.** v3 is a new major version and is
-> **not** backwards compatible with v2 data, commands, permissions or configuration. The current stable plugin (v2)
+> able to import v2 data and configuration once. Commands and permissions change in v3. The current stable plugin (v2)
 > lives on the [`2.x`](../../tree/2.x) branch. The design is in [docs/v3-rewrite-plan.md](docs/v3-rewrite-plan.md).
 
 ## Features
@@ -43,10 +43,14 @@ Paper plugin that enhances chests and hoppers, with ChestLinks, Auto-Crafting an
 | `/cl members <add\|remove\|list> <group> [player]` | Per-group members |
 | `/autocraft` (`/ac`) | The same for AutoCrafters (no `sort`) |
 | `/chestsplusplus` (`/cpp`) `trust <add\|remove\|list> [player]` | Trust players with all your groups |
+| `/cpp migrate v2 [confirm] [file <name>]` · `/cpp migrate v2 status` | Preview/apply the one-time v2 import; check pending locations and filters |
+| `/cpp migrate v2 filters <on-load\|convert-all [world]\|cancel\|dismiss>` | Convert legacy hopper filters |
 | `/cpp reload` · `/cpp version` · `/cpp help` | Admin and help |
 
 `<group>` is `name` for your own groups, or `owner:name` for someone else's group you can access. Names can have spaces;
 quote them in commands: `/cl open "Iron Ore"`, `/cl open "Steve:Iron Ore"`.
+
+See [the migration plan](docs/v2-migration-plan.md) for recovery and existing development database limits.
 
 ## Permissions
 
@@ -56,7 +60,7 @@ quote them in commands: `/cl open "Iron Ore"`, `/cl open "Steve:Iron Ore"`.
 | `chestsplusplus.autocraft.{create,open,remote,menu,remove,members}` | everyone |
 | `chestsplusplus.filter`, `chestsplusplus.trust` | everyone |
 | `chestsplusplus.limit.chestlink.<n>` / `chestsplusplus.limit.autocraft.<n>` | not set (falls back to `limits` in config) |
-| `chestsplusplus.admin.{bypass,reload,update,version}` | op |
+| `chestsplusplus.admin.{bypass,reload,update,version,migrate}` | op |
 
 ## Configuration
 

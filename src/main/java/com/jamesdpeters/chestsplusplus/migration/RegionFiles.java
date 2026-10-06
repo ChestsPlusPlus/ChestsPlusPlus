@@ -3,6 +3,7 @@ package com.jamesdpeters.chestsplusplus.migration;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -37,7 +38,7 @@ final class RegionFiles {
     static List<ChunkCoord> chunksIn(File folder) {
         List<ChunkCoord> out = new ArrayList<>();
         File[] files = folder.listFiles();
-        if (files == null) return out;
+        if (files == null) throw new IllegalStateException("Cannot list region files in " + folder);
         for (File file : files) {
             Matcher name = REGION_NAME.matcher(file.getName());
             if (name.matches()) readHeader(file, Integer.parseInt(name.group(1)), Integer.parseInt(name.group(2)), out);
@@ -62,13 +63,13 @@ final class RegionFiles {
     private static void readHeader(File file, int regionX, int regionZ, List<ChunkCoord> out) {
         try (InputStream in = Files.newInputStream(file.toPath())) {
             byte[] header = in.readNBytes(HEADER_ENTRIES * 4);
-            if (header.length < HEADER_ENTRIES * 4) return;
+            if (header.length < HEADER_ENTRIES * 4) throw new IOException("Incomplete region header: " + file);
             ByteBuffer buffer = ByteBuffer.wrap(header);
             for (int i = 0; i < HEADER_ENTRIES; i++) {
                 if (buffer.getInt() != 0) out.add(new ChunkCoord(regionX * 32 + (i & 31), regionZ * 32 + (i >> 5)));
             }
-        } catch (IOException ignored) {
-            // an unreadable region file is skipped; its chunks still convert on load
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 }

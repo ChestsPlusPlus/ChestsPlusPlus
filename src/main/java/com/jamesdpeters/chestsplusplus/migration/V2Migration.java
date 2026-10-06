@@ -28,10 +28,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jspecify.annotations.Nullable;
 
-/**
- * The v2 → v3 migration: the automatic import on the first v3 start, and everything {@code /cpp migrate v2} does. The v2 file is renamed
- * only once the import has been written, so a crash before then simply imports again (and the v2 source tags make that harmless).
- */
+/** The one-time v2 import, location recovery, filter conversion and admin commands. */
 @Slf4j(topic = ChestsPlusPlus.NAME)
 @RequiredArgsConstructor
 public final class V2Migration implements Listener {
@@ -49,43 +46,62 @@ public final class V2Migration implements Listener {
     private final MigrationState state;
     private final V2FilterMigration filters;
     private final V2FilterConversion conversion;
+    private final V2LocationRecovery recovery;
+    private final V2PendingLocations pending;
 
     /** Imports {@code data/storage.yml} if a v2 install left one, then reminds the console about filters. Never throws. */
     public void importOnStartup() {
         try {
+            recovery.finishLoaded();
             worldCleanup.finishLoaded();
         } catch (RuntimeException e) {
             log.error("Finishing imported v2 blocks in loaded chunks failed; they will be finished when their chunks next load", e);
         }
-        Path file = candidates().stream().filter(path -> !path.toString().endsWith(MIGRATED_SUFFIX)).filter(Files::isRegularFile).findFirst()
+        if (!state.importCompleted() && Files.exists(dataFolder().resolve("data/storage.yml" + MIGRATED_SUFFIX))) state.legacyImport();
+        Path file = candidates().stream().filter(Files::isRegularFile).findFirst()
                 .orElse(null);
-        if (file != null) {
+        if (file != null && !state.importCompleted()) {
             log.info("Found ChestsPlusPlus v2 data in {}; importing it", file);
-            run(plugin.getServer().getConsoleSender(), file, true, true);
+            run(plugin.getServer().getConsoleSender(), file, true);
         }
         if (state.filters() == MigrationState.Filters.PENDING) log.warn(services.messages().plain(Message.MIGRATE_FILTERS_PENDING_CONSOLE));
     }
 
     /** {@code /cpp migrate v2 [confirm] [file <name>]}: a preview, or the import itself. */
     public void importFile(Audience sender, boolean apply, @Nullable String name) {
+        if (state.importCompleted()) {
+            services.send(sender, Message.MIGRATE_NOTHING);
+            return;
+        }
         Path file = name == null ? candidates().stream().filter(Files::isRegularFile).findFirst().orElse(null) : named(name);
         if (file == null || !Files.isRegularFile(file)) {
             List<Path> looked = name == null ? candidates() : file == null ? List.of() : List.of(file);
             services.send(sender, Message.MIGRATE_NO_FILE, Messages.text("files", String.join(", ", looked.stream().map(Path::toString).toList())));
             return;
         }
-        run(sender, file, apply, !file.toString().endsWith(MIGRATED_SUFFIX));
+        run(sender, file, apply);
     }
 
-    private void run(Audience sender, Path file, boolean apply, boolean renameAfter) {
+    private void run(Audience sender, Path file, boolean apply) {
         try {
             V2Data data = V2Storage.read(file);
             if (apply) backup();
             ImportReport report = importer.run(data, apply);
-            if (apply) afterImport(report);
-            tell(sender, report);
-            if (apply) writeLog(file, report);
-            if (apply && renameAfter) services.persistence().flush().thenRun(() -> rename(file));
+            if (!apply) {
+                tell(sender, report);
+                return;
+            }
+            afterImport(report);
+            services.persistence().flush().whenComplete((ok, error) -> {
+                if (error != null) {
+                    services.send(sender, Message.MIGRATE_FAILED,
+                            Messages.text("error", "Database write failed; changes are queued for retry. Do not reimport"));
+                    return;
+                }
+                rename(file);
+                tell(sender, report);
+                writeLog(file, report);
+            });
         } catch (IOException | RuntimeException e) {
             log.error("Importing ChestsPlusPlus v2 data from {} failed", file, e);
             services.send(sender, Message.MIGRATE_FAILED, Messages.text("error", String.valueOf(e.getMessage())));
@@ -94,7 +110,12 @@ public final class V2Migration implements Listener {
 
     private void afterImport(ImportReport report) {
         if (!report.changedAnything()) return;
-        worldCleanup.finishLoaded();
+        try {
+            recovery.finishLoaded();
+            worldCleanup.finishLoaded();
+        } catch (RuntimeException e) {
+            log.warn("Imported v2 data; world cleanup will retry on chunk load", e);
+        }
         if (report.groups() > 0 && state.filters() == MigrationState.Filters.NONE && services.settings().features().hopperFilters()) {
             state.setFilters(MigrationState.Filters.PENDING);
         }
@@ -121,19 +142,23 @@ public final class V2Migration implements Listener {
         if (!report.applied()) services.send(sender, Message.MIGRATE_PREVIEW_HINT);
     }
 
-    private void writeLog(Path file, ImportReport report) throws IOException {
+    private void writeLog(Path file, ImportReport report) {
         List<String> out = new ArrayList<>();
         out.add("ChestsPlusPlus v2 import from " + file + " at " + LocalDateTime.now());
         out.add(report.chestLinks() + " ChestLink(s), " + report.autoCrafters() + " AutoCrafter(s), " + report.nodes() + " linked block(s), "
                 + report.itemStacks() + " item stack(s), " + report.trusted() + " trusted player(s)");
         out.addAll(report.lines());
-        Files.write(dataFolder().resolve("v2-migration-" + stamp() + ".log"), out, StandardCharsets.UTF_8);
+        try {
+            Files.write(V2ConfigMigrator.unusedFile(dataFolder().toFile(), "v2-migration-" + stamp(), ".log").toPath(), out, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            log.warn("Imported v2 data, but could not write its report", e);
+        }
     }
 
     /** Copies the data folder (except v3's database and earlier backups) so a server can always go back to v2. */
     private void backup() throws IOException {
         Path folder = dataFolder();
-        Path backup = folder.resolve("v2-backup-" + stamp());
+        Path backup = V2ConfigMigrator.unusedFile(folder.toFile(), "v2-backup-" + stamp(), "").toPath();
         try (Stream<Path> paths = Files.walk(folder)) {
             for (Path path : paths.filter(Files::isRegularFile).toList()) {
                 Path relative = folder.relativize(path);
@@ -151,13 +176,14 @@ public final class V2Migration implements Listener {
         try {
             Files.move(file, file.resolveSibling(file.getFileName() + MIGRATED_SUFFIX), StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
-            log.warn("Imported {} but could not rename it; the next start will check it again (nothing is imported twice)", file, e);
+            log.warn("Imported {} but could not rename it; the database completion record prevents another import", file, e);
         }
     }
 
     public void status(Audience sender) {
         String filterState = state.filters().name().toLowerCase(Locale.ROOT).replace('_', '-') + (conversion.isRunning() ? " (converting now)" : "");
-        services.send(sender, Message.MIGRATE_STATUS, Messages.text("pending", cleanup.size()), Messages.text("filters", filterState));
+        services.send(sender, Message.MIGRATE_STATUS, Messages.text("pending", cleanup.size()), Messages.text("filters", filterState),
+                Messages.text("import", state.importStatus()), Messages.text("locations", pending.size()));
     }
 
     /** Loads the chunks within {@code radius} chunks of the player that still have imported blocks waiting. */
@@ -188,12 +214,12 @@ public final class V2Migration implements Listener {
     /** Converts every chunk of {@code worldName}, or of every world when it is null. */
     public void convertAll(Audience sender, @Nullable String worldName) {
         if (worldName == null) {
-            conversion.start(sender, plugin.getServer().getWorlds());
+            conversion.start(sender, plugin.getServer().getWorlds(), true);
             return;
         }
         World world = plugin.getServer().getWorld(worldName);
         if (world == null) services.send(sender, Message.MIGRATE_UNKNOWN_WORLD, Messages.text("world", worldName));
-        else conversion.start(sender, List.of(world));
+        else conversion.start(sender, List.of(world), false);
     }
 
     public void cancelConversion(Audience sender) {
@@ -208,17 +234,17 @@ public final class V2Migration implements Listener {
         }
     }
 
-    /** Where v2 kept its data, then the copy an earlier import renamed. */
+    /** Only the original YAML is eligible; renamed files are backups. */
     private List<Path> candidates() {
         Path storage = dataFolder().resolve("data").resolve("storage.yml");
-        return List.of(storage, storage.resolveSibling("storage.yml" + MIGRATED_SUFFIX));
+        return List.of(storage);
     }
 
     /** A file named relative to the data folder; null if the name would leave it. */
     private @Nullable Path named(String name) {
         Path folder = dataFolder().toAbsolutePath().normalize();
         Path file = folder.resolve(name).normalize();
-        return file.startsWith(folder) ? file : null;
+        return file.startsWith(folder) && !file.toString().toLowerCase(Locale.ROOT).contains(MIGRATED_SUFFIX) ? file : null;
     }
 
     private Path dataFolder() {

@@ -11,8 +11,10 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.kyori.adventure.audience.Audience;
@@ -32,7 +34,7 @@ public final class V2FilterConversion {
 
     /** Chunks being loaded at once: enough to finish quickly, few enough not to stall the server. */
     private static final int CONCURRENCY = 8;
-    /** Ticks to wait for a chunk's entities before converting with what has loaded. */
+    /** Ticks to wait for a chunk's entities before deferring it to the on-load listener. */
     private static final int ENTITY_WAIT_TICKS = 200;
     private static final int REPORT_EVERY_PERCENT = 5;
 
@@ -49,16 +51,24 @@ public final class V2FilterConversion {
 
     private final class Job {
         final Audience sender;
+        final boolean allWorlds;
+        final boolean worldsAvailable;
+        final Set<UUID> worlds;
+        int unfinished;
         final Deque<Target> queue;
         final int total;
         final List<Loading> loading = new ArrayList<>();
         /** The converter's count when the job started; the chunk-load listener converts most chunks as the job loads them. */
         final int convertedBefore;
         int done;
+        int processed;
         int nextReport = REPORT_EVERY_PERCENT;
 
-        Job(Audience sender, List<Target> targets, int convertedBefore) {
+        Job(Audience sender, List<Target> targets, int convertedBefore, boolean allWorlds, boolean worldsAvailable, Set<UUID> worlds) {
             this.sender = sender;
+            this.allWorlds = allWorlds;
+            this.worldsAvailable = worldsAvailable;
+            this.worlds = worlds;
             this.queue = new ArrayDeque<>(targets);
             this.total = targets.size();
             this.convertedBefore = convertedBefore;
@@ -71,6 +81,7 @@ public final class V2FilterConversion {
     private final V2FilterMigration filters;
     private final V2Cleanup cleanup;
     private final V2WorldCleanup worldCleanup;
+    private final V2PendingLocations pending;
     private @Nullable Job job;
     private boolean scanning;
     /** Bumped by every start and cancel, so a scan cancelled while it ran doesn't start a job when it finishes. */
@@ -81,7 +92,7 @@ public final class V2FilterConversion {
     }
 
     /** Finds the chunks off the main thread, then starts converting them. */
-    public void start(Audience sender, List<World> worlds) {
+    public void start(Audience sender, List<World> worlds, boolean allWorlds) {
         if (isRunning()) {
             services.send(sender, Message.MIGRATE_FILTERS_RUNNING);
             return;
@@ -90,6 +101,12 @@ public final class V2FilterConversion {
         int thisRun = ++run;
         state.setFilters(MigrationState.Filters.ON_LOAD);
         Set<V2Cleanup.ChunkRef> waiting = new LinkedHashSet<>(cleanup.chunks());
+        for (World world : worlds) {
+            for (Chunk chunk : world.getLoadedChunks()) waiting.add(new V2Cleanup.ChunkRef(world.getUID(), chunk.getChunkKey()));
+        }
+        boolean worldsAvailable = pending.isEmpty()
+                && cleanup.chunks().stream().allMatch(ref -> plugin.getServer().getWorld(ref.world()) != null);
+        Set<UUID> scannedWorlds = worlds.stream().map(World::getUID).collect(Collectors.toSet());
         Executor mainThread = task -> plugin.getServer().getScheduler().runTask(plugin, task);
         CompletableFuture.supplyAsync(() -> targets(worlds, waiting)).whenCompleteAsync((targets, error) -> {
             if (thisRun != run) return;
@@ -99,7 +116,7 @@ public final class V2FilterConversion {
                 services.send(sender, Message.MIGRATE_FAILED, Messages.text("error", String.valueOf(error.getMessage())));
                 return;
             }
-            job = new Job(sender, targets, filters.converted());
+            job = new Job(sender, targets, filters.converted(), allWorlds, worldsAvailable, scannedWorlds);
             report(sender, Message.MIGRATE_FILTERS_STARTED, Messages.text("chunks", targets.size()));
         }, mainThread);
     }
@@ -145,11 +162,16 @@ public final class V2FilterConversion {
     }
 
     private Loading load(Target target) {
-        CompletableFuture<@Nullable Chunk> chunk = target.world().getChunkAtAsync(target.x(), target.z(), false).thenApply(loaded -> {
-            // Keeps the chunk loaded until its entities have loaded and been converted.
-            if (loaded != null) loaded.addPluginChunkTicket(plugin);
-            return loaded;
-        });
+        CompletableFuture<@Nullable Chunk> chunk;
+        try {
+            chunk = target.world().getChunkAtAsync(target.x(), target.z(), false).thenApply(loaded -> {
+                // Keeps the chunk loaded until its entities have loaded and been converted.
+                if (loaded != null) loaded.addPluginChunkTicket(plugin);
+                return loaded;
+            });
+        } catch (RuntimeException e) {
+            chunk = CompletableFuture.failedFuture(e);
+        }
         return new Loading(chunk);
     }
 
@@ -159,12 +181,22 @@ public final class V2FilterConversion {
             if (!loading.chunk.isDone()) continue;
             Chunk chunk = loading.chunk.isCompletedExceptionally() ? null : loading.chunk.join();
             if (chunk != null && !chunk.isEntitiesLoaded() && ++loading.waited < ENTITY_WAIT_TICKS) continue;
-            if (chunk != null) {
-                worldCleanup.finish(chunk);
-                filters.convert(chunk, List.of(chunk.getEntities()));
+            try {
+                if (chunk == null || !chunk.isEntitiesLoaded()) {
+                    current.unfinished++;
+                    log.warn("Deferred a v2 filter chunk: {}", chunk == null ? "chunk load failed" : "entities did not load within 200 ticks");
+                } else {
+                    worldCleanup.finish(chunk);
+                    filters.convert(chunk, List.of(chunk.getEntities()));
+                    current.done++;
+                }
+            } catch (RuntimeException e) {
+                current.unfinished++;
+                log.warn("Could not convert v2 filters in chunk {}; conversion remains on-load", chunk, e);
+            } finally {
                 release(chunk);
             }
-            current.done++;
+            current.processed++;
             it.remove();
         }
     }
@@ -175,7 +207,7 @@ public final class V2FilterConversion {
 
     private void progress(Job current) {
         if (current.total == 0) return;
-        int percent = current.done * 100 / current.total;
+        int percent = current.processed * 100 / current.total;
         if (percent < current.nextReport || percent >= 100) return;
         current.nextReport = percent - percent % REPORT_EVERY_PERCENT + REPORT_EVERY_PERCENT;
         report(current.sender, Message.MIGRATE_FILTERS_PROGRESS, Messages.text("done", current.done), Messages.text("total", current.total),
@@ -184,9 +216,14 @@ public final class V2FilterConversion {
 
     private void finish(Job current) {
         job = null;
-        state.setFilters(MigrationState.Filters.DONE);
+        boolean missingWorlds = pending.size() > 0 || cleanup.chunks().stream().anyMatch(ref -> plugin.getServer().getWorld(ref.world()) == null);
+        if (current.allWorlds && current.worldsAvailable && current.unfinished == 0 && !missingWorlds
+                && plugin.getServer().getWorlds().stream().allMatch(world -> current.worlds.contains(world.getUID())))
+            state.setFilters(MigrationState.Filters.DONE);
+        else
+            report(current.sender, Message.MIGRATE_FILTERS_DEFERRED, Messages.text("unfinished", current.unfinished));
         report(current.sender, Message.MIGRATE_FILTERS_FINISHED, Messages.text("filters", filters.converted() - current.convertedBefore),
-                Messages.text("chunks", current.total));
+                Messages.text("chunks", current.done));
     }
 
     /** Progress goes to the console as well, so a long run started in game can be followed in the log. */

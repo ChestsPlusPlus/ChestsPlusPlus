@@ -139,6 +139,7 @@ public enum Message {
     MIGRATE_FILTERS_DISMISSED("migrate.filters-dismissed"),
     MIGRATE_FILTERS_STARTED("migrate.filters-started"),
     MIGRATE_FILTERS_PROGRESS("migrate.filters-progress"),
+    MIGRATE_FILTERS_DEFERRED("migrate.filters-deferred"),
     MIGRATE_FILTERS_FINISHED("migrate.filters-finished"),
     MIGRATE_FILTERS_CANCELLED("migrate.filters-cancelled"),
     MIGRATE_FILTERS_RUNNING("migrate.filters-running"),

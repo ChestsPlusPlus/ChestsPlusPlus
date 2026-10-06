@@ -12,11 +12,15 @@ import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.SortMode;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.minimessage.tag.Tag;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -161,8 +165,10 @@ public final class GroupActions {
         services.send(player, type.pick(Message.CHESTLINK_LIST_HEADER, Message.AUTOCRAFT_LIST_HEADER));
         GroupTypeHandler handler = links.handler(type);
         for (StorageGroup group : groups) {
+            String ref = StringArgumentType.escapeIfRequired(group.referenceFor(player.getUniqueId()));
+            String command = type.pick("/chestlink open ", "/autocraft open ") + ref;
             services.send(player, type.pick(Message.CHESTLINK_LIST_ENTRY, Message.AUTOCRAFT_LIST_ENTRY),
-                    Messages.group(group), Messages.text("ref", group.referenceFor(player.getUniqueId())),
+                    Messages.group(group), Messages.text("ref", ref), TagResolver.resolver("open", Tag.styling(ClickEvent.runCommand(command))),
                     Messages.text("owner", PlayerNames.of(group.owner())),
                     Messages.text("nodes", services.nodes().count(group.id())),
                     Messages.text("items", handler == null ? "" : handler.summary(group)));

@@ -2,17 +2,22 @@ package com.jamesdpeters.chestsplusplus.command;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.jamesdpeters.chestsplusplus.autocraft.RecipeEditorHolder;
 import com.jamesdpeters.chestsplusplus.core.BlockPos;
 import com.jamesdpeters.chestsplusplus.link.LinkService;
+import com.jamesdpeters.chestsplusplus.model.AutoCraftGroup;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.SortMode;
+import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import com.jamesdpeters.chestsplusplus.testing.CommandHostPlugin;
 import com.jamesdpeters.chestsplusplus.testing.PluginTestBase;
 import com.jamesdpeters.chestsplusplus.ui.UiService;
 import com.jamesdpeters.chestsplusplus.ui.menu.PaginatedMenu;
 import java.util.ArrayList;
 import java.util.List;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -99,6 +104,42 @@ class GroupCommandsIntegrationTest extends PluginTestBase {
         run(bob, "cl open \"Alice:Iron Ore\"");
         assertThat(bob.getOpenInventory().getTopInventory()).isSameAs(group.inventory());
         assertThat(run(alice, "cl rename \"Iron Ore\" \"Iron  Ore\"")).anyMatch(l -> l.contains("isn't a valid name"));
+    }
+
+    @Test
+    void actualListClickCommandsOpenNamesWithSpacesForBothOwnersAndTypes() {
+        for (GroupType type : GroupType.values()) {
+            for (PlayerMock owner : List.of(alice, bob)) {
+                StorageGroup group;
+                if (type == GroupType.CHESTLINK) group = create(owner, "Iron Ore", owner == alice ? 0 : 2);
+                else {
+                    group = new AutoCraftGroup(plugin.services().groups().nextId(), owner.getUniqueId(), "Iron Ore", 0);
+                    plugin.services().groups().add(group);
+                }
+                group.setPublic(true);
+            }
+            server.dispatchCommand(alice, type == GroupType.CHESTLINK ? "cl list" : "ac list");
+            List<String> commands = new ArrayList<>();
+            Component message;
+            while ((message = alice.nextComponentMessage()) != null) collectCommands(message, commands);
+            assertThat(commands).hasSize(2);
+            for (String command : commands) {
+                StorageGroup expected = plugin.services().groups().find(type,
+                        command.contains("Bob:") ? bob.getUniqueId() : alice.getUniqueId(), "Iron Ore");
+                assertThat(command).contains("\"");
+                assertThat(server.dispatchCommand(alice, command.substring(1))).isTrue();
+                if (expected instanceof ChestLinkGroup chest) assertThat(alice.getOpenInventory().getTopInventory()).isSameAs(chest.inventory());
+                else assertThat(((RecipeEditorHolder) alice.getOpenInventory().getTopInventory().getHolder()).group()).isSameAs(expected);
+                alice.closeInventory();
+                drain(alice);
+            }
+        }
+    }
+
+    private static void collectCommands(Component component, List<String> commands) {
+        ClickEvent<?> click = component.clickEvent();
+        if (click != null && click.action() == ClickEvent.Action.RUN_COMMAND) commands.add(((ClickEvent.Payload.Text) click.payload()).value());
+        component.children().forEach(child -> collectCommands(child, commands));
     }
 
     @Test

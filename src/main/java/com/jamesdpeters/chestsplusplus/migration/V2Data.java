@@ -22,7 +22,7 @@ public record V2Data(List<Group> groups, List<Party> parties, List<String> probl
     public record Group(GroupType type, UUID owner, String name, boolean isPublic, List<UUID> members, SortMode sortMode,
             @Nullable ItemStack @Nullable [] items, @Nullable Recipe recipe, List<Location> locations) {
 
-        /** The {@code v2_source} value that identifies this group across repeated imports. */
+        /** The {@code v2_source} value that records this group's v2 origin. */
         public String source() {
             return type.name().toLowerCase(Locale.ROOT) + ":" + owner + ":" + name;
         }

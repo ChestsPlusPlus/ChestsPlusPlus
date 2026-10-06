@@ -17,8 +17,6 @@ public final class ImportReport {
     @Getter private int nodes;
     @Getter private int itemStacks;
     @Getter private int trusted;
-    private int alreadyImported;
-    private int nodesAddedToEarlier;
     private final List<String> details = new ArrayList<>();
     private final Map<String, Integer> unresolvedWorlds = new LinkedHashMap<>();
 
@@ -32,7 +30,7 @@ public final class ImportReport {
     }
 
     public boolean changedAnything() {
-        return groups() + nodesAddedToEarlier + trusted > 0;
+        return groups() + trusted > 0;
     }
 
     void imported(GroupType type, int nodeCount, int stacks) {
@@ -42,19 +40,13 @@ public final class ImportReport {
         itemStacks += stacks;
     }
 
-    void alreadyImported(int newNodes) {
-        alreadyImported++;
-        nodesAddedToEarlier += newNodes;
-        nodes += newNodes;
-    }
-
     void addTrusted() {
         trusted++;
     }
 
     void renamed(String owner, GroupType type, String from, String to) {
         details.add("Renamed " + owner + "'s " + type.displayName() + " \"" + from + "\" to " + to
-                + " (v3 names allow up to 32 letters, numbers, - and _)");
+                + " (v3 names allow up to 32 letters, numbers, spaces, - and _)");
     }
 
     void taken(BlockPos pos, String group) {
@@ -80,15 +72,9 @@ public final class ImportReport {
     /** Every detail line, worlds that couldn't be found last. v2 names may hold colour codes, shown as {@code &} so chat leaves them be. */
     public List<String> lines() {
         List<String> lines = new ArrayList<>();
-        if (alreadyImported > 0) {
-            lines.add(alreadyImported + " group(s) had been imported before" + (nodesAddedToEarlier > 0
-                    ? "; added " + nodesAddedToEarlier
-                            + " block(s) to them that were skipped last time"
-                    : "; nothing new to add") + ". Their items were not imported again.");
-        }
         lines.addAll(details);
         unresolvedWorlds.forEach((world, count) -> lines.add("World '" + world + "' wasn't found, so " + count
-                + " block(s) in it were skipped. Run /cpp migrate v2 confirm again once it is loaded."));
+                + " block(s) will recover automatically when the world and chunk load."));
         return lines.stream().map(line -> line.replace('§', '&')).toList();
     }
 }
