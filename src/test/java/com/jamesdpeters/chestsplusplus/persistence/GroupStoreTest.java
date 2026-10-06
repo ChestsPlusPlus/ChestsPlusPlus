@@ -11,6 +11,7 @@ import com.jamesdpeters.chestsplusplus.model.GroupRegistry;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.Node;
 import com.jamesdpeters.chestsplusplus.model.NodeIndex;
+import com.jamesdpeters.chestsplusplus.model.SlotMatch;
 import com.jamesdpeters.chestsplusplus.model.SortMode;
 import com.jamesdpeters.chestsplusplus.testing.PluginTestBase;
 import java.nio.file.Path;
@@ -104,6 +105,7 @@ class GroupStoreTest extends PluginTestBase {
         matrix[1] = ItemStack.of(Material.COAL);
         matrix[4] = ItemStack.of(Material.STICK, 5);
         craft.setRecipe(matrix, NamespacedKey.minecraft("torch"), ItemStack.of(Material.TORCH, 4));
+        craft.setMatch(1, SlotMatch.TYPE);
         first.groups.add(craft);
         first.groupStore.markDirty(craft);
         first.trust.trust(OWNER, FRIEND);
@@ -130,6 +132,8 @@ class GroupStoreTest extends PluginTestBase {
         assertThat(loadedCraft.recipeKey()).isEqualTo(NamespacedKey.minecraft("torch"));
         assertThat(loadedCraft.matrix()[4]).isEqualTo(ItemStack.of(Material.STICK));
         assertThat(loadedCraft.matrix()[0]).isNull();
+        assertThat(loadedCraft.matches()[1]).isEqualTo(SlotMatch.TYPE);
+        assertThat(loadedCraft.matches()[4]).isEqualTo(SlotMatch.RECIPE);
         assertThat(second.trust.isTrusted(OWNER, FRIEND)).isTrue();
         assertThat(second.groups.nextId()).isGreaterThan(craft.id());
 

@@ -69,6 +69,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
             openDatabase(services);
         } catch (IOException | JdbiException | IllegalStateException e) {
             log.error("Could not start ChestsPlusPlus; disabling", e);
+            getSLF4JLogger();
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
@@ -151,7 +152,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         Persistence persistence = services.persistence();
         tickers.everyInterval("persistence-flush", () -> services.settings().storage().flushIntervalSeconds() * 20, ticks -> persistence.flush());
         tickers.every("displays", 1, services.get(DisplayService.class)::tick);
-        tickers.everyInterval("autocraft", () -> services.settings().autocraft().tickInterval(), services.get(AutoCraftService.class)::tick);
+        tickers.every("autocraft", 1, services.get(AutoCraftService.class)::tick);
     }
 
     private void startIntegrations(Services services) {

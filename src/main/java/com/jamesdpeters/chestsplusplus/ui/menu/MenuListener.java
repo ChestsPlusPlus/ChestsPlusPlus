@@ -1,10 +1,13 @@
 package com.jamesdpeters.chestsplusplus.ui.menu;
 
+import com.jamesdpeters.chestsplusplus.ChestsPlusPlus;
 import com.jamesdpeters.chestsplusplus.core.Holders;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -19,6 +22,7 @@ import org.bukkit.plugin.Plugin;
  * Dispatches menu clicks and handles "return to the menu you came from": when a player opens something from a menu
  * (e.g. a ChestLink), closing it reopens the menu. Tracked per viewer and cleared on quit.
  */
+@Slf4j(topic = ChestsPlusPlus.NAME)
 @RequiredArgsConstructor
 public final class MenuListener implements Listener {
 
@@ -44,6 +48,7 @@ public final class MenuListener implements Listener {
     }
 
     private void onMenuClick(InventoryClickEvent event, Menu menu) {
+        log.info("Menu clicked: {}", event.getClick());
         event.setCancelled(true);
         if (!(event.getWhoClicked() instanceof Player player)) return;
         if (event.getClickedInventory() != event.getView().getTopInventory()) return;
@@ -65,12 +70,18 @@ public final class MenuListener implements Listener {
     void onDrag(InventoryDragEvent event) {
         switch (Holders.of(event.getInventory())) {
             case Menu _ -> event.setCancelled(true);
-            case GhostEditor _ -> {
-                int topSize = event.getView().getTopInventory().getSize();
-                if (event.getRawSlots().stream().anyMatch(slot -> slot < topSize)) event.setCancelled(true);
-            }
+            case GhostEditor editor -> onEditorDrag(event, editor);
             case null, default -> {}
         }
+    }
+
+    /** A drag that touches the editor never moves real items; the editor gets the slots it covered instead. Raw slots below the top size are the editor's own. */
+    private void onEditorDrag(InventoryDragEvent event, GhostEditor editor) {
+        int topSize = event.getView().getTopInventory().getSize();
+        List<Integer> slots = event.getRawSlots().stream().filter(slot -> slot < topSize).sorted().toList();
+        if (slots.isEmpty()) return;
+        event.setCancelled(true);
+        if (event.getWhoClicked() instanceof Player player) editor.onDrag(player, slots, event.getOldCursor());
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

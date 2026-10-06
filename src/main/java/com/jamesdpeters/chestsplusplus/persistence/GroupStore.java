@@ -9,15 +9,18 @@ import com.jamesdpeters.chestsplusplus.model.GroupRegistry;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.Node;
 import com.jamesdpeters.chestsplusplus.model.NodeIndex;
+import com.jamesdpeters.chestsplusplus.model.SlotMatch;
 import com.jamesdpeters.chestsplusplus.model.SortMode;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import com.jamesdpeters.chestsplusplus.persistence.GroupStore.GroupSnapshot;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.BlockFace;
@@ -30,9 +33,12 @@ import org.jspecify.annotations.Nullable;
 @RequiredArgsConstructor
 public final class GroupStore implements Store<Long, GroupSnapshot> {
 
-    /** {@code items} is a ChestLink's inventory or an AutoCraft matrix. */
+    /**
+     * {@code items} is a ChestLink's inventory or an AutoCraft matrix; {@code matches} is an AutoCraft's comma-separated
+     * {@link SlotMatch} per slot, or null when every slot is {@link SlotMatch#RECIPE}.
+     */
     public record GroupRow(long id, GroupType type, UUID owner, String name, boolean isPublic, @Nullable SortMode sortMode, long createdAt,
-            @Nullable ItemStack @Nullable [] items, @Nullable String recipeKey) {}
+            @Nullable ItemStack @Nullable [] items, @Nullable String recipeKey, @Nullable String matches) {}
 
     public record MemberRow(long groupId, UUID member) {}
 
@@ -103,10 +109,29 @@ public final class GroupStore implements Store<Long, GroupSnapshot> {
     private static GroupRow row(StorageGroup group) {
         return switch (group) {
             case ChestLinkGroup chest -> new GroupRow(chest.id(), chest.type(), chest.owner(), chest.name(), chest.isPublic(), chest.sortMode(),
-                    chest.createdAt(), contents(chest), null);
+                    chest.createdAt(), contents(chest), null, null);
             case AutoCraftGroup craft -> new GroupRow(craft.id(), craft.type(), craft.owner(), craft.name(), craft.isPublic(), null,
-                    craft.createdAt(), craft.matrix(), craft.recipeKey() == null ? null : craft.recipeKey().asString());
+                    craft.createdAt(), craft.matrix(), craft.recipeKey() == null ? null : craft.recipeKey().asString(), matches(craft));
         };
+    }
+
+    private static @Nullable String matches(AutoCraftGroup craft) {
+        SlotMatch[] matches = craft.matches();
+        if (Arrays.stream(matches).allMatch(match -> match == SlotMatch.RECIPE)) return null;
+        return Arrays.stream(matches).map(SlotMatch::name).collect(Collectors.joining(","));
+    }
+
+    /** Unknown or missing entries fall back to {@link SlotMatch#RECIPE}. */
+    private static void applyMatches(AutoCraftGroup craft, @Nullable String stored) {
+        if (stored == null) return;
+        String[] names = stored.split(",");
+        for (int i = 0; i < 9 && i < names.length; i++) {
+            try {
+                craft.setMatch(i, SlotMatch.valueOf(names[i].trim().toUpperCase(Locale.ROOT)));
+            } catch (IllegalArgumentException e) {
+                craft.setMatch(i, SlotMatch.RECIPE);
+            }
+        }
     }
 
     /** Clones every slot: {@code getContents()} returns live mirrors, and the items are serialised later on the I/O thread. */
@@ -140,6 +165,7 @@ public final class GroupStore implements Store<Long, GroupSnapshot> {
             case AUTOCRAFT -> {
                 AutoCraftGroup craft = new AutoCraftGroup(row.id(), row.owner(), row.name(), row.createdAt());
                 craft.setRecipe(matrix(row.items()), row.recipeKey() == null ? null : NamespacedKey.fromString(row.recipeKey()), null);
+                applyMatches(craft, row.matches());
                 yield craft;
             }
         };

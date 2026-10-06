@@ -55,6 +55,10 @@ autocraft:
   list-empty: "<prefix> <gray>You don't have access to any AutoCrafters yet."
   title: "<dark_gray>AutoCraft: <group>"
   display-label: "<white><group>"
+  match-recipe: "<gray>Match: <white>what the recipe accepts<gray> (e.g. any planks)"
+  match-exact: "<gray>Match: <white>this exact item<gray> (same name, damage, contents...)"
+  match-type: "<gray>Match: <white>any item of this type<gray> (ignores name, damage, contents...)"
+  editor-controls: "<dark_gray>Right-click: change match<newline><dark_gray>Click with an item: replace<newline><dark_gray>Click with an empty hand: clear"
 
 state:
   public: "<green>public</green>"

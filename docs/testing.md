@@ -6,8 +6,8 @@ they can't.
 | Layer | Command | Covers |
 |---|---|---|
 | Unit | `./gradlew unitTest` | `BlockPos`, `Settings`, `Messages`, model indexes, access/trust, SQLite repository and migrations, display layout, item grouping, versions, command tree guard |
-| MockBukkit | `./gradlew integrationTest` | Plugin lifecycle, persistence round trips, linking (signs, silk touch, limits, blacklist, access), breaking/explosions, hopper substitution, displays (item only), sorting, all commands, the icon grid, filters (semantics, PDC, enforcement, stall avoidance, editor), AutoCraft (planner, crafting, ChestLink inputs, backoff, editor) |
-| E2E (Plugwright) | `./gradlew e2e -Pchestsplusplus.acceptMinecraftEula=true` | Real hopper transfers through a ChestLink, display entities, `/cl list`, `/cl open`, `/cpp help`, a real filtered hopper behind a rejected slot, real torch crafting, and the powered/unpowered crafter rule on Paper 26.3 |
+| MockBukkit | `./gradlew integrationTest` | Plugin lifecycle, persistence round trips, linking (signs, silk touch, limits, blacklist, access), breaking/explosions, hopper substitution, displays (item only), sorting, all commands, the icon grid, filters (semantics, PDC, enforcement, stall avoidance, editor), AutoCraft (planner, crafting, ChestLink inputs, scheduling and wake-ups, editor) |
+| E2E (Plugwright) | `./gradlew e2e -Pchestsplusplus.acceptMinecraftEula=true` | Real hopper transfers through a ChestLink, display entities, `/cl list`, `/cl open`, `/cpp help`, a real filtered hopper behind a rejected slot, real torch crafting, crafting on the next tick after a recipe, input or output change, and the powered/unpowered crafter rule on Paper 26.3 |
 
 Known automation limits:
 - **MockBukkit** doesn't implement `TextDisplay#setBillboard`, redstone power, recipe matching or `PluginBootstrap`.
@@ -52,6 +52,8 @@ Run each item on a native 26.3 client against `./gradlew runServer` (or the serv
 
 ### AutoCraft
 - [ ] The recipe editor shows the result; non-owners can view but not edit.
+- [ ] Right-clicking a ghost cycles its match mode (shown in the tooltip); a repair recipe with both slots on "any item of
+      this type" repairs any two damaged tools of that type.
 - [ ] Hopper below: crafts unless the hopper is locked by redstone. Container below: only while the table is powered.
 - [ ] Recipes with tag choices (e.g. any planks), and recipes that leave items behind (e.g. buckets).
 - [ ] ChestLink inputs next to a crafter.

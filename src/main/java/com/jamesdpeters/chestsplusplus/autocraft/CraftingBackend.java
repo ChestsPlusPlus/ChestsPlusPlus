@@ -24,10 +24,10 @@ import org.jspecify.annotations.Nullable;
 public interface CraftingBackend {
 
     /**
-     * A recipe resolved from a ghost matrix: its key, its result, and for each of the 9 slots which items may stand in
-     * for the ghost item (null for empty slots).
+     * A recipe resolved from a ghost matrix: its key, its result, and for each of the 9 slots the recipe's own choice that accepts the
+     * ghost (e.g. any planks). A slot is null when it's empty or the recipe exposes no choice there, as with special recipes.
      */
-    record ResolvedRecipe(@Nullable NamespacedKey key, ItemStack result, List<@Nullable Predicate<ItemStack>> slots) {}
+    record ResolvedRecipe(@Nullable NamespacedKey key, ItemStack result, List<@Nullable Predicate<ItemStack>> choices) {}
 
     /** The result of actually crafting a planned matrix: output and leftovers (e.g. empty buckets). */
     record Crafted(ItemStack result, @Nullable ItemStack[] remaining) {}
@@ -65,10 +65,7 @@ public interface CraftingBackend {
         return copy;
     }
 
-    /**
-     * Per-slot substitutes: the recipe choice that accepts the ghost item, so e.g. any planks can stand in for oak
-     * planks in a tag recipe. Recipes without exposed choices fall back to "similar to the ghost item".
-     */
+    /** Per slot, the recipe choice that accepts the ghost item, so e.g. any planks can stand in for oak planks in a tag recipe. */
     static List<@Nullable Predicate<ItemStack>> slotChoices(Recipe recipe, @Nullable ItemStack[] matrix) {
         List<RecipeChoice> choices = new ArrayList<>();
         switch (recipe) {
@@ -87,9 +84,7 @@ public interface CraftingBackend {
                 slots.add(null);
                 continue;
             }
-            ItemStack template = ghost.clone();
-            slots.add(choices.stream().filter(choice -> choice.test(ghost)).<Predicate<ItemStack>>map(choice -> choice).findFirst()
-                    .orElse(template::isSimilar));
+            slots.add(choices.stream().filter(choice -> choice.test(ghost)).<Predicate<ItemStack>>map(choice -> choice).findFirst().orElse(null));
         }
         return slots;
     }

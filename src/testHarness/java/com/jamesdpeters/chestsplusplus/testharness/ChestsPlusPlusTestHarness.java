@@ -7,6 +7,7 @@ import com.jamesdpeters.chestsplusplus.link.GroupTypeHandler;
 import com.jamesdpeters.chestsplusplus.link.LinkService;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
+import com.jamesdpeters.chestsplusplus.model.SlotMatch;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
@@ -53,6 +54,14 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
                                 .then(Commands.argument("owner", StringArgumentType.word())
                                         .then(Commands.argument("name", StringArgumentType.word())
                                                 .then(Commands.argument("matrix", StringArgumentType.greedyString()).executes(this::recipe)))))
+                        .then(Commands.literal("items")
+                                .then(Commands.argument("x", IntegerArgumentType.integer())
+                                        .then(Commands.argument("y", IntegerArgumentType.integer())
+                                                .then(Commands.argument("z", IntegerArgumentType.integer()).executes(this::items)))))
+                        .then(Commands.literal("recipe-items")
+                                .then(Commands.argument("owner", StringArgumentType.word())
+                                        .then(Commands.argument("name", StringArgumentType.word())
+                                                .then(Commands.argument("matrix", StringArgumentType.greedyString()).executes(this::recipeItems)))))
                         .then(Commands
                                 .literal(
                                         "filter")
@@ -169,6 +178,57 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
         }
         var result = services.get(com.jamesdpeters.chestsplusplus.autocraft.AutoCraftService.class).setMatrix(craft, matrix, null);
         return reply(context, "cpptest recipe result=" + (result == null ? "none" : result.getType() + "x" + result.getAmount()));
+    }
+
+    /**
+     * Fixture: {@code cpptest recipe-items <owner> <name> <i1|...|i9>} like {@code recipe}, but each slot is a full item
+     * argument with components (e.g. {@code minecraft:iron_pickaxe[damage=100]}), so {@code |} separates slots. A slot may end in
+     * {@code @recipe}, {@code @exact} or {@code @type} to set its match mode. Replies with each slot's effective mode.
+     */
+    private int recipeItems(CommandContext<CommandSourceStack> context) {
+        Services services = services();
+        StorageGroup group = services.groups().find(GroupType.AUTOCRAFT, owner(context), StringArgumentType.getString(context, "name"));
+        if (!(group instanceof com.jamesdpeters.chestsplusplus.model.AutoCraftGroup craft)) {
+            return reply(context, "cpptest recipe failed: no such AutoCraft group");
+        }
+        String[] parts = StringArgumentType.getString(context, "matrix").split("\\|");
+        org.bukkit.inventory.ItemStack[] matrix = new org.bukkit.inventory.ItemStack[9];
+        SlotMatch[] matches = new SlotMatch[9];
+        for (int i = 0; i < 9 && i < parts.length; i++) {
+            String part = parts[i].trim();
+            int at = part.lastIndexOf('@');
+            if (at > 0) {
+                matches[i] = SlotMatch.valueOf(part.substring(at + 1).toUpperCase(Locale.ROOT));
+                part = part.substring(0, at);
+            }
+            matrix[i] = part.equals("-") ? null : Bukkit.getItemFactory().createItemStack(part);
+        }
+        var autoCraft = services.get(com.jamesdpeters.chestsplusplus.autocraft.AutoCraftService.class);
+        var result = autoCraft.setMatrix(craft, matrix, null);
+        for (int i = 0; i < 9; i++) if (matches[i] != null) autoCraft.setMatch(craft, i, matches[i]);
+        List<String> effective = new ArrayList<>();
+        SlotMatch[] stored = craft.matches();
+        for (int i = 0; i < 9; i++) {
+            if (matrix[i] != null) effective.add(i + "=" + stored[i].effective(autoCraft.hasRecipeChoice(craft, i)));
+        }
+        var recipe = craft.recipeKey() == null ? null : Bukkit.getRecipe(craft.recipeKey());
+        return reply(context, "cpptest recipe result=" + (result == null ? "none" : result.getType() + "x" + result.getAmount()) + " key="
+                + craft.recipeKey() + " class=" + (recipe == null ? "-" : recipe.getClass().getSimpleName()) + " matches=" + effective);
+    }
+
+    /** {@code cpptest items <x> <y> <z>} → every non-empty slot of the container as {@code slot:id[components]xcount}. */
+    private int items(CommandContext<CommandSourceStack> context) {
+        Block block = Bukkit.getWorlds().getFirst().getBlockAt(IntegerArgumentType.getInteger(context, "x"),
+                IntegerArgumentType.getInteger(context, "y"), IntegerArgumentType.getInteger(context, "z"));
+        if (!(block.getState(false) instanceof org.bukkit.block.Container container)) return reply(context, "cpptest items not a container");
+        List<String> slots = new ArrayList<>();
+        org.bukkit.inventory.ItemStack[] contents = container.getInventory().getContents();
+        for (int i = 0; i < contents.length; i++) {
+            var item = contents[i];
+            if (item == null || item.isEmpty()) continue;
+            slots.add(i + ":" + item.getType().getKey() + item.getItemMeta().getAsComponentString() + "x" + item.getAmount());
+        }
+        return reply(context, "cpptest items " + (slots.isEmpty() ? "empty" : String.join(" ; ", slots)));
     }
 
     /** Fixture: {@code cpptest filter <x> <y> <z> <allow|deny> <material>} sets one TYPE filter on a hopper. */

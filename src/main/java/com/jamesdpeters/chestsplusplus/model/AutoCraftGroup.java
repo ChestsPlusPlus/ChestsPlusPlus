@@ -10,11 +10,13 @@ import org.jspecify.annotations.Nullable;
 public final class AutoCraftGroup extends StorageGroup {
 
     private final @Nullable ItemStack[] matrix = new ItemStack[9];
+    private final SlotMatch[] matches = new SlotMatch[9];
     private @Nullable NamespacedKey recipeKey;
     private @Nullable ItemStack result;
 
     public AutoCraftGroup(long id, UUID owner, String name, long createdAt) {
         super(id, owner, name, createdAt);
+        Arrays.fill(matches, SlotMatch.RECIPE);
     }
 
     @Override
@@ -29,14 +31,26 @@ public final class AutoCraftGroup extends StorageGroup {
         return copy;
     }
 
+    /** Sets the matrix; a slot whose ghost changes goes back to {@link SlotMatch#RECIPE}. */
     public void setRecipe(@Nullable ItemStack[] newMatrix, @Nullable NamespacedKey key, @Nullable ItemStack result) {
         if (newMatrix.length != 9) throw new IllegalArgumentException("Matrix must have 9 slots");
         for (int i = 0; i < 9; i++) {
             ItemStack item = newMatrix[i];
-            matrix[i] = item == null || item.isEmpty() ? null : item.asOne();
+            ItemStack ghost = item == null || item.isEmpty() ? null : item.asOne();
+            if (ghost == null ? matrix[i] != null : !ghost.isSimilar(matrix[i])) matches[i] = SlotMatch.RECIPE;
+            matrix[i] = ghost;
         }
         this.recipeKey = key;
         this.result = result == null || result.isEmpty() ? null : result.clone();
+    }
+
+    /** A copy of each slot's match mode. */
+    public SlotMatch[] matches() {
+        return matches.clone();
+    }
+
+    public void setMatch(int slot, SlotMatch match) {
+        matches[slot] = match;
     }
 
     public @Nullable NamespacedKey recipeKey() {

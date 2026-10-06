@@ -95,7 +95,8 @@ chestlink/
   ChestLinkListener            interact/open/close/break/place/explode/piston/silk-touch
   sort/Sorter                  O(n log n) condensing sort
 autocraft/
-  AutoCraftService             recipe editing, crafting ticker, backoff
+  AutoCraftService             recipe editing, crafting ticker
+  CraftScheduler               when each node next crafts: interval, backoff, wake on change
   RecipeEditorHolder           ghost-item 3x3 editor (custom WORKBENCH inventory)
   CraftPlanner                 pure: plans extraction from inputs without copying inventories
 filter/
@@ -301,6 +302,9 @@ Effects:
 - **Recipe editor:** a custom `WORKBENCH` inventory (`RecipeEditorHolder`) where clicks place ghost copies.
   - **On change:** resolve once with `Bukkit.getCraftingRecipe(matrix, world)`, store the recipe key and matrix, play a chime, and update the display.
   - **Animation:** the choice-cycling animation for tag/material choices is kept, but runs only while someone is viewing.
+  - **Match modes:** right-clicking a ghost cycles what its slot accepts: `RECIPE` (the recipe's own choice, e.g. any planks), `EXACT`
+    (identical item) or `TYPE` (any item of that type). Special recipes expose no choices, so `RECIPE` acts as `EXACT` there and the cycle
+    skips it. Stored per group in `groups.matches`.
 - **Crafting ticker:** **one** central ticker (every 20 ticks) iterates *active* nodes, meaning those in loaded chunks with a valid output:
   - **Hopper below:** craft unless the hopper is powered.
   - **Container below:** craft only while the table is powered.
@@ -309,7 +313,11 @@ Effects:
   - It computes the result and remaining items with `Bukkit.craftItemResult(plannedMatrix, world)`.
   - It checks output capacity by scanning output slots.
   - It then commits the plan atomically.
-- **Backoff:** a node that fails to craft backs off (1 → 2 → 4 … up to 10 s). The backoff resets on an `InventoryMoveItemEvent` into an adjacent input or on a recipe change. Idle crafters cost close to nothing.
+- **Scheduling (`CraftScheduler`):** the ticker runs every tick but only touches nodes due that tick, kept in per-tick buckets. A node that
+  crafted tries again one interval later. A node that failed backs off (1 → 2 → 4 … up to 5 s) and watches its six neighbours and any
+  adjacent ChestLink groups. Items moving in or out of those, a player clicking items into one or closing it, or a block placed or broken there retries it on the
+  next tick, as do a recipe or match change and linking. A sweep every interval picks up nodes nothing has scheduled (loaded, or relinked
+  with Silk Touch). Idle crafters cost close to nothing, and change hooks return at once while no crafter is waiting.
 - **Block reads:** non-snapshot (`getState(false)`) only.
 
 ### 5.10 Commands (Brigadier)

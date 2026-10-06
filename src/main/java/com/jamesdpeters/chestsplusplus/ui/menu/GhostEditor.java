@@ -1,5 +1,6 @@
 package com.jamesdpeters.chestsplusplus.ui.menu;
 
+import java.util.List;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.InventoryHolder;
@@ -15,4 +16,7 @@ public abstract class GhostEditor implements InventoryHolder {
 
     /** A click on one of the editor's slots. The event is already cancelled. */
     public abstract void onClick(Player player, int slot, @Nullable ItemStack cursor, ClickType click);
+
+    /** A drag of {@code cursor} across the editor's {@code slots} (in slot order). The event is already cancelled; editors ignore drags by default. */
+    public void onDrag(Player player, List<Integer> slots, ItemStack cursor) {}
 }

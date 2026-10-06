@@ -14,12 +14,15 @@ A ground-up rewrite for **Paper 26.x** (Java 25). Not compatible with v2 data, c
 - **Trust lists and members** replace parties.
 - **Silk Touch** moves linked blocks without unlinking them.
 - **Brigadier commands** with suggestions, including `owner:group` for shared groups.
+- **AutoCraft match modes:** right-click a ghost item in the recipe editor to choose what that slot accepts: what the
+  recipe allows (e.g. any planks), this exact item, or any item of its type (e.g. any damaged pickaxe for repairs).
 
 ### Changed
 - ChestLink hoppers are now vanilla transfers (`HopperInventorySearchEvent`), so speed and hopper settings match a
   normal chest. There are no per-group tasks.
 - Data is stored incrementally in SQLite (`data.db`), with crash-safe write-behind saving.
-- AutoCraft runs on one central ticker with backoff for idle crafters; inputs can be ChestLinks.
+- AutoCraft runs on one central ticker and crafts on the next tick after its recipe, inputs or output change, instead of waiting for
+  a fixed sweep; idle crafters back off. Inputs can be ChestLinks.
 - Sorting happens on open/close and on demand instead of after every click.
 - Permissions moved to `chestsplusplus.*`; limits are `chestsplusplus.limit.<type>.<n>`.
 - Update notices go only to players with `chestsplusplus.admin.update`, when they join.

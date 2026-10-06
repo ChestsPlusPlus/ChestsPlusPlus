@@ -7,7 +7,8 @@ CREATE TABLE groups (
   sort_mode   TEXT,
   created_at  INTEGER NOT NULL,
   items       BLOB,
-  recipe_key  TEXT
+  recipe_key  TEXT,
+  matches     TEXT
 );
 
 CREATE TABLE group_members (
