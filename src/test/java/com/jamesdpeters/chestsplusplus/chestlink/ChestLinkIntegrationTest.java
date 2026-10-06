@@ -19,6 +19,7 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Container;
+import org.bukkit.block.data.Directional;
 import org.bukkit.block.data.type.WallSign;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Item;
@@ -116,6 +117,9 @@ class ChestLinkIntegrationTest extends PluginTestBase {
     void namedTagLinksBlockAndIsUsedUp() {
         Block barrel = world.getBlockAt(0, 64, 0);
         barrel.setType(Material.BARREL);
+        Directional data = (Directional) barrel.getBlockData();
+        data.setFacing(BlockFace.EAST);
+        barrel.setBlockData(data);
         ItemStack tag = namedTag("ores", 2);
 
         PlayerInteractEvent event = nameTag(alice, barrel, tag);
@@ -124,7 +128,8 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         assertThat(group).isNotNull();
         Node node = plugin.services().nodes().get(BlockPos.of(barrel));
         assertThat(node).isNotNull();
-        assertThat(node.facing()).isEqualTo(BlockFace.SOUTH);
+        // Clicked on the south side, but the link goes on the barrel's front.
+        assertThat(node.facing()).isEqualTo(BlockFace.EAST);
         assertThat(event.useInteractedBlock()).isEqualTo(org.bukkit.event.Event.Result.DENY);
         assertThat(tag.getAmount()).isEqualTo(1);
         assertThat(nextPlain(alice)).contains("Created ChestLink ores");
