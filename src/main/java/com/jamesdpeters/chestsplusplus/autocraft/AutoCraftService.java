@@ -6,6 +6,7 @@ import com.jamesdpeters.chestsplusplus.core.Holders;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.display.DisplayService;
 import com.jamesdpeters.chestsplusplus.link.GroupTypeHandler;
+import com.jamesdpeters.chestsplusplus.link.SyntheticMoveEvent;
 import com.jamesdpeters.chestsplusplus.message.Message;
 import com.jamesdpeters.chestsplusplus.message.Messages;
 import com.jamesdpeters.chestsplusplus.model.AutoCraftGroup;
@@ -18,6 +19,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Predicate;
 import lombok.RequiredArgsConstructor;
@@ -332,23 +334,69 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
         if (inputs.isEmpty()) return false;
         List<@Nullable Predicate<ItemStack>> slots = slotsFor(group);
         if (slots == null) return false;
+        Craft craft = permittedCraft(slots, inputs, output, table);
+        if (craft == null) return false;
 
+        CraftPlanner.commit(craft.plan());
+        output.addItem(craft.produced());
+        markChanged(output);
+        inputs.forEach(this::markChanged);
+        return true;
+    }
+
+    private record Craft(CraftPlanner.Plan plan, ItemStack[] produced) {}
+
+    /** A craft whose every move other plugins allow: a refused input is dropped and the craft planned again without it. */
+    private @Nullable Craft permittedCraft(List<@Nullable Predicate<ItemStack>> slots, List<Inventory> inputs, Inventory output, Block table) {
+        List<Inventory> usable = new ArrayList<>(inputs);
+        List<Inventory> allowed = new ArrayList<>(inputs.size());
+        while (true) {
+            Craft craft = craft(slots, usable, output, table.getWorld());
+            if (craft == null) return null;
+            Inventory refused = refusedSource(craft.plan(), output, table, allowed);
+            if (refused == null) return craft;
+            usable.remove(refused);
+        }
+    }
+
+    private @Nullable Craft craft(List<@Nullable Predicate<ItemStack>> slots, List<Inventory> inputs, Inventory output, World world) {
         CraftPlanner.Plan plan = CraftPlanner.plan(slots, inputs);
-        if (plan == null) return false;
-        CraftingBackend.Crafted crafted = backend.craft(plan.matrix(), table.getWorld());
-        if (crafted == null) return false;
+        if (plan == null) return null;
+        CraftingBackend.Crafted crafted = backend.craft(plan.matrix(), world);
+        if (crafted == null) return null;
         List<ItemStack> produced = new ArrayList<>();
         produced.add(crafted.result());
         for (ItemStack leftover : crafted.remaining()) {
             if (leftover != null && !leftover.isEmpty()) produced.add(leftover);
         }
-        if (!CraftPlanner.fits(output, produced)) return false;
+        return CraftPlanner.fits(output, produced) ? new Craft(plan, produced.toArray(ItemStack[]::new)) : null;
+    }
 
-        CraftPlanner.commit(plan);
-        output.addItem(produced.toArray(ItemStack[]::new));
-        markChanged(output);
-        inputs.forEach(this::markChanged);
-        return true;
+    /**
+     * The first input the plan takes from that another plugin refuses, asked as a hopper move from the input's block into the output's,
+     * so a crafter can do no more than a hopper could there. Each input is asked once per attempt.
+     */
+    private @Nullable Inventory refusedSource(CraftPlanner.Plan plan, Inventory output, Block table, List<Inventory> allowed) {
+        Inventory into = blockSide(output, table, BlockFace.DOWN);
+        for (int i = 0; i < plan.sources().size(); i++) {
+            CraftPlanner.Source source = plan.sources().get(i);
+            if (source == null || allowed.contains(source.inventory())) continue;
+            Inventory input = source.inventory();
+            if (!SyntheticMoveEvent.allows(blockSide(input, table, INPUT_FACES), Objects.requireNonNull(plan.matrix()[i]), into)) return input;
+            allowed.add(input);
+        }
+        return null;
+    }
+
+    /** What a lock plugin can recognise: for a ChestLink, its linked block's own container beside the table rather than the shared inventory. */
+    private Inventory blockSide(Inventory inventory, Block table, BlockFace... faces) {
+        if (!(Holders.of(inventory) instanceof ChestLinkHolder holder)) return inventory;
+        for (BlockFace face : faces) {
+            Block block = table.getRelative(face);
+            Inventory container = services.groupAt(block) == holder.group() ? Holders.containerAt(block) : null;
+            if (container != null) return container;
+        }
+        return inventory;
     }
 
     /**

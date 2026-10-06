@@ -7,6 +7,7 @@ import com.jamesdpeters.chestsplusplus.core.BlockPos;
 import com.jamesdpeters.chestsplusplus.core.Holders;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.link.LinkService;
+import com.jamesdpeters.chestsplusplus.link.SyntheticMoveEvent;
 import com.jamesdpeters.chestsplusplus.message.Message;
 import java.util.HashMap;
 import java.util.Map;
@@ -54,7 +55,7 @@ public final class FilterListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     void onMove(InventoryMoveItemEvent event) {
         Inventory destination = event.getDestination();
-        if (destination.getType() != InventoryType.HOPPER || !enabled()) return;
+        if (destination.getType() != InventoryType.HOPPER || event instanceof SyntheticMoveEvent || !enabled()) return;
         // Hopper blocks only (minecart hoppers have an entity holder).
         if (!(Holders.of(destination) instanceof Hopper hopper)) return;
         CompiledFilter filter = filters.get(hopper.getWorld().getUID(), hopper.getX(), hopper.getY(), hopper.getZ());
@@ -74,7 +75,8 @@ public final class FilterListener implements Listener {
 
     /**
      * A hopper still stalls when the first slot of its source is rejected. Move the first acceptable stack instead, once per hopper
-     * cooldown, with a single slot scan and no event re-entry.
+     * cooldown, with a single slot scan. Other plugins only saw the rejected item, so they are asked about this one first; a refusal
+     * waits out the cooldown.
      */
     private void avoidStall(Inventory source, Inventory destination, CompiledFilter filter, int amount, BlockPos pos) {
         int now = services.plugin().getServer().getCurrentTick();
@@ -85,6 +87,10 @@ public final class FilterListener implements Listener {
             ItemStack item = contents[slot];
             if (item == null || item.isEmpty() || !filter.accepts(item)) continue;
             ItemStack moving = item.asQuantity(Math.min(amount, item.getAmount()));
+            if (!SyntheticMoveEvent.allows(source, moving, destination)) {
+                lastManualMove.put(pos, now);
+                return;
+            }
             Map<Integer, ItemStack> leftover = destination.addItem(moving.clone());
             int moved = moving.getAmount() - leftover.values().stream().mapToInt(ItemStack::getAmount).sum();
             if (moved <= 0) continue;

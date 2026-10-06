@@ -40,11 +40,12 @@ public final class GolemBridge implements Listener {
 
     /**
      * Paper fires this several times per tick per searching golem, so non-linked blocks cost one hash lookup. Applies vanilla's rules to
-     * the group rather than the empty container, and turns golems away entirely when the feature is off so nothing lands in it.
+     * the group rather than the empty container, and turns golems away entirely when the feature is off so nothing lands in it. Only
+     * ever narrows: the event starts allowed, so a refusal here came from another plugin, such as a lock on the linked block.
      */
     @EventHandler
     void onValidate(ItemTransportingEntityValidateTargetEvent event) {
-        if (!(services.groupAt(event.getBlock()) instanceof ChestLinkGroup group)) return;
+        if (!event.isAllowed() || !(services.groupAt(event.getBlock()) instanceof ChestLinkGroup group)) return;
         if (!enabled() || !(event.getEntity() instanceof CopperGolem golem)) {
             event.setAllowed(false);
             return;

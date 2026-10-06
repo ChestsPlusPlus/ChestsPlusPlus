@@ -3,6 +3,7 @@ package com.jamesdpeters.chestsplusplus.chestlink;
 import com.jamesdpeters.chestsplusplus.core.Holders;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.link.LinkService;
+import com.jamesdpeters.chestsplusplus.link.SyntheticMoveEvent;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.Node;
@@ -68,6 +69,7 @@ public final class ChestLinkListener implements Listener {
     /** Hopper transfers in or out of a ChestLink mark it dirty and refresh its display. */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     void onMove(InventoryMoveItemEvent event) {
+        if (event instanceof SyntheticMoveEvent) return;
         if (Holders.of(event.getDestination()) instanceof ChestLinkHolder holder) chestLinks.changed(holder.group());
         if (Holders.of(event.getSource()) instanceof ChestLinkHolder holder) chestLinks.changed(holder.group());
     }

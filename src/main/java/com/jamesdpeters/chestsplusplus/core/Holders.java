@@ -1,6 +1,8 @@
 package com.jamesdpeters.chestsplusplus.core;
 
+import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.Container;
 import org.bukkit.entity.Entity;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
@@ -21,6 +23,11 @@ public final class Holders {
         } catch (RuntimeException unsupported) {
             return inventory.getHolder();
         }
+    }
+
+    /** The block's own container inventory (no block-state snapshot), or null when it isn't a container. */
+    public static @Nullable Inventory containerAt(Block block) {
+        return block.getState(false) instanceof Container container ? container.getInventory() : null;
     }
 
     /** The horizontal direction an entity is looking towards, from its yaw. */

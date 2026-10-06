@@ -7,6 +7,7 @@ import com.jamesdpeters.chestsplusplus.filter.HopperFilter.Mode;
 import com.jamesdpeters.chestsplusplus.testing.PluginTestBase;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -14,6 +15,8 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Container;
 import org.bukkit.block.Hopper;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
@@ -128,6 +131,47 @@ class FilterIntegrationTest extends PluginTestBase {
         InventoryMoveItemEvent accepted = new InventoryMoveItemEvent(source, ItemStack.of(Material.STONE), destination, false);
         server.getPluginManager().callEvent(accepted);
         assertThat(accepted.isCancelled()).isFalse();
+    }
+
+    /** Another plugin refusing hopper moves of {@code refused}, at {@code priority}. */
+    private void refuse(EventPriority priority, Predicate<InventoryMoveItemEvent> refused) {
+        server.getPluginManager().registerEvent(InventoryMoveItemEvent.class, new Listener() {}, priority, (listener, event) -> {
+            if (event instanceof InventoryMoveItemEvent move && refused.test(move)) move.setCancelled(true);
+        }, plugin);
+    }
+
+    @Test
+    void stallAvoidanceAsksOtherPluginsAboutTheItemItMoves() {
+        Block hopper = hopperAt(0);
+        filters.write(hopper, List.of(filter(Material.STONE, Mode.ALLOW, Match.TYPE)));
+        Block chest = world.getBlockAt(0, 65, 0);
+        chest.setType(Material.CHEST);
+        Inventory source = inventoryOf(chest);
+        source.setItem(0, ItemStack.of(Material.DIRT, 5));
+        source.setItem(1, ItemStack.of(Material.STONE, 5));
+        refuse(EventPriority.NORMAL, move -> move.getItem().getType() == Material.STONE);
+
+        server.getPluginManager().callEvent(new InventoryMoveItemEvent(source, ItemStack.of(Material.DIRT), inventoryOf(hopper), false));
+
+        assertThat(inventoryOf(hopper).isEmpty()).isTrue();
+        assertThat(source.getItem(1).getAmount()).isEqualTo(5);
+    }
+
+    @Test
+    void stallAvoidanceMovesNothingOutOfAChestLockedByALatePlugin() {
+        Block hopper = hopperAt(0);
+        filters.write(hopper, List.of(filter(Material.STONE, Mode.ALLOW, Match.TYPE)));
+        Block chest = world.getBlockAt(0, 65, 0);
+        chest.setType(Material.CHEST);
+        Inventory source = inventoryOf(chest);
+        source.setItem(0, ItemStack.of(Material.DIRT, 5));
+        source.setItem(1, ItemStack.of(Material.STONE, 5));
+        refuse(EventPriority.HIGHEST, move -> move.getSource().equals(source));
+
+        server.getPluginManager().callEvent(new InventoryMoveItemEvent(source, ItemStack.of(Material.DIRT), inventoryOf(hopper), false));
+
+        assertThat(inventoryOf(hopper).isEmpty()).isTrue();
+        assertThat(source.getItem(1).getAmount()).isEqualTo(5);
     }
 
     @Test

@@ -19,6 +19,8 @@ import org.bukkit.block.Container;
 import org.bukkit.block.data.type.WallSign;
 import org.bukkit.block.sign.Side;
 import org.bukkit.entity.CopperGolem;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.world.GenericGameEvent;
 import org.bukkit.inventory.Inventory;
@@ -116,6 +118,20 @@ class GolemBridgeIntegrationTest extends PluginTestBase {
         assertThat(validate(golem, chest)).isFalse();
         group.inventory().addItem(new ItemStack(Material.COBBLESTONE, 3));
         assertThat(validate(golem, chest)).isTrue();
+    }
+
+    @Test
+    void aLockThatRefusedFirstStaysRefused() {
+        Block chest = place(Material.COPPER_CHEST, 0);
+        link(chest, "src").inventory().addItem(new ItemStack(Material.COBBLESTONE, 3));
+        CopperGolem golem = golemBeside(chest, CopperGolem.State.IDLE, ItemStack.empty());
+        server.getPluginManager().registerEvent(ItemTransportingEntityValidateTargetEvent.class, new Listener() {}, EventPriority.LOW,
+                (listener, event) -> {
+                    if (event instanceof ItemTransportingEntityValidateTargetEvent validate && validate.getBlock().equals(chest))
+                        validate.setAllowed(false);
+                }, plugin);
+
+        assertThat(validate(golem, chest)).isFalse();
     }
 
     @Test

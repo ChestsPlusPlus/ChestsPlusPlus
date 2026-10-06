@@ -2,6 +2,7 @@ package com.jamesdpeters.chestsplusplus.autocraft;
 
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.link.LinkService;
+import com.jamesdpeters.chestsplusplus.link.SyntheticMoveEvent;
 import com.jamesdpeters.chestsplusplus.model.AutoCraftGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.Node;
@@ -34,6 +35,7 @@ public final class AutoCraftListener implements Listener {
     /** Items arriving at an input, or leaving a full output hopper. */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     void onMove(InventoryMoveItemEvent event) {
+        if (event instanceof SyntheticMoveEvent) return;
         autoCraft.inventoryChanged(event.getDestination());
         autoCraft.inventoryChanged(event.getSource());
     }

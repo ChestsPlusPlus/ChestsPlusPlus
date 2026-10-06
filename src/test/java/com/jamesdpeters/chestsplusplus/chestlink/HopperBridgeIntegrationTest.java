@@ -17,6 +17,9 @@ import org.bukkit.block.Container;
 import org.bukkit.block.data.type.WallSign;
 import org.bukkit.block.sign.Side;
 import org.bukkit.entity.Item;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.inventory.Inventory;
@@ -105,6 +108,33 @@ class HopperBridgeIntegrationTest extends PluginTestBase {
         assertThat(dropper.contains(Material.DIRT, 3)).isTrue();
         assertThat(group.inventory().contains(Material.DIRT)).isFalse();
         assertThat(droppedItems()).isEmpty();
+    }
+
+    /** A lock plugin that cancels late, after the dropper push has already been taken over. */
+    static final class LateLock implements Listener {
+        private final Inventory locked;
+
+        LateLock(Inventory locked) {
+            this.locked = locked;
+        }
+
+        @EventHandler(priority = EventPriority.HIGHEST)
+        void onMove(InventoryMoveItemEvent event) {
+            if (event.getDestination().equals(locked)) event.setCancelled(true);
+        }
+    }
+
+    @Test
+    void aLateLockOnTheLinkedChestStillStopsADropperPush() {
+        Inventory dropper = inventoryOf(place(Material.DROPPER, 2));
+        dropper.addItem(new ItemStack(Material.DIRT, 3));
+        server.getPluginManager().registerEvents(new LateLock(inventoryOf(chest)), plugin);
+
+        InventoryMoveItemEvent event = push(dropper, new ItemStack(Material.DIRT));
+
+        assertThat(event.isCancelled()).isTrue();
+        assertThat(dropper.contains(Material.DIRT, 3)).isTrue();
+        assertThat(group.inventory().contains(Material.DIRT)).isFalse();
     }
 
     @Test

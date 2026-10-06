@@ -7,7 +7,7 @@ they can't.
 |---|---|---|
 | Unit | `./gradlew unitTest` | `BlockPos`, `Settings`, `Messages`, model indexes, access/trust, SQLite repository and migrations, display layout, item grouping, versions, command tree guard |
 | MockBukkit | `./gradlew integrationTest` | Plugin lifecycle, persistence round trips, linking (signs, silk touch, limits, blacklist, access), breaking/explosions, hopper substitution, displays (item only), sorting, all commands, the icon grid, filters (semantics, PDC, enforcement, stall avoidance, editor), AutoCraft (planner, crafting, ChestLink inputs, scheduling and wake-ups, editor) |
-| E2E (Plugwright) | `./gradlew e2e -Pchestsplusplus.acceptMinecraftEula=true` | Real hopper transfers through a ChestLink, display entities, `/cl list`, `/cl open`, `/cpp help`, a real filtered hopper behind a rejected slot, real torch crafting, crafting on the next tick after a recipe, input or output change, and the powered/unpowered crafter rule on Paper 26.3 |
+| E2E (Plugwright) | `./gradlew e2e -Pchestsplusplus.acceptMinecraftEula=true` | Real hopper transfers through a ChestLink, display entities, `/cl list`, `/cl open`, `/cpp help`, a real filtered hopper behind a rejected slot, real torch crafting, crafting on the next tick after a recipe, input or output change, the powered/unpowered crafter rule, and hoppers and AutoCrafters refused by a locked ChestLink exactly as by a locked vanilla chest (via a stand-in lock plugin) on Paper 26.3 |
 
 Known automation limits:
 - **MockBukkit** doesn't implement `TextDisplay#setBillboard`, redstone power, recipe matching or `PluginBootstrap`.

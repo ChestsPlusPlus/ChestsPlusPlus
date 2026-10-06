@@ -39,12 +39,15 @@ import org.jspecify.annotations.Nullable;
 /**
  * E2E test harness. Never shipped: built from {@code src/testHarness} into ChestsPlusPlus-TestHarness.jar and only
  * installed on the E2E server. Console/RCON-only {@code /cpptest} commands with plain, parseable output. Everything is
- * read-only except the explicit fixture commands ({@code link}, {@code reset}).
+ * read-only except the explicit fixture commands ({@code link}, {@code lock}, {@code reset}, ...).
  */
 public final class ChestsPlusPlusTestHarness extends JavaPlugin {
 
+    private final FakeLock lock = new FakeLock();
+
     @Override
     public void onEnable() {
+        getServer().getPluginManager().registerEvents(lock, this);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
                 event -> event.registrar().register(Commands.literal("cpptest").requires(ChestsPlusPlusTestHarness::isConsole)
                         .then(Commands.literal("ping").executes(c -> reply(c, "cpptest pong")))
@@ -71,6 +74,10 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
                                                         .then(Commands.argument("mode", StringArgumentType.word())
                                                                 .then(Commands.argument("material", StringArgumentType.greedyString())
                                                                         .executes(this::filter)))))))
+                        .then(Commands.literal("lock")
+                                .then(Commands.argument("x", IntegerArgumentType.integer())
+                                        .then(Commands.argument("y", IntegerArgumentType.integer())
+                                                .then(Commands.argument("z", IntegerArgumentType.integer()).executes(this::lock)))))
                         .then(Commands.literal("link")
                                 .then(Commands.argument("type", StringArgumentType.word()).then(Commands.argument("owner", StringArgumentType.word())
                                         .then(Commands.argument("name", StringArgumentType.word())
@@ -246,8 +253,16 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
         return reply(context, "cpptest filter ok indexed=" + (filters.get(block) != null));
     }
 
-    /** Fixture: removes every group (contents are discarded, not dropped). */
+    /** Fixture: {@code cpptest lock <x> <y> <z>} locks a container against hopper moves, like a lock plugin would. */
+    private int lock(CommandContext<CommandSourceStack> context) {
+        lock.lock(Bukkit.getWorlds().getFirst().getBlockAt(IntegerArgumentType.getInteger(context, "x"), IntegerArgumentType.getInteger(context, "y"),
+                IntegerArgumentType.getInteger(context, "z")));
+        return reply(context, "cpptest lock ok");
+    }
+
+    /** Fixture: removes every group (contents are discarded, not dropped) and every lock. */
     private int reset(CommandContext<CommandSourceStack> context) {
+        lock.clear();
         Services services = services();
         LinkService links = services.get(LinkService.class);
         List<StorageGroup> all = new ArrayList<>(services.groups().all());

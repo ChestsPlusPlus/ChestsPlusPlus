@@ -4,7 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.jamesdpeters.chestsplusplus.core.BlockPos;
 import com.jamesdpeters.chestsplusplus.display.DisplayService;
+import com.jamesdpeters.chestsplusplus.filter.FilterService;
+import com.jamesdpeters.chestsplusplus.filter.HopperFilter;
+import com.jamesdpeters.chestsplusplus.filter.HopperFilter.Match;
+import com.jamesdpeters.chestsplusplus.filter.HopperFilter.Mode;
 import com.jamesdpeters.chestsplusplus.link.LinkService;
+import com.jamesdpeters.chestsplusplus.link.SyntheticMoveEvent;
 import com.jamesdpeters.chestsplusplus.model.AutoCraftGroup;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
@@ -25,11 +30,14 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Container;
 import org.bukkit.block.data.type.Hopper;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
@@ -315,6 +323,118 @@ class AutoCraftIntegrationTest extends PluginTestBase {
 
     private void ticks(int count) {
         for (int i = 0; i < count; i++) autoCraft.tick();
+    }
+
+    /** Stands in for a container-lock plugin: refuses every hopper move into or out of one inventory. */
+    static final class Lock implements Listener {
+        private final Inventory locked;
+        final List<InventoryMoveItemEvent> seen = new ArrayList<>();
+
+        Lock(Inventory locked) {
+            this.locked = locked;
+        }
+
+        @EventHandler
+        void onMove(InventoryMoveItemEvent event) {
+            seen.add(event);
+            if (event.getSource().equals(locked) || event.getDestination().equals(locked)) event.setCancelled(true);
+        }
+    }
+
+    private Lock lock(Inventory locked) {
+        Lock lock = new Lock(locked);
+        server.getPluginManager().registerEvents(lock, plugin);
+        return lock;
+    }
+
+    @Test
+    void aLockedInputIsNotDrained() {
+        AutoCraftGroup[] group = new AutoCraftGroup[1];
+        Block table = crafter(group);
+        Inventory locked = container(table.getRelative(BlockFace.UP), Material.CHEST);
+        locked.addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
+        Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
+        Lock lock = lock(locked);
+
+        assertThat(autoCraft.craftAt(group[0], plugin.services().nodes().get(BlockPos.of(table)))).isFalse();
+        assertThat(locked.contains(Material.COAL, 1)).isTrue();
+        assertThat(locked.contains(Material.STICK, 1)).isTrue();
+        assertThat(output.isEmpty()).isTrue();
+        assertThat(lock.seen).singleElement().satisfies(event -> {
+            assertThat(event.getSource()).isEqualTo(locked);
+            assertThat(event.getDestination()).isEqualTo(output);
+        });
+    }
+
+    @Test
+    void aLockedInputIsSkippedForAnAllowedOne() {
+        AutoCraftGroup[] group = new AutoCraftGroup[1];
+        Block table = crafter(group);
+        Inventory locked = container(table.getRelative(BlockFace.UP), Material.CHEST);
+        locked.addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
+        Inventory allowed = container(table.getRelative(BlockFace.EAST), Material.CHEST);
+        allowed.addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
+        Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
+        Lock lock = lock(locked);
+
+        assertThat(autoCraft.craftAt(group[0], plugin.services().nodes().get(BlockPos.of(table)))).isTrue();
+        assertThat(output.contains(Material.TORCH, 4)).isTrue();
+        assertThat(allowed.isEmpty()).isTrue();
+        assertThat(locked.contains(Material.COAL, 1)).isTrue();
+        assertThat(locked.contains(Material.STICK, 1)).isTrue();
+        assertThat(lock.seen).hasSize(2);
+    }
+
+    @Test
+    void aLockedOutputIsNotFilled() {
+        AutoCraftGroup[] group = new AutoCraftGroup[1];
+        Block table = crafter(group);
+        Inventory input = container(table.getRelative(BlockFace.UP), Material.CHEST);
+        input.addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
+        Inventory locked = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
+        lock(locked);
+
+        assertThat(autoCraft.craftAt(group[0], plugin.services().nodes().get(BlockPos.of(table)))).isFalse();
+        assertThat(locked.isEmpty()).isTrue();
+        assertThat(input.contains(Material.COAL, 1)).isTrue();
+    }
+
+    @Test
+    void ourOwnListenersIgnoreTheProtectionCheck() {
+        AutoCraftGroup[] group = new AutoCraftGroup[1];
+        Block table = crafter(group);
+        Inventory input = container(table.getRelative(BlockFace.UP), Material.CHEST);
+        input.addItem(ItemStack.of(Material.COAL, 2), ItemStack.of(Material.STICK, 2));
+        Block below = table.getRelative(BlockFace.DOWN);
+        Inventory output = container(below, Material.HOPPER);
+        // The check's item is the coal ingredient, which this filter would refuse and stall-avoid if it treated the check as a real move.
+        plugin.services().get(FilterService.class).write(below, List.of(new HopperFilter(ItemStack.of(Material.TORCH), Mode.ALLOW, Match.TYPE)));
+        Lock lock = lock(server.createInventory(null, 9));
+
+        assertThat(autoCraft.craftAt(group[0], plugin.services().nodes().get(BlockPos.of(table)))).isTrue();
+        assertThat(lock.seen).singleElement().isInstanceOf(SyntheticMoveEvent.class).satisfies(event -> assertThat(event.isCancelled()).isFalse());
+        assertThat(output.contains(Material.TORCH, 4)).isTrue();
+        assertThat(output.contains(Material.COAL)).isFalse();
+        assertThat(input.contains(Material.COAL, 1)).isTrue();
+        assertThat(input.contains(Material.STICK, 1)).isTrue();
+    }
+
+    @Test
+    void aLockedChestLinkInputIsRefusedLikeAVanillaChest() {
+        AutoCraftGroup[] group = new AutoCraftGroup[1];
+        Block table = crafter(group);
+        Block side = table.getRelative(BlockFace.EAST);
+        side.setType(Material.CHEST);
+        plugin.services().get(LinkService.class).link(alice, GroupType.CHESTLINK, "mats", side, BlockFace.EAST, true);
+        ChestLinkGroup mats = (ChestLinkGroup) plugin.services().groups().find(GroupType.CHESTLINK, alice.getUniqueId(), "mats");
+        mats.inventory().addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
+        container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
+        Inventory linkedChest = ((Container) side.getState(false)).getInventory();
+        Lock lock = lock(linkedChest);
+
+        assertThat(autoCraft.craftAt(group[0], plugin.services().nodes().get(BlockPos.of(table)))).isFalse();
+        assertThat(lock.seen).singleElement().satisfies(event -> assertThat(event.getSource()).isEqualTo(linkedChest));
+        assertThat(mats.inventory().contains(Material.COAL)).isTrue();
     }
 
     @Test
