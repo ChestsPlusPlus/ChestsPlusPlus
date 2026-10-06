@@ -344,7 +344,7 @@ Registered in the bootstrapper via `LifecycleEvents.COMMANDS`, with typed argume
 ### 5.12 Configuration
 `config.yml` (fresh v3 layout) maps onto an immutable `Settings` record tree:
 ```yaml
-features: { chestlinks: true, autocraft: true, hopper-filters: true }
+features: { chestlinks: true, autocraft: true, hopper-filters: true, copper-golems: true }
 chestlink: { animate-all-nodes: true, display: { enabled: true, label: true, view-range: 0.5 } }
 autocraft: { display: { enabled: true, label: true } , tick-interval: 20 }
 filters:   { displays: true }
@@ -732,6 +732,27 @@ A bot confirmed it builds without errors. Which row is right, readability at dis
 1. **Wait (default):** keep the E2E job non-blocking, with only short smoke tests (join, command, RCON) in Stage A. Gameplay scenarios go on the manual checklist until ViaBackwards is fixed or Mineflayer supports 26.3 (Stage C). Optionally report the bug upstream with the repro above.
 2. **Target 26.2 at runtime for E2E:** declare `api-version: 26.2`, avoid 26.3-only APIs (already preferred by §10.2), and run the E2E server on Paper 26.2 + Via, where bots work. This costs a runtime guard against accidental 26.3-only API use and a second server version to maintain.
 3. **Custom mode with a newer protocol library:** only if Mineflayer or minecraft-data gains 26.3 data first (it currently has none for 26.2/26.3).
+
+### S7: Copper golems and ChestLinks (6 October 2026): **works, via hand handoff**
+A throwaway probe plugin (not committed) ran eight walled pens on Paper 26.3-146, each with a waxed copper golem, a copper chest and a
+chest, for up to 9000 ticks. A plain `Inventory` stood in for the group.
+
+- **The container can't be swapped.** `TransportItemsBetweenContainers` takes the block entity's own container (`ChestBlock.getContainer`
+  for chests) in private static code. Paper's only hook is `ItemTransportingEntityValidateTargetEvent` (allow or deny a candidate).
+  Golems take from `copper_chests` and deliver to `chest`/`trapped_chest`, 16 items per trip.
+- **Without handling, linked chests leak:** a golem sees a linked chest's empty container as a valid drop-off and puts items in it.
+- **Open/close game events come without the golem.** Chests delay their opener callbacks, and the recheck calls
+  `gameEvent(null, CONTAINER_OPEN, pos)`. The event does arrive in the tick the golem enters `GETTING_NO_ITEM`/`DROPPING_*`, with the
+  exact block position.
+- **Handoff on open works.** Giving an empty-handed golem in `GETTING_NO_ITEM` up to 16 items makes it end the interaction the next tick
+  and go to deliver; it never puts them back. Taking a `DROPPING_*` golem's item into the group leaves nothing in the container.
+  Totals matched in every pen at every summary, with no leaks. Handing off at the end of the interaction also works but is slower.
+- **Validate applies vanilla's rules to the group:** deny an empty group as a source; allow a drop-off only if the group is empty or
+  holds a similar item with room. Non-matching loads were turned away and the golem kept them, as in vanilla.
+- **Vanilla quirks seen in every pen type, linked or not:** some golems never start working, and some sit in one interaction for
+  500–900 ticks.
+
+This is `GolemBridge`. MockBukkit 26.2 doesn't implement `CopperGolem#getGolemState`, so its test subclasses `CopperGolemMock`.
 
 ---
 

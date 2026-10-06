@@ -5,6 +5,7 @@ import com.jamesdpeters.chestsplusplus.autocraft.AutoCraftService;
 import com.jamesdpeters.chestsplusplus.autocraft.CraftingBackend;
 import com.jamesdpeters.chestsplusplus.chestlink.ChestLinkListener;
 import com.jamesdpeters.chestsplusplus.chestlink.ChestLinkService;
+import com.jamesdpeters.chestsplusplus.chestlink.GolemBridge;
 import com.jamesdpeters.chestsplusplus.chestlink.HopperBridge;
 import com.jamesdpeters.chestsplusplus.config.Settings;
 import com.jamesdpeters.chestsplusplus.core.Services;
@@ -185,6 +186,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
                 new NameTagLinkListener(services, links),
                 new ChestLinkListener(services, links, services.get(ChestLinkService.class)),
                 new HopperBridge(services),
+                new GolemBridge(services, services.get(ChestLinkService.class)),
                 services.get(MenuListener.class),
                 new AutoCraftListener(services, links, services.get(AutoCraftService.class)),
                 new FilterListener(services, services.get(FilterService.class), links, services.get(ChestLinkService.class)),

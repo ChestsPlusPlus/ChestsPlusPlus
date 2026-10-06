@@ -10,7 +10,7 @@ import org.bukkit.configuration.MemoryConfiguration;
 public record Settings(Features features, Linking linking, ChestLink chestlink, AutoCraft autocraft, Filters filters, Limits limits,
         Set<String> worldBlacklist, Storage storage, boolean updateChecker, boolean metrics) {
 
-    public record Features(boolean chestlinks, boolean autocraft, boolean hopperFilters) {}
+    public record Features(boolean chestlinks, boolean autocraft, boolean hopperFilters, boolean copperGolems) {}
 
     public record Linking(boolean consumeNameTags) {}
 
@@ -32,7 +32,7 @@ public record Settings(Features features, Linking linking, ChestLink chestlink, 
     public static Settings from(ConfigurationSection config) {
         return new Settings(
                 new Features(config.getBoolean("features.chestlinks", true), config.getBoolean("features.autocraft", true),
-                        config.getBoolean("features.hopper-filters", true)),
+                        config.getBoolean("features.hopper-filters", true), config.getBoolean("features.copper-golems", true)),
                 new Linking(config.getBoolean("linking.consume-name-tags", true)),
                 new ChestLink(config.getBoolean("chestlink.animate-all-nodes", true), display(config, "chestlink.display")),
                 new AutoCraft(display(config, "autocraft.display"), Math.clamp(config.getInt("autocraft.tick-interval", 20), 1, 1200)),

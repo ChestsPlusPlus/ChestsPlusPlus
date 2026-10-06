@@ -95,4 +95,5 @@ comments, no repeated logic.
   startup. A store's `snapshot` runs on the main thread and must copy what it needs: clone `ItemStack`s, since `getContents()` returns
   live mirrors and items are serialised on the I/O thread.
 - Hot paths run every tick per hopper, so keep them to a few hash lookups with no allocation. These are
-  `HopperBridge.onSearch` and `FilterListener.onMove`.
+  `HopperBridge.onSearch` and `FilterListener.onMove`, plus `GolemBridge.onValidate` (several times per tick per searching golem) and
+  `GolemBridge.onGameEvent` (every game event, footsteps included).

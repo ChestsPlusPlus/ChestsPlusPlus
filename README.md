@@ -12,7 +12,7 @@ Paper plugin that enhances chests and hoppers, with ChestLinks, Auto-Crafting an
 
 - **ChestLinks**: link any number of chests and barrels so they share one 54-slot inventory. Open it from any linked
   block, or remotely with `/cl open <group>` or the menu. Hoppers move items in and out exactly as with a normal
-  chest.
+  chest, and copper golems take from linked copper chests and deliver into linked chests.
 - **AutoCraft**: link crafting tables to a shared recipe. Place a container above or beside a table and a hopper
   below, and it crafts automatically. A container below crafts only while the table is powered.
 - **Hopper filters**: sneak + right-click a hopper with an empty hand to choose which items it accepts (allow/deny,

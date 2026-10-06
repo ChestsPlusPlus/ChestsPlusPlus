@@ -41,6 +41,7 @@ class SettingsTest {
 
         assertThat(settings.features().autocraft()).isFalse();
         assertThat(settings.features().chestlinks()).isTrue();
+        assertThat(settings.features().copperGolems()).isTrue();
         assertThat(settings.linking().consumeNameTags()).isFalse();
         assertThat(settings.chestlink().display().viewRange()).isEqualTo(16.0f);
         assertThat(settings.autocraft().tickInterval()).isEqualTo(1);

@@ -4,6 +4,8 @@ features:
   chestlinks: true
   autocraft: true
   hopper-filters: true
+  # Copper golems take items from linked copper chests and deliver into linked chests.
+  copper-golems: true
 
 linking:
   # Use up one name tag each time a block is linked by right-clicking it with a named name tag (never in creative).

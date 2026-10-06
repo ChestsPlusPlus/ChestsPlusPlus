@@ -37,6 +37,9 @@ Run each item on a native 26.3 client against `./gradlew runServer` (or the serv
 - [ ] Remote open from `/cl open`, the hub and the grid; closing returns to the grid when opened from it.
 - [ ] Sorting (each mode) on open/close and on `/cl sort`.
 - [ ] Hopper chains in and out; a dropper pointing into a linked chest adds to the group.
+- [ ] A copper golem takes items from a linked copper chest and delivers them to a chest, and carries items from a copper chest into a
+      linked chest. The linked blocks' own containers stay empty, a golem holding an item the group doesn't have walks past it, and
+      `features.copper-golems: false` makes golems ignore linked blocks.
 
 ### Menus (spike S3)
 - [ ] Hub search, paging, the group dialog (rename, public, sort mode, save), members, trust, and remove with
