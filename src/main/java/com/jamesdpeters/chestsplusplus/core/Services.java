@@ -31,6 +31,7 @@ public final class Services {
     @Getter private final TrustService trust = new TrustService();
     @Getter private final AccessService access = new AccessService(trust, groups);
     @Getter private final Tickers tickers;
+    @Getter private final Shutdown shutdown = new Shutdown();
     @Getter private volatile Settings settings;
     @Getter private volatile Messages messages;
     private @Nullable Persistence persistence;

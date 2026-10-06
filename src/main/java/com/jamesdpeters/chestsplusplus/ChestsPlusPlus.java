@@ -62,7 +62,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.world.WorldSaveEvent;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.jdbi.v3.core.JdbiException;
 import org.jspecify.annotations.Nullable;
 
 /** Plugin entry point. {@code /cpp reload} only swaps settings and messages; it never re-runs enable. */
@@ -78,29 +77,28 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
-        Services services;
         try {
             V2ConfigMigrator.migrate(this);
-            services = new Services(this, loadSettings(), loadMessages());
+            Services services = new Services(this, loadSettings(), loadMessages());
+            // Set before anything can fail, so onDisable undoes whatever was started.
+            this.services = services;
             registerFeatures(services);
             openDatabase(services);
             startMigration(services);
-        } catch (IOException | JdbiException | IllegalStateException e) {
+            registerListeners(services);
+            startTickers(services);
+            startIntegrations(services);
+            refreshLoadedChunks(services);
+        } catch (IOException | RuntimeException e) {
             log.error("Could not start ChestsPlusPlus; disabling", e);
-            getSLF4JLogger();
             getServer().getPluginManager().disablePlugin(this);
-            return;
         }
-        this.services = services;
-        registerListeners(services);
-        startTickers(services);
-        startIntegrations(services);
-        refreshLoadedChunks(services);
     }
 
     private void registerFeatures(Services services) {
         DisplayService displays = services.add(DisplayService.class,
                 new DisplayService(this, services.groups(), services.nodes(), services::settings));
+        services.shutdown().add("displays", displays::despawnAll);
         displays.surfaces(block -> block.getState(false) instanceof Chest ? Surface.CHEST : Surface.FULL_BLOCK);
         LinkService links = services.add(LinkService.class, new LinkService(services, displays));
         services.add(LinkItem.class, new LinkItem(this));
@@ -116,7 +114,9 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         GroupActions actions = services.add(GroupActions.class, new GroupActions(services, links, chestLinks));
         MenuListener menus = services.add(MenuListener.class, new MenuListener(this));
         services.add(UiService.class, new UiService(services, links, actions, menus));
-        services.add(FilterService.class, new FilterService(this, new FilterCodec(this), ItemGrouping.fromServerTags(), services::settings));
+        FilterService filters = services.add(FilterService.class,
+                new FilterService(this, new FilterCodec(this), ItemGrouping.fromServerTags(), services::settings));
+        services.shutdown().add("filter displays", filters::despawnAll);
         services.add(V2Cleanup.class, new V2Cleanup());
         services.add(MigrationState.class, new MigrationState());
         V2PendingLocations pending = services.add(V2PendingLocations.class, new V2PendingLocations());
@@ -128,6 +128,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         if (!dataFolder.isDirectory() && !dataFolder.mkdirs()) throw new IOException("Cannot create " + dataFolder);
         Database database = Database.open("jdbc:sqlite:" + new File(dataFolder, DATABASE_FILE).getAbsolutePath());
         Persistence persistence = new Persistence(database, this::runOnMainThread);
+        services.shutdown().add("persistence", persistence::close);
         GroupStore groupStore = new GroupStore(persistence, services.groups(), services.nodes(), attachLoaded(services));
         TrustStore trustStore = new TrustStore(persistence, services.trust());
         persistence.register(groupStore);
@@ -216,6 +217,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
     private void startTickers(Services services) {
         Tickers tickers = services.tickers();
         Persistence persistence = services.persistence();
+        services.shutdown().add("tickers", tickers::stopAll);
         tickers.everyInterval("persistence-flush", () -> services.settings().storage().flushIntervalSeconds() * 20, ticks -> persistence.flush());
         tickers.every("displays", 1, services.get(DisplayService.class)::tick);
         tickers.every("autocraft", 1, services.get(AutoCraftService.class)::tick);
@@ -223,8 +225,11 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
     }
 
     private void startIntegrations(Services services) {
-        services.add(MetricsService.class, new MetricsService()).start(this, services);
+        MetricsService metrics = services.add(MetricsService.class, new MetricsService());
+        services.shutdown().add("metrics", metrics::stop);
+        metrics.start(this, services);
         UpdateChecker updates = services.add(UpdateChecker.class, new UpdateChecker(services, getPluginMeta().getVersion()));
+        services.shutdown().add("update checker", updates::stop);
         getServer().getPluginManager().registerEvents(updates, this);
         updates.start();
     }
@@ -250,13 +255,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
     public void onDisable() {
         Services current = services;
         services = null;
-        if (current == null) return;
-        current.tickers().stopAll();
-        current.get(UpdateChecker.class).stop();
-        current.get(MetricsService.class).stop();
-        current.get(DisplayService.class).despawnAll();
-        current.get(FilterService.class).despawnAll();
-        current.persistence().close();
+        if (current != null) current.shutdown().run();
     }
 
     /** The live services, or null while the plugin is not enabled. */
