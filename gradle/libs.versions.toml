@@ -18,6 +18,12 @@ jdbi = "3.55.0"
 viaversion = "5.12.0"
 viaversionUrl = "https://cdn.modrinth.com/data/P1OZGk5p/versions/FaishMnD/ViaVersion-5.12.0.jar"
 viaversionSha512 = "2dfe562109179f08685dc84a66aedf7c810592223b5287b6355ba1e741d1737d015ca0c444b4bc01e5db2a4b10549d5028bf2e3f3337219ded709e44b579a4d8"
+# The v2 upgrade test bed (docs/v2-migration-plan.md §8.1): ChestsPlusPlus v2 on Paper 1.21.7.
+v2PaperApi = "1.21.7-R0.1-SNAPSHOT"
+v2PaperServer = "1.21.7"
+v2PaperServerBuild = "32"
+v2PaperServerUrl = "https://fill-data.papermc.io/v1/objects/83838188699cb2837e55b890fb1a1d39ad0710285ed633fbf9fc14e9f47ce078/paper-1.21.7-32.jar"
+v2PaperServerSha256 = "83838188699cb2837e55b890fb1a1d39ad0710285ed633fbf9fc14e9f47ce078"
 viabackwards = "5.12.0"
 viabackwardsUrl = "https://cdn.modrinth.com/data/NpvuJQoq/versions/SxGhdsPK/ViaBackwards-5.12.0.jar"
 viabackwardsSha512 = "dba076b3283eb5987e3d37a63b57802e7946cf8a2d3b6f68ff57ddbc4eb648e2084decd212fef2cd0cde5187bc6565959c31b496bfb38000e67e3ffab4c290b3"
@@ -25,6 +31,7 @@ viabackwardsSha512 = "dba076b3283eb5987e3d37a63b57802e7946cf8a2d3b6f68ff57ddbc4e
 [libraries]
 paper-api = { module = "io.papermc.paper:paper-api", version.ref = "paper" }
 paper-api-test = { module = "io.papermc.paper:paper-api", version.ref = "testPaper" }
+paper-api-v2 = { module = "io.papermc.paper:paper-api", version.ref = "v2PaperApi" }
 mockbukkit = { module = "org.mockbukkit.mockbukkit:mockbukkit-v26.2", version.ref = "mockbukkit" }
 bstats-bukkit = { module = "org.bstats:bstats-bukkit", version.ref = "bstats" }
 jspecify = { module = "org.jspecify:jspecify", version.ref = "jspecify" }

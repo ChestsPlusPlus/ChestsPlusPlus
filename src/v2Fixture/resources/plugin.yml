@@ -1,0 +1,14 @@
+# Test-bed helper for v2UpgradeFixture (docs/v2-migration-plan.md §8.1). Never shipped.
+name: ChestsPlusPlus-V2Fixture
+main: com.jamesdpeters.chestsplusplus.v2fixture.V2FixturePlugin
+version: '1'
+api-version: '1.21'
+depend: [ChestsPlusPlus]
+commands:
+  v2fixture:
+    description: Builds the v2 upgrade test world.
+    usage: /v2fixture build <tester> <other player>
+    permission: v2fixture.build
+permissions:
+  v2fixture.build:
+    default: op

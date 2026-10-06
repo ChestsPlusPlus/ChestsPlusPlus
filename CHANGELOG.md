@@ -2,9 +2,14 @@
 
 ## 3.0.0 (unreleased)
 
-A ground-up rewrite for **Paper 26.x** (Java 25). Not compatible with v2 data, commands, permissions or config.
+A ground-up rewrite for **Paper 26.x** (Java 25). v2 data and config are imported on the first start; commands, permissions and
+language files start fresh.
 
 ### New
+- **v2 import:** on its first start v3 imports v2's `data/storage.yml` (ChestLinks with their items, AutoCrafters, members,
+  public flags, sort modes, and parties as trust) and converts `config.yml`, after backing the data folder up. Blocks are tidied
+  up as their chunks load (v2 signs and armour stands removed, double chests split). `/cpp migrate v2` previews or repeats the
+  import, and v2 hopper filters (item frames) are converted on request with `/cpp migrate v2 filters`.
 - **Sign → display:** linking signs turn into floating item and label displays; no more fake-air sign packets.
 - **Name tag linking:** right-click a chest, barrel or crafting table with a named name tag to link it to that group.
 - **Hopper filter editor:** sneak + right-click a hopper to set allow/deny filters (exact item, same type, or

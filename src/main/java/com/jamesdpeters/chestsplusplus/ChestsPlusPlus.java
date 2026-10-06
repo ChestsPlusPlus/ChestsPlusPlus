@@ -25,6 +25,17 @@ import com.jamesdpeters.chestsplusplus.link.NodeListener;
 import com.jamesdpeters.chestsplusplus.link.SignLinkListener;
 import com.jamesdpeters.chestsplusplus.message.Message;
 import com.jamesdpeters.chestsplusplus.message.Messages;
+import com.jamesdpeters.chestsplusplus.migration.MigrationState;
+import com.jamesdpeters.chestsplusplus.migration.MigrationStateStore;
+import com.jamesdpeters.chestsplusplus.migration.V2Cleanup;
+import com.jamesdpeters.chestsplusplus.migration.V2CleanupStore;
+import com.jamesdpeters.chestsplusplus.migration.V2ConfigMigrator;
+import com.jamesdpeters.chestsplusplus.migration.V2FilterConversion;
+import com.jamesdpeters.chestsplusplus.migration.V2FilterMigration;
+import com.jamesdpeters.chestsplusplus.migration.V2Importer;
+import com.jamesdpeters.chestsplusplus.migration.V2Migration;
+import com.jamesdpeters.chestsplusplus.migration.V2WorldCleanup;
+import com.jamesdpeters.chestsplusplus.migration.WorldUids;
 import com.jamesdpeters.chestsplusplus.model.AutoCraftGroup;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
@@ -41,6 +52,7 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
+import org.bukkit.NamespacedKey;
 import org.bukkit.block.Chest;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -64,9 +76,11 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
     public void onEnable() {
         Services services;
         try {
+            V2ConfigMigrator.migrate(this);
             services = new Services(this, loadSettings(), loadMessages());
             registerFeatures(services);
             openDatabase(services);
+            startMigration(services);
         } catch (IOException | JdbiException | IllegalStateException e) {
             log.error("Could not start ChestsPlusPlus; disabling", e);
             getSLF4JLogger();
@@ -99,6 +113,8 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         MenuListener menus = services.add(MenuListener.class, new MenuListener(this));
         services.add(UiService.class, new UiService(services, links, actions, menus));
         services.add(FilterService.class, new FilterService(this, new FilterCodec(this), ItemGrouping.fromServerTags(), services::settings));
+        services.add(V2Cleanup.class, new V2Cleanup());
+        services.add(MigrationState.class, new MigrationState());
     }
 
     private void openDatabase(Services services) throws IOException {
@@ -111,9 +127,38 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         persistence.register(groupStore);
         persistence.register(trustStore);
         services.trust().onChange(trustStore::markDirty);
+        registerMigrationStores(services, persistence);
         services.persistence(persistence, groupStore, trustStore);
         persistence.load();
         log.info("Loaded {} group(s) and {} linked block(s)", services.groups().size(), services.nodes().size());
+    }
+
+    private static void registerMigrationStores(Services services, Persistence persistence) {
+        V2Cleanup cleanup = services.get(V2Cleanup.class);
+        MigrationState state = services.get(MigrationState.class);
+        V2CleanupStore cleanupStore = new V2CleanupStore(persistence, cleanup);
+        MigrationStateStore stateStore = new MigrationStateStore(persistence, state);
+        persistence.register(cleanupStore);
+        persistence.register(stateStore);
+        cleanup.onChange(cleanupStore::markDirty);
+        state.onChange(stateStore::markDirty);
+    }
+
+    /** Builds the v2 migration and runs the one-time import if a v2 install left its data behind. */
+    private void startMigration(Services services) {
+        V2Cleanup cleanup = services.get(V2Cleanup.class);
+        MigrationState state = services.get(MigrationState.class);
+        DisplayService displays = services.get(DisplayService.class);
+        V2WorldCleanup worldCleanup = services.add(V2WorldCleanup.class, new V2WorldCleanup(cleanup, services.nodes(), services.groups(),
+                services.groupStore(), displays, new NamespacedKey(this, "chestsplusplus")));
+        V2FilterMigration filters = services.add(V2FilterMigration.class,
+                new V2FilterMigration(state, services.get(FilterService.class), new NamespacedKey(this, "v2_filters_scanned")));
+        V2FilterConversion conversion = services.add(V2FilterConversion.class,
+                new V2FilterConversion(this, services, state, filters, cleanup, worldCleanup));
+        V2Importer importer = new V2Importer(services.groups(), services.nodes(), services.trust(), services.groupStore(), cleanup,
+                new WorldUids(getServer(), getServer()::getWorldContainer), services::settings, displays::nodeAdded);
+        services.add(V2Migration.class, new V2Migration(this, services, importer, cleanup, worldCleanup, state, filters, conversion))
+                .importOnStartup();
     }
 
     private static Consumer<LoadedGroup> attachLoaded(Services services) {
@@ -142,7 +187,10 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
                 new HopperBridge(services),
                 services.get(MenuListener.class),
                 new AutoCraftListener(services, links, services.get(AutoCraftService.class)),
-                new FilterListener(services, services.get(FilterService.class), links, services.get(ChestLinkService.class)));
+                new FilterListener(services, services.get(FilterService.class), links, services.get(ChestLinkService.class)),
+                services.get(V2WorldCleanup.class),
+                services.get(V2FilterMigration.class),
+                services.get(V2Migration.class));
         listeners.forEach(listener -> getServer().getPluginManager().registerEvents(listener, this));
     }
 
@@ -153,6 +201,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         tickers.everyInterval("persistence-flush", () -> services.settings().storage().flushIntervalSeconds() * 20, ticks -> persistence.flush());
         tickers.every("displays", 1, services.get(DisplayService.class)::tick);
         tickers.every("autocraft", 1, services.get(AutoCraftService.class)::tick);
+        tickers.every("v2-filter-conversion", 1, services.get(V2FilterConversion.class)::tick);
     }
 
     private void startIntegrations(Services services) {

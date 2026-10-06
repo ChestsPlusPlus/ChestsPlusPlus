@@ -85,6 +85,7 @@ public final class Commands {
                         .then(literal("add").then(playerArgument().executes(trustBody(true))))
                         .then(literal("remove").then(playerArgument().executes(trustBody(false))))
                         .then(literal("list").executes(this::listTrust)))
+                .then(new MigrateCommands(services).build())
                 .build();
     }
 

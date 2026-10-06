@@ -8,7 +8,8 @@ CREATE TABLE groups (
   created_at  INTEGER NOT NULL,
   items       BLOB,
   recipe_key  TEXT,
-  matches     TEXT
+  matches     TEXT,
+  v2_source   TEXT
 );
 
 CREATE TABLE group_members (
@@ -33,4 +34,18 @@ CREATE TABLE trust (
   owner   BLOB NOT NULL,
   trusted BLOB NOT NULL,
   PRIMARY KEY (owner, trusted)
+);
+
+CREATE TABLE v2_blocks (
+  world   BLOB    NOT NULL,
+  x       INTEGER NOT NULL,
+  y       INTEGER NOT NULL,
+  z       INTEGER NOT NULL,
+  pending INTEGER NOT NULL,
+  PRIMARY KEY (world, x, y, z)
+);
+
+CREATE TABLE migration_state (
+  key   TEXT PRIMARY KEY,
+  value TEXT NOT NULL
 );

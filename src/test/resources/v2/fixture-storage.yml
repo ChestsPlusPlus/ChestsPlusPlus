@@ -1,0 +1,1205 @@
+chests++:
+  ==: ConfigStorage
+  chests:
+    11111111-1111-1111-1111-111111111111:
+      ThisChestLinkNameIsLongerThan32Chars:
+        ==: ChestLinkStorage
+        inventory:
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        locationInfo:
+        - ==: LocationInfo
+          Location:
+            ==: org.bukkit.Location
+            world: world
+            x: 16.0
+            y: -60.0
+            z: 0.0
+            pitch: 0.0
+            yaw: 0.0
+        playerUUID: 11111111-1111-1111-1111-111111111111
+        members: null
+        isPublic: false
+        inventoryName: ThisChestLinkNameIsLongerThan32Chars
+        sortMethod: 'OFF'
+      Nether:
+        ==: ChestLinkStorage
+        inventory:
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        locationInfo:
+        - ==: LocationInfo
+          Location:
+            ==: org.bukkit.Location
+            world: world_nether
+            x: 0.0
+            y: 100.0
+            z: 0.0
+            pitch: 0.0
+            yaw: 0.0
+        playerUUID: 11111111-1111-1111-1111-111111111111
+        members: null
+        isPublic: false
+        inventoryName: Nether
+        sortMethod: 'OFF'
+      Iron Ore:
+        ==: ChestLinkStorage
+        inventory:
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        locationInfo:
+        - ==: LocationInfo
+          Location:
+            ==: org.bukkit.Location
+            world: world
+            x: 10.0
+            y: -60.0
+            z: 0.0
+            pitch: 0.0
+            yaw: 0.0
+        playerUUID: 11111111-1111-1111-1111-111111111111
+        members: null
+        isPublic: false
+        inventoryName: Iron Ore
+        sortMethod: 'OFF'
+      IRON:
+        ==: ChestLinkStorage
+        inventory:
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        locationInfo:
+        - ==: LocationInfo
+          Location:
+            ==: org.bukkit.Location
+            world: world
+            x: 14.0
+            y: -60.0
+            z: 0.0
+            pitch: 0.0
+            yaw: 0.0
+        playerUUID: 11111111-1111-1111-1111-111111111111
+        members: null
+        isPublic: false
+        inventoryName: IRON
+        sortMethod: 'OFF'
+      Public:
+        ==: ChestLinkStorage
+        inventory:
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        locationInfo:
+        - ==: LocationInfo
+          Location:
+            ==: org.bukkit.Location
+            world: world
+            x: 22.0
+            y: -60.0
+            z: 0.0
+            pitch: 0.0
+            yaw: 0.0
+        playerUUID: 11111111-1111-1111-1111-111111111111
+        members: null
+        isPublic: true
+        inventoryName: Public
+        sortMethod: 'OFF'
+      Shared:
+        ==: ChestLinkStorage
+        inventory:
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        locationInfo:
+        - ==: LocationInfo
+          Location:
+            ==: org.bukkit.Location
+            world: world
+            x: 24.0
+            y: -60.0
+            z: 0.0
+            pitch: 0.0
+            yaw: 0.0
+        playerUUID: 11111111-1111-1111-1111-111111111111
+        members:
+        - 22222222-2222-2222-2222-222222222222
+        isPublic: false
+        inventoryName: Shared
+        sortMethod: 'OFF'
+      Double:
+        ==: ChestLinkStorage
+        inventory:
+        - ==: org.bukkit.inventory.ItemStack
+          DataVersion: 4438
+          id: minecraft:oak_log
+          count: 32
+          schema_version: 1
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        locationInfo:
+        - ==: LocationInfo
+          Location:
+            ==: org.bukkit.Location
+            world: world
+            x: 6.0
+            y: -60.0
+            z: 0.0
+            pitch: 0.0
+            yaw: 0.0
+        playerUUID: 11111111-1111-1111-1111-111111111111
+        members: null
+        isPublic: false
+        inventoryName: Double
+        sortMethod: 'OFF'
+      Storage:
+        ==: ChestLinkStorage
+        inventory:
+        - ==: org.bukkit.inventory.ItemStack
+          DataVersion: 4438
+          id: minecraft:cobblestone
+          count: 64
+          schema_version: 1
+        - ==: org.bukkit.inventory.ItemStack
+          DataVersion: 4438
+          id: minecraft:diamond_sword
+          count: 1
+          components:
+            minecraft:enchantments: '{"minecraft:sharpness":5}'
+            minecraft:damage: '100'
+          schema_version: 1
+        - ==: org.bukkit.inventory.ItemStack
+          DataVersion: 4438
+          id: minecraft:name_tag
+          count: 1
+          components:
+            minecraft:custom_name: '{color:"light_purple",text:"Lucky charm"}'
+          schema_version: 1
+        - ==: org.bukkit.inventory.ItemStack
+          DataVersion: 4438
+          id: minecraft:potion
+          count: 1
+          components:
+            minecraft:potion_contents: '{potion:"minecraft:swiftness"}'
+          schema_version: 1
+        - ==: org.bukkit.inventory.ItemStack
+          DataVersion: 4438
+          id: minecraft:written_book
+          count: 1
+          components:
+            minecraft:written_book_content: '{author:"v2",pages:[{raw:"Written on
+              ChestsPlusPlus v2."}],title:{raw:"Notes"}}'
+          schema_version: 1
+        - ==: org.bukkit.inventory.ItemStack
+          DataVersion: 4438
+          id: minecraft:shulker_box
+          count: 1
+          components:
+            minecraft:container: '[{item:{count:32,id:"minecraft:diamond"},slot:0},{item:{count:16,id:"minecraft:emerald"},slot:1}]'
+          schema_version: 1
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        locationInfo:
+        - ==: LocationInfo
+          Location:
+            ==: org.bukkit.Location
+            world: world
+            x: 0.0
+            y: -60.0
+            z: 0.0
+            pitch: 0.0
+            yaw: 0.0
+        - ==: LocationInfo
+          Location:
+            ==: org.bukkit.Location
+            world: world
+            x: 2.0
+            y: -60.0
+            z: 0.0
+            pitch: 0.0
+            yaw: 0.0
+        playerUUID: 11111111-1111-1111-1111-111111111111
+        members: null
+        isPublic: false
+        inventoryName: Storage
+        sortMethod: NAME
+      Hoppers:
+        ==: ChestLinkStorage
+        inventory:
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        locationInfo:
+        - ==: LocationInfo
+          Location:
+            ==: org.bukkit.Location
+            world: world
+            x: 30.0
+            y: -59.0
+            z: 0.0
+            pitch: 0.0
+            yaw: 0.0
+        playerUUID: 11111111-1111-1111-1111-111111111111
+        members: null
+        isPublic: false
+        inventoryName: Hoppers
+        sortMethod: 'OFF'
+      iron:
+        ==: ChestLinkStorage
+        inventory:
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        locationInfo:
+        - ==: LocationInfo
+          Location:
+            ==: org.bukkit.Location
+            world: world
+            x: 12.0
+            y: -60.0
+            z: 0.0
+            pitch: 0.0
+            yaw: 0.0
+        playerUUID: 11111111-1111-1111-1111-111111111111
+        members: null
+        isPublic: false
+        inventoryName: iron
+        sortMethod: 'OFF'
+      §aGreen:
+        ==: ChestLinkStorage
+        inventory:
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        locationInfo:
+        - ==: LocationInfo
+          Location:
+            ==: org.bukkit.Location
+            world: world
+            x: 18.0
+            y: -60.0
+            z: 0.0
+            pitch: 0.0
+            yaw: 0.0
+        playerUUID: 11111111-1111-1111-1111-111111111111
+        members: null
+        isPublic: false
+        inventoryName: §aGreen
+        sortMethod: 'OFF'
+      Stale:
+        ==: ChestLinkStorage
+        inventory:
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        locationInfo:
+        - ==: LocationInfo
+          Location:
+            ==: org.bukkit.Location
+            world: world
+            x: 34.0
+            y: -60.0
+            z: 0.0
+            pitch: 0.0
+            yaw: 0.0
+        playerUUID: 11111111-1111-1111-1111-111111111111
+        members: null
+        isPublic: false
+        inventoryName: Stale
+        sortMethod: 'OFF'
+      Distant:
+        ==: ChestLinkStorage
+        inventory:
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        locationInfo:
+        - ==: LocationInfo
+          Location:
+            ==: org.bukkit.Location
+            world: world
+            x: 2000.0
+            y: -60.0
+            z: 0.0
+            pitch: 0.0
+            yaw: 0.0
+        playerUUID: 11111111-1111-1111-1111-111111111111
+        members: null
+        isPublic: false
+        inventoryName: Distant
+        sortMethod: 'OFF'
+    22222222-2222-2222-2222-222222222222:
+      Gift:
+        ==: ChestLinkStorage
+        inventory:
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        - null
+        locationInfo:
+        - ==: LocationInfo
+          Location:
+            ==: org.bukkit.Location
+            world: world
+            x: 26.0
+            y: -60.0
+            z: 0.0
+            pitch: 0.0
+            yaw: 0.0
+        playerUUID: 22222222-2222-2222-2222-222222222222
+        members:
+        - 11111111-1111-1111-1111-111111111111
+        isPublic: false
+        inventoryName: Gift
+        sortMethod: 'OFF'
+  autocraftingtables:
+    11111111-1111-1111-1111-111111111111:
+      repair:
+        ==: AutoCraftingStorage
+        locationInfo:
+        - ==: LocationInfo
+          Location:
+            ==: org.bukkit.Location
+            world: world
+            x: 10.0
+            y: -60.0
+            z: 10.0
+            pitch: 0.0
+            yaw: 0.0
+        playerUUID: 11111111-1111-1111-1111-111111111111
+        members: null
+        isPublic: false
+        recipe:
+          ==: C++Recipe
+          namespace: minecraft
+          key: repair_item
+          items:
+          - ==: org.bukkit.inventory.ItemStack
+            DataVersion: 4438
+            id: minecraft:iron_pickaxe
+            count: 1
+            components:
+              minecraft:damage: '100'
+            schema_version: 1
+          - ==: org.bukkit.inventory.ItemStack
+            DataVersion: 4438
+            id: minecraft:iron_pickaxe
+            count: 1
+            components:
+              minecraft:damage: '100'
+            schema_version: 1
+          - null
+          - null
+          - null
+          - null
+          - null
+          - null
+          - null
+        identifier: repair
+      bonemeal:
+        ==: AutoCraftingStorage
+        locationInfo:
+        - ==: LocationInfo
+          Location:
+            ==: org.bukkit.Location
+            world: world
+            x: 6.0
+            y: -60.0
+            z: 10.0
+            pitch: 0.0
+            yaw: 0.0
+        playerUUID: 11111111-1111-1111-1111-111111111111
+        members: null
+        isPublic: false
+        recipe:
+          ==: C++Recipe
+          namespace: minecraft
+          key: bone_meal
+        identifier: bonemeal
+      torches:
+        ==: AutoCraftingStorage
+        locationInfo:
+        - ==: LocationInfo
+          Location:
+            ==: org.bukkit.Location
+            world: world
+            x: 0.0
+            y: -60.0
+            z: 10.0
+            pitch: 0.0
+            yaw: 0.0
+        - ==: LocationInfo
+          Location:
+            ==: org.bukkit.Location
+            world: world
+            x: 2.0
+            y: -60.0
+            z: 10.0
+            pitch: 0.0
+            yaw: 0.0
+        playerUUID: 11111111-1111-1111-1111-111111111111
+        members: null
+        isPublic: false
+        recipe:
+          ==: C++Recipe
+          namespace: minecraft
+          key: torch
+        identifier: torches
+      gone:
+        ==: AutoCraftingStorage
+        locationInfo:
+        - ==: LocationInfo
+          Location:
+            ==: org.bukkit.Location
+            world: world
+            x: 14.0
+            y: -60.0
+            z: 10.0
+            pitch: 0.0
+            yaw: 0.0
+        playerUUID: 11111111-1111-1111-1111-111111111111
+        members: null
+        isPublic: false
+        recipe:
+          ==: C++Recipe
+          namespace: v2fixture
+          key: gone
+        identifier: gone
+      empty:
+        ==: AutoCraftingStorage
+        locationInfo:
+        - ==: LocationInfo
+          Location:
+            ==: org.bukkit.Location
+            world: world
+            x: 18.0
+            y: -60.0
+            z: 10.0
+            pitch: 0.0
+            yaw: 0.0
+        playerUUID: 11111111-1111-1111-1111-111111111111
+        members: null
+        isPublic: false
+        recipe: null
+        identifier: empty
+  parties:
+    11111111-1111-1111-1111-111111111111:
+      ==: PlayerPartyStorage
+      owner: 11111111-1111-1111-1111-111111111111
+      ownedParties:
+        friends:
+          ==: PlayerParty
+          owner: 11111111-1111-1111-1111-111111111111
+          partyName: friends
+          members:
+          - 22222222-2222-2222-2222-222222222222

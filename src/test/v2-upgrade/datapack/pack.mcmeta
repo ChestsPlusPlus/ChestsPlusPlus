@@ -1,0 +1,6 @@
+{
+  "pack": {
+    "description": "v2 upgrade fixture: a recipe that disappears before the upgrade",
+    "pack_format": 81
+  }
+}

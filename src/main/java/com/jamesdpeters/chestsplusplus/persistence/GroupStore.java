@@ -35,10 +35,11 @@ public final class GroupStore implements Store<Long, GroupSnapshot> {
 
     /**
      * {@code items} is a ChestLink's inventory or an AutoCraft matrix; {@code matches} is an AutoCraft's comma-separated
-     * {@link SlotMatch} per slot, or null when every slot is {@link SlotMatch#RECIPE}.
+     * {@link SlotMatch} per slot, or null when every slot is {@link SlotMatch#RECIPE}. {@code v2Source} names the v2 group it was imported
+     * from, if any.
      */
     public record GroupRow(long id, GroupType type, UUID owner, String name, boolean isPublic, @Nullable SortMode sortMode, long createdAt,
-            @Nullable ItemStack @Nullable [] items, @Nullable String recipeKey, @Nullable String matches) {}
+            @Nullable ItemStack @Nullable [] items, @Nullable String recipeKey, @Nullable String matches, @Nullable String v2Source) {}
 
     public record MemberRow(long groupId, UUID member) {}
 
@@ -98,20 +99,34 @@ public final class GroupStore implements Store<Long, GroupSnapshot> {
         Map<Long, List<MemberRow>> members = MEMBERS.all(handle).stream().collect(groupingBy(MemberRow::groupId));
         Map<Long, List<NodeRow>> nodeRows = NODES.all(handle).stream().collect(groupingBy(NodeRow::groupId));
         for (GroupRow row : GROUPS.all(handle)) {
-            StorageGroup group = group(row);
-            groups.add(group);
-            members.getOrDefault(row.id(), List.of()).forEach(member -> groups.addMember(group, member.member()));
-            nodeRows.getOrDefault(row.id(), List.of()).forEach(node -> nodes.put(node(node)));
-            attach.accept(new LoadedGroup(group, row.items()));
+            register(new GroupSnapshot(row, members.getOrDefault(row.id(), List.of()), nodeRows.getOrDefault(row.id(), List.of())));
         }
+    }
+
+    /** Registers a group built outside the store (an import) exactly as if it had been loaded, and saves it. */
+    public StorageGroup adopt(GroupSnapshot snapshot) {
+        StorageGroup group = register(snapshot);
+        markDirty(group);
+        return group;
+    }
+
+    private StorageGroup register(GroupSnapshot snapshot) {
+        GroupRow row = snapshot.group();
+        StorageGroup group = group(row);
+        groups.add(group);
+        snapshot.members().forEach(member -> groups.addMember(group, member.member()));
+        snapshot.nodes().forEach(node -> nodes.put(node(node)));
+        attach.accept(new LoadedGroup(group, row.items()));
+        return group;
     }
 
     private static GroupRow row(StorageGroup group) {
         return switch (group) {
             case ChestLinkGroup chest -> new GroupRow(chest.id(), chest.type(), chest.owner(), chest.name(), chest.isPublic(), chest.sortMode(),
-                    chest.createdAt(), contents(chest), null, null);
+                    chest.createdAt(), contents(chest), null, null, chest.v2Source());
             case AutoCraftGroup craft -> new GroupRow(craft.id(), craft.type(), craft.owner(), craft.name(), craft.isPublic(), null,
-                    craft.createdAt(), craft.matrix(), craft.recipeKey() == null ? null : craft.recipeKey().asString(), matches(craft));
+                    craft.createdAt(), craft.matrix(), craft.recipeKey() == null ? null : craft.recipeKey().asString(), matches(craft),
+                    craft.v2Source());
         };
     }
 
@@ -146,8 +161,11 @@ public final class GroupStore implements Store<Long, GroupSnapshot> {
     }
 
     private static NodeRow row(Node node) {
-        BlockPos pos = node.pos();
-        return new NodeRow(node.groupId(), pos.world(), pos.x(), pos.y(), pos.z(), node.facing());
+        return row(node.groupId(), node.pos(), node.facing());
+    }
+
+    public static NodeRow row(long groupId, BlockPos pos, BlockFace facing) {
+        return new NodeRow(groupId, pos.world(), pos.x(), pos.y(), pos.z(), facing);
     }
 
     private static Node node(NodeRow row) {
@@ -170,6 +188,7 @@ public final class GroupStore implements Store<Long, GroupSnapshot> {
             }
         };
         group.setPublic(row.isPublic());
+        group.setV2Source(row.v2Source());
         return group;
     }
 

@@ -1,0 +1,15 @@
+# A v2 config.yml with non-default values, so the upgrade's config conversion has something to show.
+update-checker: false
+update-checker-period: 3600
+chestlinks-enabled: true
+autocrafters-enabled: true
+hopper-filters-enabled: true
+limit-chests: true
+limit-chestlinks-amount: 5
+should-animate-all-chests: true
+display_chestlink_armour_stand: true
+display_autocraft_armour_stands: false
+set-filter-itemframe-invisible: false
+world-blacklist:
+- world_nether
+language-file: default

@@ -2,7 +2,8 @@
 
 **Status:** Implemented on `v3`; see §14 for status and open items · **Date:** 3 October 2026 · **Target:** Paper 26.x (Java 25)
 
-v3 is a ground-up rewrite of ChestsPlusPlus as a native **Paper plugin**. It keeps the core gameplay: ChestLinks, AutoCraft, hopper filters and sharing. It replaces the Spigot-era plumbing with modern Paper APIs, a cleaner architecture and a performance-first runtime. It ships as a new major version, so **backwards compatibility with v2 data, commands, permissions and config is explicitly not a goal**.
+v3 is a ground-up rewrite of ChestsPlusPlus as a native **Paper plugin**. It keeps the core gameplay: ChestLinks, AutoCraft, hopper filters and sharing. It replaces the Spigot-era plumbing with modern Paper APIs, a cleaner architecture and a performance-first runtime. It ships as a new major version, so **backwards compatibility with v2 commands and permissions is not a goal**. v2 data and config are imported once on upgrade
+(see [v2-migration-plan.md](v2-migration-plan.md)).
 
 ---
 

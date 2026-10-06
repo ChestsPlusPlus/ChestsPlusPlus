@@ -145,3 +145,24 @@ item:
 
 update:
   available: "<prefix> <gold>ChestsPlusPlus <version> is available: <click:open_url:'<url>'><yellow><url></yellow></click>"
+
+migrate:
+  summary: "<prefix> <green>v2 import <mode>: <chestlinks> ChestLink(s), <autocrafters> AutoCrafter(s), <nodes> linked block(s), <items> item stack(s), <trusted> trusted player(s)."
+  detail: "<gray>- <line>"
+  preview-hint: "<prefix> <gray>Nothing has changed yet. Run <click:suggest_command:'/cpp migrate v2 confirm'><yellow>/cpp migrate v2 confirm</yellow></click> to import."
+  nothing: "<prefix> <gray>Everything in that file has already been imported."
+  no-file: "<prefix> <red>No v2 data found. Looked for <yellow><files></yellow>."
+  failed: "<prefix> <red>The v2 import failed: <error>. See the console for details."
+  status: "<prefix> <gray>Imported blocks waiting for their chunk to load: <yellow><pending></yellow>. v2 hopper filters: <yellow><filters></yellow>."
+  cleanup-started: "<prefix> <gray>Loading <yellow><chunks></yellow> chunk(s) with imported blocks waiting for cleanup..."
+  filters-pending: "<prefix> <gold>Hopper filters from ChestsPlusPlus v2 (item frames on hoppers) haven't been converted yet. <click:suggest_command:'/cpp migrate v2 filters on-load'><yellow>[Convert as chunks load]</yellow></click> <click:suggest_command:'/cpp migrate v2 filters convert-all'><yellow>[Convert every chunk now]</yellow></click> <click:suggest_command:'/cpp migrate v2 filters dismiss'><gray>[Dismiss]</gray></click>"
+  filters-pending-console: "Hopper filters from ChestsPlusPlus v2 (item frames on hoppers) haven't been converted yet. Run '/cpp migrate v2 filters on-load' to convert them as chunks load, '/cpp migrate v2 filters convert-all' to convert every chunk now, or '/cpp migrate v2 filters dismiss' if you never used them."
+  filters-on-load: "<prefix> <green>v2 hopper filters will now be converted as chunks load. Run <yellow>/cpp migrate v2 filters convert-all</yellow> to finish the rest at once."
+  filters-dismissed: "<prefix> <gray>v2 hopper filter migration dismissed; no more chunks will be scanned."
+  filters-started: "<prefix> <gray>Converting v2 hopper filters in <yellow><chunks></yellow> chunk(s)..."
+  filters-progress: "<prefix> <gray>v2 hopper filters: <yellow><done></yellow>/<total> chunks (<percent>%), <filters> filter(s) converted."
+  filters-finished: "<prefix> <green>v2 hopper filter conversion finished: <filters> filter(s) converted in <chunks> chunk(s)."
+  filters-cancelled: "<prefix> <gray>Stopped converting v2 hopper filters after <done>/<total> chunks. Run the command again to carry on."
+  filters-running: "<prefix> <red>A v2 hopper filter conversion is already running."
+  filters-not-running: "<prefix> <gray>No v2 hopper filter conversion is running."
+  unknown-world: "<prefix> <red>No world named <yellow><world></yellow> is loaded."

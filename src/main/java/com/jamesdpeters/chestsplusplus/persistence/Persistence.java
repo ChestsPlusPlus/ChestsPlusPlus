@@ -61,16 +61,23 @@ public final class Persistence {
         dirty.keySet().forEach(store -> store.load(database.handle()));
     }
 
-    public void flush() {
+    /** Writes every dirty key. The future completes on the main thread once they are committed, or fails if the write failed. */
+    public CompletableFuture<Void> flush() {
         List<Batch<?, ?>> batches = dirty.keySet().stream().<Batch<?, ?>>map(this::take).filter(batch -> !batch.keys().isEmpty()).toList();
         int keys = batches.stream().mapToInt(batch -> batch.keys().size()).sum();
-        if (keys == 0) return;
+        if (keys == 0) return CompletableFuture.completedFuture(null);
         inFlight += keys;
+        CompletableFuture<Void> done = new CompletableFuture<>();
         CompletableFuture.runAsync(() -> database.handle().useTransaction(handle -> batches.forEach(batch -> batch.apply(handle))), io)
                 .whenComplete((ok, error) -> {
                     if (error != null) log.error("Failed to save {} ChestsPlusPlus change(s); will retry", keys, error);
-                    mainThread.accept(() -> written(batches, keys, error != null));
+                    mainThread.accept(() -> {
+                        written(batches, keys, error != null);
+                        if (error == null) done.complete(null);
+                        else done.completeExceptionally(error);
+                    });
                 });
+        return done;
     }
 
     /** Flushes, waits for the I/O thread to finish, and closes the database. A failed final write is logged. */

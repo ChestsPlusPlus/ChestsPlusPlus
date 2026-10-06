@@ -98,6 +98,7 @@ class GroupStoreTest extends PluginTestBase {
         chest.inventory().setItem(53, ItemStack.of(Material.OAK_LOG, 64));
         chest.setSortMode(SortMode.AMOUNT_DESC);
         chest.setPublic(true);
+        chest.setV2Source("chestlink:owner:Ores");
         first.groups.addMember(chest, FRIEND);
         first.nodes.put(new Node(new BlockPos(WORLD, 1, 2, 3), BlockFace.EAST, chest.id()));
         AutoCraftGroup craft = new AutoCraftGroup(first.groups.nextId(), OWNER, "torches", 2000);
@@ -121,6 +122,7 @@ class GroupStoreTest extends PluginTestBase {
         assertThat(loaded).isNotNull();
         assertThat(loaded.id()).isEqualTo(chest.id());
         assertThat(loaded.isPublic()).isTrue();
+        assertThat(loaded.v2Source()).isEqualTo("chestlink:owner:Ores");
         assertThat(loaded.sortMode()).isEqualTo(SortMode.AMOUNT_DESC);
         assertThat(loaded.members()).containsExactly(FRIEND);
         assertThat(loaded.inventory().getItem(0)).isEqualTo(ItemStack.of(Material.DIAMOND, 7));

@@ -180,7 +180,7 @@ public final class LinkService {
     }
 
     /** Chests and barrels show their link on their front; blocks without a horizontal front use {@code fallback}. */
-    private static BlockFace front(Block block, BlockFace fallback) {
+    public static BlockFace front(Block block, BlockFace fallback) {
         if (block.getBlockData() instanceof Directional directional && directional.getFacing().getModY() == 0) return directional.getFacing();
         return fallback;
     }

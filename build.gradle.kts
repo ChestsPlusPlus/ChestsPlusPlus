@@ -111,6 +111,7 @@ paperPluginYaml {
             "chestsplusplus.admin.reload" to "Use /chestsplusplus reload",
             "chestsplusplus.admin.update" to "Receive update notifications",
             "chestsplusplus.admin.version" to "Use /chestsplusplus version",
+            "chestsplusplus.admin.migrate" to "Import ChestsPlusPlus v2 data and convert v2 hopper filters",
         )
         everyone.forEach { (node, text) ->
             register(node) {
@@ -364,4 +365,100 @@ tasks.register("e2e") {
     description = "Starts the E2E server, runs the Plugwright suite against it, then stops it."
     dependsOn(startE2eServer, "plugwrightTest")
     finalizedBy(stopE2eServer)
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// v2 → v3 upgrade test bed (docs/v2-migration-plan.md §8.1): a flat world built by ChestsPlusPlus v2 on Paper 1.21.7,
+// then run on v3. v2 is built from `master` with Maven unless -Pchestsplusplus.v2Jar points at a jar.
+// ---------------------------------------------------------------------------------------------------------------
+val v2Fixture: SourceSet = sourceSets.create("v2Fixture")
+val v2RunDir = layout.projectDirectory.dir("run/v2-upgrade")
+val v2SnapshotDir = layout.projectDirectory.dir("run/v2-upgrade-snapshot")
+
+val buildV2Jar = tasks.register<BuildV2Jar>("buildV2Jar") {
+    group = "v2 upgrade"
+    description = "Builds the ChestsPlusPlus v2 jar from the master branch with Maven."
+    commit = providers.exec { commandLine("git", "rev-parse", "master") }.standardOutput.asText.map { it.trim() }
+    mavenExecutable = providers.gradleProperty("chestsplusplus.maven")
+        .orElse(if (System.getProperty("os.name").startsWith("Windows")) "mvn.cmd" else "mvn")
+    javaLauncher = e2eLauncher
+    repository = layout.projectDirectory
+    workDirectory = layout.buildDirectory.dir("v2/maven")
+    output = layout.buildDirectory.file("v2/ChestsPlusPlus-v2.jar")
+}
+// files(buildV2Jar) carries the task dependency, which a mapped provider would lose.
+val v2Jar: FileCollection = providers.gradleProperty("chestsplusplus.v2Jar").map { files(it) }.getOrElse(files(buildV2Jar))
+
+dependencies {
+    "v2FixtureCompileOnly"(libs.paper.api.v2)
+    "v2FixtureCompileOnly"(libs.jspecify)
+    "v2FixtureCompileOnly"(v2Jar)
+}
+
+val v2FixtureJar = tasks.register<Jar>("v2FixtureJar") {
+    group = "v2 upgrade"
+    description = "Builds the helper plugin that sets up the v2 upgrade cases (test bed only, never shipped)."
+    archiveBaseName = "ChestsPlusPlus-V2Fixture"
+    from(v2Fixture.output)
+}
+
+val downloadV2Paper = tasks.register<DownloadFile>("downloadV2Paper") {
+    url = libs.versions.v2PaperServerUrl
+    checksum = "sha256:" + libs.versions.v2PaperServerSha256.get()
+    destination = File(e2eCacheDir, "paper-${libs.versions.v2PaperServer.get()}-${libs.versions.v2PaperServerBuild.get()}.jar")
+}
+
+tasks.register<BuildV2UpgradeFixture>("v2UpgradeFixture") {
+    group = "v2 upgrade"
+    description = "Builds run/v2-upgrade: a flat world with every v2 upgrade case, made by v2 on Paper 1.21.7. Needs -Pchestsplusplus.testPlayer=<name>."
+    javaLauncher = e2eLauncher
+    serverJar = downloadV2Paper.flatMap { it.destination }
+    plugins.from(v2Jar, v2FixtureJar.flatMap { it.archiveFile }, downloadViaVersion.flatMap { it.destination })
+    fixtureDirectory = layout.projectDirectory.dir("src/test/v2-upgrade")
+    testPlayer = providers.gradleProperty("chestsplusplus.testPlayer")
+    otherPlayer = "Alex"
+    acceptEula = eulaAccepted
+    rconPort = 25576
+    runDirectory = v2RunDir
+    snapshotDirectory = v2SnapshotDir
+    storageFixture = layout.projectDirectory.file("src/test/resources/v2/fixture-storage.yml")
+}
+
+tasks.register<ResetV2Upgrade>("resetV2Upgrade") {
+    group = "v2 upgrade"
+    description = "Restores run/v2-upgrade to the v2 world v2UpgradeFixture built, so the upgrade can be tried again."
+    runDirectory = v2RunDir
+    snapshotDirectory = v2SnapshotDir
+}
+
+tasks.register<RunServer>("runV2Server") {
+    group = "v2 upgrade"
+    description = "Runs the v2 world on v2 (Paper 1.21.7 + ViaVersion, so a current client can join), for adding cases by hand."
+    // run-paper needs the version even with a server jar.
+    minecraftVersion(libs.versions.v2PaperServer.get())
+    serverJar(downloadV2Paper.flatMap { it.destination })
+    pluginJars.from(v2Jar, downloadViaVersion.flatMap { it.destination })
+    runDirectory(v2RunDir.asFile)
+    javaLauncher = e2eLauncher
+    // The AC-missing case's recipe comes from a datapack removed before the upgrade. v2 drops a group whose recipe is gone and
+    // saves without it, so the datapack is back for as long as v2 runs. resetV2Upgrade also removes it.
+    val datapack = v2RunDir.dir("world/datapacks/v2fixture").asFile
+    doFirst { layout.projectDirectory.dir("src/test/v2-upgrade/datapack").asFile.copyRecursively(datapack, overwrite = true) }
+    doLast { datapack.deleteRecursively() }
+}
+
+tasks.register<RunServer>("runV2Upgrade") {
+    group = "v2 upgrade"
+    description = "Runs the v2 world on v3 (Paper 26.3) with hot-swap, like runServer. resetV2Upgrade puts it back to v2."
+    minecraftVersion(libs.versions.paperServer.get())
+    build(libs.versions.paperServerBuild.get().toInt())
+    pluginJars.from(tasks.shadowJar.flatMap { it.archiveFile })
+    runDirectory(v2RunDir.asFile)
+    javaLauncher = jetBrainsRuntime
+    dependsOn(devAgentJar)
+    val agent = devAgentJar.flatMap { it.archiveFile }
+    val classes = sourceSets.main.get().java.destinationDirectory
+    jvmArgumentProviders.add {
+        listOf("-XX:+AllowEnhancedClassRedefinition", "-javaagent:${agent.get().asFile}=${classes.get().asFile}")
+    }
 }

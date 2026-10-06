@@ -28,6 +28,7 @@ public final class Permissions {
     public static final String ADMIN_RELOAD = "chestsplusplus.admin.reload";
     public static final String ADMIN_UPDATE = "chestsplusplus.admin.update";
     public static final String ADMIN_VERSION = "chestsplusplus.admin.version";
+    public static final String ADMIN_MIGRATE = "chestsplusplus.admin.migrate";
 
     /** Prefix of the numeric limit nodes, e.g. {@code chestsplusplus.limit.chestlink.10}. */
     public static String limitPrefix(GroupType type) {

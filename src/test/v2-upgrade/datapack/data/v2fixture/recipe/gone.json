@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": ["minecraft:dirt", "minecraft:dirt"],
+  "result": {"id": "minecraft:diamond", "count": 1}
+}

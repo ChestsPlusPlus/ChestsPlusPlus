@@ -7,6 +7,8 @@ comments, no repeated logic.
 
 - `./gradlew spotlessApply` formats the code. Run it before committing: CI runs `./gradlew build`, which fails on unformatted code.
 - `./gradlew unitTest integrationTest` runs the JVM tests. See [docs/testing.md](docs/testing.md) for E2E and the manual checklist.
+- `./gradlew v2UpgradeFixture` builds a v2 world for testing the upgrade, `runV2Upgrade` runs it on v3 and `resetV2Upgrade`
+  restores it. See [docs/testing.md](docs/testing.md#v2-upgrade).
 - The compiler runs with `-Xlint:all -Werror`, so any warning fails the build.
 - `./gradlew runServer` runs on the JetBrains Runtime with a hot-swap agent. While it runs, `./gradlew classes` (or `-t classes`,
   or an IntelliJ build) swaps changed classes into the live server, including added methods, fields and classes. New static
