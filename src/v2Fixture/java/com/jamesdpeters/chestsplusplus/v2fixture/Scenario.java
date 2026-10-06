@@ -94,7 +94,7 @@ final class Scenario {
 
         String[] names = {"Iron Ore", "iron", "IRON", "ThisChestLinkNameIsLongerThan32Chars", "§aGreen"};
         for (int i = 0; i < names.length; i++) chestLink(tester, names[i], chest(10 + i * 2, CHESTLINKS, BlockFace.NORTH), BlockFace.NORTH);
-        label(11, CHESTLINKS, "CL-names", "Iron_Ore, iron", "IRON_2, cut to", "32, Green");
+        label(11, CHESTLINKS, "CL-names", "Iron Ore, iron", "IRON_2, cut to", "32, Green");
 
         chestLink(tester, "Public", chest(22, CHESTLINKS, BlockFace.NORTH), BlockFace.NORTH).setPublic(true);
         chestLink(tester, "Shared", chest(24, CHESTLINKS, BlockFace.NORTH), BlockFace.NORTH).addMember(other);

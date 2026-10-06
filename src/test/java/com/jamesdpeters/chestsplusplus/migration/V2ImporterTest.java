@@ -93,7 +93,7 @@ class V2ImporterTest extends PluginTestBase {
     void importsGroupsMembersItemsAndTrust() {
         ImportReport report = importFixture(true);
 
-        ChestLinkGroup ore = chest(ALICE, "Iron_Ore");
+        ChestLinkGroup ore = chest(ALICE, "Iron Ore");
         assertThat(ore).isNotNull();
         assertThat(ore.isPublic()).isTrue();
         assertThat(ore.sortMode()).isEqualTo(SortMode.AMOUNT_DESC);
@@ -138,9 +138,10 @@ class V2ImporterTest extends PluginTestBase {
         ImportReport report = importFixture(true);
 
         assertThat(chest(ALICE, "iron").name()).isEqualTo("iron");
-        assertThat(groups.ownedBy(ALICE, GroupType.CHESTLINK)).extracting(StorageGroup::name).containsExactlyInAnyOrder("Iron_Ore", "iron", "IRON_2");
-        assertThat(report.lines()).anyMatch(line -> line.contains("\"Iron Ore\" to Iron_Ore")).anyMatch(line -> line.contains("\"IRON\" to IRON_2"));
-        assertThat(V2Importer.cleanName("§aGreen §lStuff!")).isEqualTo("Green_Stuff");
+        assertThat(groups.ownedBy(ALICE, GroupType.CHESTLINK)).extracting(StorageGroup::name).containsExactlyInAnyOrder("Iron Ore", "iron", "IRON_2");
+        assertThat(report.lines()).anyMatch(line -> line.contains("\"IRON\" to IRON_2")).noneMatch(line -> line.contains("\"Iron Ore\" to"));
+        assertThat(V2Importer.cleanName("§aGreen §lStuff!")).isEqualTo("Green Stuff");
+        assertThat(V2Importer.cleanName("  Iron   Ore? ")).isEqualTo("Iron Ore");
         assertThat(V2Importer.cleanName("[]")).isEqualTo("group");
         assertThat(V2Importer.cleanName("x".repeat(40))).hasSize(32);
     }
@@ -159,7 +160,7 @@ class V2ImporterTest extends PluginTestBase {
     @Test
     void importingAgainAddsOnlySkippedBlocksAndNeverDuplicatesItems() throws IOException {
         importFixture(true);
-        ChestLinkGroup ore = chest(ALICE, "Iron_Ore");
+        ChestLinkGroup ore = chest(ALICE, "Iron Ore");
         int groupCount = groups.size();
         UUID lostWorld = UUID.randomUUID();
         writeUid(dir.resolve("lost_world").resolve("uid.dat"), lostWorld);
@@ -190,13 +191,13 @@ class V2ImporterTest extends PluginTestBase {
 
     @Test
     void blocksAndNamesAlreadyUsedInV3AreLeftAlone() {
-        ChestLinkGroup existing = new ChestLinkGroup(groups.nextId(), ALICE, "Iron_Ore", 0);
+        ChestLinkGroup existing = new ChestLinkGroup(groups.nextId(), ALICE, "Iron Ore", 0);
         groups.add(existing);
         nodes.put(new Node(at(2, 64, 0), BlockFace.EAST, existing.id()));
 
         ImportReport report = importFixture(true);
 
-        assertThat(chest(ALICE, "Iron_Ore_2").v2Source()).contains("Iron Ore");
+        assertThat(chest(ALICE, "Iron Ore_2").v2Source()).contains("Iron Ore");
         assertThat(nodes.get(at(2, 64, 0)).groupId()).isEqualTo(existing.id());
         assertThat(nodes.nodesOf(chest(ALICE, "iron").id())).isEmpty();
         assertThat(report.lines()).anyMatch(line -> line.contains("2 64 0") && line.contains("already linked"));

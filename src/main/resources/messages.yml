@@ -18,7 +18,7 @@ error:
   unknown-group: "<prefix> <red>No group named <yellow><group></yellow> was found."
   no-access: "<prefix> <red>You don't have access to <yellow><group></yellow>."
   not-owner: "<prefix> <red>Only the owner of <yellow><group></yellow> can do that."
-  invalid-name: "<prefix> <red><yellow><name></yellow> isn't a valid name. Use up to 32 letters, numbers, - or _."
+  invalid-name: "<prefix> <red><yellow><name></yellow> isn't a valid name. Use up to 32 letters, numbers, spaces, - or _."
   group-exists: "<prefix> <red>You already have a group named <yellow><group></yellow>."
   already-linked: "<prefix> <red>That block is already linked to <yellow><group></yellow>."
   invalid-block: "<prefix> <red>Look at a <type> block to do that."
@@ -38,7 +38,7 @@ chestlink:
   list-header: "<prefix> <gold>ChestLinks you can access:"
   list-entry: "<gray>- <hover:show_text:'<gray>Owner: <owner><newline>Nodes: <nodes><newline>Items: <items>'><click:run_command:'/chestlink open <ref>'><yellow><group></yellow></click></hover> <dark_gray>(<owner>, <items> items)"
   list-empty: "<prefix> <gray>You don't have access to any ChestLinks yet."
-  title: "<dark_gray>ChestLink: <group>"
+  title: "<dark_gray><group>"
   display-label: "<white><group>"
 
 autocraft:
@@ -53,7 +53,7 @@ autocraft:
   list-header: "<prefix> <gold>AutoCrafters you can access:"
   list-entry: "<gray>- <hover:show_text:'<gray>Owner: <owner><newline>Nodes: <nodes><newline>Crafts: <items>'><click:run_command:'/autocraft open <ref>'><yellow><group></yellow></click></hover> <dark_gray>(<owner>, <items>)"
   list-empty: "<prefix> <gray>You don't have access to any AutoCrafters yet."
-  title: "<dark_gray>AutoCraft: <group>"
+  title: "<dark_gray><group>"
   display-label: "<white><group>"
   match-recipe: "<gray>Match: <white>what the recipe accepts<gray> (e.g. any planks)"
   match-exact: "<gray>Match: <white>this exact item<gray> (same name, damage, contents...)"

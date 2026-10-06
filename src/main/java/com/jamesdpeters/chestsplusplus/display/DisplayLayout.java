@@ -71,6 +71,12 @@ public final class DisplayLayout {
 
     static final double NODE_ITEM_HEIGHT = 0.55;
     static final double NODE_LABEL_HEIGHT = 0.15;
+    public static final float NODE_LABEL_SCALE = 0.35f;
+    /**
+     * Label wrap width in font pixels: a chest's 14px front at {@link #NODE_LABEL_SCALE} (a font pixel is 1/40 of a block at
+     * scale 1), so long names wrap onto more lines instead of running past the block's sides.
+     */
+    public static final int NODE_LABEL_LINE_WIDTH = Math.round(14 / 16f * 40 / NODE_LABEL_SCALE);
 
     /**
      * Hopper filter grid on each side of the bowl: 2 rows (Allow, Deny) of 10 columns: a green/red pane marking the

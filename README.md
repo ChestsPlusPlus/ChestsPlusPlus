@@ -45,7 +45,8 @@ Paper plugin that enhances chests and hoppers, with ChestLinks, Auto-Crafting an
 | `/chestsplusplus` (`/cpp`) `trust <add\|remove\|list> [player]` | Trust players with all your groups |
 | `/cpp reload` · `/cpp version` · `/cpp help` | Admin and help |
 
-`<group>` is `name` for your own groups, or `owner:name` for someone else's group you can access.
+`<group>` is `name` for your own groups, or `owner:name` for someone else's group you can access. Names can have spaces;
+quote them in commands: `/cl open "Iron Ore"`, `/cl open "Steve:Iron Ore"`.
 
 ## Permissions
 

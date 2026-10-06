@@ -141,12 +141,12 @@ out. Running `/cpp migrate v2` again once the world exists picks it up (see §2,
 
 ### 4.3 Names
 
-v3 names must match `[A-Za-z0-9_-]{1,32}` and be unique per (type, owner), ignoring case. v2's were free text, unique only
+v3 names are up to 32 of `[A-Za-z0-9_-]` with single spaces between words, and are unique per (type, owner), ignoring case. v2's were free text, unique only
 with case counted.
 
-- Strip colour codes, swap invalid characters for `_`, trim to 32 characters, and use `group` if nothing is left.
+- Strip colour codes, collapse runs of spaces, swap other invalid characters for `_`, trim to 32 characters, and use `group` if nothing is left.
 - On a clash, append `_2`, `_3`, … (staying within 32 characters).
-- The report lists every rename (`Steve: "Iron Ore" → Iron_Ore`).
+- The report lists every rename (`Steve: "Ores!" → Ores`).
 
 ### 4.4 AutoCraft matrix
 
@@ -400,7 +400,7 @@ The tester is `T`; the second player is `Alex` and never needs to join.
 |---|---|---|
 | CL-basic | `T:Storage`, chests facing N and E. Items include enchanted tools, renamed items, potions, a written book and a filled shulker box. Sort `NAME`. | One group with 2 nodes, displays on the N and E faces, every item intact (DFU-upgraded), sort NAME, signs and armour stands gone |
 | CL-double | `T:Double` on a double chest | Group kept, chest split into two singles |
-| CL-names | `T`: `Iron Ore`, `iron` + `IRON`, a 40-character name, `§aGreen` | `Iron_Ore`, `iron` + `IRON_2`, cut to 32 characters, `Green`; all listed in the report |
+| CL-names | `T`: `Iron Ore`, `iron` + `IRON`, a 40-character name, `§aGreen` | `Iron Ore` (unchanged), `iron` + `IRON_2`, cut to 32 characters, `Green`; the renames listed in the report |
 | CL-access | `T:Public` public; `T:Shared` with member Alex; `Alex:Gift` with member T | Public flag and members kept; T can open `Alex:Gift` |
 | CL-hoppers | Hopper → `T:Hoppers` chest → hopper → plain chest | Items still flow through after the upgrade |
 | CL-stale | `T:Stale` with a location whose chest was broken afterwards | The node is dropped on chunk load and the group's items are kept |

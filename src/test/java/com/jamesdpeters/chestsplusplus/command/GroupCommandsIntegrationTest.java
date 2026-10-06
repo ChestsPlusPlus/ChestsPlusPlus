@@ -90,6 +90,18 @@ class GroupCommandsIntegrationTest extends PluginTestBase {
     }
 
     @Test
+    void quotedNamesCanHaveSpaces() {
+        ChestLinkGroup group = create(alice, "ores", 0);
+        group.setPublic(true);
+
+        run(alice, "cl rename ores \"Iron Ore\"");
+        assertThat(group.name()).isEqualTo("Iron Ore");
+        run(bob, "cl open \"Alice:Iron Ore\"");
+        assertThat(bob.getOpenInventory().getTopInventory()).isSameAs(group.inventory());
+        assertThat(run(alice, "cl rename \"Iron Ore\" \"Iron  Ore\"")).anyMatch(l -> l.contains("isn't a valid name"));
+    }
+
+    @Test
     void membersAndTrustCommandsGrantAccess() {
         ChestLinkGroup group = create(alice, "ores", 0);
 

@@ -55,7 +55,7 @@ final class GroupCommands {
                         .then(group().executes(withGroup((context, p, g) -> actions().openRemote(p, g)))))
                 .then(literal("menu").requires(permission(Permissions.menu(type))).executes(player((context, p) -> ui().openHub(p, type, "", 0))))
                 .then(literal("list").executes(player((context, p) -> actions().list(p, type))))
-                .then(literal("rename").then(group().then(argument("new", StringArgumentType.word()).executes(withGroup(this::rename)))))
+                .then(literal("rename").then(group().then(argument("new", StringArgumentType.string()).executes(withGroup(this::rename)))))
                 .then(literal("public").then(group().then(argument("public", BoolArgumentType.bool()).executes(withGroup(this::setPublic)))))
                 .then(members());
         if (type == GroupType.CHESTLINK) root.then(sort());

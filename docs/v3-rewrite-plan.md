@@ -632,7 +632,7 @@ From Phase 2 on, every phase's exit criteria include **MockBukkit tests for its 
 
 **Defaults I've assumed (say if you disagree):**
 1. Command linking (`/cl add`) doesn't consume a sign item. Sign linking consumes the placed sign, and it is not refunded on unlink.
-2. Group names are case-insensitive and unique per owner and type, limited to 32 characters matching `[A-Za-z0-9_-]`.
+2. Group names are case-insensitive and unique per owner and type, limited to 32 characters of `[A-Za-z0-9_-]` and single spaces between words.
 3. The ChestLink inventory stays fixed at 54 slots.
 4. Hopper filters are lost when the hopper is broken in 3.0.0. Carrying them on the dropped item is a follow-up.
 5. bStats keeps plugin id **7166**.

@@ -209,8 +209,8 @@ public final class DisplayService {
             entity.setDefaultBackground(false);
             entity.setBackgroundColor(Color.fromARGB(0x40000000));
             entity.setShadowed(true);
-            entity.setLineWidth(200);
-            entity.setTransformation(scale(0.35f, 0.35f, 0.35f));
+            entity.setLineWidth(DisplayLayout.NODE_LABEL_LINE_WIDTH);
+            entity.setTransformation(scale(DisplayLayout.NODE_LABEL_SCALE, DisplayLayout.NODE_LABEL_SCALE, DisplayLayout.NODE_LABEL_SCALE));
         });
     }
 

@@ -105,7 +105,7 @@ and says what should happen. "Alex" is a second player who never joins.
       potion, a written book, and a shulker box still holding its diamonds and emeralds. Displays sit on the N and E faces. The v2
       signs and armour stands are gone. Sorting is by name.
 - [ ] **CL-double:** the double chest is now two single chests; `Double` is linked to the left one.
-- [ ] **CL-names:** `/cl list` shows `Iron_Ore`, `iron` and `IRON` (whichever v2 saved second gets `_2`), a 32-character name
+- [ ] **CL-names:** `/cl list` shows `Iron Ore`, `iron` and `IRON` (whichever v2 saved second gets `_2`), a 32-character name
       and `Green`.
 - [ ] **CL-access:** `Public` is public, `Shared` has Alex as a member, and you can open `Alex:Gift`.
 - [ ] **CL-hoppers:** cobblestone keeps flowing from the top hopper through the ChestLink into the plain chest.

@@ -80,7 +80,10 @@ class ModelIndexTest {
     @Test
     void groupNameRules() {
         assertThat(GroupNames.isValid("ore_storage-2")).isTrue();
-        assertThat(GroupNames.isValid("has space")).isFalse();
+        assertThat(GroupNames.isValid("Iron Ore")).isTrue();
+        assertThat(GroupNames.isValid(" Iron Ore")).isFalse();
+        assertThat(GroupNames.isValid("Iron  Ore")).isFalse();
+        assertThat(GroupNames.isValid("Steve:ores")).isFalse();
         assertThat(GroupNames.isValid("")).isFalse();
         assertThat(GroupNames.isValid("x".repeat(33))).isFalse();
     }

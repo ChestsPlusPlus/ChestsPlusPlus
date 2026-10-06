@@ -195,10 +195,13 @@ public final class V2Importer {
         }
     }
 
-    /** Fits a free-text v2 name to v3's rules: colour codes dropped, other characters replaced with {@code _}, at most 32 long. */
+    /**
+     * Fits a free-text v2 name to v3's rules: colour codes dropped, runs of spaces made single, other characters replaced with
+     * {@code _}, at most 32 long.
+     */
     static String cleanName(String name) {
-        String cleaned = name.replaceAll("§.", "").trim().replaceAll("[^A-Za-z0-9_-]+", "_").replaceAll("^_+|_+$", "");
-        if (cleaned.length() > GroupNames.MAX_LENGTH) cleaned = cleaned.substring(0, GroupNames.MAX_LENGTH);
+        String cleaned = name.replaceAll("§.", "").replaceAll("\\s+", " ").replaceAll("[^A-Za-z0-9_ -]+", "_").replaceAll("^[_ ]+|[_ ]+$", "");
+        if (cleaned.length() > GroupNames.MAX_LENGTH) cleaned = cleaned.substring(0, GroupNames.MAX_LENGTH).stripTrailing();
         return cleaned.isEmpty() ? "group" : cleaned;
     }
 }

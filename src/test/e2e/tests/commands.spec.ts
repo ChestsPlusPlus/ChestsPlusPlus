@@ -12,7 +12,7 @@ test('/cl list and /cl open work for a group the bot owns', async ({ player, ser
   await expect(player).toHaveReceivedMessage('e2egroup');
 
   player.chat('/cl open e2egroup');
-  const gui = await player.gui({ title: /ChestLink: e2egroup/ });
+  const gui = await player.gui({ title: /e2egroup/ });
   if (!gui) throw new Error('ChestLink inventory did not open');
 });
 

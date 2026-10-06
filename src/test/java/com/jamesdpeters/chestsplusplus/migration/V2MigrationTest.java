@@ -77,7 +77,7 @@ class V2MigrationTest extends PluginTestBase {
     void startupImportsBacksUpAndRenamesTheFileOnceSaved() throws Exception {
         migration().importOnStartup();
 
-        assertThat(services.groups().find(GroupType.CHESTLINK, ALICE, "Iron_Ore")).isNotNull();
+        assertThat(services.groups().find(GroupType.CHESTLINK, ALICE, "Iron Ore")).isNotNull();
         assertThat(services.get(MigrationState.class).filters()).isEqualTo(MigrationState.Filters.PENDING);
         Path migrated = storage.resolveSibling("storage.yml.v2-migrated");
         tickUntil(() -> Files.exists(migrated));
