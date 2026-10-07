@@ -451,7 +451,9 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         autoCraft.setMatrix(group, matrix, null);
         editor.render();
 
-        assertThat(editor.getInventory().getItem(RecipeEditorHolder.RESULT_SLOT)).isEqualTo(ItemStack.of(Material.TORCH, 4));
+        ItemStack result = editor.getInventory().getItem(RecipeEditorHolder.RESULT_SLOT);
+        assertThat(result.getType()).isEqualTo(Material.TORCH);
+        assertThat(result.getAmount()).isEqualTo(4);
         assertThat(editor.getInventory().getItem(2).getType()).isEqualTo(Material.COAL);
         assertThat(group.recipeKey()).isEqualTo(NamespacedKey.minecraft("torch"));
         assertThat(plugin.services().groupStore().isDirty(group)).isTrue();
@@ -530,6 +532,29 @@ class AutoCraftIntegrationTest extends PluginTestBase {
 
         drag(server.addPlayer("Bob"), editor, ItemStack.of(Material.DIRT), 1, 2);
         assertThat(group[0].matrix()[0]).isNull();
+    }
+
+    @Test
+    void doubleClickingInYourOwnInventoryCannotCollectTheResultIcon() {
+        AutoCraftGroup[] group = new AutoCraftGroup[1];
+        crafter(group);
+        RecipeEditorHolder editor = editor(group[0]);
+        InventoryView view = alice.openInventory(editor.getInventory());
+        view.setCursor(ItemStack.of(Material.TORCH));
+
+        InventoryClickEvent collect = click(view, ClickType.DOUBLE_CLICK, InventoryAction.COLLECT_TO_CURSOR);
+        assertThat(collect.isCancelled()).isTrue();
+        assertThat(editor.getInventory().getItem(RecipeEditorHolder.RESULT_SLOT).getType()).isEqualTo(Material.TORCH);
+
+        assertThat(click(view, ClickType.LEFT, InventoryAction.PICKUP_ALL).isCancelled()).isFalse();
+    }
+
+    /** Fires a click on the first slot of the player's own inventory below {@code view} through the real listeners. */
+    private InventoryClickEvent click(InventoryView view, ClickType click, InventoryAction action) {
+        int rawSlot = view.getTopInventory().getSize();
+        InventoryClickEvent event = new InventoryClickEvent(view, InventoryType.SlotType.CONTAINER, rawSlot, click, action);
+        server.getPluginManager().callEvent(event);
+        return event;
     }
 
     /** Fires a drag of {@code cursor} over raw {@code slots} of the player's open editor through the real listeners. */

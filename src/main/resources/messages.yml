@@ -59,6 +59,7 @@ autocraft:
   match-exact: "<gray>Match: <white>this exact item<gray> (same name, damage, contents...)"
   match-type: "<gray>Match: <white>any item of this type<gray> (ignores name, damage, contents...)"
   editor-controls: "<dark_gray>Right-click: change match<newline><dark_gray>Click with an item: replace<newline><dark_gray>Click with an empty hand: clear"
+  editor-result: "<gray>Crafted from the recipe above"
 
 state:
   public: "<green>public</green>"

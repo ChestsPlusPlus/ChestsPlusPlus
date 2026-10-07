@@ -12,6 +12,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
@@ -56,10 +57,13 @@ public final class MenuListener implements Listener {
         if (button != null) button.handler().onClick(player, event.getClick());
     }
 
-    /** Clicks in the player's own inventory work as normal, except shift-clicks, which would move items into the editor. */
+    /**
+     * Clicks in the player's own inventory work as normal, except shift-clicks, which would move items into the editor, and double-clicks,
+     * whose "collect to cursor" also takes matching stacks out of the editor.
+     */
     private void onEditorClick(InventoryClickEvent event, GhostEditor editor) {
         if (event.getClickedInventory() != event.getView().getTopInventory()) {
-            if (event.isShiftClick()) event.setCancelled(true);
+            if (event.isShiftClick() || event.getAction() == InventoryAction.COLLECT_TO_CURSOR) event.setCancelled(true);
             return;
         }
         event.setCancelled(true);

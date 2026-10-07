@@ -54,6 +54,7 @@ public enum Message {
     AUTOCRAFT_MATCH_EXACT("autocraft.match-exact"),
     AUTOCRAFT_MATCH_TYPE("autocraft.match-type"),
     AUTOCRAFT_EDITOR_CONTROLS("autocraft.editor-controls"),
+    AUTOCRAFT_EDITOR_RESULT("autocraft.editor-result"),
     STATE_PUBLIC("state.public"),
     STATE_PRIVATE("state.private"),
     MEMBERS_ADDED("members.added"),

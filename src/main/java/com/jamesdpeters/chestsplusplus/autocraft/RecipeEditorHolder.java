@@ -87,7 +87,8 @@ public final class RecipeEditorHolder extends GhostEditor {
             ItemStack ghost = matrix[i];
             inventory.setItem(i + 1, ghost == null ? null : icon(ghost, matches[i].effective(autoCraft.hasRecipeChoice(group, i))));
         }
-        inventory.setItem(RESULT_SLOT, group.result());
+        ItemStack result = group.result();
+        inventory.setItem(RESULT_SLOT, result == null ? null : withLore(result, messages.lines(Message.AUTOCRAFT_EDITOR_RESULT)));
     }
 
     private ItemStack icon(ItemStack ghost, SlotMatch match) {
@@ -98,7 +99,12 @@ public final class RecipeEditorHolder extends GhostEditor {
         };
         List<Component> lore = new ArrayList<>(messages.lines(line));
         lore.addAll(messages.lines(Message.AUTOCRAFT_EDITOR_CONTROLS));
-        ItemStack icon = ghost.clone();
+        return withLore(ghost, lore);
+    }
+
+    /** A copy of {@code item} with its lore replaced, so the icon is never similar to a real item. */
+    private static ItemStack withLore(ItemStack item, List<Component> lore) {
+        ItemStack icon = item.clone();
         icon.setData(DataComponentTypes.LORE, ItemLore.lore(lore));
         return icon;
     }
