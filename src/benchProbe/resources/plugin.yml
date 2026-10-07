@@ -1,0 +1,13 @@
+# The benchmark's measuring plugin (docs/benchmarking.md). It runs on v2's Paper 1.21.7 and v3's Paper 26.3 alike. Never shipped.
+name: BenchProbe
+main: com.jamesdpeters.chestsplusplus.benchprobe.BenchProbePlugin
+version: '1'
+api-version: '1.21'
+commands:
+  benchprobe:
+    description: Measures server ticks for the benchmark.
+    usage: /benchprobe <start|stop>
+    permission: benchprobe.use
+permissions:
+  benchprobe.use:
+    default: op

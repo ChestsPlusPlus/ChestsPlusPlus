@@ -51,8 +51,8 @@ final class Scenario {
     private static final int FILTERS = 20;
     private static final int FAR_X = 2000;
     /** v2's sign tags (its {@code Values} class isn't in the shaded jar). */
-    private static final String CHESTLINK_TAG = "[ChestLink]";
-    private static final String AUTOCRAFT_TAG = "[AutoCraft]";
+    static final String CHESTLINK_TAG = "[ChestLink]";
+    static final String AUTOCRAFT_TAG = "[AutoCraft]";
     /** Where v2 keeps a link sign's owner ({@code Values.playerUUID}). */
     private static final NamespacedKey V2_OWNER_KEY = new NamespacedKey("chestsplusplus", "playeruuid");
 
@@ -184,7 +184,7 @@ final class Scenario {
         label(-4, CHESTLINKS, "Party", "friends with", Objects.requireNonNullElse(other.getName(), "other"), "-> trusted");
     }
 
-    private ChestLinkStorage chestLink(OfflinePlayer owner, String name, Block block, BlockFace face) {
+    static ChestLinkStorage chestLink(OfflinePlayer owner, String name, Block block, BlockFace face) {
         Location sign = linkSign(block, face, CHESTLINK_TAG, name, owner);
         ChestLinkStorage storage = new ChestLinkStorage(owner, name, block.getLocation(), sign);
         Config.getStore().chests.computeIfAbsent(owner.getUniqueId().toString(), k -> new HashMap<>()).put(name, storage);
@@ -192,10 +192,14 @@ final class Scenario {
     }
 
     private AutoCraftingStorage autoCraft(String name, int x, BlockFace face, @Nullable Recipe recipe, @Nullable ItemStack[] items) {
-        Block table = table(x, AUTOCRAFTERS);
-        AutoCraftingStorage storage = new AutoCraftingStorage(tester, name, table.getLocation(), linkSign(table, face, AUTOCRAFT_TAG, name, tester));
+        return autoCraft(tester, name, table(x, AUTOCRAFTERS), face, recipe, items);
+    }
+
+    static AutoCraftingStorage autoCraft(OfflinePlayer owner, String name, Block table, BlockFace face, @Nullable Recipe recipe,
+            @Nullable ItemStack[] items) {
+        AutoCraftingStorage storage = new AutoCraftingStorage(owner, name, table.getLocation(), linkSign(table, face, AUTOCRAFT_TAG, name, owner));
         storage.setRecipe(recipe, items);
-        Config.getStore().autocraftingtables.computeIfAbsent(tester.getUniqueId().toString(), k -> new HashMap<>()).put(name, storage);
+        Config.getStore().autocraftingtables.computeIfAbsent(owner.getUniqueId().toString(), k -> new HashMap<>()).put(name, storage);
         return storage;
     }
 
@@ -203,7 +207,7 @@ final class Scenario {
         return Objects.requireNonNull(Bukkit.getRecipe(Objects.requireNonNull(NamespacedKey.fromString(key))), "no recipe " + key);
     }
 
-    private static @Nullable ItemStack[] grid(@Nullable ItemStack... items) {
+    static @Nullable ItemStack[] grid(@Nullable ItemStack... items) {
         @Nullable ItemStack[] grid = new ItemStack[9];
         System.arraycopy(items, 0, grid, 0, items.length);
         return grid;
@@ -213,7 +217,7 @@ final class Scenario {
      * The wall sign v2 placed on a linked block's front: the tag, then the group name in brackets. v2 only treats it as a link when it
      * also carries the owner's UUID.
      */
-    private static Location linkSign(Block block, BlockFace face, String tag, String name, OfflinePlayer owner) {
+    static Location linkSign(Block block, BlockFace face, String tag, String name, OfflinePlayer owner) {
         Block signBlock = block.getRelative(face);
         signBlock.setType(Material.OAK_WALL_SIGN);
         facing(signBlock, face);
@@ -257,7 +261,7 @@ final class Scenario {
         return block;
     }
 
-    private static void facing(Block block, BlockFace face) {
+    static void facing(Block block, BlockFace face) {
         Directional data = (Directional) block.getBlockData();
         data.setFacing(face);
         block.setBlockData(data);

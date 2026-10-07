@@ -1,0 +1,12 @@
+# The v2 config.yml for the benchmark world. v3 converts it on import, so both run with the same settings.
+update-checker: false
+chestlinks-enabled: true
+autocrafters-enabled: true
+hopper-filters-enabled: true
+limit-chests: false
+should-animate-all-chests: false
+display_chestlink_armour_stand: true
+display_autocraft_armour_stands: true
+set-filter-itemframe-invisible: false
+world-blacklist: []
+language-file: default

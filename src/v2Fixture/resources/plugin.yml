@@ -6,8 +6,8 @@ api-version: '1.21'
 depend: [ChestsPlusPlus]
 commands:
   v2fixture:
-    description: Builds the v2 upgrade test world.
-    usage: /v2fixture build <tester> <other player>
+    description: Builds the v2 upgrade test world or the benchmark world.
+    usage: /v2fixture build <tester> <other player> | /v2fixture benchmark <chestlinks> <autocrafters> <filters>
     permission: v2fixture.build
 permissions:
   v2fixture.build:
