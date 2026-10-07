@@ -1,7 +1,5 @@
 package com.jamesdpeters.chestsplusplus.persistence;
 
-import static java.util.stream.Collectors.groupingBy;
-
 import com.jamesdpeters.chestsplusplus.core.BlockPos;
 import com.jamesdpeters.chestsplusplus.model.AutoCraftGroup;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
@@ -13,14 +11,6 @@ import com.jamesdpeters.chestsplusplus.model.SlotMatch;
 import com.jamesdpeters.chestsplusplus.model.SortMode;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import com.jamesdpeters.chestsplusplus.persistence.GroupStore.GroupSnapshot;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.UUID;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.BlockFace;
@@ -28,6 +18,20 @@ import org.bukkit.inventory.ItemStack;
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.mapper.ColumnMapper;
 import org.jspecify.annotations.Nullable;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.groupingBy;
 
 /** Groups: a {@code groups} row each (with a ChestLink's inventory or an AutoCraft recipe), plus their members and nodes. */
 @RequiredArgsConstructor
@@ -59,6 +63,13 @@ public final class GroupStore implements Store<Long, GroupSnapshot> {
     private final NodeIndex nodes;
     /** Called for each loaded group once it is registered and its nodes indexed (e.g. to create ChestLink inventories). */
     private final Consumer<LoadedGroup> attach;
+    /** ChestLinks a hopper used since the last flush. Groups compare by identity, so adding one already here allocates nothing. */
+    private final Set<ChestLinkGroup> touched = new HashSet<>();
+    /**
+     * The contents last saved of each ChestLink a hopper uses, so a touched group is only saved when they differ. Null until the first
+     * save after the first touch, as there is nothing to compare against yet. Other groups aren't kept, to save copying their items.
+     */
+    private final Map<Long, @Nullable ItemStack @Nullable []> written = new HashMap<>();
 
     public void markDirty(StorageGroup group) {
         persistence.markDirty(this, group.id());
@@ -68,10 +79,33 @@ public final class GroupStore implements Store<Long, GroupSnapshot> {
         return persistence.isDirty(this, group.id());
     }
 
+    /**
+     * For hoppers, which can't tell whether a transfer happened: the group is saved at the next flush if its contents changed. Hot path:
+     * one hash-set add.
+     */
+    public void touch(ChestLinkGroup group) {
+        touched.add(group);
+    }
+
+    @Override
+    public void beforeFlush() {
+        for (ChestLinkGroup chest : touched) {
+            // Starts keeping its contents from its next save.
+            @Nullable ItemStack[] last = written.putIfAbsent(chest.id(), null);
+            if (!isDirty(chest) && (last == null || !Arrays.equals(chest.inventory().getContents(), last))) markDirty(chest);
+        }
+        touched.clear();
+    }
+
     @Override
     public @Nullable GroupSnapshot snapshot(Long id) {
         StorageGroup group = groups.byId(id);
-        if (group == null) return null;
+        if (group == null) {
+            written.remove(id);
+            return null;
+        }
+        // Its own copy, since the snapshot's items are serialised on the I/O thread while later flushes compare against these.
+        if (group instanceof ChestLinkGroup chest && written.containsKey(id)) written.put(id, contents(chest));
         List<MemberRow> members = group.members().stream().map(member -> new MemberRow(id, member)).toList();
         List<NodeRow> nodeRows = nodes.nodesOf(id).stream().map(GroupStore::row).toList();
         return new GroupSnapshot(row(group), members, nodeRows);

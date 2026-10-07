@@ -4,10 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
+import com.jamesdpeters.chestsplusplus.persistence.Persistence;
 import com.jamesdpeters.chestsplusplus.testing.PluginTestBase;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.BooleanSupplier;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -21,6 +24,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.SignChangeEvent;
+import org.bukkit.event.inventory.HopperInventorySearchEvent;
+import org.bukkit.event.inventory.HopperInventorySearchEvent.ContainerType;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -169,5 +174,42 @@ class HopperBridgeIntegrationTest extends PluginTestBase {
                 .satisfies(item -> assertThat(item.getItemStack()).isEqualTo(new ItemStack(Material.OAK_PLANKS, 8)));
         assertThat(group.inventory().contains(Material.OAK_PLANKS)).isFalse();
         assertThat(Arrays.stream(inventoryOf(chest).getContents()).allMatch(stack -> stack == null || stack.isEmpty())).isTrue();
+    }
+
+    @Test
+    void idleHopperDoesNotSaveTheGroupButATransferWithoutAMoveEventDoes() throws InterruptedException {
+        Persistence persistence = plugin.services().persistence();
+        Block hopper = world.getBlockAt(0, 4, 0);
+        hopper.setType(Material.HOPPER);
+        persistence.flush();
+        tickUntil(() -> persistence.pending() == 0);
+
+        search(hopper, ContainerType.SOURCE);
+        persistence.flush();
+        tickUntil(() -> persistence.pending() == 0);
+
+        search(hopper, ContainerType.SOURCE);
+        persistence.flush();
+        assertThat(persistence.pending()).isZero();
+
+        search(hopper, ContainerType.DESTINATION);
+        group.inventory().addItem(new ItemStack(Material.DIRT));
+        persistence.flush();
+        assertThat(persistence.pending()).isEqualTo(1);
+    }
+
+    private void search(Block hopper, ContainerType type) {
+        HopperInventorySearchEvent event = new HopperInventorySearchEvent(inventoryOf(chest), type, hopper, chest);
+        server.getPluginManager().callEvent(event);
+        assertThat(event.getInventory()).isSameAs(group.inventory());
+    }
+
+    private void tickUntil(BooleanSupplier done) throws InterruptedException {
+        long deadline = System.nanoTime() + Duration.ofSeconds(10).toNanos();
+        while (!done.getAsBoolean() && System.nanoTime() < deadline) {
+            server.getScheduler().performOneTick();
+            Thread.sleep(5);
+        }
+        assertThat(done.getAsBoolean()).as("condition reached within 10s").isTrue();
     }
 }

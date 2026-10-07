@@ -53,7 +53,7 @@ public final class Persistence {
         dirty.put(store, new LinkedHashSet<>());
     }
 
-    /** One hash-set add: cheap enough for the hopper hot path. */
+    /** One hash-set add. */
     public <K> void markDirty(Store<K, ?> store, K key) {
         keys(store).add(key);
     }
@@ -74,6 +74,7 @@ public final class Persistence {
 
     /** Writes every dirty key. The future completes on the main thread once they are committed, or fails if any of them failed. */
     public CompletableFuture<Void> flush() {
+        dirty.keySet().forEach(Store::beforeFlush);
         List<Batch<?, ?>> batches = dirty.keySet().stream().<Batch<?, ?>>map(this::take).filter(batch -> !batch.writes().isEmpty()).toList();
         int keys = batches.stream().mapToInt(batch -> batch.writes().size()).sum();
         if (keys == 0) return CompletableFuture.completedFuture(null);

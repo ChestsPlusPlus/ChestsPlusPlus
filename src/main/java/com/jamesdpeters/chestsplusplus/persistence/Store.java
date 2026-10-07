@@ -7,6 +7,9 @@ import org.jspecify.annotations.Nullable;
 /** One kind of persisted thing: how to copy it on the main thread, and how to write, delete and load its rows. */
 public interface Store<K, S> {
 
+    /** Main thread, at the start of every flush: a chance to mark keys dirty that only now turn out to have changed. */
+    default void beforeFlush() {}
+
     /** Main thread, cheap: a copy safe to hand to the I/O thread, or null when the thing no longer exists (it is then deleted). */
     @Nullable
     S snapshot(K key);

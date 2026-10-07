@@ -154,8 +154,9 @@ record GroupSnapshot(GroupRow group, List<MemberRow> members, List<NodeRow> node
 
 - Every `markDirty(group, Change.X)` becomes `groupStore.markDirty(group)` (`LinkService`, `ChestLinkService`, `AutoCraftService`,
   `HopperBridge`). `markDeleted` becomes `markDirty` too: the snapshot returns null for a removed group, which deletes it.
-- `HopperBridge.onSearch` calls `markDirty` directly; `markHopperTouched` goes. That's one hash-set add on the hot path, the same cost
-  as today.
+- `HopperBridge.onSearch` calls `groupStore.touch(group)`, one hash-set add on the hot path. At the start of each flush
+  (`Store.beforeFlush`), a touched group is marked dirty only if its contents differ from what it last wrote, so an idle hopper
+  doesn't re-save its group every flush. Only hoppered groups' contents are kept for this; the first touch saves the group once.
 - `ChestLinkService.setSortMode` stays, minus its extra `Change.META` call.
 - `ChestsPlusPlus`: build `Persistence`, register `GroupStore` then `TrustStore`, call `load()`. Remove the per-tick
   `persistence` ticker; the interval ticker and `WorldSaveEvent` call `flush()`.

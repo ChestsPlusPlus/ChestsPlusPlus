@@ -17,6 +17,7 @@ import com.jamesdpeters.chestsplusplus.testing.PluginTestBase;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.BooleanSupplier;
 import net.kyori.adventure.text.Component;
@@ -224,5 +225,81 @@ class GroupStoreTest extends PluginTestBase {
         ChestLinkGroup loaded = (ChestLinkGroup) second.groups.byId(chest.id());
         assertThat(loaded.inventory().getItem(0)).isEqualTo(named);
         second.persistence.close();
+    }
+
+    @Test
+    void touchedGroupIsSavedOnlyWhenItsContentsChanged() throws Exception {
+        Instance first = new Instance();
+        ChestLinkGroup chest = first.chest("g");
+        chest.inventory().setItem(0, ItemStack.of(Material.DIAMOND_SWORD));
+        chest.inventory().setItem(1, ItemStack.of(Material.DIAMOND, 7));
+        chest.inventory().setItem(2, ItemStack.of(Material.OAK_LOG, 64));
+        first.flushAndWait();
+
+        // The first touch saves it, as nothing was kept to compare against.
+        assertThat(savedOnTouch(first, chest)).isTrue();
+        assertThat(savedOnTouch(first, chest)).isFalse();
+        chest.inventory().setItem(1, ItemStack.of(Material.OAK_LOG, 64));
+        chest.inventory().setItem(2, ItemStack.of(Material.DIAMOND, 7));
+        assertThat(savedOnTouch(first, chest)).isTrue();
+        chest.inventory().setItem(1, ItemStack.of(Material.OAK_LOG, 63));
+        assertThat(savedOnTouch(first, chest)).isTrue();
+        ItemStack named = ItemStack.of(Material.DIAMOND_SWORD);
+        named.editMeta(meta -> meta.displayName(Component.text("Excalibur")));
+        chest.inventory().setItem(0, named);
+        first.groupStore.touch(chest);
+        first.persistence.close();
+
+        Instance second = new Instance();
+        ChestLinkGroup loaded = (ChestLinkGroup) second.groups.byId(chest.id());
+        assertThat(loaded.inventory().getContents()).startsWith(named, ItemStack.of(Material.OAK_LOG, 63), ItemStack.of(Material.DIAMOND, 7));
+        assertThat(savedOnTouch(second, loaded)).isTrue();
+        assertThat(savedOnTouch(second, loaded)).isFalse();
+        second.persistence.close();
+    }
+
+    @Test
+    void hopperDoesNotRetryAGroupThatWasGivenUpOnUntilItChanges() throws Exception {
+        Instance first = new Instance();
+        ChestLinkGroup stuck = first.chest("stuck");
+        ChestLinkGroup fine = first.chest("fine");
+        first.flushAndWait();
+        try (Database db = Database.open(url())) {
+            db.handle()
+                    .execute("CREATE TRIGGER stuck BEFORE UPDATE ON groups WHEN NEW.id = " + stuck.id() + " BEGIN SELECT RAISE(ABORT, 'stuck'); END");
+        }
+
+        // Another group saves in each flush, so the failures count against the stuck one rather than the database.
+        for (int attempt = 0; attempt <= Persistence.MAX_ATTEMPTS; attempt++) {
+            first.groupStore.touch(stuck);
+            first.groupStore.markDirty(fine);
+            flushAndDrain(first);
+        }
+        assertThat(first.groupStore.isDirty(stuck)).isFalse();
+
+        first.groupStore.touch(stuck);
+        first.persistence.flush();
+        assertThat(first.persistence.pending()).isZero();
+
+        stuck.inventory().setItem(0, ItemStack.of(Material.DIRT));
+        first.groupStore.touch(stuck);
+        flushAndDrain(first);
+        assertThat(first.groupStore.isDirty(stuck)).isTrue();
+        first.persistence.close();
+    }
+
+    /** Flushes and waits for that flush alone, which {@link Instance#flushAndWait} can't when a key keeps failing. */
+    private void flushAndDrain(Instance instance) throws InterruptedException {
+        CompletableFuture<Void> flushed = instance.persistence.flush();
+        drainUntil(flushed::isDone);
+    }
+
+    /** Touches the group as a hopper would and flushes; true if that wrote it. */
+    private boolean savedOnTouch(Instance instance, ChestLinkGroup chest) throws InterruptedException {
+        instance.groupStore.touch(chest);
+        instance.persistence.flush();
+        boolean saved = instance.persistence.pending() > 0;
+        instance.flushAndWait();
+        return saved;
     }
 }

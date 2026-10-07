@@ -30,7 +30,8 @@ import org.jspecify.annotations.Nullable;
 /**
  * Hoppers ↔ ChestLinks via {@link HopperInventorySearchEvent}: when a hopper looks up a linked
  * block as source or destination, the group's inventory is substituted, so transfers are vanilla. This fires every
- * tick per idle hopper, so the handler is one hash lookup with no allocation.
+ * tick per idle hopper, so the handler is one hash lookup with no allocation, and only touches the group: it is saved at the next flush
+ * if its contents changed, which covers servers with {@code hopper.disable-move-event} and moves other plugins cancel and make by hand.
  */
 @RequiredArgsConstructor
 public final class HopperBridge implements Listener {
@@ -45,7 +46,7 @@ public final class HopperBridge implements Listener {
     void onSearch(HopperInventorySearchEvent event) {
         if (!(services.groupAt(event.getSearchBlock()) instanceof ChestLinkGroup group)) return;
         event.setInventory(group.inventory());
-        services.groupStore().markDirty(group);
+        services.groupStore().touch(group);
     }
 
     /**

@@ -181,7 +181,7 @@ Migrations are versioned with `PRAGMA user_version`, using numbered SQL files (`
 
 ### 4.3 Write-behind
 - **Stores:** each kind of thing (groups, trust) is a `Store` that says how to snapshot, write, delete and load it. The `Persistence` engine knows nothing about chests; it keeps a dirty key set per store.
-- **What marks a group dirty:** metadata, member and node changes, viewer close, `InventoryMoveItemEvent` at MONITOR where either side's holder is a `ChestLinkHolder`, AutoCraft output, programmatic changes, and every `HopperBridge` substitution (S1), which covers servers with `hopper.disable-move-event: true`, where the move event never fires. A dirty group is saved whole.
+- **What marks a group dirty:** metadata, member and node changes, viewer close, `InventoryMoveItemEvent` at MONITOR where either side's holder is a `ChestLinkHolder`, AutoCraft output, programmatic changes, and every `HopperBridge` substitution (S1) whose group's contents differ at the next flush from what was last written. That covers servers with `hopper.disable-move-event: true`, where the move event never fires, and moves another plugin cancels and makes by hand. A dirty group is saved whole.
 - **Flush** (default every 30 s, configurable, plus on `WorldSaveEvent`): take and clear the dirty keys, snapshot them on main (a removed group snapshots to null and is deleted; item stacks are cloned), and write everything in one transaction on the I/O thread, where the clones are serialised.
 - **Ordering:** the single I/O thread runs batches in order, so a group that changes while its batch is being written is simply saved again by the next flush.
 - **Retries:** a failed batch is logged and its keys are marked dirty again, so the retry writes their current state.
