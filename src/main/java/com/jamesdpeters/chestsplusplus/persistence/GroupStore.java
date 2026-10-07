@@ -1,5 +1,7 @@
 package com.jamesdpeters.chestsplusplus.persistence;
 
+import static java.util.stream.Collectors.groupingBy;
+
 import com.jamesdpeters.chestsplusplus.core.BlockPos;
 import com.jamesdpeters.chestsplusplus.model.AutoCraftGroup;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
@@ -11,14 +13,6 @@ import com.jamesdpeters.chestsplusplus.model.SlotMatch;
 import com.jamesdpeters.chestsplusplus.model.SortMode;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import com.jamesdpeters.chestsplusplus.persistence.GroupStore.GroupSnapshot;
-import lombok.RequiredArgsConstructor;
-import org.bukkit.NamespacedKey;
-import org.bukkit.block.BlockFace;
-import org.bukkit.inventory.ItemStack;
-import org.jdbi.v3.core.Handle;
-import org.jdbi.v3.core.mapper.ColumnMapper;
-import org.jspecify.annotations.Nullable;
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,8 +24,13 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static java.util.stream.Collectors.groupingBy;
+import lombok.RequiredArgsConstructor;
+import org.bukkit.NamespacedKey;
+import org.bukkit.block.BlockFace;
+import org.bukkit.inventory.ItemStack;
+import org.jdbi.v3.core.Handle;
+import org.jdbi.v3.core.mapper.ColumnMapper;
+import org.jspecify.annotations.Nullable;
 
 /** Groups: a {@code groups} row each (with a ChestLink's inventory or an AutoCraft recipe), plus their members and nodes. */
 @RequiredArgsConstructor
