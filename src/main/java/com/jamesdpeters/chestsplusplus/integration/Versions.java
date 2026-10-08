@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-/** Version comparison for the update checker: numeric dotted parts, and a pre-release suffix sorts below release. */
+/** Version comparison for the update checker: numeric dotted parts and SemVer pre-release precedence. */
 public final class Versions {
 
     private Versions() {}
@@ -20,17 +20,35 @@ public final class Versions {
             if (x != y) return Integer.compare(x, y);
         }
         if (pa.preRelease.isEmpty() != pb.preRelease.isEmpty()) return pa.preRelease.isEmpty() ? 1 : -1;
-        return pa.preRelease.compareTo(pb.preRelease);
+        return comparePreRelease(pa.preRelease, pb.preRelease);
     }
 
     public static boolean isNewer(String candidate, String current) {
         return compare(candidate, current) > 0;
     }
 
+    private static int comparePreRelease(String a, String b) {
+        String[] identifiersA = a.split("\\.");
+        String[] identifiersB = b.split("\\.");
+        for (int i = 0; i < Math.min(identifiersA.length, identifiersB.length); i++) {
+            int comparison = compareIdentifier(identifiersA[i], identifiersB[i]);
+            if (comparison != 0) return comparison;
+        }
+        return Integer.compare(identifiersA.length, identifiersB.length);
+    }
+
+    private static int compareIdentifier(String a, String b) {
+        boolean numericA = a.matches("[0-9]+");
+        boolean numericB = b.matches("[0-9]+");
+        if (numericA != numericB) return numericA ? -1 : 1;
+        if (numericA && a.length() != b.length()) return Integer.compare(a.length(), b.length());
+        return a.compareTo(b);
+    }
+
     private record Parsed(List<Integer> numbers, String preRelease) {}
 
     private static Parsed parse(String version) {
-        String v = version.trim().toLowerCase(Locale.ROOT);
+        String v = version.trim().toLowerCase(Locale.ROOT).split("\\+", 2)[0];
         if (v.startsWith("v")) v = v.substring(1);
         String pre = "";
         int dash = v.indexOf('-');

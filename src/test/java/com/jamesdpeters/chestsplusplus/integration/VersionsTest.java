@@ -20,6 +20,28 @@ class VersionsTest {
     }
 
     @Test
+    void comparesPreReleaseIdentifiersBySemVerPrecedence() {
+        assertThat(Versions.compare("3.0.0-beta.10", "3.0.0-beta.9")).isPositive();
+        assertThat(Versions.compare("3.0.0-beta.9", "3.0.0-beta.10")).isNegative();
+        assertThat(Versions.compare("3.0.0", "3.0.0-beta.2")).isPositive();
+        assertThat(Versions.compare("3.0.0-beta.1", "3.0.0-alpha.1")).isPositive();
+        assertThat(Versions.compare("3.0.0-rc.1", "3.0.0-beta.5")).isPositive();
+        assertThat(Versions.compare("3.0.0-rc.10", "3.0.0-rc.9")).isPositive();
+        assertThat(Versions.compare("3.0.0-beta.1", "3.0.0-beta")).isPositive();
+        assertThat(Versions.compare("3.0.0-beta.1", "3.0.0-beta.alpha")).isNegative();
+        assertThat(Versions.compare("3.0.1-beta.1", "3.0.0")).isPositive();
+        assertThat(Versions.compare("3.0.0-beta.1", "3.0.0-BETA.1")).isZero();
+        assertThat(Versions.compare("3.0.0-beta.99999999999999999999", "3.0.0-beta.100000000000000000000")).isNegative();
+        assertThat(Versions.compare("3.0.0-beta.9", "3.0.0-beta.1a")).isNegative();
+    }
+
+    @Test
+    void ignoresBuildMetadata() {
+        assertThat(Versions.compare("3.0.0+build.1", "3.0.0+build.2")).isZero();
+        assertThat(Versions.compare("v3.0.0-beta.1+build.1", "3.0.0-BETA.1+build.2")).isZero();
+    }
+
+    @Test
     void parsesTheReleaseTag() {
         assertThat(UpdateChecker.parseTag("{\"url\":\"x\",\"tag_name\": \"v3.0.1\",\"name\":\"y\"}")).isEqualTo("v3.0.1");
         assertThat(UpdateChecker.parseTag("{}")).isNull();
