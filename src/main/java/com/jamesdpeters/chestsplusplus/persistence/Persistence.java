@@ -7,11 +7,15 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
@@ -28,17 +32,23 @@ import org.jspecify.annotations.Nullable;
  * A retry that fails again is split up, one transaction per store and then per key, so a key that can never be written doesn't block the
  * rest. Such a key is given up on after {@link #MAX_ATTEMPTS} failures, until it next changes. A failure only counts against a key when
  * something else committed, so a database outage retries everything instead of giving up on it.
- * {@link #markDirty}, {@link #flush} and {@link #load} are main-thread only.
+ * <p>
+ * Completions queue up for the main thread to run, so they survive a scheduler that has stopped taking tasks. {@link #close} runs them
+ * itself, retrying failed keys for a few rounds before logging what it couldn't save. {@link #markDirty}, {@link #flush}, {@link #load}
+ * and {@link #close} are main-thread only.
  */
 @Slf4j(topic = ChestsPlusPlus.NAME)
 @RequiredArgsConstructor
 public final class Persistence {
 
     static final int MAX_ATTEMPTS = 3;
+    private static final int CLOSE_ROUNDS = 3;
+    private static final int CLOSE_TIMEOUT_SECONDS = 30;
 
     private final Database database;
-    /** Runs a task on the server thread; used for write completions. */
+    /** Runs a task on the server thread, or drops it once the plugin is disabling; {@link #close} picks up what it drops. */
     private final Consumer<Runnable> mainThread;
+    private final Queue<Runnable> completions = new ConcurrentLinkedQueue<>();
     private final ExecutorService io = Executors.newSingleThreadExecutor(runnable -> {
         Thread thread = new Thread(runnable, "ChestsPlusPlus-persistence-io");
         thread.setDaemon(true);
@@ -83,25 +93,59 @@ public final class Persistence {
         CompletableFuture<Void> done = new CompletableFuture<>();
         io.execute(() -> {
             Attempts attempts = write(batches, isolate);
-            mainThread.accept(() -> written(batches, keys, attempts, done));
+            completions.add(() -> written(batches, keys, attempts, done));
+            mainThread.accept(this::runCompletions);
         });
         return done;
     }
 
-    /** Flushes, waits for the I/O thread to finish, and closes the database. A failed final write is logged. */
+    /**
+     * Saves everything and closes the database. Runs write completions on the calling thread, so a failed write is logged and retried, for
+     * up to {@link #CLOSE_ROUNDS} flushes; changes still unsaved after that are logged at error level.
+     */
     public void close() {
-        flush();
-        io.shutdown();
-        try {
-            if (!io.awaitTermination(30, TimeUnit.SECONDS)) log.warn("ChestsPlusPlus persistence did not finish saving within 30s");
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+        for (int round = 0; round < CLOSE_ROUNDS; round++) {
+            flush();
+            if (!awaitIdle()) break;
+            runCompletions();
+            if (pending() == 0) break;
         }
+        if (pending() > 0) log.error("Failed to save {} ChestsPlusPlus change(s) before shutdown: {}", pending(), unsaved());
+        io.shutdown();
         try {
             database.close();
         } catch (JdbiException e) {
             log.warn("Closing the ChestsPlusPlus database failed", e);
         }
+    }
+
+    private void runCompletions() {
+        Runnable completion;
+        while ((completion = completions.poll()) != null) completion.run();
+    }
+
+    /** Waits for every write submitted so far, without shutting the I/O thread down. */
+    private boolean awaitIdle() {
+        try {
+            io.submit(() -> {}).get(CLOSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            return true;
+        } catch (TimeoutException e) {
+            log.warn("ChestsPlusPlus persistence did not finish saving within {}s", CLOSE_TIMEOUT_SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } catch (ExecutionException e) {
+            throw new IllegalStateException(e);
+        }
+        return false;
+    }
+
+    private Map<String, Integer> unsaved() {
+        Map<String, Integer> unsaved = new LinkedHashMap<>();
+        dirty.forEach((store, keys) -> {
+            if (!keys.isEmpty()) unsaved.merge(store.getClass().getSimpleName(), keys.size(), Integer::sum);
+        });
+        if (inFlight > 0) unsaved.put("still being written", inFlight);
+        return unsaved;
     }
 
     private Attempts write(List<Batch<?, ?>> batches, boolean isolate) {

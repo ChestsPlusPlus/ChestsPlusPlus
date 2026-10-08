@@ -1,19 +1,29 @@
 package com.jamesdpeters.chestsplusplus.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
+import com.jamesdpeters.chestsplusplus.ChestsPlusPlus;
 import com.jamesdpeters.chestsplusplus.testing.Tags;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 import org.jdbi.v3.core.Handle;
 import org.jspecify.annotations.Nullable;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -88,13 +98,42 @@ class PersistenceTest {
     @TempDir Path dir;
 
     private final ConcurrentLinkedQueue<Runnable> mainQueue = new ConcurrentLinkedQueue<>();
+    /** Like {@code ChestsPlusPlus.runOnMainThread}, the fake main thread drops tasks once the plugin is disabling. */
+    private volatile boolean disabling;
+    private final Logger logger = Logger.getLogger(ChestsPlusPlus.NAME);
+    private final List<LogRecord> logs = new CopyOnWriteArrayList<>();
+    private final Handler handler = new Handler() {
+
+        @Override
+        public void publish(LogRecord record) {
+            logs.add(record);
+        }
+
+        @Override
+        public void flush() {}
+
+        @Override
+        public void close() {}
+    };
+
+    @BeforeEach
+    void captureLogs() {
+        logger.addHandler(handler);
+    }
+
+    @AfterEach
+    void releaseLogs() {
+        logger.removeHandler(handler);
+    }
 
     private Database database() {
         return Database.open("jdbc:sqlite:" + dir.resolve("data.db"));
     }
 
     private Persistence start(Database database, EntryStore... stores) {
-        Persistence persistence = new Persistence(database, mainQueue::add);
+        Persistence persistence = new Persistence(database, task -> {
+            if (!disabling) mainQueue.add(task);
+        });
         for (EntryStore store : stores) persistence.register(store);
         persistence.load();
         return persistence;
@@ -113,6 +152,21 @@ class PersistenceTest {
             Thread.sleep(5);
         }
         assertThat(done.getAsBoolean()).as("condition reached within 10s").isTrue();
+    }
+
+    private void disableAndClose(Persistence persistence) {
+        disabling = true;
+        persistence.close();
+    }
+
+    private Map<String, String> savedRows() {
+        try (Database database = database()) {
+            return rows(database);
+        }
+    }
+
+    private List<String> logged(Level level) {
+        return logs.stream().filter(record -> record.getLevel() == level).map(LogRecord::getMessage).toList();
     }
 
     private static Map<String, String> rows(Database database) {
@@ -279,5 +333,50 @@ class PersistenceTest {
         start(database(), second).close();
 
         assertThat(second.values).containsExactly(Map.entry("a", "1"), Map.entry("b", "2"));
+    }
+
+    @Test
+    void finalWriteThatFailsDuringCloseIsLoggedAndRetried() {
+        EntryStore store = new EntryStore();
+        Persistence persistence = start(database(), store);
+        store.failNextWrite = true;
+        store.set(persistence, "a", "1");
+
+        disableAndClose(persistence);
+
+        assertThat(logged(Level.WARNING)).anyMatch(message -> message.startsWith("Failed to save 1 ChestsPlusPlus change(s)"));
+        assertThat(logged(Level.SEVERE)).isEmpty();
+        assertThat(savedRows()).containsExactly(Map.entry("a", "1"));
+    }
+
+    @Test
+    void batchStillBeingWrittenWhenCloseStartsIsRetriedIfItFails() {
+        EntryStore store = new EntryStore();
+        Persistence persistence = start(database(), store);
+        store.gate = new CountDownLatch(1);
+        store.failNextWrite = true;
+        store.set(persistence, "a", "1");
+        persistence.flush();
+        CompletableFuture.runAsync(store.gate::countDown, CompletableFuture.delayedExecutor(100, TimeUnit.MILLISECONDS));
+
+        disableAndClose(persistence);
+
+        assertThat(logged(Level.SEVERE)).isEmpty();
+        assertThat(savedRows()).containsExactly(Map.entry("a", "1"));
+    }
+
+    @Test
+    void storeThatAlwaysFailsGivesUpAtCloseAndLogsAnError() {
+        EntryStore store = new EntryStore();
+        EntryStore other = new EntryStore("others");
+        Persistence persistence = start(database(), store, other);
+        store.failEveryWrite = true;
+        store.set(persistence, "a", "1");
+        store.set(persistence, "b", "2");
+
+        assertTimeoutPreemptively(Duration.ofSeconds(10), () -> disableAndClose(persistence));
+
+        assertThat(logged(Level.SEVERE)).containsExactly("Failed to save 2 ChestsPlusPlus change(s) before shutdown: {EntryStore=2}");
+        assertThat(savedRows()).isEmpty();
     }
 }
