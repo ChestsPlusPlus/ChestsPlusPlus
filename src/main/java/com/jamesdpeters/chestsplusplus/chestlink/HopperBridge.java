@@ -117,7 +117,7 @@ public final class HopperBridge implements Listener {
         int moved = moving.getAmount() - notMoved;
         if (moved <= 0) return;
         event.getSource().removeItem(moving.asQuantity(moved));
-        services.groupStore().markDirty(group);
+        chestLinks.changed(group);
     }
 
     /**

@@ -20,6 +20,7 @@ import org.bukkit.block.Container;
 import org.bukkit.block.data.type.WallSign;
 import org.bukkit.block.sign.Side;
 import org.bukkit.entity.Item;
+import org.bukkit.entity.ItemDisplay;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -98,6 +99,20 @@ class HopperBridgeIntegrationTest extends PluginTestBase {
         assertThat(event.isCancelled()).isTrue();
         assertThat(group.inventory().contains(Material.DIRT, 1)).isTrue();
         assertThat(dropper.contains(Material.DIRT, 2)).isTrue();
+    }
+
+    @Test
+    void dropperPushRefreshesTheDisplay() {
+        Inventory dropper = inventoryOf(place(Material.DROPPER, 2));
+        dropper.addItem(new ItemStack(Material.DIRT, 3));
+        // Linking queues its own display update; let it run first so it can't show the pushed item.
+        server.getScheduler().performTicks(10);
+
+        push(dropper, new ItemStack(Material.DIRT));
+        server.getScheduler().performTicks(10);
+
+        assertThat(world.getEntitiesByClass(ItemDisplay.class)).singleElement()
+                .satisfies(display -> assertThat(display.getItemStack().getType()).isEqualTo(Material.DIRT));
     }
 
     @Test
