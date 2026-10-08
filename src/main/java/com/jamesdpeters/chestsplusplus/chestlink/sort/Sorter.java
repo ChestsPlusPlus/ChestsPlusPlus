@@ -9,33 +9,33 @@ import java.util.Map;
 import org.bukkit.inventory.ItemStack;
 import org.jspecify.annotations.Nullable;
 
-/**
- * Condensing sort in O(n log n): similar stacks are merged up to their max stack size, then ordered by
- * the mode. Replaces v2's O(n²) {@code isSimilar} comparators.
- */
+/** Condenses similar stacks without increasing their slot count, then orders them in O(n log n). */
 public final class Sorter {
 
     private Sorter() {}
 
-    /** A group of similar items: the template (amount 1) and the total amount. */
-    private record Pile(ItemStack template, String key, long total, int firstSlot) {}
+    private record Pile(ItemStack template, String key, long total, int largest, int firstSlot) {
+
+        Pile add(int amount) {
+            return new Pile(template, key, total + amount, Math.max(largest, amount), firstSlot);
+        }
+    }
 
     /** Returns the sorted contents for an inventory of {@code size} slots (nulls for empty slots). */
     public static @Nullable ItemStack[] sort(@Nullable ItemStack[] contents, SortMode mode, int size) {
         if (mode == SortMode.OFF) return contents;
         // Group similar stacks; LinkedHashMap keeps first-seen order for stable ties.
-        Map<ItemStack, long[]> totals = new LinkedHashMap<>();
-        Map<ItemStack, Integer> firstSlots = new LinkedHashMap<>();
+        Map<ItemStack, Pile> grouped = new LinkedHashMap<>();
         for (int slot = 0; slot < contents.length; slot++) {
             ItemStack item = contents[slot];
             if (item == null || item.isEmpty()) continue;
             ItemStack template = item.asOne();
-            totals.computeIfAbsent(template, k -> new long[1])[0] += item.getAmount();
-            firstSlots.putIfAbsent(template, slot);
+            Pile pile = grouped.get(template);
+            grouped.put(template, pile == null
+                    ? new Pile(template, sortKey(template), item.getAmount(), item.getAmount(), slot)
+                    : pile.add(item.getAmount()));
         }
-        List<Pile> piles = new ArrayList<>(totals.size());
-        totals.forEach((template, total) -> piles
-                .add(new Pile(template, sortKey(template), total[0], firstSlots.getOrDefault(template, Integer.MAX_VALUE))));
+        List<Pile> piles = new ArrayList<>(grouped.values());
 
         Comparator<Pile> byName = Comparator.comparing(Pile::key);
         Comparator<Pile> order = switch (mode) {
@@ -49,9 +49,11 @@ public final class Sorter {
         @Nullable ItemStack[] out = new ItemStack[size];
         int slot = 0;
         for (Pile pile : piles) {
-            int max = Math.max(1, pile.template().getMaxStackSize());
+            // Keep oversized amounts so condensing never needs more slots than the original stacks.
+            int max = Math.max(pile.largest(), Math.max(1, pile.template().getMaxStackSize()));
             long remaining = pile.total();
-            while (remaining > 0 && slot < size) {
+            while (remaining > 0) {
+                if (slot >= size) return contents;
                 int amount = (int) Math.min(max, remaining);
                 out[slot++] = pile.template().asQuantity(amount);
                 remaining -= amount;
