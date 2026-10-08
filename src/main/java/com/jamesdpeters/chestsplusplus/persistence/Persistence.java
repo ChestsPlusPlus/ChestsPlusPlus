@@ -10,12 +10,11 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
@@ -127,16 +126,12 @@ public final class Persistence {
     /** Waits for every write submitted so far, without shutting the I/O thread down. */
     private boolean awaitIdle() {
         try {
-            io.submit(() -> {}).get(CLOSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            CompletableFuture.runAsync(() -> {}, io).orTimeout(CLOSE_TIMEOUT_SECONDS, TimeUnit.SECONDS).join();
             return true;
-        } catch (TimeoutException e) {
+        } catch (CompletionException e) {
             log.warn("ChestsPlusPlus persistence did not finish saving within {}s", CLOSE_TIMEOUT_SECONDS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        } catch (ExecutionException e) {
-            throw new IllegalStateException(e);
+            return false;
         }
-        return false;
     }
 
     private Map<String, Integer> unsaved() {

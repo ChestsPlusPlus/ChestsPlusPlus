@@ -16,7 +16,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
-import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
@@ -102,28 +101,16 @@ class PersistenceTest {
     private volatile boolean disabling;
     private final Logger logger = Logger.getLogger(ChestsPlusPlus.NAME);
     private final List<LogRecord> logs = new CopyOnWriteArrayList<>();
-    private final Handler handler = new Handler() {
-
-        @Override
-        public void publish(LogRecord record) {
-            logs.add(record);
-        }
-
-        @Override
-        public void flush() {}
-
-        @Override
-        public void close() {}
-    };
 
     @BeforeEach
     void captureLogs() {
-        logger.addHandler(handler);
+        // A filter sees every record logged to this logger; List.add returning true lets each one through.
+        logger.setFilter(logs::add);
     }
 
     @AfterEach
     void releaseLogs() {
-        logger.removeHandler(handler);
+        logger.setFilter(null);
     }
 
     private Database database() {
