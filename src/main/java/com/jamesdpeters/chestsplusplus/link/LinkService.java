@@ -21,6 +21,7 @@ import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Directional;
@@ -126,22 +127,26 @@ public final class LinkService {
         };
         if (group == null) return null;
 
-        addNode(group, block, facing);
-        int overflow = handler.onLinked(group, block);
         Message linked = target instanceof Resolved.Missing
                 ? type.pick(Message.CHESTLINK_CREATED, Message.AUTOCRAFT_CREATED)
                 : type.pick(Message.CHESTLINK_LINKED, Message.AUTOCRAFT_LINKED);
-        services.send(player, linked, Messages.group(group));
-        if (overflow > 0) services.send(player, Message.CHESTLINK_OVERFLOW, Messages.text("count", overflow));
+        join(player, group, block, facing, linked);
         return group;
+    }
+
+    /** Adds {@code block} to {@code group}, runs the type's link hook and tells the player. */
+    void join(Player player, StorageGroup group, Block block, BlockFace facing, Message message) {
+        addNode(group, block, facing);
+        int overflow = Objects.requireNonNull(handlers.get(group.type())).onLinked(group, block);
+        services.send(player, message, Messages.group(group));
+        if (overflow > 0) services.send(player, Message.CHESTLINK_OVERFLOW, Messages.text("count", overflow));
     }
 
     /** Why {@code player} may not link {@code block}, or null if they may. The protection check runs last as it fires an event. */
     private Resolved.@Nullable Error linkRefusal(Player player, GroupType type, Block block, BlockFace facing, boolean protectionChecked) {
-        GroupTypeHandler handler = handlers.get(type);
-        if (handler == null || !isFeatureEnabled(type)) return new Resolved.Error(Message.ERROR_FEATURE_DISABLED);
-        if (!player.hasPermission(Permissions.create(type))) return new Resolved.Error(Message.ERROR_NO_PERMISSION);
-        if (services.settings().isBlacklisted(block.getWorld().getName())) return new Resolved.Error(Message.ERROR_WORLD_BLACKLISTED);
+        Message refusal = linkingRefusal(player, type, block.getWorld());
+        if (refusal != null) return new Resolved.Error(refusal);
+        GroupTypeHandler handler = Objects.requireNonNull(handlers.get(type));
         if (!handler.isValidBlock(block)) return new Resolved.Error(Message.ERROR_INVALID_BLOCK, Messages.text("type", type.displayName()));
         Node existing = services.nodes().at(block);
         if (existing != null) {
@@ -149,6 +154,15 @@ public final class LinkService {
             return new Resolved.Error(Message.ERROR_ALREADY_LINKED, Messages.text("group", linkedTo == null ? "?" : linkedTo.name()));
         }
         if (!protectionChecked && !passesProtection(player, block, facing)) return new Resolved.Error(Message.ERROR_PROTECTED);
+        return null;
+    }
+
+    /** The checks every way of linking shares: feature enabled, create permission, world not blacklisted. */
+    @Nullable
+    Message linkingRefusal(Player player, GroupType type, World world) {
+        if (!isFeatureEnabled(type)) return Message.ERROR_FEATURE_DISABLED;
+        if (!player.hasPermission(Permissions.create(type))) return Message.ERROR_NO_PERMISSION;
+        if (services.settings().isBlacklisted(world.getName())) return Message.ERROR_WORLD_BLACKLISTED;
         return null;
     }
 

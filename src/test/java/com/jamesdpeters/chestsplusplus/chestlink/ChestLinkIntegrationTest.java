@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.jamesdpeters.chestsplusplus.core.BlockPos;
 import com.jamesdpeters.chestsplusplus.display.DisplayService;
 import com.jamesdpeters.chestsplusplus.link.LinkItem;
+import com.jamesdpeters.chestsplusplus.link.LinkService;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.Node;
@@ -327,24 +328,60 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         sign(alice, chest, "[ChestLink]", "portable");
         ChestLinkGroup group = group(alice, "portable");
         group.inventory().addItem(ItemStack.of(Material.GOLD_INGOT, 4));
-        ItemStack pickaxe = ItemStack.of(Material.DIAMOND_PICKAXE);
-        pickaxe.addEnchantment(Enchantment.SILK_TOUCH, 1);
-        alice.getInventory().setItemInMainHand(pickaxe);
-
-        BlockBreakEvent breakEvent = new BlockBreakEvent(chest, alice);
-        server.getPluginManager().callEvent(breakEvent);
-
-        assertThat(breakEvent.isDropItems()).isFalse();
+        ItemStack linkItem = silkTouchBreak(chest);
         assertThat(group(alice, "portable")).isSameAs(group);
-        ItemStack linkItem = world.getEntitiesByClass(Item.class).iterator().next().getItemStack();
         LinkItem.Link link = plugin.services().get(LinkItem.class).read(linkItem);
         assertThat(link).isEqualTo(new LinkItem.Link(group.id(), GroupType.CHESTLINK));
 
-        Block placed = chestAt(9, 9);
-        server.getPluginManager().callEvent(
-                new BlockPlaceEvent(placed, placed.getState(), placed.getRelative(BlockFace.DOWN), linkItem, alice, true, EquipmentSlot.HAND));
-        assertThat(plugin.services().nodes().get(BlockPos.of(placed)).groupId()).isEqualTo(group.id());
+        BlockPlaceEvent placeEvent = placeLinkItem(alice, linkItem);
+        assertThat(plugin.services().nodes().at(placeEvent.getBlockPlaced()).groupId()).isEqualTo(group.id());
         assertThat(group.inventory().contains(Material.GOLD_INGOT, 4)).isTrue();
+    }
+
+    @Test
+    void linkItemPlacementRequiresCreatePermissionForPublicGroup() {
+        ItemStack linkItem = publicLinkItem();
+        bob.addAttachment(plugin).setPermission("chestsplusplus.chestlink.create", false);
+
+        BlockPlaceEvent event = placeLinkItem(bob, linkItem);
+
+        assertThat(event.isCancelled()).isTrue();
+        assertThat(plugin.services().nodes().at(event.getBlockPlaced())).isNull();
+    }
+
+    @Test
+    void linkItemPlacementAllowsDefaultCreatePermissionForPublicGroup() {
+        ItemStack linkItem = publicLinkItem();
+
+        BlockPlaceEvent event = placeLinkItem(bob, linkItem);
+
+        assertThat(event.isCancelled()).isFalse();
+        assertThat(plugin.services().nodes().at(event.getBlockPlaced()).groupId()).isEqualTo(group(alice, "portable").id());
+    }
+
+    private ItemStack publicLinkItem() {
+        Block chest = chestAt(0, 0);
+        sign(alice, chest, "[ChestLink]", "portable");
+        plugin.services().get(LinkService.class).setPublic(group(alice, "portable"), true);
+        return silkTouchBreak(chest);
+    }
+
+    private ItemStack silkTouchBreak(Block block) {
+        ItemStack pickaxe = ItemStack.of(Material.DIAMOND_PICKAXE);
+        pickaxe.addEnchantment(Enchantment.SILK_TOUCH, 1);
+        alice.getInventory().setItemInMainHand(pickaxe);
+        BlockBreakEvent event = new BlockBreakEvent(block, alice);
+        server.getPluginManager().callEvent(event);
+        assertThat(event.isDropItems()).isFalse();
+        return world.getEntitiesByClass(Item.class).iterator().next().getItemStack();
+    }
+
+    private BlockPlaceEvent placeLinkItem(PlayerMock player, ItemStack linkItem) {
+        Block placed = chestAt(9, 9);
+        BlockPlaceEvent event = new BlockPlaceEvent(placed, placed.getState(), placed.getRelative(BlockFace.DOWN), linkItem, player, true,
+                EquipmentSlot.HAND);
+        server.getPluginManager().callEvent(event);
+        return event;
     }
 
     @Test

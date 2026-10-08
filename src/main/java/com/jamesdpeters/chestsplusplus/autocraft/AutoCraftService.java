@@ -240,7 +240,7 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
 
     /**
      * Called every tick: attempts the nodes due now, and every {@code autocraft.tick-interval} ticks sweeps for crafters nothing has
-     * scheduled yet (just loaded, or relinked with Silk Touch).
+     * scheduled yet (just loaded).
      */
     public void tick() {
         if (!services.settings().features().autocraft()) return;

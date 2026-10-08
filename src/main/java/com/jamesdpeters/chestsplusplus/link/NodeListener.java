@@ -96,15 +96,15 @@ public final class NodeListener implements Listener {
         }
         GroupTypeHandler handler = links.handler(group.type());
         if (handler == null || !handler.isValidBlock(block)) return false;
-        links.addNode(group, block, Holders.facing(player).getOppositeFace());
-        services.send(player, group.type().pick(Message.CHESTLINK_LINKED, Message.AUTOCRAFT_LINKED), Messages.group(group));
+        links.join(player, group, block, Holders.facing(player).getOppositeFace(),
+                group.type().pick(Message.CHESTLINK_LINKED, Message.AUTOCRAFT_LINKED));
         return true;
     }
 
     private @Nullable Message relinkRefusal(Player player, StorageGroup group, Block block) {
-        if (!links.isFeatureEnabled(group.type())) return Message.ERROR_FEATURE_DISABLED;
+        Message refusal = links.linkingRefusal(player, group.type(), block.getWorld());
+        if (refusal != null) return refusal;
         if (!services.access().canAccess(player.getUniqueId(), player, group)) return Message.ERROR_NO_ACCESS;
-        if (services.settings().isBlacklisted(block.getWorld().getName())) return Message.ERROR_WORLD_BLACKLISTED;
         return null;
     }
 

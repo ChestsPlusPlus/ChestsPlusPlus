@@ -8,6 +8,7 @@ import com.jamesdpeters.chestsplusplus.filter.FilterService;
 import com.jamesdpeters.chestsplusplus.filter.HopperFilter;
 import com.jamesdpeters.chestsplusplus.filter.HopperFilter.Match;
 import com.jamesdpeters.chestsplusplus.filter.HopperFilter.Mode;
+import com.jamesdpeters.chestsplusplus.link.LinkItem;
 import com.jamesdpeters.chestsplusplus.link.LinkService;
 import com.jamesdpeters.chestsplusplus.link.SyntheticMoveEvent;
 import com.jamesdpeters.chestsplusplus.model.AutoCraftGroup;
@@ -30,9 +31,13 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Container;
 import org.bukkit.block.data.type.Hopper;
+import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Item;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -239,6 +244,36 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         assertThat(output.contains(Material.TORCH, 8)).isFalse();
         ticks(1);
         assertThat(output.contains(Material.TORCH, 8)).isTrue();
+    }
+
+    @Test
+    void placingALinkItemCraftsOnTheNextTick() {
+        plugin.services().get(LinkService.class).register(autoCraft);
+        AutoCraftGroup[] group = new AutoCraftGroup[1];
+        Block original = crafter(group);
+        ItemStack pickaxe = ItemStack.of(Material.DIAMOND_PICKAXE);
+        pickaxe.addEnchantment(Enchantment.SILK_TOUCH, 1);
+        alice.getInventory().setItemInMainHand(pickaxe);
+        BlockBreakEvent breakEvent = new BlockBreakEvent(original, alice);
+        server.getPluginManager().callEvent(breakEvent);
+        assertThat(breakEvent.isDropItems()).isFalse();
+        ItemStack linkItem = world.getEntitiesByClass(Item.class).iterator().next().getItemStack();
+        assertThat(plugin.services().get(LinkItem.class).read(linkItem)).isEqualTo(new LinkItem.Link(group[0].id(), GroupType.AUTOCRAFT));
+        ticks(1);
+
+        Block placed = world.getBlockAt(9, 64, 9);
+        placed.setType(Material.CRAFTING_TABLE);
+        container(placed.getRelative(BlockFace.UP), Material.CHEST).addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
+        Inventory output = container(placed.getRelative(BlockFace.DOWN), Material.HOPPER);
+        BlockPlaceEvent event = new BlockPlaceEvent(placed, placed.getState(), placed.getRelative(BlockFace.DOWN), linkItem, alice, true,
+                EquipmentSlot.HAND);
+        server.getPluginManager().callEvent(event);
+        assertThat(event.isCancelled()).isFalse();
+        assertThat(plugin.services().nodes().at(placed).groupId()).isEqualTo(group[0].id());
+        assertThat(output.isEmpty()).isTrue();
+
+        ticks(1);
+        assertThat(output.contains(Material.TORCH, 4)).isTrue();
     }
 
     @Test
