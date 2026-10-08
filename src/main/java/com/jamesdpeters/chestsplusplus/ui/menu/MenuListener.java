@@ -1,13 +1,11 @@
 package com.jamesdpeters.chestsplusplus.ui.menu;
 
-import com.jamesdpeters.chestsplusplus.ChestsPlusPlus;
 import com.jamesdpeters.chestsplusplus.core.Holders;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -23,7 +21,6 @@ import org.bukkit.plugin.Plugin;
  * Dispatches menu clicks and handles "return to the menu you came from": when a player opens something from a menu
  * (e.g. a ChestLink), closing it reopens the menu. Tracked per viewer and cleared on quit.
  */
-@Slf4j(topic = ChestsPlusPlus.NAME)
 @RequiredArgsConstructor
 public final class MenuListener implements Listener {
 
@@ -49,7 +46,6 @@ public final class MenuListener implements Listener {
     }
 
     private void onMenuClick(InventoryClickEvent event, Menu menu) {
-        log.info("Menu clicked: {}", event.getClick());
         event.setCancelled(true);
         if (!(event.getWhoClicked() instanceof Player player)) return;
         if (event.getClickedInventory() != event.getView().getTopInventory()) return;
