@@ -3,6 +3,7 @@ package com.jamesdpeters.chestsplusplus.link;
 import com.destroystokyo.paper.profile.PlayerProfile;
 import com.jamesdpeters.chestsplusplus.Permissions;
 import com.jamesdpeters.chestsplusplus.access.AccessService;
+import com.jamesdpeters.chestsplusplus.access.AccessibleGroups;
 import com.jamesdpeters.chestsplusplus.chestlink.ChestLinkService;
 import com.jamesdpeters.chestsplusplus.core.PlayerNames;
 import com.jamesdpeters.chestsplusplus.core.Services;
@@ -157,19 +158,19 @@ public final class GroupActions {
     }
 
     public void list(Player player, GroupType type) {
-        List<StorageGroup> groups = services.access().accessibleGroups(player.getUniqueId(), AccessService.hasBypass(player), type);
-        if (groups.isEmpty()) {
+        AccessibleGroups accessible = services.access().accessibleGroups(player.getUniqueId(), AccessService.hasBypass(player), type);
+        if (accessible.groups().isEmpty()) {
             services.send(player, type.pick(Message.CHESTLINK_LIST_EMPTY, Message.AUTOCRAFT_LIST_EMPTY));
             return;
         }
         services.send(player, type.pick(Message.CHESTLINK_LIST_HEADER, Message.AUTOCRAFT_LIST_HEADER));
         GroupTypeHandler handler = links.handler(type);
-        for (StorageGroup group : groups) {
-            String ref = StringArgumentType.escapeIfRequired(group.referenceFor(player.getUniqueId()));
+        for (StorageGroup group : accessible.groups()) {
+            String ref = StringArgumentType.escapeIfRequired(accessible.reference(group));
             String command = type.pick("/chestlink open ", "/autocraft open ") + ref;
             services.send(player, type.pick(Message.CHESTLINK_LIST_ENTRY, Message.AUTOCRAFT_LIST_ENTRY),
                     Messages.group(group), Messages.text("ref", ref), TagResolver.resolver("open", Tag.styling(ClickEvent.runCommand(command))),
-                    Messages.text("owner", PlayerNames.of(group.owner())),
+                    Messages.text("owner", accessible.ownerName(group)),
                     Messages.text("nodes", services.nodes().count(group.id())),
                     Messages.text("items", handler == null ? "" : handler.summary(group)));
         }

@@ -2,6 +2,7 @@ package com.jamesdpeters.chestsplusplus.ui;
 
 import com.jamesdpeters.chestsplusplus.Permissions;
 import com.jamesdpeters.chestsplusplus.access.AccessService;
+import com.jamesdpeters.chestsplusplus.access.AccessibleGroups;
 import com.jamesdpeters.chestsplusplus.core.PlayerNames;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.link.GroupActions;
@@ -87,11 +88,10 @@ public final class UiService {
     private boolean dialogShown;
 
     /** Groups shown in the hub for {@code search} (case-insensitive substring of name or owner). */
-    public List<StorageGroup> hubGroups(Player player, GroupType type, String search) {
+    public AccessibleGroups hubGroups(Player player, GroupType type, String search) {
         String needle = search.trim().toLowerCase(Locale.ROOT);
-        return services.access().accessibleGroups(player.getUniqueId(), AccessService.hasBypass(player), type).stream()
-                .filter(g -> needle.isEmpty() || contains(g.name(), needle) || contains(PlayerNames.of(g.owner()), needle))
-                .toList();
+        AccessibleGroups accessible = services.access().accessibleGroups(player.getUniqueId(), AccessService.hasBypass(player), type);
+        return accessible.filter(g -> needle.isEmpty() || contains(g.name(), needle) || contains(accessible.ownerName(g), needle));
     }
 
     private static boolean contains(String text, String lowerCaseNeedle) {
@@ -103,7 +103,8 @@ public final class UiService {
             services.send(player, Message.ERROR_NO_PERMISSION);
             return;
         }
-        List<StorageGroup> groups = hubGroups(player, type, search);
+        AccessibleGroups accessible = hubGroups(player, type, search);
+        List<StorageGroup> groups = accessible.groups();
         int pages = Math.max(1, (groups.size() + GROUPS_PER_PAGE - 1) / GROUPS_PER_PAGE);
         int current = Math.clamp(page, 0, pages - 1);
         int from = current * GROUPS_PER_PAGE;
@@ -111,7 +112,7 @@ public final class UiService {
         List<DialogBody> body = new ArrayList<>();
         body.add(DialogBody.plainMessage(hubHeader(groups.size(), current, pages), HUB_WIDTH));
         List<StorageGroup> shown = groups.subList(from, Math.min(groups.size(), from + GROUPS_PER_PAGE));
-        shown.forEach(group -> body.add(hubGroupRow(group, search, current)));
+        shown.forEach(group -> body.add(hubGroupRow(group, accessible.ownerName(group), search, current)));
         for (int i = shown.size(); i < GROUPS_PER_PAGE; i++) body.add(blankGroupRow());
         DialogInput searchInput = DialogInput.text(SEARCH_INPUT, text(Message.MENU_HUB_SEARCH))
                 .initial(search)
@@ -131,18 +132,18 @@ public final class UiService {
     }
 
     /** The group's icon (hover for details) beside its name, owner and Open / Manage links. Closing the opened group returns to this page. */
-    private DialogBody hubGroupRow(StorageGroup group, String search, int page) {
+    private DialogBody hubGroupRow(StorageGroup group, String ownerName, String search, int page) {
         GroupType type = group.type();
         BiConsumer<Player, StorageGroup> open = (p, g) -> openRemote(p, g, () -> openHub(p, type, search, page));
         Component description = text(Message.MENU_HUB_GROUP,
                 Messages.group(group),
                 Messages.text("items", summary(group)),
                 Messages.component("owner_head", Component.object(ObjectContents.playerHead(group.owner()))),
-                Messages.text("owner", PlayerNames.of(group.owner())),
+                Messages.text("owner", ownerName),
                 Messages.component("open", link(type.pick(Message.MENU_HUB_GROUP_OPEN, Message.MENU_HUB_GROUP_RECIPE), group, open)),
                 Messages.component("manage", link(Message.MENU_HUB_GROUP_MANAGE, group, this::openGroup)));
         ItemStack icon = namedIcon(group, Message.MENU_HUB_GROUP_LORE,
-                Messages.text("owner", PlayerNames.of(group.owner())),
+                Messages.text("owner", ownerName),
                 Messages.text("items", summary(group)),
                 Messages.component("public", text(group.isPublic() ? Message.STATE_PUBLIC : Message.STATE_PRIVATE)),
                 Messages.text("members", memberNames(group)));
@@ -311,9 +312,10 @@ public final class UiService {
 
     public PaginatedMenu openGrid(Player player, GroupType type) {
         List<PaginatedMenu.Entry> entries = new ArrayList<>();
-        for (StorageGroup group : hubGroups(player, type, "")) {
+        AccessibleGroups accessible = hubGroups(player, type, "");
+        for (StorageGroup group : accessible.groups()) {
             ItemStack icon = namedIcon(group, Message.MENU_GRID_ENTRY_LORE,
-                    Messages.text("owner", PlayerNames.of(group.owner())),
+                    Messages.text("owner", accessible.ownerName(group)),
                     Messages.text("items", summary(group)));
             entries.add(new PaginatedMenu.Entry(icon, (p, click) -> withGroup(p, group.id(), g -> onGridClick(p, g, click))));
         }
