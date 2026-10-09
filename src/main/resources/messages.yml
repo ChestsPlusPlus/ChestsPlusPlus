@@ -25,6 +25,7 @@ error:
   player-not-found: "<prefix> <red>No player named <yellow><player></yellow> has played here."
   protected: "<prefix> <red>You can't use that block here."
   self: "<prefix> <red>You can't do that to yourself."
+  stale-link-item: "<prefix> <red>The group that item was linked to no longer exists, so it was placed as a normal block."
 
 chestlink:
   created: "<prefix> <green>Created ChestLink <yellow><group></yellow>."

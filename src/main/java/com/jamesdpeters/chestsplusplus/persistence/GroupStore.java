@@ -14,6 +14,7 @@ import com.jamesdpeters.chestsplusplus.model.SortMode;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import com.jamesdpeters.chestsplusplus.persistence.GroupStore.GroupSnapshot;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -56,6 +57,7 @@ public final class GroupStore implements Store<Long, GroupSnapshot> {
     private static final RecordTable<GroupRow> GROUPS = new RecordTable<>(GroupRow.class, "groups", "id");
     private static final RecordTable<MemberRow> MEMBERS = new RecordTable<>(MemberRow.class, "group_members", "group_id", "member");
     private static final RecordTable<NodeRow> NODES = new RecordTable<>(NodeRow.class, "nodes", "world", "x", "y", "z");
+    private static final String ID_KIND = "groups";
 
     private final Persistence persistence;
     private final GroupRegistry groups;
@@ -125,6 +127,7 @@ public final class GroupStore implements Store<Long, GroupSnapshot> {
     @Override
     public void delete(Handle handle, List<Long> ids) {
         GROUPS.deleteWhere(handle, "id", ids);
+        retireIds(handle, ids);
     }
 
     @Override
@@ -136,6 +139,7 @@ public final class GroupStore implements Store<Long, GroupSnapshot> {
         for (GroupRow row : GROUPS.all(handle)) {
             register(new GroupSnapshot(row, members.getOrDefault(row.id(), List.of()), nodeRows.getOrDefault(row.id(), List.of())));
         }
+        groups.reserveThrough(highestRetiredId(handle));
     }
 
     /** Registers a group built outside the store (an import) exactly as if it had been loaded, and saves it. */
@@ -153,6 +157,22 @@ public final class GroupStore implements Store<Long, GroupSnapshot> {
         snapshot.nodes().forEach(node -> nodes.put(node(node)));
         attach.accept(new LoadedGroup(group, row.items()));
         return group;
+    }
+
+    /**
+     * Silk-touch link items name a group by id alone, so a deleted group's id must never pass to a new group. Recording it here also covers
+     * a group created and deleted between two flushes, which was never written. Groups still stored raise the next id on load.
+     */
+    private static void retireIds(Handle handle, Collection<Long> deleted) {
+        deleted.stream().mapToLong(Long::longValue).max().ifPresent(highest -> handle
+                .createUpdate("INSERT INTO id_high_water (kind, id) VALUES (:kind, :id) ON CONFLICT (kind) DO UPDATE SET id = max(id, excluded.id)")
+                .bind("kind", ID_KIND)
+                .bind("id", highest)
+                .execute());
+    }
+
+    private static long highestRetiredId(Handle handle) {
+        return handle.createQuery("SELECT id FROM id_high_water WHERE kind = :kind").bind("kind", ID_KIND).mapTo(long.class).findOne().orElse(0L);
     }
 
     private static GroupRow row(StorageGroup group) {

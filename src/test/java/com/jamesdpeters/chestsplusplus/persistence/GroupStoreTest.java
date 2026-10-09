@@ -167,6 +167,35 @@ class GroupStoreTest extends PluginTestBase {
     }
 
     @Test
+    void deletedGroupsIdIsNotReusedAfterRestart() throws Exception {
+        Instance first = new Instance();
+        first.chest("kept");
+        ChestLinkGroup last = first.chest("last");
+        first.flushAndWait();
+        first.groups.remove(last);
+        first.groupStore.markDirty(last);
+        first.persistence.close();
+
+        Instance second = new Instance();
+        assertThat(second.groups.byId(last.id())).isNull();
+        assertThat(second.groups.nextId()).isGreaterThan(last.id());
+        second.persistence.close();
+    }
+
+    @Test
+    void idOfAGroupDeletedBeforeItWasEverSavedIsNotReusedAfterRestart() throws Exception {
+        Instance first = new Instance();
+        first.chest("kept");
+        ChestLinkGroup fleeting = first.chest("fleeting");
+        first.groups.remove(fleeting);
+        first.persistence.close();
+
+        Instance second = new Instance();
+        assertThat(second.groups.nextId()).isGreaterThan(fleeting.id());
+        second.persistence.close();
+    }
+
+    @Test
     void nodeMovedBetweenGroupsInOneFlushStaysWithItsNewGroup() throws Exception {
         Instance first = new Instance();
         Node a = new Node(new BlockPos(WORLD, 0, 0, 0), BlockFace.NORTH, 1);
