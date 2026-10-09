@@ -260,8 +260,8 @@ class GroupCommandsIntegrationTest extends PluginTestBase {
         create(alice, "wood", 2);
         UiService ui = plugin.services().get(UiService.class);
 
-        assertThat(ui.hubGroups(alice, GroupType.CHESTLINK, "OR")).extracting(g -> g.name()).containsExactly("ores");
-        assertThat(ui.hubGroups(alice, GroupType.CHESTLINK, "alice")).hasSize(2);
-        assertThat(ui.hubGroups(bob, GroupType.CHESTLINK, "")).isEmpty();
+        assertThat(ui.hubGroups(alice, GroupType.CHESTLINK, "OR").groups()).extracting(g -> g.name()).containsExactly("ores");
+        assertThat(ui.hubGroups(alice, GroupType.CHESTLINK, "alice").groups()).hasSize(2);
+        assertThat(ui.hubGroups(bob, GroupType.CHESTLINK, "").groups()).isEmpty();
     }
 }

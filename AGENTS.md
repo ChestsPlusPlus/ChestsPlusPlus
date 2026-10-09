@@ -76,8 +76,8 @@ comments, no repeated logic.
 | Send a message | `services.send(audience, Message.X, ...)` |
 | Common placeholders | `Messages.group(group)`, `Messages.player(name)`, `Messages.text(key, int)` |
 | Node or group at a block (no allocation) | `services.nodes().at(block)`, `services.groupAt(block)` |
-| Player names and group references | `PlayerNames.of(uuid)`, `PlayerNames.join(uuids)`, `group.referenceFor(requester)` |
-| Groups a player can use | `services.access().accessibleGroups(...)` |
+| Player names | `PlayerNames.of(uuid)`, `PlayerNames.join(uuids)` |
+| Groups a player can use, with owner names and command references | `services.access().accessibleGroups(...)`, then `ownerName(group)` / `reference(group)`, never `PlayerNames.of(group.owner())` per group |
 | Right-click on a linked block | `LinkService.claimNodeClick(event, type)` |
 | Repeating work | `Tickers.every` / `Tickers.everyInterval`. Never one task per group or node. |
 | Ghost-item inventories | extend `GhostEditor`; `MenuListener` enforces the no-real-items rules |
