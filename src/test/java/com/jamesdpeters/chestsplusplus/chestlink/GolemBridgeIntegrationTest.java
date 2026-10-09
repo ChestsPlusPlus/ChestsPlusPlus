@@ -7,7 +7,6 @@ import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.testing.PluginTestBase;
 import com.jamesdpeters.chestsplusplus.testing.WallSigns;
 import io.papermc.paper.event.entity.ItemTransportingEntityValidateTargetEvent;
-import java.io.IOException;
 import java.util.UUID;
 import org.bukkit.GameEvent;
 import org.bukkit.Material;
@@ -87,14 +86,19 @@ class GolemBridgeIntegrationTest extends PluginTestBase {
         server.getPluginManager().callEvent(new GenericGameEvent(type, block.getLocation(), null, 16, false));
     }
 
-    private void disableGolems() {
-        plugin.getConfig().set("features.copper-golems", false);
-        plugin.saveConfig();
-        try {
-            plugin.reload();
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
-        }
+    @Test
+    void golemsAreTurnedAwayWhileChestLinksAreDisabled() {
+        Block chest = place(Material.COPPER_CHEST, 0);
+        ChestLinkGroup group = link(chest, "src");
+        group.inventory().addItem(new ItemStack(Material.COBBLESTONE, 3));
+        CopperGolem golem = golemBeside(chest, CopperGolem.State.GETTING_NO_ITEM, ItemStack.empty());
+        reconfigure("features.chestlinks", false);
+
+        assertThat(validate(golem, chest)).isFalse();
+        gameEvent(GameEvent.CONTAINER_OPEN, chest);
+
+        assertThat(golem.getEquipment().getItemInMainHand().isEmpty()).isTrue();
+        assertThat(group.inventory().contains(Material.COBBLESTONE, 3)).isTrue();
     }
 
     @Test
@@ -196,7 +200,7 @@ class GolemBridgeIntegrationTest extends PluginTestBase {
     void disabledFeatureTurnsGolemsAwayAndHandsNothingOver() {
         Block chest = place(Material.COPPER_CHEST, 0);
         link(chest, "src").inventory().addItem(new ItemStack(Material.COBBLESTONE, 40));
-        disableGolems();
+        reconfigure("features.copper-golems", false);
         CopperGolem golem = golemBeside(chest, CopperGolem.State.GETTING_NO_ITEM, ItemStack.empty());
 
         assertThat(validate(golem, chest)).isFalse();

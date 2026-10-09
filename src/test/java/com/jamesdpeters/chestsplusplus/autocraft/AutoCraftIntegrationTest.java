@@ -3,11 +3,13 @@ package com.jamesdpeters.chestsplusplus.autocraft;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.jamesdpeters.chestsplusplus.core.BlockPos;
+import com.jamesdpeters.chestsplusplus.core.Holders;
 import com.jamesdpeters.chestsplusplus.display.DisplayService;
 import com.jamesdpeters.chestsplusplus.filter.FilterService;
 import com.jamesdpeters.chestsplusplus.filter.HopperFilter;
 import com.jamesdpeters.chestsplusplus.filter.HopperFilter.Match;
 import com.jamesdpeters.chestsplusplus.filter.HopperFilter.Mode;
+import com.jamesdpeters.chestsplusplus.link.GroupActions;
 import com.jamesdpeters.chestsplusplus.link.LinkItem;
 import com.jamesdpeters.chestsplusplus.link.LinkService;
 import com.jamesdpeters.chestsplusplus.link.SyntheticMoveEvent;
@@ -33,6 +35,7 @@ import org.bukkit.block.Container;
 import org.bukkit.block.data.type.Hopper;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Item;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
@@ -270,6 +273,51 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         assertThat(output.contains(Material.TORCH, 4)).isTrue();
         assertThat(mats.inventory().isEmpty()).isTrue();
         assertThat(plugin.services().groupStore().isDirty(mats)).isTrue();
+    }
+
+    @Test
+    void ignoresChestLinkInputsWhileChestLinksAreDisabled() {
+        AutoCraftGroup[] group = new AutoCraftGroup[1];
+        Block table = crafter(group);
+        Block side = table.getRelative(BlockFace.EAST);
+        side.setType(Material.CHEST);
+        plugin.services().get(LinkService.class).link(alice, GroupType.CHESTLINK, "mats", side, BlockFace.EAST, true);
+        ChestLinkGroup mats = (ChestLinkGroup) plugin.services().groups().find(GroupType.CHESTLINK, alice.getUniqueId(), "mats");
+        mats.inventory().addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
+        Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
+
+        reconfigure("features.chestlinks", false);
+
+        assertThat(autoCraft.craftAt(group[0], plugin.services().nodes().get(BlockPos.of(table)))).isFalse();
+        assertThat(output.isEmpty()).isTrue();
+        assertThat(mats.inventory().contains(Material.COAL)).isTrue();
+    }
+
+    @Test
+    void theRecipeEditorRefusesAndClosesWhileAutoCraftIsDisabled() {
+        AutoCraftGroup[] group = new AutoCraftGroup[1];
+        Block table = crafter(group);
+        alice.openInventory(editor(group[0]).getInventory());
+
+        reconfigure("features.autocraft", false);
+        assertThat(editorOpen()).isFalse();
+
+        PlayerInteractEvent click = new PlayerInteractEvent(alice, Action.RIGHT_CLICK_BLOCK, null, table, BlockFace.NORTH, EquipmentSlot.HAND);
+        server.getPluginManager().callEvent(click);
+        assertThat(click.useInteractedBlock()).isEqualTo(Event.Result.DENY);
+        assertThat(plugin.services().get(GroupActions.class).openRemote(alice, group[0])).isFalse();
+        assertThat(editorOpen()).isFalse();
+
+        reconfigure("features.autocraft", true);
+        assertThat(plugin.services().get(GroupActions.class).openRemote(alice, group[0])).isTrue();
+        assertThat(editorOpen()).isTrue();
+        assertThat(group[0].result()).isEqualTo(ItemStack.of(Material.TORCH, 4));
+    }
+
+    private boolean editorOpen() {
+        // MockBukkit has no top inventory once one is closed.
+        @Nullable Inventory top = alice.getOpenInventory().getTopInventory();
+        return top != null && Holders.of(top) instanceof RecipeEditorHolder;
     }
 
     @Test

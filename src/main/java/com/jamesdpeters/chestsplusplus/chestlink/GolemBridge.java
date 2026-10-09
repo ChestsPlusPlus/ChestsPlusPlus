@@ -35,12 +35,13 @@ public final class GolemBridge implements Listener {
     private final ChestLinkService chestLinks;
 
     private boolean enabled() {
-        return services.settings().features().copperGolems();
+        var features = services.settings().features();
+        return features.copperGolems() && features.chestlinks();
     }
 
     /**
      * Paper fires this several times per tick per searching golem, so non-linked blocks cost one hash lookup. Applies vanilla's rules to
-     * the group rather than the empty container, and turns golems away entirely when the feature is off so nothing lands in it. Only
+     * the group rather than the empty container, and turns golems away entirely when golems or ChestLinks are off so nothing lands in it. Only
      * ever narrows: the event starts allowed, so a refusal here came from another plugin, such as a lock on the linked block.
      */
     @EventHandler

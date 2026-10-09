@@ -83,6 +83,13 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
     }
 
     @Override
+    public void closeAllViews() {
+        for (StorageGroup group : services.groups().all(GroupType.CHESTLINK)) {
+            if (group instanceof ChestLinkGroup chest && chest.hasInventory()) closeViewers(chest);
+        }
+    }
+
+    @Override
     public void openRemote(Player player, StorageGroup group) {
         if (group instanceof ChestLinkGroup chest) open(player, chest, null);
     }
@@ -142,11 +149,15 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
     /** Drops every stack (each exactly once; v2 removed similar stacks too) and empties the inventory. */
     public void dropContents(ChestLinkGroup group, Location at) {
         Inventory inventory = group.inventory();
-        List.copyOf(inventory.getViewers()).forEach(HumanEntity::closeInventory);
+        closeViewers(group);
         for (ItemStack item : inventory.getContents()) {
             if (item != null && !item.isEmpty() && at.getWorld() != null) at.getWorld().dropItemNaturally(at, item);
         }
         inventory.clear();
+    }
+
+    private static void closeViewers(ChestLinkGroup group) {
+        List.copyOf(group.inventory().getViewers()).forEach(HumanEntity::closeInventory);
     }
 
     /** Opens the group for {@code player}; {@code from} is the clicked node, or null for a remote open. */

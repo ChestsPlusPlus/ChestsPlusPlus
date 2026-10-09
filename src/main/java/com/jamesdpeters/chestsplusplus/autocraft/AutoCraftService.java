@@ -104,6 +104,11 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
     }
 
     @Override
+    public void closeAllViews() {
+        services.plugin().getServer().getOnlinePlayers().stream().filter(player -> editorOf(player) != null).forEach(Player::closeInventory);
+    }
+
+    @Override
     public void openRemote(Player player, StorageGroup group) {
         if (group instanceof AutoCraftGroup craft) openEditor(player, craft);
     }
@@ -475,15 +480,16 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
     }
 
     /**
-     * The inventory at a block: a ChestLink's shared inventory if it is linked and the crafter's owner may use it, else the container's own
-     * inventory.
+     * The inventory at a block: a ChestLink's shared inventory if it is linked, ChestLinks are enabled and the crafter's owner may use it,
+     * else the container's own inventory. Another linked block, or a ChestLink while they are disabled, is no inventory at all.
      */
     private @Nullable Inventory inventoryAt(Block block, AutoCraftGroup crafter) {
         Node node = services.nodes().at(block);
         if (node == null) return block.getState(false) instanceof Container container ? container.getInventory() : null;
-        return services.groups().byId(node.groupId()) instanceof ChestLinkGroup chest && services.access().canAccess(crafter.owner(), false, chest)
-                ? chest.inventory()
-                : null;
+        return services.groups().byId(node.groupId()) instanceof ChestLinkGroup chest && services.settings().features().chestlinks()
+                && services.access().canAccess(crafter.owner(), false, chest)
+                        ? chest.inventory()
+                        : null;
     }
 
     private void markChanged(Inventory inventory) {

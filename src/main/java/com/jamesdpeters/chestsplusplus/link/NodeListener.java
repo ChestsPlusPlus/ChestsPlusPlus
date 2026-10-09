@@ -49,6 +49,18 @@ public final class NodeListener implements Listener {
         return services.nodes().at(block) != null;
     }
 
+    /**
+     * A disabled feature's linked blocks can't be broken, so its groups stay exactly as they were until it is turned back on: unlinking the
+     * last block would delete the group and drop its contents.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    void onBreakWhileDisabled(BlockBreakEvent event) {
+        StorageGroup group = services.groupAt(event.getBlock());
+        if (group == null || links.isFeatureEnabled(group.type())) return;
+        event.setCancelled(true);
+        services.send(event.getPlayer(), Message.ERROR_FEATURE_DISABLED);
+    }
+
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     void onBreak(BlockBreakEvent event) {
         Block block = event.getBlock();

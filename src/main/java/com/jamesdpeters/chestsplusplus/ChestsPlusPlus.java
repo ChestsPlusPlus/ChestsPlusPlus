@@ -270,6 +270,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         Services current = services;
         if (current == null) throw new IllegalStateException("ChestsPlusPlus is not enabled");
         current.reconfigure(loadSettings(), loadMessages());
+        current.get(LinkService.class).closeDisabledViews();
         ChestLinkService chestLinks = current.get(ChestLinkService.class);
         for (var group : current.groups().all(GroupType.CHESTLINK)) chestLinks.retitle((ChestLinkGroup) group);
         current.get(DisplayService.class).refreshAll();

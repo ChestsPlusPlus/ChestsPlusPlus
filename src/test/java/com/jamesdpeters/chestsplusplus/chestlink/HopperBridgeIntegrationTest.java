@@ -180,6 +180,34 @@ class HopperBridgeIntegrationTest extends PluginTestBase {
     }
 
     @Test
+    void whileChestLinksAreDisabledNothingMovesInOrOut() {
+        group.inventory().addItem(new ItemStack(Material.EMERALD, 2));
+        Block hopper = world.getBlockAt(0, 4, 0);
+        hopper.setType(Material.HOPPER);
+        Inventory dropper = inventoryOf(place(Material.DROPPER, 2));
+        dropper.addItem(new ItemStack(Material.DIRT, 3));
+        Inventory crafter = inventoryOf(place(Material.CRAFTER, 4));
+        reconfigure("features.chestlinks", false);
+
+        for (ContainerType type : ContainerType.values()) {
+            HopperInventorySearchEvent search = new HopperInventorySearchEvent(inventoryOf(chest), type, hopper, chest);
+            server.getPluginManager().callEvent(search);
+            assertThat(search.getInventory()).isNull();
+        }
+        assertThat(push(dropper, new ItemStack(Material.DIRT)).isCancelled()).isTrue();
+        assertThat(push(crafter, new ItemStack(Material.OAK_PLANKS, 4)).isCancelled()).isTrue();
+        server.getScheduler().performTicks(1);
+
+        assertThat(dropper.contains(Material.DIRT, 3)).isTrue();
+        assertThat(group.inventory().contains(Material.DIRT)).isFalse();
+        assertThat(group.inventory().contains(Material.EMERALD, 2)).isTrue();
+        assertThat(inventoryOf(chest).isEmpty()).isTrue();
+
+        reconfigure("features.chestlinks", true);
+        search(hopper, ContainerType.SOURCE);
+    }
+
+    @Test
     void idleHopperDoesNotSaveTheGroupButATransferWithoutAMoveEventDoes() throws InterruptedException {
         Persistence persistence = plugin.services().persistence();
         Block hopper = world.getBlockAt(0, 4, 0);

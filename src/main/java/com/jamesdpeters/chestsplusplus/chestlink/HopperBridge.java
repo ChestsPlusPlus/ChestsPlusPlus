@@ -42,11 +42,20 @@ public final class HopperBridge implements Listener {
     /** Linked blocks a crafter pushed into this tick, absorbed together on the next. */
     private final Set<BlockPos> pendingAbsorbs = new HashSet<>();
 
+    /** While ChestLinks are disabled the hopper finds no container at all, so nothing reaches the linked block's empty one. */
     @EventHandler(priority = EventPriority.NORMAL)
     void onSearch(HopperInventorySearchEvent event) {
         if (!(services.groupAt(event.getSearchBlock()) instanceof ChestLinkGroup group)) return;
+        if (!enabled()) {
+            event.setInventory(null);
+            return;
+        }
         event.setInventory(group.inventory());
         services.groupStore().touch(group);
+    }
+
+    private boolean enabled() {
+        return services.settings().features().chestlinks();
     }
 
     /**
@@ -87,7 +96,10 @@ public final class HopperBridge implements Listener {
         return Holders.containerAt(block);
     }
 
-    /** Droppers and crafters don't fire the search event, so what they push into a linked block is redirected here. */
+    /**
+     * Droppers and crafters don't fire the search event, so what they push into a linked block is redirected here. While ChestLinks are
+     * disabled the push is refused: a dropper keeps its item and a crafter ejects its result into the world, as vanilla does.
+     */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     void onBlockPush(InventoryMoveItemEvent event) {
         if (event instanceof SyntheticMoveEvent) return;
@@ -95,7 +107,8 @@ public final class HopperBridge implements Listener {
         if (!(source instanceof Dropper) && !(source instanceof Crafter)) return;
         Block destination = destinationBlock(event);
         if (destination == null || !(services.groupAt(destination) instanceof ChestLinkGroup group)) return;
-        if (source instanceof Crafter) absorbNextTick(destination);
+        if (!enabled()) event.setCancelled(true);
+        else if (source instanceof Crafter) absorbNextTick(destination);
         else pushFromDropper(event, group);
     }
 

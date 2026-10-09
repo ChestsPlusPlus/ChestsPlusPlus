@@ -35,6 +35,17 @@ public abstract class PluginTestBase {
         }
     }
 
+    /** Sets one config value and reloads, as an admin editing config.yml and running {@code /cpp reload} would. */
+    protected void reconfigure(String path, Object value) {
+        plugin.getConfig().set(path, value);
+        plugin.saveConfig();
+        try {
+            plugin.reload();
+        } catch (java.io.IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
     protected ServerMock createServer() {
         return MockBukkit.mock();
     }

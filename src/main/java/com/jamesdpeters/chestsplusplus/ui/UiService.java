@@ -103,6 +103,7 @@ public final class UiService {
             services.send(player, Message.ERROR_NO_PERMISSION);
             return;
         }
+        if (!actions.isEnabled(player, type)) return;
         AccessibleGroups accessible = hubGroups(player, type, search);
         List<StorageGroup> groups = accessible.groups();
         int pages = Math.max(1, (groups.size() + GROUPS_PER_PAGE - 1) / GROUPS_PER_PAGE);
@@ -195,7 +196,7 @@ public final class UiService {
     }
 
     public void openGroup(Player player, StorageGroup group) {
-        if (!actions.canUse(player, group)) return;
+        if (!actions.isEnabled(player, group.type()) || !actions.canUse(player, group)) return;
         boolean manage = services.access().canManage(player.getUniqueId(), player, group);
         String description = PlayerNames.of(group.owner()) + " · " + summary(group) + " · " + services.nodes().count(group.id()) + " block(s)";
         DialogBase base = baseBuilder(text(Message.MENU_GROUP_TITLE, Messages.group(group)))
