@@ -11,11 +11,13 @@ import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.SortMode;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import com.jamesdpeters.chestsplusplus.testing.CommandHostPlugin;
+import com.jamesdpeters.chestsplusplus.testing.DeferredProfileServer;
 import com.jamesdpeters.chestsplusplus.testing.PluginTestBase;
 import com.jamesdpeters.chestsplusplus.ui.UiService;
 import com.jamesdpeters.chestsplusplus.ui.menu.PaginatedMenu;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import org.bukkit.Material;
@@ -27,13 +29,20 @@ import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.MockBukkit;
+import org.mockbukkit.mockbukkit.ServerMock;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
 class GroupCommandsIntegrationTest extends PluginTestBase {
 
+    private final DeferredProfileServer profiles = new DeferredProfileServer();
     private World world;
     private PlayerMock alice;
     private PlayerMock bob;
+
+    @Override
+    protected ServerMock createServer() {
+        return MockBukkit.mock(profiles);
+    }
 
     @BeforeEach
     void setUp() {
@@ -160,6 +169,52 @@ class GroupCommandsIntegrationTest extends PluginTestBase {
         run(alice, "cpp trust remove Bob");
         assertThat(plugin.services().trust().isTrusted(alice.getUniqueId(), bob.getUniqueId())).isFalse();
         assertThat(run(alice, "cpp trust add Alice")).anyMatch(l -> l.contains("yourself"));
+    }
+
+    private void finishLookup(String name, UUID id) {
+        profiles.resolve(name, id);
+        server.getScheduler().performOneTick();
+    }
+
+    @Test
+    void memberLookupOfUncachedNameAddsMemberOnceItFinishes() {
+        ChestLinkGroup group = create(alice, "ores", 0);
+        UUID carol = UUID.randomUUID();
+
+        assertThat(run(alice, "cl members add ores Carol")).anyMatch(l -> l.contains("Looking up"));
+        assertThat(group.members()).isEmpty();
+        finishLookup("Carol", carol);
+
+        assertThat(group.members()).containsExactly(carol);
+        assertThat(drain(alice)).anyMatch(l -> l.contains("Added Carol"));
+    }
+
+    @Test
+    void memberAddFinishingAfterGroupRemovalChangesNothing() {
+        ChestLinkGroup group = create(alice, "ores", 0);
+        UUID carol = UUID.randomUUID();
+
+        run(alice, "cl members add ores Carol");
+        run(alice, "cl remove ores");
+        finishLookup("Carol", carol);
+
+        assertThat(group.members()).isEmpty();
+        assertThat(plugin.services().groups().memberOf(carol)).isEmpty();
+        assertThat(drain(alice)).anyMatch(l -> l.contains("No group named ores")).noneMatch(l -> l.contains("Added"));
+    }
+
+    @Test
+    void memberRemoveFinishingAfterGroupRemovalChangesNothing() {
+        ChestLinkGroup group = create(alice, "ores", 0);
+        UUID carol = UUID.randomUUID();
+        plugin.services().get(LinkService.class).addMember(group, carol);
+
+        run(alice, "cl members remove ores Carol");
+        run(alice, "cl remove ores");
+        finishLookup("Carol", carol);
+
+        assertThat(group.members()).containsExactly(carol);
+        assertThat(drain(alice)).anyMatch(l -> l.contains("No group named ores")).noneMatch(l -> l.contains("Removed"));
     }
 
     @Test

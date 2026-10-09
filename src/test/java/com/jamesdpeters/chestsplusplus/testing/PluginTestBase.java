@@ -20,7 +20,7 @@ public abstract class PluginTestBase {
 
     @BeforeEach
     void setUpServer() {
-        server = MockBukkit.mock();
+        server = createServer();
         plugin = MockBukkit.load(ChestsPlusPlus.class);
         // MockBukkit doesn't implement TextDisplay#setBillboard; labels are covered by E2E instead.
         plugin.getConfig().set("chestlink.display.label", false);
@@ -33,6 +33,10 @@ public abstract class PluginTestBase {
         } catch (java.io.IOException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    protected ServerMock createServer() {
+        return MockBukkit.mock();
     }
 
     @AfterEach

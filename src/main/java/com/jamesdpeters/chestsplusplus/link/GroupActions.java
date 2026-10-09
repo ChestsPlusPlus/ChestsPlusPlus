@@ -93,8 +93,7 @@ public final class GroupActions {
     }
 
     public void addMember(Player player, StorageGroup group, String name, Runnable after) {
-        if (!require(player, Permissions.members(group.type())) || !canManage(player, group)) return;
-        lookup(player, name, member -> {
+        lookupMember(player, group, name, member -> {
             if (member.equals(group.owner())) {
                 services.send(player, Message.ERROR_SELF);
                 return;
@@ -106,8 +105,7 @@ public final class GroupActions {
     }
 
     public void removeMember(Player player, StorageGroup group, String name, Runnable after) {
-        if (!require(player, Permissions.members(group.type())) || !canManage(player, group)) return;
-        lookup(player, name, member -> {
+        lookupMember(player, group, name, member -> {
             links.removeMember(group, member);
             services.send(player, Message.MEMBERS_REMOVED, Messages.player(name), Messages.group(group));
             after.run();
@@ -197,6 +195,22 @@ public final class GroupActions {
         if (!services.settings().isBlacklisted(player.getWorld().getName())) return false;
         services.send(player, Message.ERROR_WORLD_BLACKLISTED);
         return true;
+    }
+
+    private void lookupMember(Player player, StorageGroup group, String name, Consumer<UUID> onFound) {
+        if (!canEditMembers(player, group)) return;
+        lookup(player, name, member -> {
+            if (canEditMembers(player, group)) onFound.accept(member);
+        });
+    }
+
+    /** Also run after an async lookup returns, when the group may have been deleted or the player's rights changed. */
+    private boolean canEditMembers(Player player, StorageGroup group) {
+        if (services.groups().byId(group.id()) != group) {
+            services.send(player, Message.ERROR_UNKNOWN_GROUP, Messages.group(group));
+            return false;
+        }
+        return require(player, Permissions.members(group.type())) && canManage(player, group);
     }
 
     /**
