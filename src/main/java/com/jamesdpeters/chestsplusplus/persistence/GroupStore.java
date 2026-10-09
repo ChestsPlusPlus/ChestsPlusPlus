@@ -103,11 +103,13 @@ public final class GroupStore implements Store<Long, GroupSnapshot> {
             written.remove(id);
             return null;
         }
-        // Its own copy, since the snapshot's items are serialised on the I/O thread while later flushes compare against these.
-        if (group instanceof ChestLinkGroup chest && written.containsKey(id)) written.put(id, contents(chest));
+        GroupRow row = row(group);
+        // Keeps the snapshot's clones rather than cloning again: the I/O thread serialises them and later flushes compare against them, and
+        // neither modifies them.
+        if (group instanceof ChestLinkGroup && written.containsKey(id)) written.put(id, row.items());
         List<MemberRow> members = group.members().stream().map(member -> new MemberRow(id, member)).toList();
         List<NodeRow> nodeRows = nodes.nodesOf(id).stream().map(GroupStore::row).toList();
-        return new GroupSnapshot(row(group), members, nodeRows);
+        return new GroupSnapshot(row, members, nodeRows);
     }
 
     @Override
