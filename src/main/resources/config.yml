@@ -1,10 +1,13 @@
 # ChestsPlusPlus v3 configuration. Reload with /cpp reload.
 
 features:
+  # Turning chestlinks or autocraft off keeps every group and its items, ready for when it is turned back on. Until then their
+  # linked blocks can't be opened, linked or broken, their commands and menus refuse, hoppers, droppers, crafters and golems
+  # don't move items through ChestLinks, and AutoCrafters stop crafting.
   chestlinks: true
   autocraft: true
   hopper-filters: true
-  # Copper golems take items from linked copper chests and deliver into linked chests.
+  # Copper golems take items from linked copper chests and deliver into linked chests (only while chestlinks is on).
   copper-golems: true
 
 linking:

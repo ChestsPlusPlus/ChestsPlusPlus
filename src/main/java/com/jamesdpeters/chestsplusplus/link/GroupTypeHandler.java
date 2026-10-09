@@ -28,6 +28,9 @@ public interface GroupTypeHandler {
     /** The group was renamed or its access changed. */
     void onRenamed(StorageGroup group);
 
+    /** Closes every view players have open of this type's groups (inventories, editors). */
+    void closeAllViews();
+
     /** Opens the group for a player away from its blocks (command, menu, dialog); checks are done by the caller. */
     void openRemote(Player player, StorageGroup group);
 

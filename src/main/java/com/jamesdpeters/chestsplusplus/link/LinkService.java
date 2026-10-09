@@ -73,6 +73,11 @@ public final class LinkService {
         return handlers.containsKey(type) && type.pick(features.chestlinks(), features.autocraft());
     }
 
+    /** Closes what players have open of every group whose feature is now off, so {@code /cpp reload} takes effect at once. */
+    public void closeDisabledViews() {
+        handlers.values().stream().filter(handler -> !isFeatureEnabled(handler.type())).forEach(GroupTypeHandler::closeAllViews);
+    }
+
     /** Is the synthetic protection-check interact event being fired right now? Listeners must ignore it. */
     public boolean isFiringSyntheticInteract() {
         return firingSyntheticInteract;
@@ -333,6 +338,7 @@ public final class LinkService {
     }
 
     private @Nullable Message openRefusal(Player player, StorageGroup group, Block block) {
+        if (!isFeatureEnabled(group.type())) return Message.ERROR_FEATURE_DISABLED;
         if (services.settings().isBlacklisted(block.getWorld().getName())) return Message.ERROR_WORLD_BLACKLISTED;
         if (!player.hasPermission(Permissions.open(group.type()))) return Message.ERROR_NO_PERMISSION;
         if (!services.access().canAccess(player.getUniqueId(), player, group)) return Message.ERROR_NO_ACCESS;

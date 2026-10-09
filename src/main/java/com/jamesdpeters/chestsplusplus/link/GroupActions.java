@@ -54,7 +54,7 @@ public final class GroupActions {
     }
 
     public boolean openRemote(Player player, StorageGroup group) {
-        if (!require(player, Permissions.remote(group.type())) || blacklisted(player) || !canUse(player, group)) {
+        if (!isEnabled(player, group.type()) || !require(player, Permissions.remote(group.type())) || blacklisted(player) || !canUse(player, group)) {
             return false;
         }
         GroupTypeHandler handler = links.handler(group.type());
@@ -64,7 +64,7 @@ public final class GroupActions {
     }
 
     public boolean remove(Player player, StorageGroup group) {
-        if (!require(player, Permissions.remove(group.type())) || !canManage(player, group)) return false;
+        if (!isEnabled(player, group.type()) || !require(player, Permissions.remove(group.type())) || !canManage(player, group)) return false;
         links.removeGroup(group, player.getLocation());
         services.send(player, group.type().pick(Message.CHESTLINK_REMOVED, Message.AUTOCRAFT_REMOVED),
                 Messages.group(group));
@@ -72,12 +72,12 @@ public final class GroupActions {
     }
 
     public boolean rename(Player player, StorageGroup group, String newName) {
-        if (!canManage(player, group)) return false;
+        if (!isEnabled(player, group.type()) || !canManage(player, group)) return false;
         return links.rename(player, group, newName);
     }
 
     public boolean setPublic(Player player, StorageGroup group, boolean isPublic) {
-        if (!canManage(player, group)) return false;
+        if (!isEnabled(player, group.type()) || !canManage(player, group)) return false;
         links.setPublic(group, isPublic);
         services.send(player, group.type().pick(Message.CHESTLINK_PUBLIC, Message.AUTOCRAFT_PUBLIC),
                 Messages.group(group),
@@ -86,7 +86,7 @@ public final class GroupActions {
     }
 
     public boolean sort(Player player, ChestLinkGroup group, SortMode mode) {
-        if (!require(player, Permissions.CHESTLINK_SORT) || !canManage(player, group)) return false;
+        if (!isEnabled(player, group.type()) || !require(player, Permissions.CHESTLINK_SORT) || !canManage(player, group)) return false;
         chestLinks.setSortMode(group, mode);
         services.send(player, Message.CHESTLINK_SORT_MODE, Messages.group(group),
                 Messages.text("mode", mode.name().toLowerCase(Locale.ROOT)));
@@ -114,7 +114,7 @@ public final class GroupActions {
     }
 
     public void listMembers(Player player, StorageGroup group) {
-        if (!canUse(player, group)) return;
+        if (!isEnabled(player, group.type()) || !canUse(player, group)) return;
         if (group.members().isEmpty()) {
             services.send(player, Message.MEMBERS_NONE, Messages.group(group));
             return;
@@ -156,6 +156,7 @@ public final class GroupActions {
     }
 
     public void list(Player player, GroupType type) {
+        if (!isEnabled(player, type)) return;
         AccessibleGroups accessible = services.access().accessibleGroups(player.getUniqueId(), AccessService.hasBypass(player), type);
         if (accessible.groups().isEmpty()) {
             services.send(player, type.pick(Message.CHESTLINK_LIST_EMPTY, Message.AUTOCRAFT_LIST_EMPTY));
@@ -172,6 +173,13 @@ public final class GroupActions {
                     Messages.text("nodes", services.nodes().count(group.id())),
                     Messages.text("items", handler == null ? "" : handler.summary(group)));
         }
+    }
+
+    /** Disabled features keep their groups, but players can't use or change them until the feature is turned back on. */
+    public boolean isEnabled(Player player, GroupType type) {
+        if (links.isFeatureEnabled(type)) return true;
+        services.send(player, Message.ERROR_FEATURE_DISABLED);
+        return false;
     }
 
     public boolean canUse(Player player, StorageGroup group) {
@@ -211,7 +219,7 @@ public final class GroupActions {
             services.send(player, Message.ERROR_UNKNOWN_GROUP, Messages.group(group));
             return false;
         }
-        return require(player, Permissions.members(group.type())) && canManage(player, group);
+        return isEnabled(player, group.type()) && require(player, Permissions.members(group.type())) && canManage(player, group);
     }
 
     /**
