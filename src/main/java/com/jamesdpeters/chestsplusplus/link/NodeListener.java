@@ -72,8 +72,25 @@ public final class NodeListener implements Listener {
         services.send(player, message, Messages.group(group));
     }
 
+    /** Refuses a link item the player may not place. The linking itself waits for {@link #onPlaceFinal}. */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     void onPlace(BlockPlaceEvent event) {
+        StorageGroup group = linkedGroup(event.getItemInHand());
+        if (group == null) return;
+        Player player = event.getPlayer();
+        Message refusal = relinkRefusal(player, group, event.getBlockPlaced());
+        if (refusal == null) return;
+        services.send(player, refusal, Messages.group(group));
+        event.setCancelled(true);
+    }
+
+    /**
+     * Protection plugins may cancel up to HIGHEST, and the server also reverts a placement whose {@code canBuild} is false without
+     * cancelling it, so nothing may be linked or split for a block that wasn't kept.
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    void onPlaceFinal(BlockPlaceEvent event) {
+        if (!event.canBuild()) return;
         LinkItem.Link link = linkItems.read(event.getItemInHand());
         StorageGroup group = link == null ? null : services.groups().byId(link.groupId());
         boolean stale = link != null && (group == null || group.type() != link.type());
@@ -82,16 +99,16 @@ public final class NodeListener implements Listener {
         preventDoubleChest(event.getBlockPlaced());
     }
 
+    private @Nullable StorageGroup linkedGroup(ItemStack item) {
+        LinkItem.Link link = linkItems.read(item);
+        StorageGroup group = link == null ? null : services.groups().byId(link.groupId());
+        return group != null && group.type() == link.type() ? group : null;
+    }
+
     /** Links a placed link item back to its group. Returns false if the block can't join the group, so it places normally. */
     private boolean relink(BlockPlaceEvent event, StorageGroup group) {
         Player player = event.getPlayer();
         Block block = event.getBlockPlaced();
-        Message refusal = relinkRefusal(player, group, block);
-        if (refusal != null) {
-            services.send(player, refusal, Messages.group(group));
-            event.setCancelled(true);
-            return true;
-        }
         GroupTypeHandler handler = links.handler(group.type());
         if (handler == null || !handler.isValidBlock(block)) return false;
         links.join(player, group, block, Holders.facing(player).getOppositeFace(),
