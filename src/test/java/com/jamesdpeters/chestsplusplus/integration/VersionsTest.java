@@ -42,8 +42,16 @@ class VersionsTest {
     }
 
     @Test
-    void parsesTheReleaseTag() {
-        assertThat(UpdateChecker.parseTag("{\"url\":\"x\",\"tag_name\": \"v3.0.1\",\"name\":\"y\"}")).isEqualTo("v3.0.1");
-        assertThat(UpdateChecker.parseTag("{}")).isNull();
+    void picksTheHighestModrinthVersion() {
+        String json = "[{\"version_number\":\"3.0.0-beta.2\"},{\"version_number\":\"3.0.0\"},{\"version_number\":\"3.0.0-beta.10\"}]";
+        assertThat(UpdateChecker.newest(json)).contains("3.0.0");
+        assertThat(UpdateChecker.newest("[]")).isEmpty();
+    }
+
+    @Test
+    void onlyReleaseBuildsFilterOutPreReleases() {
+        assertThat(UpdateChecker.versionsUri("3.0.0").toString()).endsWith("&version_type=release");
+        assertThat(UpdateChecker.versionsUri("3.0.0-beta.1").toString()).doesNotContain("version_type");
+        assertThat(UpdateChecker.versionsUri("3.0.0-SNAPSHOT").toString()).doesNotContain("version_type");
     }
 }

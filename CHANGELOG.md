@@ -32,7 +32,8 @@ language files start fresh.
   a fixed sweep; idle crafters back off. Inputs can be ChestLinks.
 - Sorting happens on open/close and on demand instead of after every click.
 - Permissions moved to `chestsplusplus.*`; limits are `chestsplusplus.limit.<type>.<n>`.
-- Update notices go only to players with `chestsplusplus.admin.update`, when they join.
+- Updates are checked on Modrinth, and notices go only to players with `chestsplusplus.admin.update`, when they join. Beta builds
+  are also told about newer betas.
 
 ### Removed
 - Item-frame hopper filters, parties, language files (English only; i18n-ready), and Spigot/NMS support.
