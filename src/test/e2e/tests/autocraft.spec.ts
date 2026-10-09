@@ -1,6 +1,6 @@
 import { sleep, test } from '@plugwright/runner';
 
-// Phase 5 E2E: real recipe matching (Bukkit.getCraftingRecipe / craftItemResult) and the central crafting ticker.
+// Real recipe matching (Bukkit.getCraftingRecipe / craftItemResult) and the central crafting ticker.
 
 const OWNER = 'E2EOwner';
 

@@ -207,7 +207,6 @@ class V2MigrationTest extends PluginTestBase {
         Path destination = storage.resolveSibling("storage.yml.v2-migrated");
         Files.createDirectories(destination);
         Files.writeString(destination.resolve("keep"), "occupied");
-        // Introduce the obstruction after startup's legacy-file check; importFile exercises the normal commit-then-rename path.
         migration().importFile(server.getConsoleSender(), true, null);
         tickUntil(() -> services.persistence().pending() == 0);
         assertThat(storage).exists();

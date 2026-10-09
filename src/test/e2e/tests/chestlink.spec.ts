@@ -1,7 +1,7 @@
 import { sleep, test } from '@plugwright/runner';
 
-// Phase 2 E2E: real hopper ticking through HopperBridge on a 26.3 server. Bots can't stay connected for long through
-// ViaBackwards (spike S6), so the world is set up over RCON and asserted through the /cpptest harness.
+// Real hopper ticking through HopperBridge on a 26.3 server. Bots can't stay connected for long through
+// ViaBackwards, so the world is set up over RCON and asserted through the /cpptest harness.
 
 const OWNER = 'E2EOwner';
 

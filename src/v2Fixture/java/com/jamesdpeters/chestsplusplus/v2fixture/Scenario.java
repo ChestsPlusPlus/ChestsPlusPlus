@@ -41,7 +41,7 @@ import org.bukkit.potion.PotionType;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The v2 upgrade cases (docs/v2-migration-plan.md §8.2), laid out in rows south of spawn with every linked block facing spawn. A standing
+ * The v2 upgrade cases (docs/v2-migration.md), laid out in rows south of spawn with every linked block facing spawn. A standing
  * sign beside each case names it and says what v3 should do with it. ChestLinks are z=0, AutoCrafters z=10, hopper filters z=20.
  */
 final class Scenario {

@@ -57,7 +57,6 @@ public final class V2Migration implements Listener {
         } catch (RuntimeException e) {
             log.error("Finishing imported v2 blocks in loaded chunks failed; they will be finished when their chunks next load", e);
         }
-        if (!state.importCompleted() && Files.exists(dataFolder().resolve("data/storage.yml" + MIGRATED_SUFFIX))) state.legacyImport();
         Path file = candidates().stream().filter(Files::isRegularFile).findFirst()
                 .orElse(null);
         if (file != null && !state.importCompleted()) {

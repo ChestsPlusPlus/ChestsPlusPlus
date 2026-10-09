@@ -6,7 +6,7 @@ Paper plugin that enhances chests and hoppers, with ChestLinks, Auto-Crafting an
 
 > **This is the `v3` branch: a ground-up rewrite for Paper 26.x and Java 25.** v3 is a new major version and is
 > able to import v2 data and configuration once. Commands and permissions change in v3. The current stable plugin (v2)
-> lives on the [`2.x`](../../tree/2.x) branch. The design is in [docs/v3-rewrite-plan.md](docs/v3-rewrite-plan.md).
+> lives on the [`2.x`](../../tree/2.x) branch.
 
 ## Features
 
@@ -50,7 +50,7 @@ Paper plugin that enhances chests and hoppers, with ChestLinks, Auto-Crafting an
 `<group>` is `name` for your own groups, or `owner:name` for someone else's group you can access. Names can have spaces;
 quote them in commands: `/cl open "Iron Ore"`, `/cl open "Steve:Iron Ore"`.
 
-See [the migration plan](docs/v2-migration-plan.md) for recovery and existing development database limits.
+See [docs/v2-migration.md](docs/v2-migration.md) for what the import does, unresolved worlds and how to roll back.
 
 ## Permissions
 

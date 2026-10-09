@@ -35,7 +35,7 @@ dependencies {
     annotationProcessor(libs.lombok)
     implementation(libs.bstats.bukkit)
 
-    // Tests compile and run against paper-api 26.2 + mockbukkit-v26.2 until mockbukkit-v26.3 exists (plan §10.2).
+    // Tests compile and run against paper-api 26.2 + mockbukkit-v26.2 until mockbukkit-v26.3 exists.
     testImplementation(libs.paper.api.test)
     testImplementation(libs.mockbukkit)
     testImplementation(platform(libs.junit.bom))

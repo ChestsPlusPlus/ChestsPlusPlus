@@ -1,6 +1,6 @@
 # Testing ChestsPlusPlus v3
 
-Three automated layers run in CI (plan §10). This page lists what they cover and the **manual checklist** for what
+Three automated layers run in CI. This page lists what they cover and the **manual checklist** for what
 they can't.
 
 | Layer | Command | Covers |
@@ -14,7 +14,7 @@ Performance against v2 is measured separately; see [benchmarking.md](benchmarkin
 Known automation limits:
 - **MockBukkit** doesn't implement `TextDisplay#setBillboard`, redstone power, recipe matching or `PluginBootstrap`.
   `FailOnUnimplemented` turns any such gap into a test failure, so nothing is silently skipped.
-- **E2E bots** (Mineflayer 26.1 via ViaBackwards) are kicked after about 3 s or on any movement (spike S6). E2E sets
+- **E2E bots** (Mineflayer 26.1 via ViaBackwards) are kicked after about 3 s or on any movement. E2E sets
   the world up over RCON with the never-shipped `/cpptest` harness and keeps bot interactions short. Dialogs can't be
   driven by bots at all.
 
@@ -25,8 +25,8 @@ Run each item on a native 26.3 client against `./gradlew runServer` (or the serv
 ### Linking and displays
 - [ ] A `[ChestLink]` sign on a chest, a barrel and a copper chest creates the group. The sign disappears and the
       item display plus label appear on the sign's face.
-- [ ] Display orientation is correct on all four faces for chests, barrels and crafting tables (spike S4: row A/B
-      decides `DisplayLayout.ITEM_YAW_OFFSET`).
+- [ ] Display orientation is correct on all four faces for chests, barrels and crafting tables (this is what
+      `DisplayLayout.ITEM_YAW_OFFSET` is tuned against).
 - [ ] Displays are readable at about 16 blocks and at night, and disappear and reappear with chunk unload/load.
 - [ ] `/cl add <group>` while looking at a chest links it; it's refused in a protected region (WorldGuard or
       GriefPrevention).
@@ -43,7 +43,7 @@ Run each item on a native 26.3 client against `./gradlew runServer` (or the serv
       linked chest. The linked blocks' own containers stay empty, a golem holding an item the group doesn't have walks past it, and
       `features.copper-golems: false` makes golems ignore linked blocks.
 
-### Menus (spike S3)
+### Menus
 - [ ] Hub search, paging, the group dialog (rename, public, sort mode, save), members, trust, and remove with
       confirmation.
 - [ ] Every dialog button works once (single use) and expires after 10 minutes; no errors in the console.
@@ -72,7 +72,7 @@ Run each item on a native 26.3 client against `./gradlew runServer` (or the serv
 ## v2 upgrade
 
 A flat world built by ChestsPlusPlus v2 on Paper 1.21.7, with every upgrade case laid out south of spawn, then run on v3. See
-[v2-migration-plan.md](v2-migration-plan.md) §8.1 for how it's built.
+[v2-migration.md](v2-migration.md#upgrade-test-bed) for how it's built.
 
 ```bash
 ./gradlew v2UpgradeFixture -Pchestsplusplus.acceptMinecraftEula=true -Pchestsplusplus.testPlayer=<your name>

@@ -21,7 +21,7 @@ class CommandsTest {
         assertThat(root.getChild("version")).isNotNull();
     }
 
-    /** Release guard (plan §10.3): debug/test entry points exist only in the test-harness plugin. */
+    /** Release guard: debug/test entry points exist only in the test-harness plugin. */
     @Test
     void treeHasNoDebugOrTestLiterals() {
         List<String> names = new ArrayList<>();

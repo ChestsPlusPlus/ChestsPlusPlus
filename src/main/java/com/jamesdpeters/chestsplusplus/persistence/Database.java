@@ -16,7 +16,7 @@ import org.jdbi.v3.core.JdbiException;
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class Database implements AutoCloseable {
 
-    public static final int SCHEMA_VERSION = 2;
+    public static final int SCHEMA_VERSION = 1;
 
     private static final List<String> PRAGMAS = List.of("journal_mode=WAL", "synchronous=NORMAL", "foreign_keys=ON", "busy_timeout=5000");
 

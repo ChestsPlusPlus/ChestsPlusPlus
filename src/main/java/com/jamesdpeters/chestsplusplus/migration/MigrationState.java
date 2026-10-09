@@ -51,10 +51,6 @@ public final class MigrationState {
         set(IMPORT, "COMPLETE");
     }
 
-    public void legacyImport() {
-        set(IMPORT, "LEGACY");
-    }
-
     @Nullable
     String get(String key) {
         return values.get(key);

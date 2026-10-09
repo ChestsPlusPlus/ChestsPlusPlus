@@ -78,7 +78,7 @@ abstract class BuildV2Jar : DefaultTask() {
 }
 
 /**
- * Builds a flat world with ChestsPlusPlus v2 on Paper 1.21.7 for manual upgrade testing (docs/v2-migration-plan.md §8.1):
+ * Builds a flat world with ChestsPlusPlus v2 on Paper 1.21.7 for manual upgrade testing (docs/v2-migration.md):
  * 1. starts v2 with the `v2-fixture` helper and runs `v2fixture build`, which sets every case up through v2's own classes;
  * 2. starts v2 again and fails if v2 can't read its own file back (this run also leaves v2's armour stands in the world);
  * 3. removes the v2 jars and the fixture datapack, so the folder looks like a server about to upgrade, and snapshots it.

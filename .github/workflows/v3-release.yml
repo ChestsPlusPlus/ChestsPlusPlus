@@ -1,7 +1,7 @@
 name: v3 Release
 
-# Runs only when a v3 tag is pushed (e.g. v3.0.0). Builds, runs the release-jar guard, and attaches the jar to a
-# draft GitHub release for review before publishing.
+# Runs only when a v3 tag is pushed (e.g. v3.0.0). Runs the full CI (build, tests and E2E) first, then builds, runs the
+# release-jar guard, and attaches the jar to a draft GitHub release for review before publishing.
 on:
   push:
     tags: ["v3.*"]
@@ -10,7 +10,12 @@ permissions:
   contents: write
 
 jobs:
+  ci:
+    uses: ./.github/workflows/v3-ci.yml
+    secrets: inherit
+
   release:
+    needs: ci
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

@@ -8,7 +8,7 @@ import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
 
 /**
- * Base class for MockBukkit integration tests (plan §10.2): a fresh mocked server with ChestsPlusPlus loaded for every
+ * Base class for MockBukkit integration tests: a fresh mocked server with ChestsPlusPlus loaded for every
  * test, torn down afterwards. MockBukkit gives each loaded plugin a data folder in a temporary directory.
  */
 @Tag(Tags.INTEGRATION)

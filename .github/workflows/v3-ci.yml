@@ -1,9 +1,12 @@
 name: v3 CI
 
 on:
+  # Tags are left to v3-release.yml, which runs this workflow itself before drafting the release.
   push:
+    branches: ["**"]
   pull_request:
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
@@ -45,8 +48,6 @@ jobs:
   e2e:
     name: E2E (Plugwright, Paper 26.3 via ViaVersion)
     runs-on: ubuntu-latest
-    # Non-blocking until spike S6 is signed off (plan §10.5).
-    continue-on-error: true
     timeout-minutes: 30
     env:
       E2E_RCON_PASSWORD: ${{ secrets.E2E_RCON_PASSWORD }}

@@ -1,4 +1,4 @@
-# Test-bed helper for v2UpgradeFixture (docs/v2-migration-plan.md §8.1). Never shipped.
+# Test-bed helper for v2UpgradeFixture (docs/v2-migration.md). Never shipped.
 name: ChestsPlusPlus-V2Fixture
 main: com.jamesdpeters.chestsplusplus.v2fixture.V2FixturePlugin
 version: '1'

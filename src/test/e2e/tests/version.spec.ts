@@ -1,6 +1,6 @@
 import { expect, test } from '@plugwright/runner';
 
-// Phase 0 smoke tests. The bot speaks 26.1; ViaVersion/ViaBackwards bridge it to the 26.3 server (plan §10.3.1).
+// Smoke tests. The bot speaks 26.1; ViaVersion/ViaBackwards bridge it to the 26.3 server.
 
 test('bot joins, /cpp version replies', async ({ player }) => {
   await player.makeOp();

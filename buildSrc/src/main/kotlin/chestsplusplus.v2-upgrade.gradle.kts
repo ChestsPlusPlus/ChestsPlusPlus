@@ -1,4 +1,4 @@
-// The v2 → v3 upgrade test bed (docs/v2-migration-plan.md §8.1): a flat world built by ChestsPlusPlus v2 on Paper 1.21.7, then run
+// The v2 → v3 upgrade test bed (docs/v2-migration.md): a flat world built by ChestsPlusPlus v2 on Paper 1.21.7, then run
 // on v3. The v2Fixture source set is the helper plugin that lays the world out through v2's own classes.
 
 import xyz.jpenilla.runpaper.task.RunServer

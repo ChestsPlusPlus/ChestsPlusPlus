@@ -49,3 +49,12 @@ CREATE TABLE migration_state (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
+
+CREATE TABLE v2_pending_locations (
+  group_id  INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
+  world_name TEXT NOT NULL,
+  x INTEGER NOT NULL,
+  y INTEGER NOT NULL,
+  z INTEGER NOT NULL,
+  PRIMARY KEY (group_id, world_name, x, y, z)
+);

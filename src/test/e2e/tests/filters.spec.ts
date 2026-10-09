@@ -1,7 +1,7 @@
 import { sleep, test } from '@plugwright/runner';
 
-// Phase 4 E2E: a filtered hopper on a real 26.3 server. The first source slot is rejected, so this also checks the
-// stall avoidance from spike S1b (the hopper must still move the allowed item).
+// A filtered hopper on a real 26.3 server. The first source slot is rejected, so this also checks the
+// stall avoidance (the hopper must still move the allowed item).
 
 function expectContains(text: string, needle: string) {
   if (!text.includes(needle)) throw new Error(`expected ${JSON.stringify(needle)} in ${JSON.stringify(text)}`);
