@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.jamesdpeters.chestsplusplus.filter.HopperFilter.Match;
 import com.jamesdpeters.chestsplusplus.filter.HopperFilter.Mode;
 import com.jamesdpeters.chestsplusplus.testing.PluginTestBase;
+import com.jamesdpeters.chestsplusplus.testing.TileEntityWorld;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -17,6 +19,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Container;
 import org.bukkit.block.Hopper;
+import org.bukkit.entity.ItemDisplay;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
@@ -39,7 +42,10 @@ class FilterIntegrationTest extends PluginTestBase {
 
     @BeforeEach
     void setUp() {
-        world = server.addSimpleWorld("world");
+        TileEntityWorld tileWorld = new TileEntityWorld();
+        tileWorld.setName("world");
+        server.addWorld(tileWorld);
+        world = tileWorld;
         world.loadChunk(0, 0);
         filters = plugin.services().get(FilterService.class);
     }
@@ -286,6 +292,55 @@ class FilterIntegrationTest extends PluginTestBase {
 
         assertThat(event.useInteractedBlock()).isEqualTo(org.bukkit.event.Event.Result.DENY);
         assertThat(player.getOpenInventory().getTopInventory().getHolder()).isInstanceOf(FilterEditorHolder.class);
+    }
+
+    private void setHopperFilters(boolean enabled) throws IOException {
+        plugin.getConfig().set("features.hopper-filters", enabled);
+        plugin.saveConfig();
+        plugin.reload();
+    }
+
+    @Test
+    void disablingHopperFiltersOnReloadDropsTheIndexAndDisplays() throws IOException {
+        Block hopper = hopperAt(0);
+        filters.write(hopper, List.of(filter(Material.STONE, Mode.ALLOW, Match.TYPE)));
+        assertThat(filters.indexedCount()).isEqualTo(1);
+
+        setHopperFilters(false);
+
+        assertThat(filters.get(hopper)).isNull();
+        assertThat(filters.indexedCount()).isZero();
+        assertThat(filters.displayCount()).isZero();
+        assertThat(world.getEntitiesByClass(ItemDisplay.class)).isEmpty();
+    }
+
+    @Test
+    void disabledHopperFiltersNeitherIndexNorSpawnDisplaysButKeepTheStoredFilters() throws IOException {
+        setHopperFilters(false);
+        Block hopper = hopperAt(0);
+        List<HopperFilter> stored = List.of(filter(Material.STONE, Mode.ALLOW, Match.TYPE));
+
+        filters.write(hopper, stored);
+        filters.chunkLoaded(hopper.getChunk());
+
+        assertThat(filters.read(hopper)).isEqualTo(stored);
+        assertThat(filters.get(hopper)).isNull();
+        assertThat(filters.indexedCount()).isZero();
+        assertThat(filters.displayCount()).isZero();
+        assertThat(world.getEntitiesByClass(ItemDisplay.class)).isEmpty();
+    }
+
+    @Test
+    void enablingHopperFiltersOnReloadIndexesStoredFiltersAndSpawnsDisplays() throws IOException {
+        setHopperFilters(false);
+        Block hopper = hopperAt(0);
+        filters.write(hopper, List.of(filter(Material.STONE, Mode.ALLOW, Match.TYPE)));
+
+        setHopperFilters(true);
+
+        assertThat(filters.get(hopper)).isNotNull();
+        assertThat(filters.indexedCount()).isEqualTo(1);
+        assertThat(filters.displayCount()).isEqualTo(8);
     }
 
     @Test

@@ -47,6 +47,8 @@ public final class FilterService {
     private final NamespacedKey marker;
     private final Map<UUID, Long2ObjectMap<Long2ObjectMap<CompiledFilter>>> index = new HashMap<>();
     private final Map<BlockPos, List<Entity>> displays = new HashMap<>();
+    /** Whether the index was built from the loaded chunks, which a reload that switches hopper filters on has to do. */
+    private boolean scanned;
 
     public FilterService(Plugin plugin, FilterCodec codec, ItemGrouping grouping, Supplier<Settings> settings) {
         this.plugin = plugin;
@@ -71,17 +73,18 @@ public final class FilterService {
         return hopper.getState(false) instanceof Hopper state ? codec.read(state.getPersistentDataContainer()) : List.of();
     }
 
-    /** Saves filters to the hopper's PDC and refreshes the index and displays. */
+    /** Saves filters to the hopper's PDC and, while hopper filters are on, refreshes the index and displays. */
     public void write(Block hopper, List<HopperFilter> filters) {
         // Snapshot + update (edits are rare): works whether or not the platform supports live block states.
         if (!(hopper.getState() instanceof Hopper state)) return;
         codec.write(state.getPersistentDataContainer(), filters);
         state.update(false, false);
-        index(hopper, filters);
+        if (enabled()) index(hopper, filters);
     }
 
     /** Indexes the hoppers with filters in a just-loaded chunk and spawns their displays. */
     public void chunkLoaded(Chunk chunk) {
+        if (!enabled()) return;
         for (BlockState state : chunk.getTileEntities(block -> block.getType() == Material.HOPPER, false)) {
             if (state instanceof Hopper hopper && codec.has(hopper.getPersistentDataContainer())) {
                 index(state.getBlock(), codec.read(hopper.getPersistentDataContainer()));
@@ -108,13 +111,28 @@ public final class FilterService {
         despawn(BlockPos.of(block));
     }
 
+    /** Indexes the hoppers in every loaded chunk, unless hopper filters are off. */
     public void scanLoadedChunks() {
+        scanned = enabled();
+        if (!scanned) return;
         for (World world : plugin.getServer().getWorlds()) {
             for (Chunk chunk : world.getLoadedChunks()) chunkLoaded(chunk);
         }
     }
 
-    public void refreshDisplays() {
+    /** Applies reloaded settings: switching hopper filters off drops the index and displays, on builds them, otherwise displays respawn. */
+    public void reload() {
+        if (enabled()) {
+            if (scanned) refreshDisplays();
+            else scanLoadedChunks();
+            return;
+        }
+        despawnAll();
+        index.clear();
+        scanned = false;
+    }
+
+    private void refreshDisplays() {
         List<BlockPos> positions = new ArrayList<>();
         index.forEach((world, chunks) -> chunks.values()
                 .forEach(filters -> filters.keySet().forEach((long p) -> positions.add(BlockPos.unpack(world, p)))));
@@ -141,6 +159,10 @@ public final class FilterService {
 
     public boolean isOurs(Entity entity) {
         return entity.getPersistentDataContainer().has(marker, PersistentDataType.BOOLEAN);
+    }
+
+    private boolean enabled() {
+        return settings.get().features().hopperFilters();
     }
 
     private void index(Block hopper, List<HopperFilter> filters) {
