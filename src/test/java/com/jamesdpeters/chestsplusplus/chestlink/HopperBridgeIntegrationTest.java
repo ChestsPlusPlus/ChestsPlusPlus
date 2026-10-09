@@ -6,25 +6,20 @@ import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.persistence.Persistence;
 import com.jamesdpeters.chestsplusplus.testing.PluginTestBase;
+import com.jamesdpeters.chestsplusplus.testing.WallSigns;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.function.BooleanSupplier;
-import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
 import org.bukkit.block.Container;
-import org.bukkit.block.data.type.WallSign;
-import org.bukkit.block.sign.Side;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.inventory.HopperInventorySearchEvent;
 import org.bukkit.event.inventory.HopperInventorySearchEvent.ContainerType;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
@@ -52,14 +47,7 @@ class HopperBridgeIntegrationTest extends PluginTestBase {
     }
 
     private ChestLinkGroup link(Block block, String name) {
-        Block sign = block.getRelative(BlockFace.NORTH);
-        sign.setType(Material.OAK_WALL_SIGN);
-        WallSign data = (WallSign) sign.getBlockData();
-        data.setFacing(BlockFace.NORTH);
-        sign.setBlockData(data);
-        server.getPluginManager()
-                .callEvent(new SignChangeEvent(sign, alice,
-                        List.of(Component.text("[ChestLink]"), Component.text(name), Component.empty(), Component.empty()), Side.FRONT));
+        WallSigns.write(alice, block, "[ChestLink]", name);
         return (ChestLinkGroup) plugin.services().groups().find(GroupType.CHESTLINK, alice.getUniqueId(), name);
     }
 
