@@ -22,8 +22,9 @@ import org.jspecify.annotations.Nullable;
 /**
  * Name tag → link conversion: right-clicking an unlinked chest, barrel, crafting table etc. with a renamed name tag
  * links it to the group named on the tag ({@code name} or {@code owner:name}), picking the group type from the block.
- * Unnamed tags do nothing. Like a mob name tag, one is used up outside creative (configurable). Runs at HIGH so protection plugins
- * have already had their say on this real interaction.
+ * Unnamed tags do nothing. Like a mob name tag, one is used up outside creative (configurable). Runs at HIGHEST because setting DENY
+ * cancels the event for later {@code ignoreCancelled} handlers, and protection plugins (Towny among them) deny at HIGH. Linking pulls
+ * the block's contents into the group, so the synthetic protection check runs too, for plugins that deny at HIGHEST.
  */
 @RequiredArgsConstructor
 public final class NameTagLinkListener implements Listener {
@@ -33,7 +34,7 @@ public final class NameTagLinkListener implements Listener {
     private final Services services;
     private final LinkService links;
 
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler(priority = EventPriority.HIGHEST)
     void onInteract(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK || links.isFiringSyntheticInteract()) return;
         Block block = event.getClickedBlock();
@@ -50,7 +51,7 @@ public final class NameTagLinkListener implements Listener {
         event.setUseItemInHand(Event.Result.DENY);
 
         Player player = event.getPlayer();
-        if (links.link(player, type, name, block, NodeListener.facingFor(event.getBlockFace(), player), true) == null) return;
+        if (links.link(player, type, name, block, NodeListener.facingFor(event.getBlockFace(), player), false) == null) return;
         if (services.settings().linking().consumeNameTags() && player.getGameMode() != GameMode.CREATIVE) item.subtract();
     }
 
