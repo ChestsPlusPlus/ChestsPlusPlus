@@ -36,7 +36,6 @@ import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.block.BlockFace;
-import org.bukkit.configuration.MemoryConfiguration;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.ShapedRecipe;
 import org.junit.jupiter.api.AfterEach;
@@ -62,7 +61,7 @@ class V2ImporterTest extends PluginTestBase {
     private GroupStore groupStore;
     private V2Importer importer;
     private boolean failAttach;
-    private Settings settings = Settings.DEFAULTS;
+    private Settings settings = Settings.defaults();
 
     @BeforeEach
     void setUp() {
@@ -232,9 +231,7 @@ class V2ImporterTest extends PluginTestBase {
 
     @Test
     void groupsOverTheDefaultLimitAreReported() {
-        MemoryConfiguration config = new MemoryConfiguration();
-        config.set("limits.chestlink-default", 2);
-        settings = Settings.from(config);
+        settings = Settings.parse("limits: { chestlink-default: 2 }");
 
         ImportReport report = importFixture(false);
 

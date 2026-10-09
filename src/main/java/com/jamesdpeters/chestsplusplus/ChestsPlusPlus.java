@@ -78,7 +78,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
     @Override
     public void onEnable() {
         try {
-            V2ConfigMigrator.migrate(this);
+            V2ConfigMigrator.migrate(getDataFolder());
             Services services = new Services(this, loadSettings(), loadMessages());
             // Set before anything can fail, so onDisable undoes whatever was started.
             this.services = services;
@@ -283,10 +283,8 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         if (current != null) current.persistence().flush();
     }
 
-    private Settings loadSettings() {
-        saveDefaultConfig();
-        reloadConfig();
-        return Settings.from(getConfig());
+    private Settings loadSettings() throws IOException {
+        return Settings.update(getDataFolder().toPath().resolve("config.yml"));
     }
 
     private Messages loadMessages() throws IOException {

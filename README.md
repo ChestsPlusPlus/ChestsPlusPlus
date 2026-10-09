@@ -66,7 +66,8 @@ See [docs/v2-migration.md](docs/v2-migration.md) for what the import does, unres
 ## Configuration
 
 `plugins/ChestsPlusPlus/config.yml` controls features, displays, limits, the world blacklist, saving and the update
-checker; see the comments in the file. Messages use [MiniMessage](https://docs.papermc.io/adventure/minimessage/format):
+checker; see the comments in the file. Settings added by later versions are written into it on start-up and
+`/cpp reload`; comments you add yourself are not kept. Messages use [MiniMessage](https://docs.papermc.io/adventure/minimessage/format):
 copy keys from the bundled `messages.yml` into `plugins/ChestsPlusPlus/messages.yml` to change them. Data is stored in
 `plugins/ChestsPlusPlus/data.db` (SQLite).
 

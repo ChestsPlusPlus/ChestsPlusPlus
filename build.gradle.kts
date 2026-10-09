@@ -29,6 +29,7 @@ configurations.testImplementation { extendsFrom(paperLibrary) }
 
 dependencies {
     paperLibrary(libs.jdbi.core)
+    paperLibrary(libs.configlib.yaml)
     compileOnly(libs.paper.api)
     compileOnly(libs.jspecify)
     compileOnly(libs.lombok)

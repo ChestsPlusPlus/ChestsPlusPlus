@@ -19,7 +19,7 @@ public final class MetricsService {
     private @Nullable Metrics metrics;
 
     public void start(JavaPlugin plugin, Services services) {
-        if (!services.settings().metrics()) return;
+        if (!services.settings().metrics().enabled()) return;
         try {
             Metrics created = new Metrics(plugin, PLUGIN_ID);
             created.addCustomChart(new SingleLineChart("chestlinks", () -> services.groups().all(GroupType.CHESTLINK).size()));

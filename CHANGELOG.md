@@ -26,6 +26,8 @@ language files start fresh.
 - ChestLink hoppers are now vanilla transfers (`HopperInventorySearchEvent`), so speed and hopper settings match a
   normal chest. There are no per-group tasks.
 - Data is stored incrementally in SQLite (`data.db`), with crash-safe write-behind saving.
+- `config.yml` gains settings added by later versions on start-up and `/cpp reload`, with their defaults and comments. The
+  file is rewritten each time, so comments you add yourself are not kept.
 - AutoCraft runs on one central ticker and crafts on the next tick after its recipe, inputs or output change, instead of waiting for
   a fixed sweep; idle crafters back off. Inputs can be ChestLinks.
 - Sorting happens on open/close and on demand instead of after every click.
