@@ -53,6 +53,16 @@ class ModelIndexTest {
     }
 
     @Test
+    void reservedIdsAreNeverHandedOutAndReservationsNeverLowerTheNextId() {
+        GroupRegistry registry = new GroupRegistry();
+        registry.reserveThrough(41);
+        assertThat(registry.nextId()).isEqualTo(42);
+
+        registry.reserveThrough(10);
+        assertThat(registry.nextId()).isEqualTo(43);
+    }
+
+    @Test
     void nodeIndexByPositionChunkAndGroup() {
         NodeIndex index = new NodeIndex();
         BlockPos a = new BlockPos(WORLD, 1, 64, 1);

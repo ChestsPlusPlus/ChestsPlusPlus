@@ -339,6 +339,27 @@ class ChestLinkIntegrationTest extends PluginTestBase {
     }
 
     @Test
+    void linkItemOfADeletedGroupPlacesAsANormalBlockAndNeverJoinsAnotherGroup() {
+        Block chest = chestAt(0, 0);
+        sign(alice, chest, "[ChestLink]", "portable");
+        ChestLinkGroup deleted = group(alice, "portable");
+        ItemStack linkItem = silkTouchBreak(chest);
+        plugin.services().get(LinkService.class).removeGroup(deleted, chest.getLocation());
+        Block bobsChest = chestAt(5, 5);
+        sign(bob, bobsChest, "[ChestLink]", "mine");
+        ChestLinkGroup bobs = group(bob, "mine");
+        assertThat(bobs.id()).isNotEqualTo(deleted.id());
+        assertThat(nextPlain(bob)).contains("Created ChestLink mine");
+
+        BlockPlaceEvent event = placeLinkItem(bob, linkItem);
+
+        assertThat(event.isCancelled()).isFalse();
+        assertThat(plugin.services().nodes().at(event.getBlockPlaced())).isNull();
+        assertThat(plugin.services().nodes().count(bobs.id())).isEqualTo(1);
+        assertThat(nextPlain(bob)).contains("no longer exists");
+    }
+
+    @Test
     void linkItemPlacementRequiresCreatePermissionForPublicGroup() {
         ItemStack linkItem = publicLinkItem();
         bob.addAttachment(plugin).setPermission("chestsplusplus.chestlink.create", false);

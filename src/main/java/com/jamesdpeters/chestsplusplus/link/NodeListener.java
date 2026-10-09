@@ -80,7 +80,9 @@ public final class NodeListener implements Listener {
     void onPlace(BlockPlaceEvent event) {
         LinkItem.Link link = linkItems.read(event.getItemInHand());
         StorageGroup group = link == null ? null : services.groups().byId(link.groupId());
-        if (group != null && group.type() == link.type() && relink(event, group)) return;
+        boolean stale = link != null && (group == null || group.type() != link.type());
+        if (stale) services.send(event.getPlayer(), Message.ERROR_STALE_LINK_ITEM);
+        else if (group != null && relink(event, group)) return;
         preventDoubleChest(event.getBlockPlaced());
     }
 
