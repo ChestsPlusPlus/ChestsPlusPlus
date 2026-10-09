@@ -109,6 +109,22 @@ class FilterIntegrationTest extends PluginTestBase {
     }
 
     @Test
+    void chunkUnloadDropsOnlyThatChunksFilters() {
+        world.loadChunk(1, 0);
+        Block unloading = hopperAt(0);
+        Block staying = hopperAt(16);
+        filters.write(unloading, List.of(filter(Material.STONE, Mode.ALLOW, Match.TYPE)));
+        filters.write(staying, List.of(filter(Material.STONE, Mode.ALLOW, Match.TYPE)));
+
+        filters.chunkUnloaded(world.getChunkAt(0, 0));
+
+        assertThat(filters.get(unloading)).isNull();
+        assertThat(filters.get(staying)).isNotNull();
+        assertThat(filters.indexedCount()).isEqualTo(1);
+        assertThat(filters.displayCount()).isEqualTo(8);
+    }
+
+    @Test
     void rejectedItemsAreCancelledAndTheNextAcceptableOneMoves() {
         Block hopper = hopperAt(0);
         filters.write(hopper, List.of(filter(Material.STONE, Mode.ALLOW, Match.TYPE)));
