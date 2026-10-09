@@ -100,34 +100,80 @@ test('an AutoCrafter takes nothing from a locked chest, linked or not', async ({
   expectContains(await server.execute(`data get block ${OPEN} -52 12 Items`), 'minecraft:torch');
 });
 
-/**
- * A copper chest of three cobblestone on the ground at (x, -60, 0), linked when {@code group} is given, with an empty chest beside it and
- * a copper golem between them. Sites are 100 blocks apart, beyond a golem's search range.
- */
-async function golemSite(server: Server, x: number, group?: string) {
-  await run(server, `forceload add ${x} 0`, `setblock ${x} -60 0 minecraft:copper_chest{Items:[${COBBLE}]}`, `setblock ${x + 3} -60 0 minecraft:chest`);
-  if (group) expectContains(await server.execute(`cpptest link chestlink ${OWNER} ${group} ${x} -60 0`), 'cpptest link ok');
-  await server.execute(`summon minecraft:copper_golem ${x + 1} -60 2`);
+const GOLEM_SITES = [100, 200, 300];
+const GOLEM_TAG = 'cpptest_golem';
+
+function golemChunks(x: number) {
+  return `${x - 5} -5 ${x + 8} 8`;
 }
 
-test('a copper golem takes nothing from a locked copper chest, linked or not', async ({ server }) => {
-  await run(server, ...SETUP, 'kill @e[type=minecraft:copper_golem]');
-  await golemSite(server, 100);
-  await golemSite(server, 200, 'golemLocked');
-  await golemSite(server, 300, 'golemOpen');
-  await lock(server, 100, -60, 0);
-  await lock(server, 200, -60, 0);
+/** Sites stay beyond each other's search range; the enclosure keeps wandering golems inside entity-ticking chunks. */
+async function golemSite(server: Server, x: number, group?: string) {
+  await run(server,
+    `forceload add ${golemChunks(x)}`,
+    `fill ${x - 4} -61 -4 ${x + 7} -57 7 minecraft:glass hollow`,
+    `setblock ${x} -60 0 minecraft:copper_chest{Items:[${COBBLE}]}`,
+    `setblock ${x + 3} -60 0 minecraft:chest`,
+  );
+  if (group) expectContains(await server.execute(`cpptest link chestlink ${OWNER} ${group} ${x} -60 0`), 'cpptest link ok');
+}
 
-  // Control: wait until the unlocked ChestLink's golem has delivered, so the others have had as long to act.
+async function waitForGolemDelivery(server: Server) {
   let delivered = '';
   for (let i = 0; i < 40 && !delivered.includes('cobblestone'); i++) {
     await sleep(500);
     delivered = await server.execute('cpptest items 303 -60 0');
   }
   expectContains(delivered, 'cobblestone');
-  expectContains(await server.execute('cpptest items 103 -60 0'), 'empty');
-  expectContains(await server.execute('cpptest items 100 -60 0'), 'cobblestone');
-  expectContains(await server.execute('cpptest items 203 -60 0'), 'empty');
-  expectContains(await group(server, 'golemLocked'), 'items={COBBLESTONE=3}');
-  await server.execute('kill @e[type=minecraft:copper_golem]');
+  expectContains(delivered, 'x3');
+}
+
+async function expectGolemRefused(server: Server, x: number) {
+  const checks = await server.execute(`cpptest lock-checks ${x} -60 0`);
+  const refusals = checks.match(/golem-refusals=(\d+)/);
+  if (!refusals || Number(refusals[1]) === 0) throw new Error(`golem at ${x} never tried its locked source: ${checks}`);
+}
+
+async function golemDiagnostics(server: Server) {
+  const commands = ['time query gametime', 'forceload query'];
+  for (const x of GOLEM_SITES) {
+    commands.push(`cpptest items ${x} -60 0`, `cpptest items ${x + 3} -60 0`, `cpptest lock-checks ${x} -60 0`);
+    const entity = `@e[type=minecraft:copper_golem,tag=${GOLEM_TAG}_${x},limit=1]`;
+    for (const path of ['Pos', 'Motion', 'equipment', 'Brain.memories']) commands.push(`data get entity ${entity} ${path}`);
+  }
+  commands.push(`cpptest group chestlink ${OWNER} golemOpen`, `cpptest group chestlink ${OWNER} golemLocked`);
+  const lines = [];
+  for (const command of commands) lines.push(`${command}: ${(await server.execute(command)).trim()}`);
+  return lines.join('\n');
+}
+
+test('a copper golem takes nothing from a locked copper chest, linked or not', async ({ server }) => {
+  try {
+    await run(server, ...SETUP, `kill @e[tag=${GOLEM_TAG}]`);
+    await golemSite(server, 100);
+    await golemSite(server, 200, 'golemLocked');
+    await golemSite(server, 300, 'golemOpen');
+    await lock(server, 100, -60, 0);
+    await lock(server, 200, -60, 0);
+    expectContains(await group(server, 'golemOpen'), 'items={COBBLESTONE=3}');
+    for (const x of [200, 300]) expectContains(await server.execute(`cpptest items ${x} -60 0`), 'empty');
+    for (const x of GOLEM_SITES) {
+      expectContains(await server.execute(`cpptest items ${x + 3} -60 0`), 'empty');
+      expectContains(await server.execute(`summon minecraft:copper_golem ${x + 1} -60 2 {Tags:["${GOLEM_TAG}","${GOLEM_TAG}_${x}"]}`), 'Summoned');
+    }
+
+    await waitForGolemDelivery(server);
+    expectContains(await group(server, 'golemOpen'), 'items={}');
+    expectContains(await server.execute('cpptest items 300 -60 0'), 'empty');
+    expectContains(await server.execute('cpptest items 103 -60 0'), 'empty');
+    expectContains(await server.execute('cpptest items 100 -60 0'), 'cobblestone[]x3');
+    expectContains(await server.execute('cpptest items 203 -60 0'), 'empty');
+    expectContains(await group(server, 'golemLocked'), 'items={COBBLESTONE=3}');
+    for (const x of [100, 200]) await expectGolemRefused(server, x);
+  } catch (error) {
+    throw new Error(`${error}\n${await golemDiagnostics(server)}`);
+  } finally {
+    await run(server, `kill @e[tag=${GOLEM_TAG}]`, 'cpptest reset');
+    for (const x of GOLEM_SITES) await server.execute(`forceload remove ${golemChunks(x)}`);
+  }
 });

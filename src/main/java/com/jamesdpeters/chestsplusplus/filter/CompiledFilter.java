@@ -8,6 +8,7 @@ import org.bukkit.inventory.ItemStack;
 /**
  * A hopper's filters prepared for the hot path. Any deny match rejects; if any
  * allow entries exist an item must match at least one; with no entries everything passes.
+ * Also holds the hopper's stall-avoidance cooldown, so it goes with the index entry on unload, break, explosion or edit.
  */
 public final class CompiledFilter {
 
@@ -17,6 +18,8 @@ public final class CompiledFilter {
     private final Entry[] allows;
     private final Entry[] denies;
     private final ItemGrouping grouping;
+    private int manualMoveAllowedAt;
+    private boolean manualMoveDelayed;
 
     public CompiledFilter(List<HopperFilter> filters, ItemGrouping grouping) {
         this.filters = List.copyOf(filters);
@@ -32,6 +35,15 @@ public final class CompiledFilter {
 
     public boolean isEmpty() {
         return filters.isEmpty();
+    }
+
+    boolean manualMoveAllowed(int tick) {
+        return !manualMoveDelayed || tick - manualMoveAllowedAt >= 0;
+    }
+
+    void allowManualMoveAt(int tick) {
+        manualMoveAllowedAt = tick;
+        manualMoveDelayed = true;
     }
 
     public boolean accepts(ItemStack item) {

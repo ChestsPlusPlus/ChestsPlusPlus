@@ -1,5 +1,6 @@
 package com.jamesdpeters.chestsplusplus.autocraft;
 
+import com.jamesdpeters.chestsplusplus.ChestsPlusPlus;
 import com.jamesdpeters.chestsplusplus.chestlink.ChestLinkHolder;
 import com.jamesdpeters.chestsplusplus.core.BlockPos;
 import com.jamesdpeters.chestsplusplus.core.Holders;
@@ -17,12 +18,15 @@ import com.jamesdpeters.chestsplusplus.model.SlotMatch;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -44,6 +48,7 @@ import org.jspecify.annotations.Nullable;
  * AutoCraft: group type handler, display content, recipe editing, and crafting. One ticker runs every tick but only touches the nodes
  * {@link CraftScheduler} says are due, so idle crafters cost close to nothing while a change next to one makes it craft straight away.
  */
+@Slf4j(topic = ChestsPlusPlus.NAME)
 @RequiredArgsConstructor
 public final class AutoCraftService implements GroupTypeHandler, DisplayService.Content {
 
@@ -58,6 +63,8 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
     private final Map<Long, List<@Nullable Predicate<ItemStack>>> recipeChoices = new HashMap<>();
     /** What each slot accepts once the group's match modes are applied; what the planner uses. */
     private final Map<Long, List<@Nullable Predicate<ItemStack>>> slotRules = new HashMap<>();
+    /** Groups whose stored recipe didn't resolve yet, retried by {@link #resolveDeferred()}. */
+    private final Set<Long> unresolved = new HashSet<>();
 
     private final CraftScheduler scheduler = new CraftScheduler();
     private long tick;
@@ -85,8 +92,8 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
 
     @Override
     public void onRemoved(StorageGroup group, Location dropAt) {
-        recipeChoices.remove(group.id());
-        slotRules.remove(group.id());
+        forgetRules(group);
+        unresolved.remove(group.id());
         for (Node node : services.nodes().nodesOf(group.id())) scheduler.forget(node.pos());
         openEditors(group).forEach(Player::closeInventory);
     }
@@ -172,8 +179,34 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
     public void resolveLoaded(AutoCraftGroup group) {
         if (group.matrixIsEmpty()) return;
         World world = firstWorld();
-        if (world == null) return;
-        applyRecipe(group, group.matrix(), backend.resolve(group.matrix(), world));
+        CraftingBackend.ResolvedRecipe resolved = world == null ? null : backend.resolve(group.matrix(), world);
+        if (resolved == null) leaveUnresolved(group);
+        else applyRecipe(group, group.matrix(), resolved);
+    }
+
+    /** Keeps the stored key, so the next save doesn't lose a recipe that another plugin may only register later. */
+    private void leaveUnresolved(AutoCraftGroup group) {
+        group.setRecipe(group.matrix(), group.recipeKey(), null);
+        forgetRules(group);
+        unresolved.add(group.id());
+    }
+
+    /** Retries the recipes that didn't resolve at load, once every plugin has had the chance to register its own. */
+    public void resolveDeferred() {
+        for (long id : List.copyOf(unresolved)) {
+            if (services.groups().byId(id) instanceof AutoCraftGroup group) resolveDeferred(group);
+        }
+    }
+
+    private void resolveDeferred(AutoCraftGroup group) {
+        resolveLoaded(group);
+        if (!group.hasRecipe()) {
+            log.warn("AutoCraft group {} has no recipe: its stored recipe {} could not be resolved", group.id(), group.recipeKey());
+            return;
+        }
+        craftSoon(group);
+        displays.requestUpdate(group);
+        renderEditors(group);
     }
 
     /**
@@ -209,14 +242,19 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
     }
 
     private void applyRecipe(AutoCraftGroup group, @Nullable ItemStack[] matrix, CraftingBackend.@Nullable ResolvedRecipe resolved) {
+        unresolved.remove(group.id());
         group.setRecipe(matrix, resolved == null ? null : resolved.key(), resolved == null ? null : resolved.result());
         if (resolved == null) {
-            recipeChoices.remove(group.id());
-            slotRules.remove(group.id());
+            forgetRules(group);
             return;
         }
         recipeChoices.put(group.id(), resolved.choices());
         slotRules.put(group.id(), SlotRules.of(group.matrix(), group.matches(), resolved.choices()));
+    }
+
+    private void forgetRules(StorageGroup group) {
+        recipeChoices.remove(group.id());
+        slotRules.remove(group.id());
     }
 
     private void renderEditors(AutoCraftGroup group) {

@@ -34,6 +34,11 @@ public final class GroupRegistry {
         return nextId++;
     }
 
+    /** Ids up to and including {@code id} are never handed out again, even when no group has them any more. */
+    public void reserveThrough(long id) {
+        nextId = Math.max(nextId, id + 1);
+    }
+
     public void add(StorageGroup group) {
         NameKey key = key(group.type(), group.owner(), group.name());
         if (byId.containsKey(group.id())) throw new IllegalStateException("Duplicate group id " + group.id());
@@ -42,7 +47,7 @@ public final class GroupRegistry {
         byName.put(key, group);
         byOwner.computeIfAbsent(group.owner(), k -> new HashSet<>()).add(group);
         group.members().forEach(member -> byMember.computeIfAbsent(member, k -> new HashSet<>()).add(group));
-        nextId = Math.max(nextId, group.id() + 1);
+        reserveThrough(group.id());
     }
 
     public void remove(StorageGroup group) {

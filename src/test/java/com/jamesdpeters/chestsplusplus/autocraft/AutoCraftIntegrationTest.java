@@ -45,6 +45,7 @@ import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.server.ServerLoadEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
@@ -94,6 +95,24 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         }
     }
 
+    /** The torch recipe, but only once {@code registered} is set: like a recipe another plugin adds after this one has loaded. */
+    static final class LateBackend implements CraftingBackend {
+        private final TorchBackend torch = new TorchBackend(false);
+        boolean registered;
+
+        @Override
+        public @Nullable ResolvedRecipe resolve(@Nullable ItemStack[] matrix, World world) {
+            return registered ? torch.resolve(matrix, world) : null;
+        }
+
+        @Override
+        public @Nullable Crafted craft(@Nullable ItemStack[] matrix, World world) {
+            return torch.craft(matrix, world);
+        }
+    }
+
+    private static final NamespacedKey TORCH = NamespacedKey.minecraft("torch");
+
     private World world;
     private PlayerMock alice;
     private AutoCraftService autoCraft;
@@ -107,7 +126,11 @@ class AutoCraftIntegrationTest extends PluginTestBase {
     }
 
     private AutoCraftService autoCraft(boolean special) {
-        return new AutoCraftService(plugin.services(), plugin.services().get(DisplayService.class), new TorchBackend(special));
+        return autoCraft(new TorchBackend(special));
+    }
+
+    private AutoCraftService autoCraft(CraftingBackend backend) {
+        return new AutoCraftService(plugin.services(), plugin.services().get(DisplayService.class), backend);
     }
 
     private static ItemStack namedCoal() {
@@ -129,14 +152,32 @@ class AutoCraftIntegrationTest extends PluginTestBase {
 
     /** Crafting table at (0,64,0) with a group and the torch recipe; returns the table. */
     private Block crafter(AutoCraftGroup[] out) {
+        Block table = linkedCrafter(out);
+        autoCraft.setMatrix(out[0], torchMatrix(), null);
+        return table;
+    }
+
+    /** Crafting table at (0,64,0) with a group that has no recipe; returns the table. */
+    private Block linkedCrafter(AutoCraftGroup[] out) {
         Block table = world.getBlockAt(0, 64, 0);
         table.setType(Material.CRAFTING_TABLE);
         LinkService links = plugin.services().get(LinkService.class);
         links.link(alice, GroupType.AUTOCRAFT, "torches", table, BlockFace.NORTH, true);
-        AutoCraftGroup group = (AutoCraftGroup) plugin.services().groups().find(GroupType.AUTOCRAFT, alice.getUniqueId(), "torches");
-        autoCraft.setMatrix(group, torchMatrix(), null);
-        out[0] = group;
+        out[0] = (AutoCraftGroup) plugin.services().groups().find(GroupType.AUTOCRAFT, alice.getUniqueId(), "torches");
         return table;
+    }
+
+    /** A crafter as the store loads it: the saved matrix and key, no result until the service resolves them. */
+    private Block loadedCrafter(AutoCraftGroup[] out, AutoCraftService service) {
+        Block table = linkedCrafter(out);
+        out[0].setRecipe(torchMatrix(), TORCH, null);
+        service.resolveLoaded(out[0]);
+        return table;
+    }
+
+    private void serverFinishesLoading(AutoCraftService service) {
+        server.getPluginManager().registerEvents(new AutoCraftListener(plugin.services(), plugin.services().get(LinkService.class), service), plugin);
+        server.getPluginManager().callEvent(new ServerLoadEvent(ServerLoadEvent.LoadType.STARTUP));
     }
 
     private Inventory container(Block block, Material type) {
@@ -354,6 +395,68 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         assertThat(output.isEmpty()).isTrue();
         ticks(1);
         assertThat(output.contains(Material.TORCH, 4)).isTrue();
+    }
+
+    @Test
+    void aRecipeThatCannotBeResolvedAtLoadKeepsItsKey() {
+        autoCraft = autoCraft(new LateBackend());
+        AutoCraftGroup[] group = new AutoCraftGroup[1];
+        loadedCrafter(group, autoCraft);
+
+        assertThat(group[0].hasRecipe()).isFalse();
+        assertThat(group[0].recipeKey()).isEqualTo(TORCH);
+        assertThat(group[0].matrix()[4]).isEqualTo(ItemStack.of(Material.STICK));
+    }
+
+    @Test
+    void aRecipeRegisteredAfterLoadResolvesWhenTheServerFinishesLoading() {
+        LateBackend backend = new LateBackend();
+        autoCraft = autoCraft(backend);
+        AutoCraftGroup[] group = new AutoCraftGroup[1];
+        Block table = loadedCrafter(group, autoCraft);
+        container(table.getRelative(BlockFace.UP), Material.CHEST).addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
+        Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
+        ticks(20);
+        assertThat(output.isEmpty()).isTrue();
+
+        backend.registered = true;
+        serverFinishesLoading(autoCraft);
+
+        assertThat(group[0].result()).isEqualTo(ItemStack.of(Material.TORCH, 4));
+        assertThat(group[0].recipeKey()).isEqualTo(TORCH);
+        ticks(1);
+        assertThat(output.contains(Material.TORCH, 4)).isTrue();
+    }
+
+    @Test
+    void aRecipeStillMissingWhenTheServerLoadsKeepsItsKeyAndIsRetriedOnTheNextLoad() {
+        LateBackend backend = new LateBackend();
+        autoCraft = autoCraft(backend);
+        AutoCraftGroup[] group = new AutoCraftGroup[1];
+        loadedCrafter(group, autoCraft);
+
+        serverFinishesLoading(autoCraft);
+        assertThat(group[0].hasRecipe()).isFalse();
+        assertThat(group[0].recipeKey()).isEqualTo(TORCH);
+
+        backend.registered = true;
+        server.getPluginManager().callEvent(new ServerLoadEvent(ServerLoadEvent.LoadType.RELOAD));
+        assertThat(group[0].hasRecipe()).isTrue();
+    }
+
+    @Test
+    void editingAnUnresolvedRecipeStopsItBeingRetried() {
+        LateBackend backend = new LateBackend();
+        autoCraft = autoCraft(backend);
+        AutoCraftGroup[] group = new AutoCraftGroup[1];
+        loadedCrafter(group, autoCraft);
+
+        autoCraft.setMatrix(group[0], torchMatrix(), null);
+        assertThat(group[0].recipeKey()).isNull();
+
+        backend.registered = true;
+        serverFinishesLoading(autoCraft);
+        assertThat(group[0].hasRecipe()).isFalse();
     }
 
     private void ticks(int count) {

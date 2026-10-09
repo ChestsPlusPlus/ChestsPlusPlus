@@ -235,6 +235,8 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
     }
 
     private void refreshLoadedChunks(Services services) {
+        // Before the displays, so nodes whose block is gone never get one.
+        services.get(LinkService.class).unlinkChangedBlocksInLoadedChunks();
         services.get(DisplayService.class).refreshAll();
         services.get(FilterService.class).scanLoadedChunks();
         if (services.settings().features().hopperFilters()) warnIfMoveEventDisabled(services);

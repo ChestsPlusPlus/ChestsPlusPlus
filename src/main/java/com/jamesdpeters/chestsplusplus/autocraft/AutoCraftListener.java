@@ -17,8 +17,9 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.server.ServerLoadEvent;
 
-/** Opening the recipe editor from a crafter, and waking waiting crafters when something next to them changes. */
+/** Opening the recipe editor from a crafter, waking waiting crafters when something next to them changes, and retrying unresolved recipes. */
 @RequiredArgsConstructor
 public final class AutoCraftListener implements Listener {
 
@@ -65,5 +66,11 @@ public final class AutoCraftListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     void onBreak(BlockBreakEvent event) {
         autoCraft.blockChanged(event.getBlock());
+    }
+
+    /** Last, so recipes other plugins register in their own handler for this event are already there. */
+    @EventHandler(priority = EventPriority.MONITOR)
+    void onServerLoad(ServerLoadEvent event) {
+        autoCraft.resolveDeferred();
     }
 }
