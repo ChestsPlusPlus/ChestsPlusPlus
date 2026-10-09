@@ -125,7 +125,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
     void signOnProtectedChestIsRefused() {
         Block chest = chestAt(0, 0);
         ((Container) chest.getState(false)).getInventory().addItem(ItemStack.of(Material.DIAMOND, 5));
-        denyInteract(chest);
+        denyInteract(EventPriority.NORMAL, chest);
 
         SignChangeEvent event = sign(alice, chest, "[ChestLink]", "loot");
         server.getScheduler().performTicks(1);
@@ -137,14 +137,16 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         assertThat(nextPlain(alice)).contains("You can't use that block here");
     }
 
-    /** Mimics a container-lock plugin: sign placement is allowed, but using {@code locked} is denied. */
-    private void denyInteract(Block locked) {
-        server.getPluginManager().registerEvents(new Listener() {
-            @EventHandler
-            void onInteract(PlayerInteractEvent event) {
-                if (locked.equals(event.getClickedBlock())) event.setUseInteractedBlock(Event.Result.DENY);
+    /**
+     * Mimics a protection plugin registered after ours: sign placement is allowed, but using {@code locked} is denied at {@code priority},
+     * skipping events already denied, as Towny does at HIGH.
+     */
+    private void denyInteract(EventPriority priority, Block locked) {
+        server.getPluginManager().registerEvent(PlayerInteractEvent.class, new Listener() {}, priority, (listener, event) -> {
+            if (event instanceof PlayerInteractEvent interact && locked.equals(interact.getClickedBlock())) {
+                interact.setUseInteractedBlock(Event.Result.DENY);
             }
-        }, MockBukkit.createMockPlugin());
+        }, MockBukkit.createMockPlugin(), true);
     }
 
     private PlayerInteractEvent nameTag(PlayerMock player, Block block, ItemStack tag) {
@@ -180,6 +182,47 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         assertThat(event.useInteractedBlock()).isEqualTo(org.bukkit.event.Event.Result.DENY);
         assertThat(tag.getAmount()).isEqualTo(1);
         assertThat(nextPlain(alice)).contains("Created ChestLink ores");
+    }
+
+    @Test
+    void namedTagOnChestDeniedAtHighIsRefused() {
+        Block chest = chestAt(0, 0);
+        ((Container) chest.getState(false)).getInventory().addItem(ItemStack.of(Material.DIAMOND, 5));
+        denyInteract(EventPriority.HIGH, chest);
+        ItemStack tag = namedTag("loot", 1);
+
+        nameTag(alice, chest, tag);
+
+        assertThat(group(alice, "loot")).isNull();
+        assertThat(plugin.services().nodes().get(BlockPos.of(chest))).isNull();
+        assertThat(((Container) chest.getState(false)).getInventory().contains(Material.DIAMOND, 5)).isTrue();
+        assertThat(tag.getAmount()).isEqualTo(1);
+    }
+
+    @Test
+    void namedTagRunsTheProtectionCheckForPluginsAfterUs() {
+        Block chest = chestAt(0, 0);
+        ((Container) chest.getState(false)).getInventory().addItem(ItemStack.of(Material.DIAMOND, 5));
+        denyInteract(EventPriority.HIGHEST, chest);
+        ItemStack tag = namedTag("loot", 1);
+
+        nameTag(alice, chest, tag);
+
+        assertThat(group(alice, "loot")).isNull();
+        assertThat(((Container) chest.getState(false)).getInventory().contains(Material.DIAMOND, 5)).isTrue();
+        assertThat(tag.getAmount()).isEqualTo(1);
+        assertThat(nextPlain(alice)).contains("You can't use that block here");
+    }
+
+    @Test
+    void linkedChestDeniedAtHighDoesNotOpen() {
+        Block chest = chestAt(0, 0);
+        sign(alice, chest, "[ChestLink]", "locked");
+        denyInteract(EventPriority.HIGH, chest);
+
+        rightClick(alice, chest);
+
+        assertThat(alice.getOpenInventory().getTopInventory()).isNotSameAs(group(alice, "locked").inventory());
     }
 
     @Test

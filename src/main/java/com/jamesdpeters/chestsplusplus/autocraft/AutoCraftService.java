@@ -307,7 +307,16 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
     }
 
     private void attempt(AutoCraftGroup group, Node node, int interval) {
-        if (craftAt(group, node)) scheduler.crafted(node.pos(), interval);
+        boolean crafted;
+        try {
+            crafted = craftAt(group, node);
+        } catch (RuntimeException e) {
+            // Backing off keeps the node scheduled; leaving it unreported would strand it, and forgetting it would retry every sweep.
+            log.error("AutoCraft at {} (group {}) failed", node.pos(), group.id(), e);
+            scheduler.failed(node.pos(), interval, List.of(), List.of());
+            return;
+        }
+        if (crafted) scheduler.crafted(node.pos(), interval);
         else scheduler.failed(node.pos(), interval, watchedBlocks(node.pos()), watchedGroups(node.pos()));
     }
 

@@ -27,7 +27,7 @@ public final class AutoCraftListener implements Listener {
     private final LinkService links;
     private final AutoCraftService autoCraft;
 
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler(priority = EventPriority.HIGHEST)
     void onInteract(PlayerInteractEvent event) {
         Node node = links.claimNodeClick(event, GroupType.AUTOCRAFT);
         if (node != null && services.groups().byId(node.groupId()) instanceof AutoCraftGroup group) autoCraft.openEditor(event.getPlayer(), group);

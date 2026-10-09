@@ -397,6 +397,47 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         assertThat(output.contains(Material.TORCH, 4)).isTrue();
     }
 
+    /** The torch recipe, but the first craft throws. */
+    static final class ThrowOnceBackend implements CraftingBackend {
+        private final TorchBackend torch = new TorchBackend(false);
+        private boolean thrown;
+
+        @Override
+        public @Nullable ResolvedRecipe resolve(@Nullable ItemStack[] matrix, World world) {
+            return torch.resolve(matrix, world);
+        }
+
+        @Override
+        public @Nullable Crafted craft(@Nullable ItemStack[] matrix, World world) {
+            if (thrown) return torch.craft(matrix, world);
+            thrown = true;
+            throw new IllegalStateException("boom");
+        }
+    }
+
+    @Test
+    void aCraftThatThrowsBacksOffWithoutStallingTheRestOfItsBatch() {
+        autoCraft = autoCraft(new ThrowOnceBackend());
+        AutoCraftGroup[] group = new AutoCraftGroup[1];
+        Block first = crafter(group);
+        Block second = world.getBlockAt(4, 64, 0);
+        second.setType(Material.CRAFTING_TABLE);
+        plugin.services().get(LinkService.class).link(alice, GroupType.AUTOCRAFT, "torches", second, BlockFace.NORTH, true);
+        List<Inventory> outputs = new ArrayList<>();
+        for (Block table : List.of(first, second)) {
+            container(table.getRelative(BlockFace.UP), Material.CHEST).addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
+            outputs.add(container(table.getRelative(BlockFace.DOWN), Material.HOPPER));
+        }
+        autoCraft.setMatrix(group[0], torchMatrix(), null);
+
+        ticks(1);
+        assertThat(outputs).filteredOn(output -> output.contains(Material.TORCH, 4)).hasSize(1);
+        assertThat(List.of(first, second)).filteredOn(table -> autoCraft.isBackingOff(BlockPos.of(table))).hasSize(1);
+
+        ticks(CraftScheduler.MAX_BACKOFF_TICKS);
+        assertThat(outputs).allMatch(output -> output.contains(Material.TORCH, 4));
+    }
+
     @Test
     void aRecipeThatCannotBeResolvedAtLoadKeepsItsKey() {
         autoCraft = autoCraft(new LateBackend());
