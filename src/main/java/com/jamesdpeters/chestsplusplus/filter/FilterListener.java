@@ -3,13 +3,11 @@ package com.jamesdpeters.chestsplusplus.filter;
 import com.jamesdpeters.chestsplusplus.Permissions;
 import com.jamesdpeters.chestsplusplus.chestlink.ChestLinkHolder;
 import com.jamesdpeters.chestsplusplus.chestlink.ChestLinkService;
-import com.jamesdpeters.chestsplusplus.core.BlockPos;
 import com.jamesdpeters.chestsplusplus.core.Holders;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.link.LinkService;
 import com.jamesdpeters.chestsplusplus.link.SyntheticMoveEvent;
 import com.jamesdpeters.chestsplusplus.message.Message;
-import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.bukkit.Material;
@@ -45,7 +43,6 @@ public final class FilterListener implements Listener {
     private final FilterService filters;
     private final LinkService links;
     private final ChestLinkService chestLinks;
-    private final Map<BlockPos, Integer> lastManualMove = new HashMap<>();
 
     private boolean enabled() {
         return services.settings().features().hopperFilters();
@@ -61,7 +58,7 @@ public final class FilterListener implements Listener {
         CompiledFilter filter = filters.get(hopper.getWorld().getUID(), hopper.getX(), hopper.getY(), hopper.getZ());
         if (filter == null || filter.accepts(event.getItem())) return;
         event.setCancelled(true);
-        avoidStall(event.getSource(), destination, filter, event.getItem().getAmount(), BlockPos.of(hopper.getBlock()));
+        avoidStall(event.getSource(), destination, filter, event.getItem().getAmount());
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -78,17 +75,16 @@ public final class FilterListener implements Listener {
      * cooldown, with a single slot scan. Other plugins only saw the rejected item, so they are asked about this one first; a refusal
      * waits out the cooldown.
      */
-    private void avoidStall(Inventory source, Inventory destination, CompiledFilter filter, int amount, BlockPos pos) {
+    private void avoidStall(Inventory source, Inventory destination, CompiledFilter filter, int amount) {
         int now = services.plugin().getServer().getCurrentTick();
-        Integer last = lastManualMove.get(pos);
-        if (last != null && now - last < STALL_COOLDOWN_TICKS) return;
+        if (!filter.manualMoveAllowed(now)) return;
         ItemStack[] contents = source.getContents();
         for (int slot = 0; slot < contents.length; slot++) {
             ItemStack item = contents[slot];
             if (item == null || item.isEmpty() || !filter.accepts(item)) continue;
             ItemStack moving = item.asQuantity(Math.min(amount, item.getAmount()));
             if (!SyntheticMoveEvent.allows(source, moving, destination)) {
-                lastManualMove.put(pos, now);
+                filter.allowManualMoveAt(now + STALL_COOLDOWN_TICKS);
                 return;
             }
             Map<Integer, ItemStack> leftover = destination.addItem(moving.clone());
@@ -96,7 +92,7 @@ public final class FilterListener implements Listener {
             if (moved <= 0) continue;
             item.setAmount(item.getAmount() - moved);
             source.setItem(slot, item.isEmpty() ? null : item);
-            lastManualMove.put(pos, now);
+            filter.allowManualMoveAt(now + STALL_COOLDOWN_TICKS);
             if (Holders.of(source) instanceof ChestLinkHolder holder) chestLinks.changed(holder.group());
             return;
         }
@@ -124,10 +120,7 @@ public final class FilterListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     void onBreak(BlockBreakEvent event) {
-        if (event.getBlock().getType() == Material.HOPPER) {
-            filters.removed(event.getBlock());
-            lastManualMove.remove(BlockPos.of(event.getBlock()));
-        }
+        if (event.getBlock().getType() == Material.HOPPER) filters.removed(event.getBlock());
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -148,7 +141,5 @@ public final class FilterListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     void onChunkUnload(ChunkUnloadEvent event) {
         filters.chunkUnloaded(event.getChunk());
-        lastManualMove.keySet().removeIf(pos -> pos.chunkX() == event.getChunk().getX() && pos.chunkZ() == event.getChunk().getZ()
-                && pos.world().equals(event.getWorld().getUID()));
     }
 }
