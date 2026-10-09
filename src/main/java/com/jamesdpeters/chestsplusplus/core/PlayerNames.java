@@ -5,7 +5,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.bukkit.Bukkit;
 
-/** Display names for player UUIDs, from the server's cache (never a blocking lookup). */
+/** Display names for player UUIDs. A name the server hasn't cached is read from the player's data file, so avoid it in loops. */
 public final class PlayerNames {
 
     private PlayerNames() {}

@@ -6,8 +6,10 @@ import com.jamesdpeters.chestsplusplus.model.GroupRegistry;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -53,8 +55,11 @@ public final class AccessService {
             for (UUID owner : trust.ownersTrusting(player)) found.addAll(groups.ownedBy(owner, type));
             for (StorageGroup group : groups.all(type)) if (group.isPublic()) found.add(group);
         }
+        // Name lookups can read player data from disk, so resolve each owner once rather than per comparison.
+        Map<UUID, String> ownerNames = new HashMap<>();
+        for (StorageGroup group : found) ownerNames.computeIfAbsent(group.owner(), PlayerNames::of);
         Comparator<StorageGroup> order = Comparator.<StorageGroup, Boolean>comparing(g -> !g.owner().equals(player))
-                .thenComparing(g -> PlayerNames.of(g.owner()), String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(g -> ownerNames.get(g.owner()), String.CASE_INSENSITIVE_ORDER)
                 .thenComparing(StorageGroup::name, String.CASE_INSENSITIVE_ORDER);
         return found.stream().sorted(order).toList();
     }
