@@ -271,7 +271,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         ChestLinkService chestLinks = current.get(ChestLinkService.class);
         for (var group : current.groups().all(GroupType.CHESTLINK)) chestLinks.retitle((ChestLinkGroup) group);
         current.get(DisplayService.class).refreshAll();
-        current.get(FilterService.class).refreshDisplays();
+        current.get(FilterService.class).reload();
     }
 
     @EventHandler
