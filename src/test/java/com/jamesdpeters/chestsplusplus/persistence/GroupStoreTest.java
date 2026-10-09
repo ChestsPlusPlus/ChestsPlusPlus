@@ -13,6 +13,7 @@ import com.jamesdpeters.chestsplusplus.model.Node;
 import com.jamesdpeters.chestsplusplus.model.NodeIndex;
 import com.jamesdpeters.chestsplusplus.model.SlotMatch;
 import com.jamesdpeters.chestsplusplus.model.SortMode;
+import com.jamesdpeters.chestsplusplus.persistence.GroupStore.GroupSnapshot;
 import com.jamesdpeters.chestsplusplus.testing.PluginTestBase;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -256,6 +257,23 @@ class GroupStoreTest extends PluginTestBase {
         assertThat(savedOnTouch(second, loaded)).isTrue();
         assertThat(savedOnTouch(second, loaded)).isFalse();
         second.persistence.close();
+    }
+
+    @Test
+    void snapshotAndKeptContentsAreCopiesOfTheLiveItems() throws Exception {
+        Instance first = new Instance();
+        ChestLinkGroup chest = first.chest("g");
+        chest.inventory().setItem(0, ItemStack.of(Material.DIAMOND, 7));
+        first.flushAndWait();
+        assertThat(savedOnTouch(first, chest)).isTrue();
+
+        GroupSnapshot snapshot = first.groupStore.snapshot(chest.id());
+        chest.inventory().getItem(0).setAmount(8);
+
+        assertThat(chest.inventory().getItem(0).getAmount()).isEqualTo(8);
+        assertThat(snapshot.group().items()[0].getAmount()).isEqualTo(7);
+        assertThat(savedOnTouch(first, chest)).isTrue();
+        first.persistence.close();
     }
 
     @Test
