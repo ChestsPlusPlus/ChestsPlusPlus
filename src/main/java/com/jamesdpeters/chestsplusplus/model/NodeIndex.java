@@ -1,6 +1,8 @@
 package com.jamesdpeters.chestsplusplus.model;
 
 import com.jamesdpeters.chestsplusplus.core.BlockPos;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -17,25 +19,25 @@ import org.jspecify.annotations.Nullable;
  */
 public final class NodeIndex {
 
-    private final Map<UUID, Map<Long, Node>> byPos = new HashMap<>();
-    private final Map<UUID, Map<Long, List<Node>>> byChunk = new HashMap<>();
-    private final Map<Long, Map<BlockPos, Node>> byGroup = new HashMap<>();
+    private final Map<UUID, Long2ObjectMap<Node>> byPos = new HashMap<>();
+    private final Map<UUID, Long2ObjectMap<List<Node>>> byChunk = new HashMap<>();
+    private final Long2ObjectMap<Map<BlockPos, Node>> byGroup = new Long2ObjectOpenHashMap<>();
 
     /** Adds or replaces the node at its position; returns the node it replaced, if any. */
     public @Nullable Node put(Node node) {
         Node previous = remove(node.pos());
         BlockPos pos = node.pos();
-        byPos.computeIfAbsent(pos.world(), k -> new HashMap<>()).put(pos.packed(), node);
-        byChunk.computeIfAbsent(pos.world(), k -> new HashMap<>()).computeIfAbsent(pos.chunkKey(), k -> new ArrayList<>(2)).add(node);
+        byPos.computeIfAbsent(pos.world(), k -> new Long2ObjectOpenHashMap<>()).put(pos.packed(), node);
+        byChunk.computeIfAbsent(pos.world(), k -> new Long2ObjectOpenHashMap<>()).computeIfAbsent(pos.chunkKey(), k -> new ArrayList<>(2)).add(node);
         byGroup.computeIfAbsent(node.groupId(), k -> new LinkedHashMap<>()).put(pos, node);
         return previous;
     }
 
     public @Nullable Node remove(BlockPos pos) {
-        Map<Long, Node> world = byPos.get(pos.world());
+        Long2ObjectMap<Node> world = byPos.get(pos.world());
         Node node = world == null ? null : world.remove(pos.packed());
         if (node == null) return null;
-        Map<Long, List<Node>> chunks = byChunk.get(pos.world());
+        Long2ObjectMap<List<Node>> chunks = byChunk.get(pos.world());
         if (chunks != null) {
             List<Node> inChunk = chunks.get(pos.chunkKey());
             if (inChunk != null) {
@@ -68,12 +70,12 @@ public final class NodeIndex {
     }
 
     public @Nullable Node get(UUID world, long packed) {
-        Map<Long, Node> nodes = byPos.get(world);
+        Long2ObjectMap<Node> nodes = byPos.get(world);
         return nodes == null ? null : nodes.get(packed);
     }
 
     public List<Node> inChunk(UUID world, long chunkKey) {
-        Map<Long, List<Node>> chunks = byChunk.get(world);
+        Long2ObjectMap<List<Node>> chunks = byChunk.get(world);
         if (chunks == null) return List.of();
         List<Node> nodes = chunks.get(chunkKey);
         return nodes == null ? List.of() : List.copyOf(nodes);

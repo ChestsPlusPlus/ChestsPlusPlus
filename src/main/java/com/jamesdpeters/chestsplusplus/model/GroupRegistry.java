@@ -1,11 +1,12 @@
 package com.jamesdpeters.chestsplusplus.model;
 
+import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -18,7 +19,7 @@ public final class GroupRegistry {
 
     private record NameKey(GroupType type, UUID owner, String name) {}
 
-    private final Map<Long, StorageGroup> byId = new LinkedHashMap<>();
+    private final Long2ObjectMap<StorageGroup> byId = new Long2ObjectLinkedOpenHashMap<>();
     private final Map<NameKey, StorageGroup> byName = new HashMap<>();
     private final Map<UUID, Set<StorageGroup>> byOwner = new HashMap<>();
     private final Map<UUID, Set<StorageGroup>> byMember = new HashMap<>();

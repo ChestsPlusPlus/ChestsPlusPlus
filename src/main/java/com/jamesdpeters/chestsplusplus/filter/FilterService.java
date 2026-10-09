@@ -3,6 +3,8 @@ package com.jamesdpeters.chestsplusplus.filter;
 import com.jamesdpeters.chestsplusplus.config.Settings;
 import com.jamesdpeters.chestsplusplus.core.BlockPos;
 import com.jamesdpeters.chestsplusplus.display.DisplayLayout;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -43,7 +45,7 @@ public final class FilterService {
     @Getter private final ItemGrouping grouping;
     private final Supplier<Settings> settings;
     private final NamespacedKey marker;
-    private final Map<UUID, Map<Long, CompiledFilter>> index = new HashMap<>();
+    private final Map<UUID, Long2ObjectMap<CompiledFilter>> index = new HashMap<>();
     private final Map<BlockPos, List<Entity>> displays = new HashMap<>();
 
     public FilterService(Plugin plugin, FilterCodec codec, ItemGrouping grouping, Supplier<Settings> settings) {
@@ -56,7 +58,7 @@ public final class FilterService {
 
     /** Hot path: the compiled filter for a hopper position, or null when it has none. */
     public @Nullable CompiledFilter get(UUID world, int x, int y, int z) {
-        Map<Long, CompiledFilter> filters = index.get(world);
+        Long2ObjectMap<CompiledFilter> filters = index.get(world);
         return filters == null ? null : filters.get(BlockPos.packed(x, y, z));
     }
 
@@ -89,9 +91,9 @@ public final class FilterService {
 
     public void chunkUnloaded(Chunk chunk) {
         UUID world = chunk.getWorld().getUID();
-        Map<Long, CompiledFilter> filters = index.get(world);
+        Long2ObjectMap<CompiledFilter> filters = index.get(world);
         if (filters == null || filters.isEmpty()) return;
-        List<BlockPos> inChunk = filters.keySet().stream().map(packed -> BlockPos.unpack(world, packed))
+        List<BlockPos> inChunk = filters.keySet().longStream().mapToObj(packed -> BlockPos.unpack(world, packed))
                 .filter(pos -> pos.chunkX() == chunk.getX() && pos.chunkZ() == chunk.getZ()).toList();
         for (BlockPos pos : inChunk) {
             filters.remove(pos.packed());
@@ -101,7 +103,7 @@ public final class FilterService {
 
     /** The hopper is gone (broken, exploded), and its filters with it. */
     public void removed(Block block) {
-        Map<Long, CompiledFilter> filters = index.get(block.getWorld().getUID());
+        Long2ObjectMap<CompiledFilter> filters = index.get(block.getWorld().getUID());
         if (filters != null) filters.remove(BlockPos.packed(block.getX(), block.getY(), block.getZ()));
         despawn(BlockPos.of(block));
     }
@@ -147,7 +149,7 @@ public final class FilterService {
             return;
         }
         long key = BlockPos.packed(hopper.getX(), hopper.getY(), hopper.getZ());
-        index.computeIfAbsent(hopper.getWorld().getUID(), w -> new HashMap<>()).put(key, new CompiledFilter(filters, grouping));
+        index.computeIfAbsent(hopper.getWorld().getUID(), w -> new Long2ObjectOpenHashMap<>()).put(key, new CompiledFilter(filters, grouping));
         spawn(hopper, filters);
     }
 
