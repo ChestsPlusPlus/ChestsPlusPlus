@@ -1,6 +1,5 @@
 package com.jamesdpeters.chestsplusplus.link;
 
-import com.jamesdpeters.chestsplusplus.ChestsPlusPlus;
 import com.jamesdpeters.chestsplusplus.core.Holders;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.display.DisplayService;
@@ -10,8 +9,6 @@ import com.jamesdpeters.chestsplusplus.model.Node;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.bukkit.Chunk;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
@@ -40,7 +37,6 @@ import org.jspecify.annotations.Nullable;
  * burning, entity block changes, double-chest prevention, link-item placement and chunk load/unload. All lookups are
  * index lookups.
  */
-@Slf4j(topic = ChestsPlusPlus.NAME)
 @RequiredArgsConstructor
 public final class NodeListener implements Listener {
 
@@ -155,21 +151,8 @@ public final class NodeListener implements Listener {
         long key = event.getChunk().getChunkKey();
         List<Node> inChunk = services.nodes().inChunk(world, key);
         if (inChunk.isEmpty()) return;
-        unlinkChangedBlocks(event.getChunk(), inChunk);
+        links.unlinkChangedBlocks(inChunk);
         displays.chunkLoaded(world, key);
-    }
-
-    /** Lazy validation: blocks changed behind our back (e.g. by WorldEdit) are unlinked when their chunk loads. */
-    private void unlinkChangedBlocks(Chunk chunk, List<Node> nodes) {
-        for (Node node : nodes) {
-            StorageGroup group = services.groups().byId(node.groupId());
-            GroupTypeHandler handler = group == null ? null : links.handler(group.type());
-            Block block = chunk.getBlock(node.pos().x() & 15, node.pos().y(), node.pos().z() & 15);
-            if (handler != null && !handler.isValidBlock(block)) {
-                log.warn("Unlinking {} from {}: block is now {}", node.pos(), group.name(), block.getType());
-                links.unlink(node.pos(), block.getLocation(), true);
-            }
-        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
