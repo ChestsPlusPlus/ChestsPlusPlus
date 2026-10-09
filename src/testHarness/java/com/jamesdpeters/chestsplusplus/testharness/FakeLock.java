@@ -1,8 +1,8 @@
 package com.jamesdpeters.chestsplusplus.testharness;
 
 import io.papermc.paper.event.entity.ItemTransportingEntityValidateTargetEvent;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 import org.bukkit.block.Block;
 import org.bukkit.block.DoubleChest;
 import org.bukkit.event.EventHandler;
@@ -20,10 +20,14 @@ import org.jspecify.annotations.Nullable;
  */
 final class FakeLock implements Listener {
 
-    private final Set<Block> locked = new HashSet<>();
+    private final Map<Block, Integer> locked = new HashMap<>();
 
     void lock(Block block) {
-        locked.add(block);
+        locked.putIfAbsent(block, 0);
+    }
+
+    int golemRefusals(Block block) {
+        return locked.getOrDefault(block, 0);
     }
 
     void clear() {
@@ -41,7 +45,10 @@ final class FakeLock implements Listener {
      */
     @EventHandler(priority = EventPriority.LOW)
     void onGolemTarget(ItemTransportingEntityValidateTargetEvent event) {
-        if (locked.contains(event.getBlock())) event.setAllowed(false);
+        Block block = event.getBlock();
+        if (!locked.containsKey(block)) return;
+        locked.merge(block, 1, Integer::sum);
+        event.setAllowed(false);
     }
 
     private boolean isLocked(Inventory inventory) {
@@ -50,6 +57,6 @@ final class FakeLock implements Listener {
             case DoubleChest chest -> chest.getLocation().getBlock();
             case null, default -> null;
         };
-        return block != null && locked.contains(block);
+        return block != null && locked.containsKey(block);
     }
 }

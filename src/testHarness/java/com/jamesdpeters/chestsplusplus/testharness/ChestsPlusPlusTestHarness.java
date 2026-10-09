@@ -78,6 +78,10 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
                                 .then(Commands.argument("x", IntegerArgumentType.integer())
                                         .then(Commands.argument("y", IntegerArgumentType.integer())
                                                 .then(Commands.argument("z", IntegerArgumentType.integer()).executes(this::lock)))))
+                        .then(Commands.literal("lock-checks")
+                                .then(Commands.argument("x", IntegerArgumentType.integer())
+                                        .then(Commands.argument("y", IntegerArgumentType.integer())
+                                                .then(Commands.argument("z", IntegerArgumentType.integer()).executes(this::lockChecks)))))
                         .then(Commands.literal("link")
                                 .then(Commands.argument("type", StringArgumentType.word()).then(Commands.argument("owner", StringArgumentType.word())
                                         .then(Commands.argument("name", StringArgumentType.word())
@@ -258,6 +262,12 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
         lock.lock(Bukkit.getWorlds().getFirst().getBlockAt(IntegerArgumentType.getInteger(context, "x"), IntegerArgumentType.getInteger(context, "y"),
                 IntegerArgumentType.getInteger(context, "z")));
         return reply(context, "cpptest lock ok");
+    }
+
+    private int lockChecks(CommandContext<CommandSourceStack> context) {
+        Block block = Bukkit.getWorlds().getFirst().getBlockAt(IntegerArgumentType.getInteger(context, "x"),
+                IntegerArgumentType.getInteger(context, "y"), IntegerArgumentType.getInteger(context, "z"));
+        return reply(context, "cpptest lock-checks golem-refusals=" + lock.golemRefusals(block));
     }
 
     /** Fixture: removes every group (contents are discarded, not dropped) and every lock. */
