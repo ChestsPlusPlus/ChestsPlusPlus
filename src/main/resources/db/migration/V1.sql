@@ -12,6 +12,11 @@ CREATE TABLE groups (
   v2_source   TEXT
 );
 
+CREATE TABLE id_high_water (
+  kind TEXT    PRIMARY KEY,
+  id   INTEGER NOT NULL
+);
+
 CREATE TABLE group_members (
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
   member   BLOB    NOT NULL,

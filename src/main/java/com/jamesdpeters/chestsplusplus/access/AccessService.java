@@ -8,7 +8,6 @@ import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -43,9 +42,9 @@ public final class AccessService {
 
     /**
      * Groups of {@code type} the player can use: their own, member-of, owners who trust them, public ones (and all groups with bypass). Own
-     * groups first, then by owner name and group name.
+     * groups first, then by owner name and group name; the owner names come with them.
      */
-    public List<StorageGroup> accessibleGroups(UUID player, boolean bypass, GroupType type) {
+    public AccessibleGroups accessibleGroups(UUID player, boolean bypass, GroupType type) {
         Set<StorageGroup> found = new LinkedHashSet<>();
         if (bypass) {
             found.addAll(groups.all(type));
@@ -61,7 +60,7 @@ public final class AccessService {
         Comparator<StorageGroup> order = Comparator.<StorageGroup, Boolean>comparing(g -> !g.owner().equals(player))
                 .thenComparing(g -> ownerNames.get(g.owner()), String.CASE_INSENSITIVE_ORDER)
                 .thenComparing(StorageGroup::name, String.CASE_INSENSITIVE_ORDER);
-        return found.stream().sorted(order).toList();
+        return new AccessibleGroups(player, found.stream().sorted(order).toList(), ownerNames);
     }
 
     public static boolean hasBypass(Permissible permissible) {

@@ -24,6 +24,7 @@ public enum Message {
     ERROR_PLAYER_NOT_FOUND("error.player-not-found"),
     ERROR_PROTECTED("error.protected"),
     ERROR_SELF("error.self"),
+    ERROR_STALE_LINK_ITEM("error.stale-link-item"),
     CHESTLINK_CREATED("chestlink.created"),
     CHESTLINK_LINKED("chestlink.linked"),
     CHESTLINK_UNLINKED("chestlink.unlinked"),

@@ -1,5 +1,6 @@
 package com.jamesdpeters.chestsplusplus.link;
 
+import com.jamesdpeters.chestsplusplus.ChestsPlusPlus;
 import com.jamesdpeters.chestsplusplus.Permissions;
 import com.jamesdpeters.chestsplusplus.access.AccessService;
 import com.jamesdpeters.chestsplusplus.core.BlockPos;
@@ -12,10 +13,12 @@ import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.Node;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.Bukkit;
@@ -38,6 +41,7 @@ import org.jspecify.annotations.Nullable;
  * The shared linking lifecycle for both group types: resolve or create the target group, validate permission, world, limit, access and
  * protection, then link; unlink and remove; rename, public, members.
  */
+@Slf4j(topic = ChestsPlusPlus.NAME)
 @RequiredArgsConstructor
 public final class LinkService {
 
@@ -215,6 +219,23 @@ public final class LinkService {
             services.groupStore().markDirty(group);
         }
         return group;
+    }
+
+    /** Unlinks nodes whose block was changed behind our back (WorldEdit, or while the plugin was removed). Their chunks must be loaded. */
+    public void unlinkChangedBlocks(List<Node> nodes) {
+        for (Node node : nodes) {
+            StorageGroup group = services.groups().byId(node.groupId());
+            GroupTypeHandler handler = group == null ? null : handlers.get(group.type());
+            Block block = node.pos().block();
+            if (handler == null || block == null || handler.isValidBlock(block)) continue;
+            log.warn("Unlinking {} from {}: block is now {}", node.pos(), group.name(), block.getType());
+            unlink(node.pos(), block.getLocation(), true);
+        }
+    }
+
+    /** Validates the nodes in every chunk that is already loaded; chunks loaded later are validated by {@code NodeListener}. */
+    public void unlinkChangedBlocksInLoadedChunks() {
+        unlinkChangedBlocks(services.nodes().all().stream().filter(node -> node.pos().isLoaded()).toList());
     }
 
     /** Deletes a group: its contents are dropped at {@code dropAt}, its nodes unlinked, and its rows deleted. */

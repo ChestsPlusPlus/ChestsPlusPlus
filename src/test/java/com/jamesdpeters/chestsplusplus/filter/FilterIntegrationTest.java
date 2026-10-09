@@ -5,10 +5,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.jamesdpeters.chestsplusplus.filter.HopperFilter.Match;
 import com.jamesdpeters.chestsplusplus.filter.HopperFilter.Mode;
 import com.jamesdpeters.chestsplusplus.testing.PluginTestBase;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 import net.kyori.adventure.text.Component;
+import org.bukkit.ExplosionResult;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -19,6 +21,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
@@ -147,6 +150,57 @@ class FilterIntegrationTest extends PluginTestBase {
         InventoryMoveItemEvent accepted = new InventoryMoveItemEvent(source, ItemStack.of(Material.STONE), destination, false);
         server.getPluginManager().callEvent(accepted);
         assertThat(accepted.isCancelled()).isFalse();
+    }
+
+    private Inventory chestOfDirtAndStone() {
+        Block chest = world.getBlockAt(0, 65, 0);
+        chest.setType(Material.CHEST);
+        Inventory source = inventoryOf(chest);
+        source.setItem(0, ItemStack.of(Material.DIRT, 5));
+        source.setItem(1, ItemStack.of(Material.STONE, 5));
+        return source;
+    }
+
+    private void offerDirt(Inventory source, Block hopper) {
+        server.getPluginManager().callEvent(new InventoryMoveItemEvent(source, ItemStack.of(Material.DIRT), inventoryOf(hopper), false));
+    }
+
+    @Test
+    void stallCooldownWorksAcrossTickCounterOverflow() {
+        CompiledFilter filter = new CompiledFilter(List.of(), grouping);
+        int start = Integer.MAX_VALUE - 3;
+        assertThat(filter.manualMoveAllowed(start)).isTrue();
+        filter.allowManualMoveAt(start + FilterListener.STALL_COOLDOWN_TICKS);
+        assertThat(filter.manualMoveAllowed(start)).isFalse();
+        assertThat(filter.manualMoveAllowed(start + FilterListener.STALL_COOLDOWN_TICKS - 1)).isFalse();
+        assertThat(filter.manualMoveAllowed(start + FilterListener.STALL_COOLDOWN_TICKS)).isTrue();
+    }
+
+    @Test
+    void stallAvoidanceMovesOneStackPerHopperCooldown() {
+        Block hopper = hopperAt(0);
+        filters.write(hopper, List.of(filter(Material.STONE, Mode.ALLOW, Match.TYPE)));
+        Inventory source = chestOfDirtAndStone();
+
+        offerDirt(source, hopper);
+        offerDirt(source, hopper);
+        assertThat(source.getItem(1).getAmount()).isEqualTo(4);
+
+        server.getScheduler().performTicks(FilterListener.STALL_COOLDOWN_TICKS);
+        offerDirt(source, hopper);
+        assertThat(source.getItem(1).getAmount()).isEqualTo(3);
+    }
+
+    @Test
+    void explodingAHopperDropsItsIndexEntryAndDisplays() {
+        Block hopper = hopperAt(0);
+        filters.write(hopper, List.of(filter(Material.STONE, Mode.ALLOW, Match.TYPE)));
+
+        server.getPluginManager()
+                .callEvent(new BlockExplodeEvent(hopper, hopper.getState(), new ArrayList<>(List.of(hopper)), 1f, ExplosionResult.DESTROY));
+
+        assertThat(filters.get(hopper)).isNull();
+        assertThat(filters.displayCount()).isZero();
     }
 
     /** Another plugin refusing hopper moves of {@code refused}, at {@code priority}. */

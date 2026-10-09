@@ -10,6 +10,7 @@ import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.Node;
 import com.jamesdpeters.chestsplusplus.testing.PluginTestBase;
+import com.jamesdpeters.chestsplusplus.testing.TileEntityWorld;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -28,6 +29,7 @@ import org.bukkit.block.data.type.Chest;
 import org.bukkit.block.data.type.WallSign;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Item;
+import org.bukkit.entity.ItemDisplay;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -43,6 +45,7 @@ import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
@@ -59,7 +62,10 @@ class ChestLinkIntegrationTest extends PluginTestBase {
 
     @BeforeEach
     void setUp() {
-        world = server.addSimpleWorld("world");
+        TileEntityWorld tileWorld = new TileEntityWorld();
+        tileWorld.setName("world");
+        server.addWorld(tileWorld);
+        world = tileWorld;
         alice = server.addPlayer("Alice");
         bob = server.addPlayer("Bob");
         world.loadChunk(0, 0);
@@ -342,6 +348,27 @@ class ChestLinkIntegrationTest extends PluginTestBase {
     }
 
     @Test
+    void linkItemOfADeletedGroupPlacesAsANormalBlockAndNeverJoinsAnotherGroup() {
+        Block chest = chestAt(0, 0);
+        sign(alice, chest, "[ChestLink]", "portable");
+        ChestLinkGroup deleted = group(alice, "portable");
+        ItemStack linkItem = silkTouchBreak(chest);
+        plugin.services().get(LinkService.class).removeGroup(deleted, chest.getLocation());
+        Block bobsChest = chestAt(5, 5);
+        sign(bob, bobsChest, "[ChestLink]", "mine");
+        ChestLinkGroup bobs = group(bob, "mine");
+        assertThat(bobs.id()).isNotEqualTo(deleted.id());
+        assertThat(nextPlain(bob)).contains("Created ChestLink mine");
+
+        BlockPlaceEvent event = placeLinkItem(bob, linkItem);
+
+        assertThat(event.isCancelled()).isFalse();
+        assertThat(plugin.services().nodes().at(event.getBlockPlaced())).isNull();
+        assertThat(plugin.services().nodes().count(bobs.id())).isEqualTo(1);
+        assertThat(nextPlain(bob)).contains("no longer exists");
+    }
+
+    @Test
     void linkItemPlacementRequiresCreatePermissionForPublicGroup() {
         ItemStack linkItem = publicLinkItem();
         bob.addAttachment(plugin).setPermission("chestsplusplus.chestlink.create", false);
@@ -350,6 +377,30 @@ class ChestLinkIntegrationTest extends PluginTestBase {
 
         assertThat(event.isCancelled()).isTrue();
         assertThat(plugin.services().nodes().at(event.getBlockPlaced())).isNull();
+    }
+
+    @Test
+    void staleLinkItemPlacementCancelledByProtectionSendsNoPlacementMessage() {
+        ItemStack linkItem = publicLinkItem();
+        plugin.services().get(LinkService.class).removeGroup(group(alice, "portable"), alice.getLocation());
+        cancelPlacementsAtHighest();
+
+        BlockPlaceEvent event = placeLinkItem(bob, linkItem);
+
+        assertThat(event.isCancelled()).isTrue();
+        assertThat(plugin.services().nodes().at(event.getBlockPlaced())).isNull();
+        assertThat(nextPlain(bob)).isNull();
+    }
+
+    @Test
+    void staleLinkItemPlacementThatCannotBuildSendsNoPlacementMessage() {
+        ItemStack linkItem = publicLinkItem();
+        plugin.services().get(LinkService.class).removeGroup(group(alice, "portable"), alice.getLocation());
+
+        BlockPlaceEvent event = placeLinkItem(bob, linkItem, false);
+
+        assertThat(plugin.services().nodes().at(event.getBlockPlaced())).isNull();
+        assertThat(nextPlain(bob)).isNull();
     }
 
     @Test
@@ -480,6 +531,39 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         server.getPluginManager().callEvent(new BlockExplodeEvent(plain, plain.getState(), blocks, 4f, ExplosionResult.DESTROY));
 
         assertThat(blocks).containsExactly(plain);
+    }
+
+    @Test
+    void enableUnlinksStaleNodesInLoadedChunksBeforeSpawningDisplays() {
+        Block replaced = chestAt(0, 0);
+        Block intact = chestAt(4, 0);
+        sign(alice, replaced, "[ChestLink]", "g");
+        sign(alice, intact, "[ChestLink]", "g");
+
+        server.getPluginManager().disablePlugin(plugin);
+        replaced.setType(Material.FURNACE);
+        server.getPluginManager().enablePlugin(plugin);
+
+        assertThat(plugin.services().nodes().get(BlockPos.of(replaced))).isNull();
+        assertThat(plugin.services().nodes().get(BlockPos.of(intact))).isNotNull();
+        assertThat(plugin.services().get(DisplayService.class).count()).isEqualTo(1);
+        assertThat(world.getEntitiesByClass(ItemDisplay.class)).hasSize(1);
+        assertThat(group(alice, "g")).isNotNull();
+    }
+
+    @Test
+    void staleNodesInUnloadedChunksAreUnlinkedWhenTheirChunkLoads() {
+        sign(alice, chestAt(0, 0), "[ChestLink]", "g");
+        LinkService links = plugin.services().get(LinkService.class);
+        BlockPos far = new BlockPos(world.getUID(), 160, 64, 0);
+        plugin.services().nodes().put(new Node(far, BlockFace.NORTH, group(alice, "g").id()));
+
+        links.unlinkChangedBlocksInLoadedChunks();
+        assertThat(plugin.services().nodes().get(far)).isNotNull();
+
+        server.getPluginManager().callEvent(new ChunkLoadEvent(world.getChunkAt(far.chunkX(), far.chunkZ()), false));
+        assertThat(plugin.services().nodes().get(far)).isNull();
+        assertThat(plugin.services().nodes().size()).isEqualTo(1);
     }
 
     @Test

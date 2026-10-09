@@ -3,6 +3,7 @@ package com.jamesdpeters.chestsplusplus.link;
 import com.destroystokyo.paper.profile.PlayerProfile;
 import com.jamesdpeters.chestsplusplus.Permissions;
 import com.jamesdpeters.chestsplusplus.access.AccessService;
+import com.jamesdpeters.chestsplusplus.access.AccessibleGroups;
 import com.jamesdpeters.chestsplusplus.chestlink.ChestLinkService;
 import com.jamesdpeters.chestsplusplus.core.PlayerNames;
 import com.jamesdpeters.chestsplusplus.core.Services;
@@ -93,8 +94,7 @@ public final class GroupActions {
     }
 
     public void addMember(Player player, StorageGroup group, String name, Runnable after) {
-        if (!require(player, Permissions.members(group.type())) || !canManage(player, group)) return;
-        lookup(player, name, member -> {
+        lookupMember(player, group, name, member -> {
             if (member.equals(group.owner())) {
                 services.send(player, Message.ERROR_SELF);
                 return;
@@ -106,8 +106,7 @@ public final class GroupActions {
     }
 
     public void removeMember(Player player, StorageGroup group, String name, Runnable after) {
-        if (!require(player, Permissions.members(group.type())) || !canManage(player, group)) return;
-        lookup(player, name, member -> {
+        lookupMember(player, group, name, member -> {
             links.removeMember(group, member);
             services.send(player, Message.MEMBERS_REMOVED, Messages.player(name), Messages.group(group));
             after.run();
@@ -157,19 +156,19 @@ public final class GroupActions {
     }
 
     public void list(Player player, GroupType type) {
-        List<StorageGroup> groups = services.access().accessibleGroups(player.getUniqueId(), AccessService.hasBypass(player), type);
-        if (groups.isEmpty()) {
+        AccessibleGroups accessible = services.access().accessibleGroups(player.getUniqueId(), AccessService.hasBypass(player), type);
+        if (accessible.groups().isEmpty()) {
             services.send(player, type.pick(Message.CHESTLINK_LIST_EMPTY, Message.AUTOCRAFT_LIST_EMPTY));
             return;
         }
         services.send(player, type.pick(Message.CHESTLINK_LIST_HEADER, Message.AUTOCRAFT_LIST_HEADER));
         GroupTypeHandler handler = links.handler(type);
-        for (StorageGroup group : groups) {
-            String ref = StringArgumentType.escapeIfRequired(group.referenceFor(player.getUniqueId()));
+        for (StorageGroup group : accessible.groups()) {
+            String ref = StringArgumentType.escapeIfRequired(accessible.reference(group));
             String command = type.pick("/chestlink open ", "/autocraft open ") + ref;
             services.send(player, type.pick(Message.CHESTLINK_LIST_ENTRY, Message.AUTOCRAFT_LIST_ENTRY),
                     Messages.group(group), Messages.text("ref", ref), TagResolver.resolver("open", Tag.styling(ClickEvent.runCommand(command))),
-                    Messages.text("owner", PlayerNames.of(group.owner())),
+                    Messages.text("owner", accessible.ownerName(group)),
                     Messages.text("nodes", services.nodes().count(group.id())),
                     Messages.text("items", handler == null ? "" : handler.summary(group)));
         }
@@ -197,6 +196,22 @@ public final class GroupActions {
         if (!services.settings().isBlacklisted(player.getWorld().getName())) return false;
         services.send(player, Message.ERROR_WORLD_BLACKLISTED);
         return true;
+    }
+
+    private void lookupMember(Player player, StorageGroup group, String name, Consumer<UUID> onFound) {
+        if (!canEditMembers(player, group)) return;
+        lookup(player, name, member -> {
+            if (canEditMembers(player, group)) onFound.accept(member);
+        });
+    }
+
+    /** Also run after an async lookup returns, when the group may have been deleted or the player's rights changed. */
+    private boolean canEditMembers(Player player, StorageGroup group) {
+        if (services.groups().byId(group.id()) != group) {
+            services.send(player, Message.ERROR_UNKNOWN_GROUP, Messages.group(group));
+            return false;
+        }
+        return require(player, Permissions.members(group.type())) && canManage(player, group);
     }
 
     /**
