@@ -15,6 +15,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BooleanSupplier;
+import java.util.stream.Stream;
 import net.kyori.adventure.text.Component;
 import org.bukkit.ExplosionResult;
 import org.bukkit.Material;
@@ -23,11 +24,13 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Container;
 import org.bukkit.block.data.Directional;
+import org.bukkit.block.data.type.Chest;
 import org.bukkit.block.data.type.WallSign;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Item;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -357,6 +360,83 @@ class ChestLinkIntegrationTest extends PluginTestBase {
 
         assertThat(event.isCancelled()).isFalse();
         assertThat(plugin.services().nodes().at(event.getBlockPlaced()).groupId()).isEqualTo(group(alice, "portable").id());
+        assertThat(nextPlain(bob)).contains("Linked to ChestLink portable");
+    }
+
+    @Test
+    void linkItemPlacementCancelledByAProtectionPluginLinksNothing() {
+        ItemStack linkItem = publicLinkItem();
+        ChestLinkGroup group = group(alice, "portable");
+        cancelPlacementsAtHighest();
+
+        BlockPlaceEvent event = placeLinkItem(bob, linkItem);
+
+        assertThat(event.isCancelled()).isTrue();
+        assertThat(plugin.services().nodes().at(event.getBlockPlaced())).isNull();
+        assertThat(plugin.services().nodes().count(group.id())).isZero();
+        assertThat(plugin.services().get(DisplayService.class).count()).isZero();
+        assertThat(nextPlain(bob)).isNull();
+    }
+
+    @Test
+    void linkItemPlacementThatCannotBuildLinksNothing() {
+        ItemStack linkItem = publicLinkItem();
+
+        BlockPlaceEvent event = placeLinkItem(bob, linkItem, false);
+
+        assertThat(plugin.services().nodes().at(event.getBlockPlaced())).isNull();
+        assertThat(plugin.services().get(DisplayService.class).count()).isZero();
+        assertThat(nextPlain(bob)).isNull();
+    }
+
+    @Test
+    void chestPlacedNextToALinkedChestIsSplit() {
+        Block placed = placeDoubleChestNextToLinkedChest();
+
+        server.getPluginManager().callEvent(placeEvent(placed, ItemStack.of(Material.CHEST), alice, true));
+
+        assertThat(chestTypesAround(placed)).containsExactly(Chest.Type.SINGLE, Chest.Type.SINGLE);
+    }
+
+    @Test
+    void chestPlacementCancelledByAProtectionPluginIsNotSplit() {
+        Block placed = placeDoubleChestNextToLinkedChest();
+        cancelPlacementsAtHighest();
+
+        server.getPluginManager().callEvent(placeEvent(placed, ItemStack.of(Material.CHEST), alice, true));
+
+        assertThat(chestTypesAround(placed)).containsExactly(Chest.Type.LEFT, Chest.Type.RIGHT);
+    }
+
+    /** A chest at x=0 merged by vanilla with a linked chest at x=1, as it is when the place event fires. */
+    private Block placeDoubleChestNextToLinkedChest() {
+        Block linked = chestAt(1, 0);
+        sign(alice, linked, "[ChestLink]", "g");
+        Block placed = chestAt(0, 0);
+        setChestType(placed, Chest.Type.LEFT);
+        setChestType(linked, Chest.Type.RIGHT);
+        return placed;
+    }
+
+    private static void setChestType(Block block, Chest.Type type) {
+        Chest data = (Chest) block.getBlockData();
+        data.setFacing(BlockFace.NORTH);
+        data.setType(type);
+        block.setBlockData(data, false);
+    }
+
+    private static List<Chest.Type> chestTypesAround(Block placed) {
+        return Stream.of(placed, placed.getRelative(BlockFace.EAST)).map(block -> ((Chest) block.getBlockData()).getType()).toList();
+    }
+
+    /** Mimics a claim plugin that denies the placement after every other plugin has had its say. */
+    private void cancelPlacementsAtHighest() {
+        server.getPluginManager().registerEvents(new Listener() {
+            @EventHandler(priority = EventPriority.HIGHEST)
+            void onPlace(BlockPlaceEvent event) {
+                event.setCancelled(true);
+            }
+        }, MockBukkit.createMockPlugin());
     }
 
     private ItemStack publicLinkItem() {
@@ -377,11 +457,17 @@ class ChestLinkIntegrationTest extends PluginTestBase {
     }
 
     private BlockPlaceEvent placeLinkItem(PlayerMock player, ItemStack linkItem) {
-        Block placed = chestAt(9, 9);
-        BlockPlaceEvent event = new BlockPlaceEvent(placed, placed.getState(), placed.getRelative(BlockFace.DOWN), linkItem, player, true,
-                EquipmentSlot.HAND);
+        return placeLinkItem(player, linkItem, true);
+    }
+
+    private BlockPlaceEvent placeLinkItem(PlayerMock player, ItemStack linkItem, boolean canBuild) {
+        BlockPlaceEvent event = placeEvent(chestAt(9, 9), linkItem, player, canBuild);
         server.getPluginManager().callEvent(event);
         return event;
+    }
+
+    private static BlockPlaceEvent placeEvent(Block placed, ItemStack item, PlayerMock player, boolean canBuild) {
+        return new BlockPlaceEvent(placed, placed.getState(), placed.getRelative(BlockFace.DOWN), item, player, canBuild, EquipmentSlot.HAND);
     }
 
     @Test
