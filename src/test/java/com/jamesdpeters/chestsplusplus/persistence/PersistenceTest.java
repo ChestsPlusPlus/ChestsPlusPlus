@@ -266,23 +266,47 @@ class PersistenceTest {
         }
     }
 
+    /** Fails {@code name} on every flush, alongside a key that does commit, until it is given up on. */
+    private void giveUpOn(Persistence persistence, EntryStore store, String name) throws InterruptedException {
+        store.failingName = name;
+        store.set(persistence, name, "1");
+        for (int attempt = 0; attempt <= Persistence.MAX_ATTEMPTS; attempt++) {
+            assertThat(persistence.isDirty(store, name)).isTrue();
+            store.set(persistence, "good" + attempt, "1");
+            flushAndWait(persistence);
+        }
+        assertThat(persistence.pending()).isZero();
+    }
+
     @Test
     void keyIsGivenUpOnAfterTheRetryLimitUntilItChangesAgain() throws InterruptedException {
         EntryStore store = new EntryStore();
         try (Database database = database()) {
             Persistence persistence = start(database, store);
-            store.failingName = "bad";
-            store.set(persistence, "bad", "1");
-            for (int attempt = 0; attempt <= Persistence.MAX_ATTEMPTS; attempt++) {
-                assertThat(persistence.isDirty(store, "bad")).isTrue();
-                store.set(persistence, "good" + attempt, "1");
-                flushAndWait(persistence);
-            }
-            assertThat(persistence.pending()).isZero();
+            giveUpOn(persistence, store, "bad");
             assertThat(rows(database)).containsOnlyKeys("good0", "good1", "good2", "good3");
 
             store.failingName = null;
             store.set(persistence, "bad", "2");
+            flushAndWait(persistence);
+
+            assertThat(rows(database)).containsEntry("bad", "2");
+        }
+    }
+
+    @Test
+    void keyGivenUpOnGetsTheFullRetryBudgetWhenItChangesAgain() throws InterruptedException {
+        EntryStore store = new EntryStore();
+        try (Database database = database()) {
+            Persistence persistence = start(database, store);
+            giveUpOn(persistence, store, "bad");
+
+            store.set(persistence, "bad", "2");
+            store.set(persistence, "good", "1");
+            flushAndWait(persistence);
+            assertThat(persistence.isDirty(store, "bad")).isTrue();
+
+            store.failingName = null;
             flushAndWait(persistence);
 
             assertThat(rows(database)).containsEntry("bad", "2");

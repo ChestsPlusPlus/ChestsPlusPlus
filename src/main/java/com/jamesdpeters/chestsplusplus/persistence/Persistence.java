@@ -29,8 +29,8 @@ import org.jspecify.annotations.Nullable;
  * is simply saved again by a later flush. A failed batch marks its keys dirty again, and the retry snapshots their current state.
  * <p>
  * A retry that fails again is split up, one transaction per store and then per key, so a key that can never be written doesn't block the
- * rest. Such a key is given up on after {@link #MAX_ATTEMPTS} failures, until it next changes. A failure only counts against a key when
- * something else committed, so a database outage retries everything instead of giving up on it.
+ * rest. Such a key is given up on after {@link #MAX_ATTEMPTS} failures, until it next changes, when it gets the full budget again. A
+ * failure only counts against a key when something else committed, so a database outage retries everything instead of giving up on it.
  * <p>
  * Completions queue up for the main thread to run, so they survive a scheduler that has stopped taking tasks. {@link #close} runs them
  * itself, retrying failed keys for a few rounds before logging what it couldn't save. {@link #markDirty}, {@link #flush}, {@link #load}
@@ -172,6 +172,7 @@ public final class Persistence {
             this.<Object>keys(key.store()).add(key.key());
             return;
         }
+        failures.remove(key);
         log.error("Gave up saving {} {} after {} failed attempts; it is saved again when it next changes", key.store().getClass().getSimpleName(),
                 key.key(), failed, error);
     }
