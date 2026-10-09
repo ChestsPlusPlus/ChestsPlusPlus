@@ -7,7 +7,7 @@ they can't.
 |---|---|---|
 | Unit | `./gradlew unitTest` | `BlockPos`, `Settings`, `Messages`, model indexes, access/trust, SQLite repository and migrations, display layout, item grouping, versions, command tree guard |
 | MockBukkit | `./gradlew integrationTest` | Plugin lifecycle, persistence round trips, linking (signs, silk touch, limits, blacklist, access), breaking/explosions, hopper substitution, displays (item only), sorting, all commands, the icon grid, filters (semantics, PDC, enforcement, stall avoidance, editor), AutoCraft (planner, crafting, ChestLink inputs, scheduling and wake-ups, editor) |
-| E2E (Plugwright) | `./gradlew e2e -Pchestsplusplus.acceptMinecraftEula=true` | Real hopper transfers through a ChestLink, display entities, `/cl list`, `/cl open`, `/cpp help`, a real filtered hopper behind a rejected slot, real torch crafting, crafting on the next tick after a recipe, input or output change, the powered/unpowered crafter rule, and hoppers and AutoCrafters refused by a locked ChestLink exactly as by a locked vanilla chest (via a stand-in lock plugin) on Paper 26.3 |
+| E2E (Plugwright) | `./gradlew e2e -Pchestsplusplus.acceptMinecraftEula=true` | Real hopper transfers through a ChestLink, display entities, `/cl list`, `/cl open`, `/cpp help`, a real filtered hopper behind a rejected slot, real torch crafting, crafting on the next tick after a recipe, input or output change, the powered/unpowered crafter rule, and hoppers, AutoCrafters and copper golems refused by a locked ChestLink exactly as by a locked vanilla chest (via a stand-in lock plugin) on Paper 26.3 |
 
 Performance against v2 is measured separately; see [benchmarking.md](benchmarking.md).
 
@@ -17,6 +17,9 @@ Known automation limits:
 - **E2E bots** (Mineflayer 26.1 via ViaBackwards) are kicked after about 3 s or on any movement. E2E sets
   the world up over RCON with the never-shipped `/cpptest` harness and keeps bot interactions short. Dialogs can't be
   driven by bots at all.
+- **Copper golem fixtures** enclose each site and force-load the whole arena: a golem crossing into an adjacent chunk can stop
+  ticking even though that chunk is loaded. Locks are installed before spawning, and refusal counters verify that each protected
+  golem actually searched. Failed assertions capture diagnostics before removing the golems, groups and site tickets.
 
 ## Manual checklist
 
