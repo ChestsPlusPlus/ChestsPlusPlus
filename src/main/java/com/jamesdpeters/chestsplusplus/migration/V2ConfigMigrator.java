@@ -10,11 +10,10 @@ import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.plugin.java.JavaPlugin;
 
 /**
- * Rewrites a v2 {@code config.yml} into the v3 layout. It must run before settings load: otherwise {@code saveDefaultConfig} keeps the v2
- * file and v3 silently runs on defaults. The original is kept as {@code config-v2.yml}.
+ * Rewrites a v2 {@code config.yml} into the v3 layout. It must run before settings load: ConfigLib would otherwise rewrite the file with
+ * v3 defaults and drop the v2 keys. The original is kept as {@code config-v2.yml}.
  */
 @Slf4j(topic = ChestsPlusPlus.NAME)
 public final class V2ConfigMigrator {
@@ -29,16 +28,16 @@ public final class V2ConfigMigrator {
     private V2ConfigMigrator() {}
 
     /** Converts the data folder's config.yml if it is a v2 one; a failure is logged and v3 carries on with what is there. */
-    public static void migrate(JavaPlugin plugin) {
-        File file = new File(plugin.getDataFolder(), "config.yml");
+    public static void migrate(File dataFolder) {
+        File file = new File(dataFolder, "config.yml");
         if (!file.isFile()) return;
         YamlConfiguration v2 = YamlConfiguration.loadConfiguration(file);
         if (!isV2(v2)) return;
         try {
-            File kept = unusedFile(plugin.getDataFolder(), "config-v2", ".yml");
+            File kept = unusedFile(dataFolder, "config-v2", ".yml");
             Files.move(file.toPath(), kept.toPath());
-            plugin.saveResource("config.yml", false);
-            YamlConfiguration v3 = YamlConfiguration.loadConfiguration(file);
+            // Only the converted keys: loading the settings adds every other key with its default and comment.
+            YamlConfiguration v3 = new YamlConfiguration();
             List<String> dropped = apply(v2, v3);
             v3.save(file);
             log.info("Converted the ChestsPlusPlus v2 config.yml to v3; the original is kept as {}", kept.getName());
@@ -52,7 +51,7 @@ public final class V2ConfigMigrator {
         return V3_SECTIONS.stream().noneMatch(config::isConfigurationSection) && config.getKeys(false).stream().anyMatch(V2_KEYS::contains);
     }
 
-    /** Copies v2's settings onto the v3 defaults, returning the v2 keys that were set but have nowhere to go. */
+    /** Copies v2's settings into the v3 layout, returning the v2 keys that were set but have nowhere to go. */
     static List<String> apply(ConfigurationSection v2, ConfigurationSection v3) {
         copyBoolean(v2, "chestlinks-enabled", v3, "features.chestlinks");
         copyBoolean(v2, "autocrafters-enabled", v3, "features.autocraft");

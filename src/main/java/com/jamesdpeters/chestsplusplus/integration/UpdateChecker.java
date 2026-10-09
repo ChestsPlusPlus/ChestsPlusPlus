@@ -55,7 +55,7 @@ public final class UpdateChecker implements Listener {
     }
 
     void check() {
-        if (!services.settings().updateChecker()) return;
+        if (!services.settings().updateChecker().enabled()) return;
         try {
             HttpRequest request = HttpRequest.newBuilder(URI.create(RELEASES_URL))
                     .timeout(Duration.ofSeconds(10))
@@ -85,7 +85,7 @@ public final class UpdateChecker implements Listener {
     void onJoin(PlayerJoinEvent event) {
         String version = latest;
         Player player = event.getPlayer();
-        if (version == null || !services.settings().updateChecker() || !player.hasPermission(Permissions.ADMIN_UPDATE)) return;
+        if (version == null || !services.settings().updateChecker().enabled() || !player.hasPermission(Permissions.ADMIN_UPDATE)) return;
         services.send(player, Message.UPDATE_AVAILABLE, Messages.text("version", version), Messages.text("url", DOWNLOAD_URL));
     }
 }
