@@ -12,7 +12,7 @@ public record Settings(Features features, Linking linking, ChestLink chestlink, 
 
     public record Features(boolean chestlinks, boolean autocraft, boolean hopperFilters, boolean copperGolems) {}
 
-    public record Linking(boolean consumeNameTags) {}
+    public record Linking(boolean consumeNameTags, boolean consumeSigns) {}
 
     public record Display(boolean enabled, boolean label, float viewRange) {}
 
@@ -33,7 +33,7 @@ public record Settings(Features features, Linking linking, ChestLink chestlink, 
         return new Settings(
                 new Features(config.getBoolean("features.chestlinks", true), config.getBoolean("features.autocraft", true),
                         config.getBoolean("features.hopper-filters", true), config.getBoolean("features.copper-golems", true)),
-                new Linking(config.getBoolean("linking.consume-name-tags", true)),
+                new Linking(config.getBoolean("linking.consume-name-tags", true), config.getBoolean("linking.consume-signs", false)),
                 new ChestLink(config.getBoolean("chestlink.animate-all-nodes", true), display(config, "chestlink.display")),
                 new AutoCraft(display(config, "autocraft.display"), Math.clamp(config.getInt("autocraft.tick-interval", 20), 1, 1200)),
                 new Filters(config.getBoolean("filters.displays", true)),

@@ -13,6 +13,8 @@ features:
 linking:
   # Use up one name tag each time a block is linked by right-clicking it with a named name tag (never in creative).
   consume-name-tags: true
+  # Use up the sign when a block is linked with a [ChestLink] or [AutoCraft] sign. When false, the sign goes back to the player.
+  consume-signs: false
 
 chestlink:
   # Play the lid animation on every node of a group, not just the one that was opened.

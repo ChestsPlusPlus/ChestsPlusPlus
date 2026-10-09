@@ -26,8 +26,9 @@ Known automation limits:
 Run each item on a native 26.3 client against `./gradlew runServer` (or the server you're testing).
 
 ### Linking and displays
-- [ ] A `[ChestLink]` sign on a chest, a barrel and a copper chest creates the group. The sign disappears and the
-      item display plus label appear on the sign's face.
+- [ ] A `[ChestLink]` sign on a chest, a barrel and a copper chest creates the group. The sign disappears, goes back
+      into your inventory (not in creative), and the item display plus label appear on the sign's face. With
+      `linking.consume-signs: true`, the sign is used up. A full inventory drops the returned sign at your feet.
 - [ ] Display orientation is correct on all four faces for chests, barrels and crafting tables (this is what
       `DisplayLayout.ITEM_YAW_OFFSET` is tuned against).
 - [ ] Displays are readable at about 16 blocks and at night, and disappear and reappear with chunk unload/load.

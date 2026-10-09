@@ -11,6 +11,7 @@ import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.Node;
 import com.jamesdpeters.chestsplusplus.testing.PluginTestBase;
 import com.jamesdpeters.chestsplusplus.testing.TileEntityWorld;
+import com.jamesdpeters.chestsplusplus.testing.WallSigns;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -19,6 +20,7 @@ import java.util.function.BooleanSupplier;
 import java.util.stream.Stream;
 import net.kyori.adventure.text.Component;
 import org.bukkit.ExplosionResult;
+import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -26,7 +28,6 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.Container;
 import org.bukkit.block.data.Directional;
 import org.bukkit.block.data.type.Chest;
-import org.bukkit.block.data.type.WallSign;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.ItemDisplay;
@@ -79,15 +80,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
 
     /** Places a wall sign on the north face of {@code target} and submits the given lines. */
     private SignChangeEvent sign(PlayerMock player, Block target, String header, String name) {
-        Block sign = target.getRelative(BlockFace.NORTH);
-        sign.setType(Material.OAK_WALL_SIGN);
-        WallSign data = (WallSign) sign.getBlockData();
-        data.setFacing(BlockFace.NORTH);
-        sign.setBlockData(data);
-        SignChangeEvent event = new SignChangeEvent(sign, player,
-                List.of(Component.text(header), Component.text(name), Component.empty(), Component.empty()), org.bukkit.block.sign.Side.FRONT);
-        server.getPluginManager().callEvent(event);
-        return event;
+        return WallSigns.write(player, target, header, name);
     }
 
     private ChestLinkGroup group(PlayerMock owner, String name) {
@@ -119,32 +112,130 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         assertThat(((Container) chest.getState(false)).getInventory().isEmpty()).isTrue();
         assertThat(plugin.services().groupStore().isDirty(group)).isTrue();
         assertThat(nextPlain(alice)).contains("Created ChestLink ores");
+        assertThat(alice.getInventory().contains(Material.OAK_SIGN, 1)).isTrue();
+    }
+
+    @Test
+    void signOfAnyWoodIsGivenBack() {
+        WallSigns.write(alice, chestAt(0, 0), "[ChestLink]", "ores", Material.SPRUCE_WALL_SIGN, Material.SPRUCE_SIGN);
+        server.getScheduler().performTicks(1);
+
+        assertThat(alice.getInventory().contains(Material.SPRUCE_SIGN, 1)).isTrue();
+    }
+
+    @Test
+    void signIsNotGivenBackInCreative() {
+        alice.setGameMode(GameMode.CREATIVE);
+        Block chest = chestAt(0, 0);
+
+        sign(alice, chest, "[ChestLink]", "ores");
+        server.getScheduler().performTicks(1);
+
+        assertThat(plugin.services().nodes().get(BlockPos.of(chest))).isNotNull();
+        assertThat(alice.getInventory().contains(Material.OAK_SIGN)).isFalse();
+    }
+
+    @Test
+    void signIsUsedUpWhenConsumptionIsEnabled() {
+        plugin.getConfig().set("linking.consume-signs", true);
+        plugin.saveConfig();
+        reloadPlugin();
+        Block chest = chestAt(0, 0);
+
+        sign(alice, chest, "[ChestLink]", "ores");
+        server.getScheduler().performTicks(1);
+
+        assertThat(plugin.services().nodes().at(chest)).isNotNull();
+        assertThat(chest.getRelative(BlockFace.NORTH).getType()).isEqualTo(Material.AIR);
+        assertThat(alice.getInventory().contains(Material.OAK_SIGN)).isFalse();
+    }
+
+    @Test
+    void signRefundDropsOverflowAtPlayersFeet() {
+        // MockBukkit's addItem also fills armour and offhand slots.
+        for (int slot = 0; slot < alice.getInventory().getSize(); slot++) {
+            alice.getInventory().setItem(slot, ItemStack.of(Material.COBBLESTONE, 64));
+        }
+        Block chest = chestAt(0, 0);
+
+        sign(alice, chest, "[ChestLink]", "ores");
+        server.getScheduler().performTicks(1);
+
+        assertThat(chest.getRelative(BlockFace.NORTH).getType()).isEqualTo(Material.AIR);
+        assertThat(alice.getInventory().contains(Material.OAK_SIGN)).isFalse();
+        assertThat(alice.getWorld().getEntitiesByClass(Item.class)).singleElement().satisfies(item -> {
+            assertThat(item.getItemStack()).isEqualTo(ItemStack.of(Material.OAK_SIGN));
+            assertThat(item.getLocation()).isEqualTo(alice.getLocation());
+        });
+    }
+
+    @Test
+    void signAlreadyRemovedIsNotRefunded() {
+        Block chest = chestAt(0, 0);
+        sign(alice, chest, "[ChestLink]", "ores");
+        chest.getRelative(BlockFace.NORTH).setType(Material.AIR);
+
+        server.getScheduler().performTicks(1);
+
+        assertThat(alice.getInventory().contains(Material.OAK_SIGN)).isFalse();
+        assertThat(alice.getWorld().getEntitiesByClass(Item.class)).isEmpty();
+    }
+
+    @Test
+    void signIsNotRefundedAfterPlayerDisconnects() {
+        Block chest = chestAt(0, 0);
+        sign(alice, chest, "[ChestLink]", "ores");
+        alice.disconnect();
+
+        server.getScheduler().performTicks(1);
+
+        assertThat(chest.getRelative(BlockFace.NORTH).getType()).isEqualTo(Material.AIR);
+        assertThat(alice.getInventory().contains(Material.OAK_SIGN)).isFalse();
+        assertThat(alice.getWorld().getEntitiesByClass(Item.class)).isEmpty();
+    }
+
+    @Test
+    void autocraftSignLinksTableAndIsRefunded() {
+        Block table = world.getBlockAt(0, 64, 0);
+        table.setType(Material.CRAFTING_TABLE);
+
+        SignChangeEvent event = sign(alice, table, "[AutoCraft]", "torches");
+        server.getScheduler().performTicks(1);
+
+        assertThat(event.isCancelled()).isTrue();
+        assertThat(plugin.services().groups().find(GroupType.AUTOCRAFT, alice.getUniqueId(), "torches")).isNotNull();
+        assertThat(plugin.services().nodes().at(table)).isNotNull();
+        assertThat(table.getRelative(BlockFace.NORTH).getType()).isEqualTo(Material.AIR);
+        assertThat(alice.getInventory().contains(Material.OAK_SIGN, 1)).isTrue();
     }
 
     @Test
     void signOnProtectedChestIsRefused() {
         Block chest = chestAt(0, 0);
         ((Container) chest.getState(false)).getInventory().addItem(ItemStack.of(Material.DIAMOND, 5));
-        denyInteract(chest);
+        denyInteract(EventPriority.NORMAL, chest);
 
         SignChangeEvent event = sign(alice, chest, "[ChestLink]", "loot");
         server.getScheduler().performTicks(1);
 
         assertThat(event.isCancelled()).isFalse();
+        assertThat(alice.getInventory().contains(Material.OAK_SIGN)).isFalse();
         assertThat(group(alice, "loot")).isNull();
         assertThat(plugin.services().nodes().get(BlockPos.of(chest))).isNull();
         assertThat(((Container) chest.getState(false)).getInventory().contains(Material.DIAMOND, 5)).isTrue();
         assertThat(nextPlain(alice)).contains("You can't use that block here");
     }
 
-    /** Mimics a container-lock plugin: sign placement is allowed, but using {@code locked} is denied. */
-    private void denyInteract(Block locked) {
-        server.getPluginManager().registerEvents(new Listener() {
-            @EventHandler
-            void onInteract(PlayerInteractEvent event) {
-                if (locked.equals(event.getClickedBlock())) event.setUseInteractedBlock(Event.Result.DENY);
+    /**
+     * Mimics a protection plugin registered after ours: sign placement is allowed, but using {@code locked} is denied at {@code priority},
+     * skipping events already denied, as Towny does at HIGH.
+     */
+    private void denyInteract(EventPriority priority, Block locked) {
+        server.getPluginManager().registerEvent(PlayerInteractEvent.class, new Listener() {}, priority, (listener, event) -> {
+            if (event instanceof PlayerInteractEvent interact && locked.equals(interact.getClickedBlock())) {
+                interact.setUseInteractedBlock(Event.Result.DENY);
             }
-        }, MockBukkit.createMockPlugin());
+        }, MockBukkit.createMockPlugin(), true);
     }
 
     private PlayerInteractEvent nameTag(PlayerMock player, Block block, ItemStack tag) {
@@ -180,6 +271,47 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         assertThat(event.useInteractedBlock()).isEqualTo(org.bukkit.event.Event.Result.DENY);
         assertThat(tag.getAmount()).isEqualTo(1);
         assertThat(nextPlain(alice)).contains("Created ChestLink ores");
+    }
+
+    @Test
+    void namedTagOnChestDeniedAtHighIsRefused() {
+        Block chest = chestAt(0, 0);
+        ((Container) chest.getState(false)).getInventory().addItem(ItemStack.of(Material.DIAMOND, 5));
+        denyInteract(EventPriority.HIGH, chest);
+        ItemStack tag = namedTag("loot", 1);
+
+        nameTag(alice, chest, tag);
+
+        assertThat(group(alice, "loot")).isNull();
+        assertThat(plugin.services().nodes().get(BlockPos.of(chest))).isNull();
+        assertThat(((Container) chest.getState(false)).getInventory().contains(Material.DIAMOND, 5)).isTrue();
+        assertThat(tag.getAmount()).isEqualTo(1);
+    }
+
+    @Test
+    void namedTagRunsTheProtectionCheckForPluginsAfterUs() {
+        Block chest = chestAt(0, 0);
+        ((Container) chest.getState(false)).getInventory().addItem(ItemStack.of(Material.DIAMOND, 5));
+        denyInteract(EventPriority.HIGHEST, chest);
+        ItemStack tag = namedTag("loot", 1);
+
+        nameTag(alice, chest, tag);
+
+        assertThat(group(alice, "loot")).isNull();
+        assertThat(((Container) chest.getState(false)).getInventory().contains(Material.DIAMOND, 5)).isTrue();
+        assertThat(tag.getAmount()).isEqualTo(1);
+        assertThat(nextPlain(alice)).contains("You can't use that block here");
+    }
+
+    @Test
+    void linkedChestDeniedAtHighDoesNotOpen() {
+        Block chest = chestAt(0, 0);
+        sign(alice, chest, "[ChestLink]", "locked");
+        denyInteract(EventPriority.HIGH, chest);
+
+        rightClick(alice, chest);
+
+        assertThat(alice.getOpenInventory().getTopInventory()).isNotSameAs(group(alice, "locked").inventory());
     }
 
     @Test

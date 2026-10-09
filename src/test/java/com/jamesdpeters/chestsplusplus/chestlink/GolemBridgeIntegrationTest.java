@@ -5,22 +5,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.testing.PluginTestBase;
+import com.jamesdpeters.chestsplusplus.testing.WallSigns;
 import io.papermc.paper.event.entity.ItemTransportingEntityValidateTargetEvent;
-import java.util.List;
 import java.util.UUID;
-import net.kyori.adventure.text.Component;
 import org.bukkit.GameEvent;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
 import org.bukkit.block.Container;
-import org.bukkit.block.data.type.WallSign;
-import org.bukkit.block.sign.Side;
 import org.bukkit.entity.CopperGolem;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.world.GenericGameEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -43,14 +38,7 @@ class GolemBridgeIntegrationTest extends PluginTestBase {
     }
 
     private ChestLinkGroup link(Block block, String name) {
-        Block sign = block.getRelative(BlockFace.NORTH);
-        sign.setType(Material.OAK_WALL_SIGN);
-        WallSign data = (WallSign) sign.getBlockData();
-        data.setFacing(BlockFace.NORTH);
-        sign.setBlockData(data);
-        server.getPluginManager()
-                .callEvent(new SignChangeEvent(sign, alice,
-                        List.of(Component.text("[ChestLink]"), Component.text(name), Component.empty(), Component.empty()), Side.FRONT));
+        WallSigns.write(alice, block, "[ChestLink]", name);
         return (ChestLinkGroup) plugin.services().groups().find(GroupType.CHESTLINK, alice.getUniqueId(), name);
     }
 

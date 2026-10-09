@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.jamesdpeters.chestsplusplus.autocraft.RecipeEditorHolder;
 import com.jamesdpeters.chestsplusplus.core.BlockPos;
+import com.jamesdpeters.chestsplusplus.link.GroupActions;
 import com.jamesdpeters.chestsplusplus.link.LinkService;
 import com.jamesdpeters.chestsplusplus.model.AutoCraftGroup;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
@@ -169,6 +170,33 @@ class GroupCommandsIntegrationTest extends PluginTestBase {
         run(alice, "cpp trust remove Bob");
         assertThat(plugin.services().trust().isTrusted(alice.getUniqueId(), bob.getUniqueId())).isFalse();
         assertThat(run(alice, "cpp trust add Alice")).anyMatch(l -> l.contains("yourself"));
+    }
+
+    @Test
+    void addingAnExistingMemberOrRemovingANonMemberIsRefused() {
+        ChestLinkGroup group = create(alice, "ores", 0);
+        run(alice, "cl members add ores Bob");
+
+        assertThat(run(alice, "cl members add ores Bob")).anyMatch(l -> l.contains("Bob is already a member of ores"))
+                .noneMatch(l -> l.contains("Added"));
+        assertThat(group.members()).containsExactly(bob.getUniqueId());
+
+        run(alice, "cl members remove ores Bob");
+        assertThat(run(alice, "cl members remove ores Bob")).anyMatch(l -> l.contains("Bob isn't a member of ores"))
+                .noneMatch(l -> l.contains("Removed"));
+    }
+
+    @Test
+    void refusedMemberChangesSkipTheFollowUp() {
+        ChestLinkGroup group = create(alice, "ores", 0);
+        GroupActions actions = plugin.services().get(GroupActions.class);
+        List<String> followUps = new ArrayList<>();
+
+        actions.removeMember(alice, group, "Bob", () -> followUps.add("remove"));
+        actions.addMember(alice, group, "Bob", () -> followUps.add("add"));
+        actions.addMember(alice, group, "Bob", () -> followUps.add("add again"));
+
+        assertThat(followUps).containsExactly("add");
     }
 
     private void finishLookup(String name, UUID id) {

@@ -28,7 +28,7 @@ public final class ChestLinkListener implements Listener {
     private final LinkService links;
     private final ChestLinkService chestLinks;
 
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler(priority = EventPriority.HIGHEST)
     void onInteract(PlayerInteractEvent event) {
         Node node = links.claimNodeClick(event, GroupType.CHESTLINK);
         if (node != null && services.groups().byId(node.groupId()) instanceof ChestLinkGroup group) chestLinks.open(event.getPlayer(), group, node);

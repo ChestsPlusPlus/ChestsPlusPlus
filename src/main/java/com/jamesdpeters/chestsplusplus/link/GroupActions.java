@@ -99,7 +99,10 @@ public final class GroupActions {
                 services.send(player, Message.ERROR_SELF);
                 return;
             }
-            links.addMember(group, member);
+            if (!links.addMember(group, member)) {
+                services.send(player, Message.ERROR_ALREADY_MEMBER, Messages.player(name), Messages.group(group));
+                return;
+            }
             services.send(player, Message.MEMBERS_ADDED, Messages.player(name), Messages.group(group));
             after.run();
         });
@@ -107,7 +110,10 @@ public final class GroupActions {
 
     public void removeMember(Player player, StorageGroup group, String name, Runnable after) {
         lookupMember(player, group, name, member -> {
-            links.removeMember(group, member);
+            if (!links.removeMember(group, member)) {
+                services.send(player, Message.ERROR_NOT_MEMBER, Messages.player(name), Messages.group(group));
+                return;
+            }
             services.send(player, Message.MEMBERS_REMOVED, Messages.player(name), Messages.group(group));
             after.run();
         });

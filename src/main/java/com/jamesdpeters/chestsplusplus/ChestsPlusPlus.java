@@ -198,7 +198,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         List<Listener> listeners = List.of(
                 this,
                 new NodeListener(services, links, services.get(DisplayService.class), services.get(LinkItem.class)),
-                new SignLinkListener(this, links),
+                new SignLinkListener(this, services, links),
                 new NameTagLinkListener(services, links),
                 new ChestLinkListener(services, links, services.get(ChestLinkService.class)),
                 new HopperBridge(this, services, services.get(ChestLinkService.class)),

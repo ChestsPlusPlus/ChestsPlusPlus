@@ -29,7 +29,7 @@ class SettingsTest {
         YamlConfiguration yaml = new YamlConfiguration();
         yaml.loadFromString("""
                 features: { autocraft: false }
-                linking: { consume-name-tags: false }
+                linking: { consume-name-tags: false, consume-signs: true }
                 chestlink: { display: { view-range: 100 } }
                 autocraft: { tick-interval: 0 }
                 limits: { chestlink-default: 5, autocraft-default: -7 }
@@ -43,6 +43,7 @@ class SettingsTest {
         assertThat(settings.features().chestlinks()).isTrue();
         assertThat(settings.features().copperGolems()).isTrue();
         assertThat(settings.linking().consumeNameTags()).isFalse();
+        assertThat(settings.linking().consumeSigns()).isTrue();
         assertThat(settings.chestlink().display().viewRange()).isEqualTo(16.0f);
         assertThat(settings.autocraft().tickInterval()).isEqualTo(1);
         assertThat(settings.limits().chestlinkDefault()).isEqualTo(5);
