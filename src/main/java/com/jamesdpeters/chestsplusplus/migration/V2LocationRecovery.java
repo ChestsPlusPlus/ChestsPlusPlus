@@ -58,10 +58,7 @@ public final class V2LocationRecovery implements Listener {
 
     public void finish(Chunk chunk) {
         if (pending.isEmpty()) return;
-        for (LocationRow row : pending.all()) {
-            if (!row.worldName().equals(chunk.getWorld().getName()) || row.x() >> 4 != chunk.getX() || row.z() >> 4 != chunk.getZ()) continue;
-            attach(row, chunk);
-        }
+        for (LocationRow row : pending.inChunk(chunk.getWorld().getName(), chunk.getChunkKey())) attach(row, chunk);
     }
 
     private void attach(LocationRow row, Chunk chunk) {
