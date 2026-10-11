@@ -73,7 +73,7 @@ public final class HopperBridge implements Listener {
         if (fromLink == intoLink) return;
         Inventory linked = fromLink ? linkedContainer(source, pulledFrom(destination)) : linkedContainer(destination, pushedInto(source));
         if (linked == null) return;
-        if (!SyntheticMoveEvent.allows(fromLink ? linked : source, event.getItem(), intoLink ? linked : destination)) event.setCancelled(true);
+        if (!SyntheticMoveEvent.allowsRelayed(fromLink ? linked : source, event.getItem(), intoLink ? linked : destination)) event.setCancelled(true);
     }
 
     /** The block a hopper (or hopper minecart) pulls from: the one above it. */

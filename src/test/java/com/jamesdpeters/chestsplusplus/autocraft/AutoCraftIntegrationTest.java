@@ -641,23 +641,65 @@ class AutoCraftIntegrationTest extends PluginTestBase {
     }
 
     @Test
-    void ourOwnListenersIgnoreTheProtectionCheck() {
+    void theProtectionCheckAsksAboutTheProductReachingTheOutput() {
         AutoCraftGroup[] group = new AutoCraftGroup[1];
         Block table = crafter(group);
         Inventory input = container(table.getRelative(BlockFace.UP), Material.CHEST);
         input.addItem(ItemStack.of(Material.COAL, 2), ItemStack.of(Material.STICK, 2));
         Block below = table.getRelative(BlockFace.DOWN);
         Inventory output = container(below, Material.HOPPER);
-        // The check's item is the coal ingredient, which this filter would refuse and stall-avoid if it treated the check as a real move.
-        plugin.services().get(FilterService.class).write(below, List.of(new HopperFilter(ItemStack.of(Material.TORCH), Mode.ALLOW, Match.TYPE)));
+        // The filter would refuse coal and stall-avoid if it treated the check as a real move of an ingredient.
+        filter(below, Mode.ALLOW);
         Lock lock = lock(server.createInventory(null, 9));
 
         assertThat(autoCraft.craftAt(group[0], plugin.services().nodes().get(BlockPos.of(table)))).isTrue();
-        assertThat(lock.seen).singleElement().isInstanceOf(SyntheticMoveEvent.class).satisfies(event -> assertThat(event.isCancelled()).isFalse());
+        assertThat(lock.seen).singleElement().isInstanceOf(SyntheticMoveEvent.class).satisfies(event -> {
+            assertThat(event.isCancelled()).isFalse();
+            assertThat(event.getSource()).isEqualTo(input);
+            assertThat(event.getDestination()).isEqualTo(output);
+            assertThat(event.getItem()).isEqualTo(ItemStack.of(Material.TORCH, 4));
+        });
         assertThat(output.contains(Material.TORCH, 4)).isTrue();
         assertThat(output.contains(Material.COAL)).isFalse();
         assertThat(input.contains(Material.COAL, 1)).isTrue();
         assertThat(input.contains(Material.STICK, 1)).isTrue();
+    }
+
+    @Test
+    void anOutputHopperFilterThatRefusesTheProductStopsTheCraft() {
+        AutoCraftGroup[] group = new AutoCraftGroup[1];
+        Block table = crafter(group);
+        Inventory input = container(table.getRelative(BlockFace.UP), Material.CHEST);
+        input.addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
+        Block below = table.getRelative(BlockFace.DOWN);
+        Inventory output = container(below, Material.HOPPER);
+        filter(below, Mode.DENY);
+
+        assertThat(autoCraft.craftAt(group[0], plugin.services().nodes().get(BlockPos.of(table)))).isFalse();
+        assertThat(output.isEmpty()).isTrue();
+        assertThat(input.contains(Material.COAL, 1)).isTrue();
+        assertThat(input.contains(Material.STICK, 1)).isTrue();
+    }
+
+    @Test
+    void anotherPluginRefusingTheProductStopsTheCraft() {
+        AutoCraftGroup[] group = new AutoCraftGroup[1];
+        Block table = crafter(group);
+        Inventory input = container(table.getRelative(BlockFace.UP), Material.CHEST);
+        input.addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
+        Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
+        server.getPluginManager().registerEvent(InventoryMoveItemEvent.class, new Listener() {}, EventPriority.NORMAL, (_, event) -> {
+            if (event instanceof InventoryMoveItemEvent move && move.getItem().getType() == Material.TORCH) move.setCancelled(true);
+        }, plugin);
+
+        assertThat(autoCraft.craftAt(group[0], plugin.services().nodes().get(BlockPos.of(table)))).isFalse();
+        assertThat(output.isEmpty()).isTrue();
+        assertThat(input.contains(Material.COAL, 1)).isTrue();
+        assertThat(input.contains(Material.STICK, 1)).isTrue();
+    }
+
+    private void filter(Block hopper, Mode torches) {
+        plugin.services().get(FilterService.class).write(hopper, List.of(new HopperFilter(ItemStack.of(Material.TORCH), torches, Match.TYPE)));
     }
 
     @Test

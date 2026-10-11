@@ -4,8 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.jamesdpeters.chestsplusplus.filter.HopperFilter.Match;
 import com.jamesdpeters.chestsplusplus.filter.HopperFilter.Mode;
+import com.jamesdpeters.chestsplusplus.link.SyntheticMoveEvent;
+import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
+import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.testing.PluginTestBase;
 import com.jamesdpeters.chestsplusplus.testing.TileEntityWorld;
+import com.jamesdpeters.chestsplusplus.testing.WallSigns;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -250,6 +254,40 @@ class FilterIntegrationTest extends PluginTestBase {
 
         assertThat(inventoryOf(hopper).isEmpty()).isTrue();
         assertThat(source.getItem(1).getAmount()).isEqualTo(5);
+    }
+
+    @Test
+    void aSyntheticMoveGetsTheFiltersAnswerAndMovesNothing() {
+        Block hopper = hopperAt(0);
+        filters.write(hopper, List.of(filter(Material.STONE, Mode.ALLOW, Match.TYPE)));
+        Inventory source = chestOfDirtAndStone();
+
+        assertThat(SyntheticMoveEvent.allows(source, ItemStack.of(Material.DIRT), inventoryOf(hopper))).isFalse();
+        assertThat(SyntheticMoveEvent.allows(source, ItemStack.of(Material.STONE), inventoryOf(hopper))).isTrue();
+        assertThat(inventoryOf(hopper).isEmpty()).isTrue();
+        assertThat(source.getItem(1).getAmount()).isEqualTo(5);
+    }
+
+    @Test
+    void stallAvoidanceStillMovesOutOfALinkedChest() {
+        Block hopper = hopperAt(3);
+        filters.write(hopper, List.of(filter(Material.STONE, Mode.ALLOW, Match.TYPE)));
+        Inventory into = inventoryOf(hopper);
+        // The relayed lock check asks about the linked chest the hopper pulls from, which is wherever the hopper's inventory says it is.
+        Block chest = into.getLocation().getBlock().getRelative(BlockFace.UP);
+        chest.setType(Material.CHEST);
+        PlayerMock alice = server.addPlayer("Alice");
+        WallSigns.write(alice, chest, "[ChestLink]", "mats");
+        Inventory group = ((ChestLinkGroup) plugin.services().groups().find(GroupType.CHESTLINK, alice.getUniqueId(), "mats")).inventory();
+        group.setItem(0, ItemStack.of(Material.DIRT, 5));
+        group.setItem(1, ItemStack.of(Material.STONE, 5));
+
+        InventoryMoveItemEvent event = new InventoryMoveItemEvent(group, ItemStack.of(Material.DIRT), into, false);
+        server.getPluginManager().callEvent(event);
+
+        assertThat(event.isCancelled()).isTrue();
+        assertThat(into.contains(Material.STONE, 1)).isTrue();
+        assertThat(group.getItem(1).getAmount()).isEqualTo(4);
     }
 
     @Test

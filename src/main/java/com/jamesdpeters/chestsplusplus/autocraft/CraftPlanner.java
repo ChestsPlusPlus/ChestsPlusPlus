@@ -22,13 +22,20 @@ public final class CraftPlanner {
     public record Source(Inventory inventory, int slot) {}
 
     /** A complete extraction plan: per matrix slot its source (null for empty slots) and the planned matrix. */
-    public record Plan(List<@Nullable Source> sources, @Nullable ItemStack[] matrix) {}
+    public record Plan(List<@Nullable Source> sources, @Nullable ItemStack[] matrix) {
+
+        /** The inventories the plan takes from, each once. */
+        public List<Inventory> inventories() {
+            return sources.stream().filter(Objects::nonNull).map(Source::inventory).distinct().toList();
+        }
+    }
 
     /**
      * Greedily assigns an input stack to each non-empty recipe slot, counting what each stack has already given so a
-     * stack of 1 isn't used twice. Returns null when some slot can't be filled.
+     * stack of 1 isn't used twice. Each input's contents are read once. Returns null when some slot can't be filled.
      */
     public static @Nullable Plan plan(List<@Nullable Predicate<ItemStack>> slots, List<Inventory> inputs) {
+        List<ItemStack[]> contents = inputs.stream().map(Inventory::getStorageContents).toList();
         Map<Source, Integer> used = new HashMap<>();
         List<@Nullable Source> sources = new ArrayList<>(9);
         @Nullable ItemStack[] matrix = new ItemStack[9];
@@ -38,23 +45,24 @@ public final class CraftPlanner {
                 sources.add(null);
                 continue;
             }
-            Source found = findSource(wants, inputs, used);
+            Source found = findSource(wants, inputs, contents, used);
             if (found == null) return null;
             used.merge(found, 1, Integer::sum);
             sources.add(found);
-            matrix[i] = Objects.requireNonNull(found.inventory().getItem(found.slot())).asOne();
+            matrix[i] = contents.get(inputs.indexOf(found.inventory()))[found.slot()].asOne();
         }
         return new Plan(sources, matrix);
     }
 
     /** The first input stack that {@code wants} accepts and that still has an item not already planned. */
-    private static @Nullable Source findSource(Predicate<ItemStack> wants, List<Inventory> inputs, Map<Source, Integer> used) {
-        for (Inventory inventory : inputs) {
-            ItemStack[] contents = inventory.getStorageContents();
-            for (int slot = 0; slot < contents.length; slot++) {
-                ItemStack item = contents[slot];
+    private static @Nullable Source findSource(Predicate<ItemStack> wants, List<Inventory> inputs, List<ItemStack[]> contents,
+            Map<Source, Integer> used) {
+        for (int input = 0; input < inputs.size(); input++) {
+            ItemStack[] items = contents.get(input);
+            for (int slot = 0; slot < items.length; slot++) {
+                ItemStack item = items[slot];
                 if (item == null || item.isEmpty() || !wants.test(item)) continue;
-                Source source = new Source(inventory, slot);
+                Source source = new Source(inputs.get(input), slot);
                 if (used.getOrDefault(source, 0) < item.getAmount()) return source;
             }
         }
