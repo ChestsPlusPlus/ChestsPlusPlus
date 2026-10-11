@@ -42,23 +42,32 @@ public final class V2FilterMigration implements Listener {
         if (state.filters() == MigrationState.Filters.ON_LOAD) convert(event.getChunk(), event.getEntities());
     }
 
-    /** Converts the frames in a chunk not scanned before, returning how many filter entries were added. */
+    /**
+     * Converts the frames in a chunk not scanned before, returning how many filter entries were added. Each hopper's frames are removed only
+     * once its filters are saved, and the chunk is marked only once every hopper is done, so a failure leaves the rest to retry.
+     */
     public int convert(Chunk chunk, List<Entity> entities) {
         PersistentDataContainer pdc = chunk.getPersistentDataContainer();
         if (pdc.has(scannedKey)) return 0;
-        Map<Block, List<HopperFilter>> byHopper = new LinkedHashMap<>();
+        int added = 0;
+        for (Map.Entry<Block, List<ItemFrame>> entry : framesByHopper(entities).entrySet()) {
+            int hopperAdded = append(entry.getKey(), entry.getValue().stream().map(frame -> filter(frame.getItem(), frame.getRotation())).toList());
+            converted += hopperAdded;
+            added += hopperAdded;
+            entry.getValue().forEach(V2FilterMigration::dropAndRemove);
+        }
+        pdc.set(scannedKey, PersistentDataType.BOOLEAN, true);
+        return added;
+    }
+
+    private static Map<Block, List<ItemFrame>> framesByHopper(List<Entity> entities) {
+        Map<Block, List<ItemFrame>> byHopper = new LinkedHashMap<>();
         for (Entity entity : entities) {
             if (!(entity instanceof ItemFrame frame) || frame.getItem().isEmpty()) continue;
             Block attached = frame.getLocation().getBlock().getRelative(frame.getAttachedFace());
-            if (attached.getType() != Material.HOPPER) continue;
-            byHopper.computeIfAbsent(attached, k -> new ArrayList<>()).add(filter(frame.getItem(), frame.getRotation()));
-            dropAndRemove(frame);
+            if (attached.getType() == Material.HOPPER) byHopper.computeIfAbsent(attached, k -> new ArrayList<>()).add(frame);
         }
-        int added = 0;
-        for (Map.Entry<Block, List<HopperFilter>> entry : byHopper.entrySet()) added += append(entry.getKey(), entry.getValue());
-        pdc.set(scannedKey, PersistentDataType.BOOLEAN, true);
-        converted += added;
-        return added;
+        return byHopper;
     }
 
     private int append(Block hopper, List<HopperFilter> converted) {

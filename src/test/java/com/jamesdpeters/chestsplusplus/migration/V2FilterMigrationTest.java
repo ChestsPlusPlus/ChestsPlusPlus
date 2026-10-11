@@ -1,14 +1,18 @@
 package com.jamesdpeters.chestsplusplus.migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.jamesdpeters.chestsplusplus.filter.FilterCodec;
 import com.jamesdpeters.chestsplusplus.filter.FilterService;
 import com.jamesdpeters.chestsplusplus.filter.HopperFilter;
 import com.jamesdpeters.chestsplusplus.filter.HopperFilter.Match;
 import com.jamesdpeters.chestsplusplus.filter.HopperFilter.Mode;
 import com.jamesdpeters.chestsplusplus.testing.PluginTestBase;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.Rotation;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -34,7 +38,11 @@ class V2FilterMigrationTest extends PluginTestBase {
     }
 
     private ItemFrame frame(BlockFace side, Material item, Rotation rotation) {
-        ItemFrame frame = world.spawn(hopper.getRelative(side).getLocation(), ItemFrame.class);
+        return frame(hopper, side, item, rotation);
+    }
+
+    private ItemFrame frame(Block on, BlockFace side, Material item, Rotation rotation) {
+        ItemFrame frame = world.spawn(on.getRelative(side).getLocation(), ItemFrame.class);
         frame.setFacingDirection(side, true);
         frame.setItem(ItemStack.of(item));
         frame.setRotation(rotation);
@@ -87,5 +95,31 @@ class V2FilterMigrationTest extends PluginTestBase {
 
         assertThat(later.isDead()).isFalse();
         assertThat(plugin.services().get(FilterService.class).read(hopper)).hasSize(1);
+    }
+
+    @Test
+    void aFailedHopperKeepsItsFramesForARetry() {
+        Block second = world.getBlockAt(5, 64, 1);
+        second.setType(Material.HOPPER);
+        FilterService real = plugin.services().get(FilterService.class);
+        AtomicBoolean failing = new AtomicBoolean(true);
+        FilterService filters = new FilterService(plugin, new FilterCodec(plugin), real.grouping(), () -> {
+            if (failing.get() && !real.read(second).isEmpty()) throw new IllegalStateException("injected after the second hopper's write");
+            return plugin.services().settings();
+        });
+        V2FilterMigration migration = new V2FilterMigration(plugin.services().get(MigrationState.class), filters, new NamespacedKey(plugin, "test"));
+        ItemFrame first = frame(BlockFace.NORTH, Material.COAL, Rotation.NONE);
+        ItemFrame pending = frame(second, BlockFace.NORTH, Material.DIRT, Rotation.CLOCKWISE);
+
+        assertThatThrownBy(() -> migration.convert(hopper.getChunk(), List.of(first, pending))).hasMessageContaining("injected");
+        assertThat(first.isDead()).isTrue();
+        assertThat(pending.isDead()).isFalse();
+
+        failing.set(false);
+        migration.convert(hopper.getChunk(), List.of(pending));
+
+        assertThat(pending.isDead()).isTrue();
+        assertThat(real.read(hopper)).containsExactly(new HopperFilter(ItemStack.of(Material.COAL), Mode.ALLOW, Match.EXACT));
+        assertThat(real.read(second)).containsExactly(new HopperFilter(ItemStack.of(Material.DIRT), Mode.DENY, Match.EXACT));
     }
 }
