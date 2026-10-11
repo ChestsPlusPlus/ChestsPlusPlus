@@ -100,12 +100,11 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         Block chest = chestAt(0, 0);
         ((Container) chest.getState(false)).getInventory().addItem(ItemStack.of(Material.DIAMOND, 5));
 
-        SignChangeEvent event = sign(alice, chest, "[ChestLink]", "ores");
+        sign(alice, chest, "[ChestLink]", "ores");
         server.getScheduler().performTicks(1);
 
         ChestLinkGroup group = group(alice, "ores");
         assertThat(group).isNotNull();
-        assertThat(event.isCancelled()).isTrue();
         assertThat(chest.getRelative(BlockFace.NORTH).getType()).isEqualTo(Material.AIR);
         Node node = plugin.services().nodes().get(BlockPos.of(chest));
         assertThat(node).isNotNull();
@@ -216,10 +215,9 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         Block table = world.getBlockAt(0, 64, 0);
         table.setType(Material.CRAFTING_TABLE);
 
-        SignChangeEvent event = sign(alice, table, "[AutoCraft]", "torches");
+        sign(alice, table, "[AutoCraft]", "torches");
         server.getScheduler().performTicks(1);
 
-        assertThat(event.isCancelled()).isTrue();
         assertThat(plugin.services().groups().find(GroupType.AUTOCRAFT, alice.getUniqueId(), "torches")).isNotNull();
         assertThat(plugin.services().nodes().at(table)).isNotNull();
         assertThat(table.getRelative(BlockFace.NORTH).getType()).isEqualTo(Material.AIR);
@@ -241,6 +239,24 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         assertThat(plugin.services().nodes().get(BlockPos.of(chest))).isNull();
         assertThat(((Container) chest.getState(false)).getInventory().contains(Material.DIAMOND, 5)).isTrue();
         assertThat(nextPlain(alice)).contains("You can't use that block here");
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = EventPriority.class, names = {"HIGH", "HIGHEST"})
+    void signEditRefusedByAProtectionPluginDoesNotLink(EventPriority priority) {
+        Block chest = chestAt(0, 0);
+        ((Container) chest.getState(false)).getInventory().addItem(ItemStack.of(Material.DIAMOND, 5));
+        server.getPluginManager().registerEvent(SignChangeEvent.class, new Listener() {}, priority,
+                (listener, event) -> ((SignChangeEvent) event).setCancelled(true), MockBukkit.createMockPlugin(), true);
+
+        sign(alice, chest, "[ChestLink]", "loot");
+        server.getScheduler().performTicks(1);
+
+        assertThat(group(alice, "loot")).isNull();
+        assertThat(plugin.services().nodes().get(BlockPos.of(chest))).isNull();
+        assertThat(((Container) chest.getState(false)).getInventory().contains(Material.DIAMOND, 5)).isTrue();
+        assertThat(chest.getRelative(BlockFace.NORTH).getType()).isEqualTo(Material.OAK_WALL_SIGN);
+        assertThat(alice.getInventory().contains(Material.OAK_SIGN)).isFalse();
     }
 
     /**
