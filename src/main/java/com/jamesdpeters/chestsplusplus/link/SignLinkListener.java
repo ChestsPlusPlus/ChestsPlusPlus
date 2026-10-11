@@ -23,8 +23,9 @@ import org.jspecify.annotations.Nullable;
 /**
  * Sign → link conversion: a wall sign reading {@code [ChestLink]} / {@code [AutoCraft]} on line 1 and a
  * group ({@code name} or {@code owner:name}) on line 2 links the block it hangs on, then the sign is removed (it
- * becomes the node's display) and given back outside creative (configurable). Protection plugins approved placing the sign, not using
- * the block behind it (lock plugins usually allow signs on locked chests), so the target still gets the protection check.
+ * becomes the node's display) and given back outside creative (configurable). Runs at MONITOR so every protection plugin has ruled on
+ * the sign edit before anything changes. They approved editing the sign, not using the block behind it (lock plugins usually allow
+ * signs on locked chests), so the target still gets the protection check.
  */
 @RequiredArgsConstructor
 public final class SignLinkListener implements Listener {
@@ -43,7 +44,7 @@ public final class SignLinkListener implements Listener {
         };
     }
 
-    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     void onSignChange(SignChangeEvent event) {
         GroupType type = typeOf(plain(event.line(0)));
         if (type == null) return;
@@ -55,7 +56,6 @@ public final class SignLinkListener implements Listener {
 
         Player player = event.getPlayer();
         if (links.link(player, type, input, target, facing, false) == null) return;
-        event.setCancelled(true);
         boolean refund = !services.settings().linking().consumeSigns() && player.getGameMode() != GameMode.CREATIVE;
         // Remove the sign once the edit has been processed; the display replaces it.
         plugin.getServer().getScheduler().runTask(plugin, () -> removeSign(sign, refund ? player : null));
