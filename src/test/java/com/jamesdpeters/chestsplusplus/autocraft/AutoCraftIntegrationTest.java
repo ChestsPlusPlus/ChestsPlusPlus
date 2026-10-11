@@ -37,6 +37,7 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Item;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -56,6 +57,7 @@ import org.bukkit.inventory.ItemStack;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
 class AutoCraftIntegrationTest extends PluginTestBase {
@@ -312,6 +314,18 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         assertThat(plugin.services().get(GroupActions.class).openRemote(alice, group[0])).isTrue();
         assertThat(editorOpen()).isTrue();
         assertThat(group[0].result()).isEqualTo(ItemStack.of(Material.TORCH, 4));
+    }
+
+    @Test
+    void aCrafterDeniedByAProtectionPluginAtHighestDoesNotOpenTheEditor() {
+        Block table = crafter(new AutoCraftGroup[1]);
+        server.getPluginManager().registerEvent(PlayerInteractEvent.class, new Listener() {}, EventPriority.HIGHEST,
+                (listener, event) -> ((PlayerInteractEvent) event).setUseInteractedBlock(Event.Result.DENY), MockBukkit.createMockPlugin(), true);
+
+        server.getPluginManager()
+                .callEvent(new PlayerInteractEvent(alice, Action.RIGHT_CLICK_BLOCK, null, table, BlockFace.NORTH, EquipmentSlot.HAND));
+
+        assertThat(editorOpen()).isFalse();
     }
 
     private boolean editorOpen() {

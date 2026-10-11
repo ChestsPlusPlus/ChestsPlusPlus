@@ -317,8 +317,8 @@ public final class LinkService {
     /**
      * The shared part of right-clicking a linked block of {@code type}: takes the click over from vanilla and checks the player may open the
      * group. Returns the clicked node when the caller should open it. Sneaking with an item still places blocks, as in vanilla.
-     * Call it at HIGHEST: the DENY it sets cancels the event, so protection plugins handling it with {@code ignoreCancelled} (Towny at
-     * HIGH) would otherwise never get their say.
+     * Call it at MONITOR: the DENY it sets cancels the event, so protection plugins handling it with {@code ignoreCancelled}, even ones
+     * registered after us at HIGHEST, must all have passed it before the click is claimed and the group opens.
      */
     public @Nullable Node claimNodeClick(PlayerInteractEvent event, GroupType type) {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK || firingSyntheticInteract) return null;
