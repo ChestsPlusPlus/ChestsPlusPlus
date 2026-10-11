@@ -31,8 +31,9 @@ to 32 characters, and a clash gets `_2`, `_3`, and so on. The import report list
 ### AutoCraft recipes
 
 Shaped and shapeless recipes are rebuilt from the server's recipe, and every slot matches anything the recipe accepts (any planks
-for "any planks"). Complex recipes use the items v2 stored. A recipe the server no longer has (a removed datapack) leaves an empty
-matrix and is listed in the report.
+for "any planks"). Complex recipes use the items v2 stored. A recipe that isn't registered at import is listed in the report and
+imported with an empty matrix and its key; if another plugin registers it by the time the server has loaded, the matrix is rebuilt
+from it. A recipe the server no longer has (a removed datapack) stays empty.
 
 ### Limits, blacklist and features
 

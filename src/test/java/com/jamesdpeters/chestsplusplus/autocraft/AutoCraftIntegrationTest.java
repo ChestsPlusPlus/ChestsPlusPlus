@@ -54,6 +54,7 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.ShapedRecipe;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -566,6 +567,28 @@ class AutoCraftIntegrationTest extends PluginTestBase {
 
         backend.registered = true;
         server.getPluginManager().callEvent(new ServerLoadEvent(ServerLoadEvent.LoadType.RELOAD));
+        assertThat(group[0].hasRecipe()).isTrue();
+    }
+
+    @Test
+    void aKeyOnlyRecipeRegisteredAfterLoadRebuildsItsMatrixWhenTheServerFinishesLoading() {
+        LateBackend backend = new LateBackend();
+        autoCraft = autoCraft(backend);
+        AutoCraftGroup[] group = new AutoCraftGroup[1];
+        linkedCrafter(group);
+        NamespacedKey key = new NamespacedKey(plugin, "late_torch");
+        group[0].setRecipe(new ItemStack[9], key, null);
+        autoCraft.resolveLoaded(group[0]);
+        assertThat(group[0].matrixIsEmpty()).isTrue();
+
+        server.addRecipe(new ShapedRecipe(key, ItemStack.of(Material.TORCH, 4)).shape("C", "S")
+                .setIngredient('C', Material.COAL)
+                .setIngredient('S', Material.STICK));
+        backend.registered = true;
+        serverFinishesLoading(autoCraft);
+
+        assertThat(group[0].matrix()[0]).isEqualTo(ItemStack.of(Material.COAL));
+        assertThat(group[0].matrix()[3]).isEqualTo(ItemStack.of(Material.STICK));
         assertThat(group[0].hasRecipe()).isTrue();
     }
 
