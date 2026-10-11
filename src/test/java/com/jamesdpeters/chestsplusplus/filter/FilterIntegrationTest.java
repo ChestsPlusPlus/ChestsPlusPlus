@@ -297,6 +297,19 @@ class FilterIntegrationTest extends PluginTestBase {
     }
 
     @Test
+    void disablingThePluginClosesAnOpenEditorSoItsGhostItemsAreNeverLeftUnguarded() {
+        Block hopper = hopperAt(0);
+        PlayerMock player = server.addPlayer();
+        FilterEditorHolder editor = new FilterEditorHolder(hopper, List.of(filter(Material.DIAMOND, Mode.ALLOW, Match.EXACT)),
+                plugin.services().messages(), filters);
+        player.openInventory(editor.getInventory());
+
+        server.getPluginManager().disablePlugin(plugin);
+
+        assertThat(player.getOpenInventory().getTopInventory()).isNotSameAs(editor.getInventory());
+    }
+
+    @Test
     void sneakClickDeniedByAProtectionPluginAtHighestDoesNotOpenTheEditor() {
         Block hopper = hopperAt(0);
         PlayerMock player = server.addPlayer();

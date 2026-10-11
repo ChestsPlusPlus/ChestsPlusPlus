@@ -3,11 +3,13 @@ package com.jamesdpeters.chestsplusplus;
 import com.jamesdpeters.chestsplusplus.autocraft.AutoCraftListener;
 import com.jamesdpeters.chestsplusplus.autocraft.AutoCraftService;
 import com.jamesdpeters.chestsplusplus.autocraft.CraftingBackend;
+import com.jamesdpeters.chestsplusplus.chestlink.ChestLinkHolder;
 import com.jamesdpeters.chestsplusplus.chestlink.ChestLinkListener;
 import com.jamesdpeters.chestsplusplus.chestlink.ChestLinkService;
 import com.jamesdpeters.chestsplusplus.chestlink.GolemBridge;
 import com.jamesdpeters.chestsplusplus.chestlink.HopperBridge;
 import com.jamesdpeters.chestsplusplus.config.Settings;
+import com.jamesdpeters.chestsplusplus.core.Holders;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.core.scheduler.Tickers;
 import com.jamesdpeters.chestsplusplus.display.DisplayLayout.Surface;
@@ -49,6 +51,8 @@ import com.jamesdpeters.chestsplusplus.persistence.GroupStore.LoadedGroup;
 import com.jamesdpeters.chestsplusplus.persistence.Persistence;
 import com.jamesdpeters.chestsplusplus.persistence.TrustStore;
 import com.jamesdpeters.chestsplusplus.ui.UiService;
+import com.jamesdpeters.chestsplusplus.ui.menu.GhostEditor;
+import com.jamesdpeters.chestsplusplus.ui.menu.Menu;
 import com.jamesdpeters.chestsplusplus.ui.menu.MenuListener;
 import java.io.File;
 import java.io.IOException;
@@ -58,9 +62,12 @@ import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.Chest;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.world.WorldSaveEvent;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jspecify.annotations.Nullable;
 
@@ -211,6 +218,21 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
                 services.get(V2FilterMigration.class),
                 services.get(V2Migration.class));
         listeners.forEach(listener -> getServer().getPluginManager().registerEvents(listener, this));
+        services.shutdown().add("open inventories", this::closePluginInventories);
+    }
+
+    /**
+     * Ghost items and menu icons are only kept in place by our listeners, which Paper removes on disable. Close every view while they
+     * still run, and before persistence closes, so the close handlers can still save.
+     */
+    private void closePluginInventories() {
+        getServer().getOnlinePlayers().stream().filter(player -> isPluginInventory(player.getOpenInventory().getTopInventory()))
+                .forEach(Player::closeInventory);
+    }
+
+    private static boolean isPluginInventory(Inventory inventory) {
+        InventoryHolder holder = Holders.of(inventory);
+        return holder instanceof ChestLinkHolder || holder instanceof GhostEditor || holder instanceof Menu;
     }
 
     /** A few central tickers rather than one task per group. */
