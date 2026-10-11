@@ -8,7 +8,7 @@ import java.util.Map;
 
 /**
  * When each AutoCraft node next tries to craft. A node that crafted tries again one interval later; a node that failed backs off
- * (doubling, capped) and watches the blocks and ChestLink groups it depends on, so a change there retries it on the next tick instead.
+ * (doubling, capped at the larger of {@link #MAX_BACKOFF_TICKS} and its interval) and watches the blocks and ChestLink groups it depends on, so a change there retries it on the next tick instead.
  * Nodes are kept in per-tick buckets, so a tick only touches the nodes due then.
  */
 final class CraftScheduler {
@@ -61,7 +61,7 @@ final class CraftScheduler {
         State state = states.computeIfAbsent(node, _ -> new State());
         unwatch(node, state);
         state.failures++;
-        reschedule(node, state, now + Math.min(MAX_BACKOFF_TICKS, (long) interval << Math.min(state.failures - 1, 8)));
+        reschedule(node, state, now + backoff(interval, state.failures));
         state.blocks = blocks;
         state.groups = groups;
         blocks.forEach(block -> blockWatchers.computeIfAbsent(block, _ -> new ArrayList<>(1)).add(node));
@@ -94,6 +94,11 @@ final class CraftScheduler {
     void groupChanged(long group) {
         List<BlockPos> nodes = groupWatchers.get(group);
         if (nodes != null) List.copyOf(nodes).forEach(this::soon);
+    }
+
+    /** The cap never undercuts {@code interval}, so a failing node never retries faster than a crafting one. */
+    static long backoff(int interval, int failures) {
+        return Math.min(Math.max(MAX_BACKOFF_TICKS, interval), (long) interval << Math.min(failures - 1, 8));
     }
 
     private void reschedule(BlockPos node, State state, long at) {
