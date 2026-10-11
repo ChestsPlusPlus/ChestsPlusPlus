@@ -1,5 +1,6 @@
 package com.jamesdpeters.chestsplusplus.chestlink;
 
+import com.jamesdpeters.chestsplusplus.core.CppInventoryHolder;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import java.util.List;
 import lombok.Getter;
@@ -7,12 +8,11 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.jspecify.annotations.Nullable;
 
 /** The custom holder of a ChestLink's shared 54-slot inventory (Paper's recommended identification pattern). */
-public final class ChestLinkHolder implements InventoryHolder {
+public final class ChestLinkHolder implements CppInventoryHolder {
 
     @Getter private final ChestLinkGroup group;
     private Inventory inventory;
