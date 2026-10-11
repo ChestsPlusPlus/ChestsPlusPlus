@@ -277,6 +277,7 @@ public final class LinkService {
     public void setPublic(StorageGroup group, boolean isPublic) {
         group.setPublic(isPublic);
         services.groupStore().markDirty(group);
+        if (!isPublic) closeRevokedViews(group);
     }
 
     public boolean addMember(StorageGroup group, UUID member) {
@@ -288,7 +289,19 @@ public final class LinkService {
     public boolean removeMember(StorageGroup group, UUID member) {
         if (!services.groups().removeMember(group, member)) return false;
         services.groupStore().markDirty(group);
+        closeRevokedViews(group);
         return true;
+    }
+
+    /** Trust covers every group the owner has, so untrusting can revoke access to any of them. */
+    public void untrust(UUID owner, UUID player) {
+        if (!services.trust().untrust(owner, player)) return;
+        for (GroupType type : GroupType.values()) services.groups().ownedBy(owner, type).forEach(this::closeRevokedViews);
+    }
+
+    private void closeRevokedViews(StorageGroup group) {
+        GroupTypeHandler handler = handlers.get(group.type());
+        if (handler != null) handler.closeRevokedViews(group);
     }
 
     /**

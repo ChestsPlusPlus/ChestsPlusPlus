@@ -410,6 +410,69 @@ class ChestLinkIntegrationTest extends PluginTestBase {
     }
 
     @Test
+    void removingAMemberClosesTheirOpenView() {
+        Block chest = chestAt(0, 0);
+        sign(alice, chest, "[ChestLink]", "shared");
+        ChestLinkGroup group = group(alice, "shared");
+        LinkService links = plugin.services().get(LinkService.class);
+        links.addMember(group, bob.getUniqueId());
+        rightClick(bob, chest);
+        assertThat(bob.getOpenInventory().getTopInventory()).isSameAs(group.inventory());
+
+        links.removeMember(group, bob.getUniqueId());
+
+        assertThat(bob.getOpenInventory().getTopInventory()).isNotSameAs(group.inventory());
+    }
+
+    @Test
+    void makingAGroupPrivateClosesOutsidersViews() {
+        Block chest = chestAt(0, 0);
+        sign(alice, chest, "[ChestLink]", "shared");
+        ChestLinkGroup group = group(alice, "shared");
+        LinkService links = plugin.services().get(LinkService.class);
+        links.setPublic(group, true);
+        rightClick(bob, chest);
+        rightClick(alice, chest);
+
+        links.setPublic(group, false);
+
+        assertThat(bob.getOpenInventory().getTopInventory()).isNotSameAs(group.inventory());
+        assertThat(alice.getOpenInventory().getTopInventory()).isSameAs(group.inventory());
+    }
+
+    @Test
+    void untrustingClosesTheirOpenView() {
+        Block chest = chestAt(0, 0);
+        sign(alice, chest, "[ChestLink]", "shared");
+        ChestLinkGroup group = group(alice, "shared");
+        plugin.services().trust().trust(alice.getUniqueId(), bob.getUniqueId());
+        rightClick(bob, chest);
+
+        plugin.services().get(LinkService.class).untrust(alice.getUniqueId(), bob.getUniqueId());
+
+        assertThat(bob.getOpenInventory().getTopInventory()).isNotSameAs(group.inventory());
+    }
+
+    @Test
+    void losingAPermissionRefusesTheNextEditAndClosesTheView() {
+        Block chest = chestAt(0, 0);
+        sign(alice, chest, "[ChestLink]", "shared");
+        ChestLinkGroup group = group(alice, "shared");
+        group.inventory().addItem(ItemStack.of(Material.DIAMOND));
+        group.setPublic(true);
+        rightClick(bob, chest);
+
+        bob.addAttachment(plugin).setPermission("chestsplusplus.chestlink.open", false);
+        InventoryClickEvent click = new InventoryClickEvent(bob.getOpenInventory(), InventoryType.SlotType.CONTAINER, 0, ClickType.LEFT,
+                InventoryAction.PICKUP_ALL);
+        server.getPluginManager().callEvent(click);
+        server.getScheduler().performOneTick();
+
+        assertThat(click.isCancelled()).isTrue();
+        assertThat(bob.getOpenInventory().getTopInventory()).isNotSameAs(group.inventory());
+    }
+
+    @Test
     void linkingToAnotherPlayersGroupNeedsAccess() {
         sign(alice, chestAt(0, 0), "[ChestLink]", "alices");
         Block bobs = chestAt(3, 0);

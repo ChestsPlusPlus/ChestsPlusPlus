@@ -1,5 +1,6 @@
 package com.jamesdpeters.chestsplusplus.chestlink;
 
+import com.jamesdpeters.chestsplusplus.Permissions;
 import com.jamesdpeters.chestsplusplus.chestlink.sort.Sorter;
 import com.jamesdpeters.chestsplusplus.core.BlockPos;
 import com.jamesdpeters.chestsplusplus.core.Holders;
@@ -90,6 +91,13 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
     }
 
     @Override
+    public void closeRevokedViews(StorageGroup group) {
+        if (!(group instanceof ChestLinkGroup chest) || !chest.hasInventory()) return;
+        List.copyOf(chest.inventory().getViewers()).stream().filter(viewer -> !mayKeepViewing(viewer, chest))
+                .forEach(viewer -> revoke(viewer, chest));
+    }
+
+    @Override
     public void openRemote(Player player, StorageGroup group) {
         if (group instanceof ChestLinkGroup chest) open(player, chest, null);
     }
@@ -167,6 +175,17 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
         else openedFrom.remove(player.getUniqueId());
         player.openInventory(group.inventory());
         if (from == null) player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 0.5f, 1f);
+    }
+
+    /** Can {@code viewer} still use the open inventory? It needs the permission it was opened with, as well as access to the group. */
+    public boolean mayKeepViewing(HumanEntity viewer, ChestLinkGroup group) {
+        String permission = openedFrom.containsKey(viewer.getUniqueId()) ? Permissions.CHESTLINK_OPEN : Permissions.CHESTLINK_REMOTE;
+        return viewer.hasPermission(permission) && services.access().canAccess(viewer.getUniqueId(), viewer, group);
+    }
+
+    public void revoke(HumanEntity viewer, ChestLinkGroup group) {
+        viewer.closeInventory();
+        services.send(viewer, Message.ERROR_NO_ACCESS, Messages.group(group));
     }
 
     /** InventoryOpenEvent for a ChestLink inventory: open lids if this is the first viewer. */

@@ -145,7 +145,7 @@ public final class GroupActions {
     public void untrust(Player player, String name, Runnable after) {
         if (!require(player, Permissions.TRUST)) return;
         lookup(player, name, trusted -> {
-            services.trust().untrust(player.getUniqueId(), trusted);
+            links.untrust(player.getUniqueId(), trusted);
             services.send(player, Message.TRUST_REMOVED, Messages.player(name));
             after.run();
         });
