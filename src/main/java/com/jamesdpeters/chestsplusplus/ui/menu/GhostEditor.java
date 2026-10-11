@@ -1,9 +1,9 @@
 package com.jamesdpeters.chestsplusplus.ui.menu;
 
+import com.jamesdpeters.chestsplusplus.core.CppInventoryHolder;
 import java.util.List;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
-import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.jspecify.annotations.Nullable;
 
@@ -12,7 +12,7 @@ import org.jspecify.annotations.Nullable;
  * own inventory still works so they can pick items up. {@link MenuListener} cancels anything that would move items into the editor and
  * passes clicks on its own slots to {@link #onClick}.
  */
-public abstract class GhostEditor implements InventoryHolder {
+public abstract class GhostEditor implements CppInventoryHolder {
 
     /** A click on one of the editor's slots. The event is already cancelled. */
     public abstract void onClick(Player player, int slot, @Nullable ItemStack cursor, ClickType click);

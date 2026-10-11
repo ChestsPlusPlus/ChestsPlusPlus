@@ -1,5 +1,6 @@
 package com.jamesdpeters.chestsplusplus.ui.menu;
 
+import com.jamesdpeters.chestsplusplus.core.CppInventoryHolder;
 import java.util.HashMap;
 import java.util.Map;
 import net.kyori.adventure.text.Component;
@@ -7,7 +8,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.jspecify.annotations.Nullable;
 
@@ -15,7 +15,7 @@ import org.jspecify.annotations.Nullable;
  * A minimal chest-GUI menu: a custom holder with clickable buttons. Every click and drag in a
  * menu is cancelled by {@link MenuListener}; clicks on a button run its handler.
  */
-public class Menu implements InventoryHolder {
+public class Menu implements CppInventoryHolder {
 
     /** What a button does when clicked. */
     @FunctionalInterface
