@@ -48,6 +48,7 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.BeforeEach;
@@ -115,6 +116,20 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         assertThat(plugin.services().groupStore().isDirty(group)).isTrue();
         assertThat(nextPlain(alice)).contains("Created ChestLink ores");
         assertThat(alice.getInventory().contains(Material.OAK_SIGN, 1)).isTrue();
+    }
+
+    @Test
+    void linkingClosesViewsOfThePhysicalInventory() {
+        Block chest = chestAt(0, 0);
+        Inventory physical = ((Container) chest.getState(false)).getInventory();
+        bob.openInventory(physical);
+
+        sign(alice, chest, "[ChestLink]", "ores");
+        server.getScheduler().performTicks(1);
+
+        assertThat(group(alice, "ores")).isNotNull();
+        assertThat(bob.getOpenInventory().getTopInventory()).isNotSameAs(physical);
+        assertThat(physical.getViewers()).isEmpty();
     }
 
     @Test
