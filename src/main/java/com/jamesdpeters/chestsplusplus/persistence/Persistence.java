@@ -1,6 +1,8 @@
 package com.jamesdpeters.chestsplusplus.persistence;
 
 import com.jamesdpeters.chestsplusplus.ChestsPlusPlus;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -16,6 +18,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +36,7 @@ import org.jspecify.annotations.Nullable;
  * A retry that fails again is split up, one transaction per store and then per key, so a key that can never be written doesn't block the
  * rest. Such a key is given up on after {@link #MAX_ATTEMPTS} failures, until it next changes, when it gets the full budget again. A
  * failure only counts against a key when something else committed, so a database outage retries everything instead of giving up on it.
+ * Keys changed {@link #together} are never split up: they are retried, and given up on, as one.
  * <p>
  * Completions queue up for the main thread to run, so they survive a scheduler that has stopped taking tasks. {@link #close} runs them
  * itself, retrying failed keys for a few rounds before logging what it couldn't save. {@link #markDirty}, {@link #flush}, {@link #load}
@@ -54,7 +60,11 @@ public final class Persistence {
         return thread;
     });
     private final Map<Store<?, ?>, Set<?>> dirty = new LinkedHashMap<>();
-    private final Map<StoreKey, Integer> failures = new HashMap<>();
+    /** Failed attempts per {@link StoreKey}, or per {@link Unit} for keys changed together. */
+    private final Map<Object, Integer> failures = new HashMap<>();
+    /** Keys changed together that haven't all committed yet. */
+    private final List<Unit> units = new ArrayList<>();
+    private @Nullable Set<StoreKey> recording;
     private int inFlight;
     private boolean failing;
 
@@ -62,9 +72,28 @@ public final class Persistence {
         dirty.put(store, new LinkedHashSet<>());
     }
 
-    /** One hash-set add. */
+    /** One hash-set add, outside {@link #together}. */
     public <K> void markDirty(Store<K, ?> store, K key) {
         keys(store).add(key);
+        if (recording != null) recording.add(new StoreKey(store, key));
+    }
+
+    /**
+     * Runs {@code changes}, then saves every key they marked dirty in one transaction until all of them have committed. A retry never splits
+     * them, a later change to any one saves them all again, and they are given up on as one. For changes that are only valid together,
+     * like imported rows and the marker saying the import is done. If {@code changes} throws, its keys are saved independently.
+     */
+    public <T> T together(Supplier<T> changes) {
+        Set<StoreKey> changed = new LinkedHashSet<>();
+        recording = changed;
+        T result;
+        try {
+            result = changes.get();
+        } finally {
+            recording = null;
+        }
+        if (!changed.isEmpty()) units.add(new Unit(Set.copyOf(changed)));
+        return result;
     }
 
     public boolean isDirty(Store<?, ?> store, Object key) {
@@ -84,15 +113,17 @@ public final class Persistence {
     /** Writes every dirty key. The future completes on the main thread once they are committed, or fails if any of them failed. */
     public CompletableFuture<Void> flush() {
         dirty.keySet().forEach(Store::beforeFlush);
+        units.forEach(this::pullTogether);
         List<Batch<?, ?>> batches = dirty.keySet().stream().<Batch<?, ?>>map(this::take).filter(batch -> !batch.writes().isEmpty()).toList();
         int keys = batches.stream().mapToInt(batch -> batch.writes().size()).sum();
         if (keys == 0) return CompletableFuture.completedFuture(null);
         inFlight += keys;
         boolean isolate = failing || batches.stream().flatMap(Batch::keys).anyMatch(failures::containsKey);
+        List<Unit> together = List.copyOf(units);
         CompletableFuture<Void> done = new CompletableFuture<>();
         io.execute(() -> {
-            Attempts attempts = write(batches, isolate);
-            completions.add(() -> written(batches, keys, attempts, done));
+            Attempts attempts = write(batches, isolate, together);
+            completions.add(() -> written(batches, keys, together, attempts, done));
             mainThread.accept(this::runCompletions);
         });
         return done;
@@ -143,17 +174,27 @@ public final class Persistence {
         return unsaved;
     }
 
-    private Attempts write(List<Batch<?, ?>> batches, boolean isolate) {
+    /** A unit with any key dirty is saved whole, so its rows never commit apart. */
+    private void pullTogether(Unit unit) {
+        if (unit.keys().stream().anyMatch(key -> dirtyKeys(key).contains(key.key()))) unit.keys().forEach(key -> dirtyKeys(key).add(key.key()));
+    }
+
+    private Attempts write(List<Batch<?, ?>> batches, boolean isolate, List<Unit> together) {
         Attempts attempts = new Attempts();
         if (attempts.run(batches)) return attempts;
-        if (isolate) batches.forEach(attempts::isolate);
+        if (isolate) attempts.isolate(batches, together);
         else attempts.failAll(batches);
         return attempts;
     }
 
-    private void written(List<Batch<?, ?>> batches, int keys, Attempts attempts, CompletableFuture<Void> done) {
+    private void written(List<Batch<?, ?>> batches, int keys, List<Unit> together, Attempts attempts, CompletableFuture<Void> done) {
         inFlight -= keys;
-        batches.stream().flatMap(Batch::keys).filter(key -> !attempts.failed.containsKey(key)).forEach(failures::remove);
+        Set<StoreKey> saved = batches.stream().flatMap(Batch::keys).filter(key -> !attempts.failed.containsKey(key)).collect(Collectors.toSet());
+        saved.forEach(failures::remove);
+        together.stream().filter(unit -> saved.containsAll(unit.keys())).forEach(unit -> {
+            units.remove(unit);
+            failures.remove(unit);
+        });
         if (attempts.failed.isEmpty()) {
             failing = false;
             done.complete(null);
@@ -162,19 +203,23 @@ public final class Persistence {
         RuntimeException error = attempts.failed.values().iterator().next();
         if (!failing) log.warn("Failed to save {} ChestsPlusPlus change(s); will retry", attempts.failed.size(), error);
         failing = true;
-        attempts.failed.forEach((key, keyError) -> retryOrGiveUp(key, keyError, attempts.committed));
+        List<Unit> failedUnits = together.stream().filter(unit -> unit.keys().stream().anyMatch(attempts.failed::containsKey)).toList();
+        attempts.failed.forEach((key, keyError) -> {
+            if (failedUnits.stream().noneMatch(unit -> unit.keys().contains(key))) retryOrGiveUp(key, Set.of(key), keyError, attempts.committed);
+        });
+        failedUnits.forEach(unit -> retryOrGiveUp(unit, unit.keys(), error, attempts.committed));
         done.completeExceptionally(error);
     }
 
-    private void retryOrGiveUp(StoreKey key, RuntimeException error, boolean databaseWorks) {
-        int failed = databaseWorks ? failures.merge(key, 1, Integer::sum) : 0;
+    /** {@code counted} is the key, or the unit of keys, that the failure counts against. */
+    private void retryOrGiveUp(Object counted, Collection<StoreKey> keys, RuntimeException error, boolean databaseWorks) {
+        int failed = databaseWorks ? failures.merge(counted, 1, Integer::sum) : 0;
         if (failed < MAX_ATTEMPTS) {
-            this.<Object>keys(key.store()).add(key.key());
+            keys.forEach(key -> dirtyKeys(key).add(key.key()));
             return;
         }
-        failures.remove(key);
-        log.error("Gave up saving {} {} after {} failed attempts; it is saved again when it next changes", key.store().getClass().getSimpleName(),
-                key.key(), failed, error);
+        failures.remove(counted);
+        log.error("Gave up saving {} after {} failed attempts; it is saved again when it next changes", counted, failed, error);
     }
 
     private <K, S> Batch<K, S> take(Store<K, S> store) {
@@ -182,6 +227,10 @@ public final class Persistence {
         List<Write<K, S>> writes = dirtyKeys.stream().map(key -> new Write<>(key, store.snapshot(key))).toList();
         dirtyKeys.clear();
         return new Batch<>(store, writes);
+    }
+
+    private Set<Object> dirtyKeys(StoreKey key) {
+        return keys(key.store());
     }
 
     @SuppressWarnings("unchecked")
@@ -209,6 +258,19 @@ public final class Persistence {
             }
         }
 
+        /** Each unit in its own transaction, then the remaining keys a store at a time. */
+        void isolate(List<Batch<?, ?>> batches, List<Unit> together) {
+            for (Unit unit : together) {
+                List<Batch<?, ?>> part = only(batches, unit.keys()::contains);
+                if (!part.isEmpty() && !run(part)) failAll(part);
+            }
+            only(batches, key -> together.stream().noneMatch(unit -> unit.keys().contains(key))).forEach(this::isolate);
+        }
+
+        private static List<Batch<?, ?>> only(List<Batch<?, ?>> batches, Predicate<StoreKey> keep) {
+            return batches.stream().<Batch<?, ?>>map(batch -> batch.only(keep)).filter(batch -> !batch.writes().isEmpty()).toList();
+        }
+
         void isolate(Batch<?, ?> batch) {
             if (run(List.of(batch))) return;
             batch.singles().stream().filter(single -> !run(List.of(single))).forEach(single -> failAll(List.of(single)));
@@ -220,7 +282,21 @@ public final class Persistence {
         }
     }
 
-    private record StoreKey(Store<?, ?> store, Object key) {}
+    private record StoreKey(Store<?, ?> store, Object key) {
+
+        @Override
+        public String toString() {
+            return store.getClass().getSimpleName() + " " + key;
+        }
+    }
+
+    private record Unit(Set<StoreKey> keys) {
+
+        @Override
+        public String toString() {
+            return keys.size() + " change(s) made together";
+        }
+    }
 
     private record Write<K, S>(K key, @Nullable S snapshot) {}
 
@@ -228,6 +304,10 @@ public final class Persistence {
 
         Stream<StoreKey> keys() {
             return writes.stream().map(write -> new StoreKey(store, write.key()));
+        }
+
+        Batch<K, S> only(Predicate<StoreKey> keep) {
+            return new Batch<>(store, writes.stream().filter(write -> keep.test(new StoreKey(store, write.key()))).toList());
         }
 
         List<Batch<K, S>> singles() {

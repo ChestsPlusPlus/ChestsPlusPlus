@@ -232,7 +232,7 @@ class V2MigrationTest extends PluginTestBase {
 
     private ChestLinkGroup importUnresolved(String worldName, int x) {
         V2Importer importer = new V2Importer(services.groups(), services.nodes(), services.trust(), services.groupStore(),
-                services.get(V2Cleanup.class),
+                services.persistence(), services.get(V2Cleanup.class),
                 new WorldUids(server, plugin::getDataFolder), services.get(MigrationState.class), services.get(V2PendingLocations.class),
                 services::settings, services.get(DisplayService.class)::nodeAdded);
         importer.run(new V2Data(List.of(new V2Data.Group(GroupType.CHESTLINK, ALICE, "Late World", false, List.of(), SortMode.OFF,

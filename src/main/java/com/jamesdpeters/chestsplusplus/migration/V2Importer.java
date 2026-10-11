@@ -17,6 +17,7 @@ import com.jamesdpeters.chestsplusplus.persistence.GroupStore;
 import com.jamesdpeters.chestsplusplus.persistence.GroupStore.GroupRow;
 import com.jamesdpeters.chestsplusplus.persistence.GroupStore.GroupSnapshot;
 import com.jamesdpeters.chestsplusplus.persistence.GroupStore.MemberRow;
+import com.jamesdpeters.chestsplusplus.persistence.Persistence;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -45,6 +46,7 @@ public final class V2Importer {
     private final NodeIndex nodes;
     private final TrustService trust;
     private final GroupStore groupStore;
+    private final Persistence persistence;
     private final V2Cleanup cleanup;
     private final WorldUids worlds;
     private final MigrationState state;
@@ -58,17 +60,10 @@ public final class V2Importer {
         if (state.importCompleted())
             return new ImportReport(apply, List.of("The one-time v2 import is complete; pending locations recover automatically."));
         Run run = new Run(data, apply);
-        ImportReport report;
-        try {
-            report = run.execute();
-        } catch (RuntimeException e) {
-            if (apply) run.rollback();
-            throw e;
-        }
-        if (apply) {
-            state.completeImport();
-            displayImported(run.adopted);
-        }
+        if (!apply) return run.execute();
+        // One unit, so the completion marker never commits without every group, node and bookkeeping row it vouches for.
+        ImportReport report = persistence.together(run::apply);
+        displayImported(run.adopted);
         return report;
     }
 
@@ -100,6 +95,17 @@ public final class V2Importer {
             this.data = data;
             this.apply = apply;
             this.report = new ImportReport(apply, data.problems());
+        }
+
+        ImportReport apply() {
+            try {
+                execute();
+            } catch (RuntimeException e) {
+                rollback();
+                throw e;
+            }
+            state.completeImport();
+            return report;
         }
 
         ImportReport execute() {

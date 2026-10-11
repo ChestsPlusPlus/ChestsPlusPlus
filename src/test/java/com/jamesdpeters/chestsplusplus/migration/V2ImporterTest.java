@@ -88,7 +88,7 @@ class V2ImporterTest extends PluginTestBase {
         pending.onChange(pendingStore::markDirty);
         groups.onRemove(pending::removeGroup);
         persistence.load();
-        importer = new V2Importer(groups, nodes, trust, groupStore, cleanup, new WorldUids(server, () -> dir.toFile()), state, pending,
+        importer = new V2Importer(groups, nodes, trust, groupStore, persistence, cleanup, new WorldUids(server, () -> dir.toFile()), state, pending,
                 () -> settings, spawned::add);
         server.addRecipe(new ShapedRecipe(NamespacedKey.minecraft("torch"), ItemStack.of(Material.TORCH, 4)).shape("C", "S")
                 .setIngredient('C', Material.COAL)
@@ -288,6 +288,28 @@ class V2ImporterTest extends PluginTestBase {
         assertThat(database.handle().createQuery("SELECT count(*) FROM groups").mapTo(int.class).one()).isEqualTo(6);
         assertThat(database.handle().createQuery("SELECT count(*) FROM v2_pending_locations").mapTo(int.class).one()).isEqualTo(1);
         assertThat(database.handle().createQuery("SELECT count(*) FROM trust").mapTo(int.class).one()).isZero();
+    }
+
+    @Test
+    void completionIsNotSavedWhileAnyImportedGroupFailsToSave() {
+        database.handle()
+                .execute("CREATE TRIGGER fail_iron BEFORE INSERT ON groups WHEN NEW.name = 'iron' BEGIN SELECT RAISE(ABORT, 'bad row'); END");
+        importFixture(true);
+        for (int attempt = 0; attempt < 2; attempt++) assertThatThrownBy(() -> persistence.flush().join()).hasCauseInstanceOf(RuntimeException.class);
+        assertThat(count("groups")).isZero();
+        assertThat(count("nodes")).isZero();
+        assertThat(count("migration_state")).isZero();
+        assertThat(count("v2_pending_locations")).isZero();
+
+        database.handle().execute("DROP TRIGGER fail_iron");
+        persistence.flush().join();
+
+        assertThat(count("groups")).isEqualTo(6);
+        assertThat(count("migration_state")).isOne();
+    }
+
+    private int count(String table) {
+        return database.handle().createQuery("SELECT count(*) FROM " + table).mapTo(int.class).one();
     }
 
     private static void writeUid(Path file, UUID uuid) throws IOException {

@@ -266,6 +266,38 @@ class PersistenceTest {
         }
     }
 
+    @Test
+    void keysChangedTogetherAreNeverSavedApart() throws InterruptedException {
+        EntryStore store = new EntryStore();
+        EntryStore marker = new EntryStore("markers");
+        try (Database database = database()) {
+            Persistence persistence = start(database, store, marker);
+            store.failingName = "bad";
+            persistence.together(() -> {
+                store.set(persistence, "a", "1");
+                store.set(persistence, "bad", "2");
+                marker.set(persistence, "done", "yes");
+                return null;
+            });
+            for (int attempt = 0; attempt <= Persistence.MAX_ATTEMPTS; attempt++) {
+                store.set(persistence, "good" + attempt, "1");
+                flushAndWait(persistence);
+            }
+            assertThat(persistence.pending()).isZero();
+            assertThat(rows(database)).containsOnlyKeys("good0", "good1", "good2", "good3");
+            assertThat(rows(database, "markers")).isEmpty();
+
+            store.set(persistence, "a", "3");
+            flushAndWait(persistence);
+            assertThat(rows(database)).doesNotContainKey("a");
+
+            store.failingName = null;
+            flushAndWait(persistence);
+            assertThat(rows(database)).containsEntry("a", "3").containsEntry("bad", "2");
+            assertThat(rows(database, "markers")).containsExactly(Map.entry("done", "yes"));
+        }
+    }
+
     /** Fails {@code name} on every flush, alongside a key that does commit, until it is given up on. */
     private void giveUpOn(Persistence persistence, EntryStore store, String name) throws InterruptedException {
         store.failingName = name;
