@@ -6,13 +6,16 @@ import com.jamesdpeters.chestsplusplus.core.BlockPos;
 import com.jamesdpeters.chestsplusplus.testing.Tags;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 @Tag(Tags.UNIT)
 class CraftSchedulerTest {
 
-    private static final BlockPos NODE = new BlockPos(UUID.randomUUID(), 0, 64, 0);
+    private static final UUID WORLD = UUID.randomUUID();
+    private static final BlockPos NODE = new BlockPos(WORLD, 0, 64, 0);
+    private static final long GROUP = 1L;
 
     private final CraftScheduler scheduler = new CraftScheduler();
 
@@ -34,5 +37,37 @@ class CraftSchedulerTest {
 
         for (int tick = 1; tick < 1200; tick++) assertThat(scheduler.advance()).isEmpty();
         assertThat(scheduler.advance()).containsExactly(NODE);
+    }
+
+    @Test
+    void groupChangeRetriesEveryWatcherNextTickInOrder() {
+        List<BlockPos> nodes = IntStream.range(0, 50).mapToObj(i -> new BlockPos(WORLD, i, 64, 0)).toList();
+        nodes.forEach(node -> scheduler.failed(node, 20, List.of(), List.of(GROUP)));
+
+        scheduler.groupChanged(GROUP);
+
+        assertThat(scheduler.anyWaiting()).isFalse();
+        assertThat(scheduler.advance()).containsExactlyElementsOf(nodes);
+        for (int tick = 0; tick < CraftScheduler.MAX_BACKOFF_TICKS; tick++) assertThat(scheduler.advance()).isEmpty();
+    }
+
+    @Test
+    void nodeWatchingAGroupTwiceIsRetriedOnce() {
+        scheduler.failed(NODE, 20, List.of(), List.of(GROUP, GROUP));
+
+        scheduler.groupChanged(GROUP);
+
+        assertThat(scheduler.anyWaiting()).isFalse();
+        assertThat(scheduler.advance()).containsExactly(NODE);
+    }
+
+    @Test
+    void forgottenNodeIsNeitherDueNorWatching() {
+        scheduler.failed(NODE, 1, List.of(), List.of(GROUP));
+
+        scheduler.forget(NODE);
+
+        assertThat(scheduler.anyWaiting()).isFalse();
+        assertThat(scheduler.advance()).isEmpty();
     }
 }
