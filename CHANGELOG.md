@@ -30,6 +30,8 @@ language files start fresh.
   file is rewritten each time, so comments you add yourself are not kept.
 - AutoCraft runs on one central ticker and crafts on the next tick after its recipe, inputs or output change, instead of waiting for
   a fixed sweep; idle crafters back off. Inputs can be ChestLinks.
+- AutoCraft only crafts what the output hopper would accept, so hopper filters (this plugin's or another's) apply to crafted
+  items. Container-lock plugins decide about each input chest as they would for a hopper under it.
 - Sorting happens on open/close and on demand instead of after every click.
 - Permissions moved to `chestsplusplus.*`; limits are `chestsplusplus.limit.<type>.<n>`.
 - Update notices go only to players with `chestsplusplus.admin.update`, when they join.

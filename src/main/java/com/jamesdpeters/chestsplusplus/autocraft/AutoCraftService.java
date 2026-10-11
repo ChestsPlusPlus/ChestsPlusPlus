@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
@@ -404,14 +403,13 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
 
     private record Craft(CraftPlanner.Plan plan, ItemStack[] produced) {}
 
-    /** A craft whose every move other plugins allow: a refused input is dropped and the craft planned again without it. */
+    /** A craft whose every move other plugins allow: an input they refuse is dropped and the craft planned again without it. */
     private @Nullable Craft permittedCraft(List<@Nullable Predicate<ItemStack>> slots, List<Inventory> inputs, Inventory output, Block table) {
         List<Inventory> usable = new ArrayList<>(inputs);
-        List<Inventory> allowed = new ArrayList<>(inputs.size());
         while (true) {
             Craft craft = craft(slots, usable, output, table.getWorld());
             if (craft == null) return null;
-            Inventory refused = refusedSource(craft.plan(), output, table, allowed);
+            Inventory refused = refusedSource(craft, output, table);
             if (refused == null) return craft;
             usable.remove(refused);
         }
@@ -431,17 +429,17 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
     }
 
     /**
-     * The first input the plan takes from that another plugin refuses, asked as a hopper move from the input's block into the output's,
-     * so a crafter can do no more than a hopper could there. Each input is asked once per attempt.
+     * The first input the plan takes from that another plugin refuses, asked as hopper moves of what the craft produces, from the input's
+     * block into the output's. Lock plugins judge the two containers, as for a hopper there, and hopper filters judge what would reach the
+     * output. No popular lock plugin looks at the item, so the ingredients themselves aren't asked about.
      */
-    private @Nullable Inventory refusedSource(CraftPlanner.Plan plan, Inventory output, Block table, List<Inventory> allowed) {
+    private @Nullable Inventory refusedSource(Craft craft, Inventory output, Block table) {
         Inventory into = blockSide(output, table, BlockFace.DOWN);
-        for (int i = 0; i < plan.sources().size(); i++) {
-            CraftPlanner.Source source = plan.sources().get(i);
-            if (source == null || allowed.contains(source.inventory())) continue;
-            Inventory input = source.inventory();
-            if (!SyntheticMoveEvent.allows(blockSide(input, table, INPUT_FACES), Objects.requireNonNull(plan.matrix()[i]), into)) return input;
-            allowed.add(input);
+        for (Inventory input : craft.plan().inventories()) {
+            Inventory from = blockSide(input, table, INPUT_FACES);
+            for (ItemStack produced : craft.produced()) {
+                if (!SyntheticMoveEvent.allows(from, produced, into)) return input;
+            }
         }
         return null;
     }

@@ -48,17 +48,21 @@ public final class FilterListener implements Listener {
         return services.settings().features().hopperFilters();
     }
 
-    /** Hot path: one type check, one holder lookup, one hash lookup. */
+    /**
+     * Hot path: one type check, one holder lookup, one hash lookup. A synthetic move gets the filter's answer but no stall avoidance, as
+     * nothing is moving; a relayed one is skipped, since the real move it repeats is judged here too.
+     */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     void onMove(InventoryMoveItemEvent event) {
         Inventory destination = event.getDestination();
-        if (destination.getType() != InventoryType.HOPPER || event instanceof SyntheticMoveEvent || !enabled()) return;
+        if (destination.getType() != InventoryType.HOPPER || !enabled()) return;
+        if (event instanceof SyntheticMoveEvent synthetic && synthetic.relayed()) return;
         // Hopper blocks only (minecart hoppers have an entity holder).
         if (!(Holders.of(destination) instanceof Hopper hopper)) return;
         CompiledFilter filter = filters.get(hopper.getWorld().getUID(), hopper.getX(), hopper.getY(), hopper.getZ());
         if (filter == null || filter.accepts(event.getItem())) return;
         event.setCancelled(true);
-        avoidStall(event.getSource(), destination, filter, event.getItem().getAmount());
+        if (!(event instanceof SyntheticMoveEvent)) avoidStall(event.getSource(), destination, filter, event.getItem().getAmount());
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
