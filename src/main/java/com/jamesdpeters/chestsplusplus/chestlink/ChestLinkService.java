@@ -4,6 +4,7 @@ import com.jamesdpeters.chestsplusplus.Permissions;
 import com.jamesdpeters.chestsplusplus.chestlink.sort.Sorter;
 import com.jamesdpeters.chestsplusplus.core.BlockPos;
 import com.jamesdpeters.chestsplusplus.core.Holders;
+import com.jamesdpeters.chestsplusplus.core.InventoryChanges;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.display.DisplayService;
 import com.jamesdpeters.chestsplusplus.link.GroupTypeHandler;
@@ -48,6 +49,7 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
 
     private final Services services;
     private final DisplayService displays;
+    private final InventoryChanges changes;
     /** Lids currently held open per group, so the last viewer closing can close them. */
     private final Map<Long, Set<BlockPos>> openLids = new HashMap<>();
     /** Node each viewer opened from (lid animation for non-"animate all" setups). */
@@ -149,8 +151,7 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
         Map<Integer, ItemStack> overflow = group.inventory().addItem(moving.toArray(ItemStack[]::new));
         Location dropAt = block.getLocation().clone().add(0.5, 1.0, 0.5);
         overflow.values().forEach(item -> block.getWorld().dropItemNaturally(dropAt, item));
-        services.groupStore().markDirty(group);
-        displays.requestUpdate(group);
+        changed(group);
         return overflow.size();
     }
 
@@ -243,6 +244,7 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
     public void changed(ChestLinkGroup group) {
         services.groupStore().markDirty(group);
         displays.requestUpdate(group);
+        changes.changed(group.inventory());
     }
 
     /** Total item count, for menus and listings. */

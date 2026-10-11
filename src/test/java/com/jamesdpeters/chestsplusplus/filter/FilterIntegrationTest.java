@@ -2,8 +2,10 @@ package com.jamesdpeters.chestsplusplus.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.jamesdpeters.chestsplusplus.chestlink.ChestLinkService;
 import com.jamesdpeters.chestsplusplus.filter.HopperFilter.Match;
 import com.jamesdpeters.chestsplusplus.filter.HopperFilter.Mode;
+import com.jamesdpeters.chestsplusplus.link.LinkService;
 import com.jamesdpeters.chestsplusplus.link.SyntheticMoveEvent;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
@@ -175,6 +177,22 @@ class FilterIntegrationTest extends PluginTestBase {
 
     private void offerDirt(Inventory source, Block hopper) {
         server.getPluginManager().callEvent(new InventoryMoveItemEvent(source, ItemStack.of(Material.DIRT), inventoryOf(hopper), false));
+    }
+
+    @Test
+    void stallAvoidanceReportsBothInventoriesItChanged() {
+        Block hopper = hopperAt(0);
+        filters.write(hopper, List.of(filter(Material.STONE, Mode.ALLOW, Match.TYPE)));
+        Inventory source = chestOfDirtAndStone();
+        Inventory into = inventoryOf(hopper);
+        List<Inventory> changed = new ArrayList<>();
+        FilterListener listener = new FilterListener(plugin.services(), filters, plugin.services().get(LinkService.class),
+                plugin.services().get(ChestLinkService.class), changed::add);
+
+        listener.onMove(new InventoryMoveItemEvent(source, ItemStack.of(Material.DIRT), into, false));
+
+        assertThat(into.contains(Material.STONE, 1)).isTrue();
+        assertThat(changed).containsExactly(source, into);
     }
 
     @Test

@@ -4,6 +4,7 @@ import com.jamesdpeters.chestsplusplus.Permissions;
 import com.jamesdpeters.chestsplusplus.chestlink.ChestLinkHolder;
 import com.jamesdpeters.chestsplusplus.chestlink.ChestLinkService;
 import com.jamesdpeters.chestsplusplus.core.Holders;
+import com.jamesdpeters.chestsplusplus.core.InventoryChanges;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.link.LinkService;
 import com.jamesdpeters.chestsplusplus.link.SyntheticMoveEvent;
@@ -43,6 +44,7 @@ public final class FilterListener implements Listener {
     private final FilterService filters;
     private final LinkService links;
     private final ChestLinkService chestLinks;
+    private final InventoryChanges changes;
 
     private boolean enabled() {
         return services.settings().features().hopperFilters();
@@ -98,6 +100,8 @@ public final class FilterListener implements Listener {
             source.setItem(slot, item.isEmpty() ? null : item);
             filter.allowManualMoveAt(now + STALL_COOLDOWN_TICKS);
             if (Holders.of(source) instanceof ChestLinkHolder holder) chestLinks.changed(holder.group());
+            else changes.changed(source);
+            changes.changed(destination);
             return;
         }
     }

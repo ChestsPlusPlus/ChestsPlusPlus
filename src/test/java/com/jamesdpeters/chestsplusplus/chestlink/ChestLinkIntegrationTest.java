@@ -119,6 +119,22 @@ class ChestLinkIntegrationTest extends PluginTestBase {
     }
 
     @Test
+    void contentChangesAreReportedSoWaitingCraftersWake() {
+        Block chest = chestAt(0, 0);
+        sign(alice, chest, "[ChestLink]", "ores");
+        server.getScheduler().performTicks(1);
+        ChestLinkGroup group = group(alice, "ores");
+        List<Inventory> changed = new ArrayList<>();
+        ChestLinkService chestLinks = new ChestLinkService(plugin.services(), plugin.services().get(DisplayService.class), changed::add);
+
+        chestLinks.changed(group);
+        ((Container) chest.getState(false)).getInventory().addItem(ItemStack.of(Material.DIAMOND));
+        chestLinks.absorbPhysicalContents(group, chest);
+
+        assertThat(changed).containsExactly(group.inventory(), group.inventory());
+    }
+
+    @Test
     void linkingClosesViewsOfThePhysicalInventory() {
         Block chest = chestAt(0, 0);
         Inventory physical = ((Container) chest.getState(false)).getInventory();

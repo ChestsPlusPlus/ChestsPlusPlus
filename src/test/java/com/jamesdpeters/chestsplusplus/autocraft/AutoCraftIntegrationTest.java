@@ -469,6 +469,31 @@ class AutoCraftIntegrationTest extends PluginTestBase {
     }
 
     @Test
+    void aCraftThatEmptiesAnotherCraftersFullOutputWakesIt() {
+        AutoCraftGroup[] group = new AutoCraftGroup[1];
+        Block first = linkedCrafter(group);
+        Block shared = first.getRelative(BlockFace.UP);
+        Block second = shared.getRelative(BlockFace.UP);
+        second.setType(Material.CRAFTING_TABLE);
+        plugin.services().get(LinkService.class).link(alice, GroupType.AUTOCRAFT, "torches", second, BlockFace.NORTH, true);
+        autoCraft.setMatrix(group[0], torchMatrix(), null);
+        Inventory between = container(shared, Material.HOPPER);
+        between.setContents(new ItemStack[]{ItemStack.of(Material.COAL), ItemStack.of(Material.STICK), ItemStack.of(Material.DIRT, 64),
+                ItemStack.of(Material.DIRT, 64), ItemStack.of(Material.DIRT, 64)});
+        container(second.getRelative(BlockFace.UP), Material.CHEST).addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
+        Block below = first.getRelative(BlockFace.DOWN);
+        ticks(1);
+        assertThat(autoCraft.isBackingOff(BlockPos.of(second))).isTrue();
+
+        Inventory output = container(below, Material.HOPPER);
+        autoCraft.blockChanged(below);
+        ticks(1);
+        assertThat(output.contains(Material.TORCH, 4)).isTrue();
+        ticks(1);
+        assertThat(between.contains(Material.TORCH, 4)).isTrue();
+    }
+
+    @Test
     void theSweepFindsCraftersNothingScheduled() {
         AutoCraftGroup[] group = new AutoCraftGroup[1];
         Block table = crafter(group);
