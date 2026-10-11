@@ -98,7 +98,8 @@ public final class FilterListener implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
+    /** At MONITOR, like {@link LinkService#claimNodeClick}: the DENY cancels the event, so every protection plugin must have passed it first. */
+    @EventHandler(priority = EventPriority.MONITOR)
     void onInteract(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK || links.isFiringSyntheticInteract()) return;
         Block block = event.getClickedBlock();

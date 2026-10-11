@@ -52,6 +52,8 @@ import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
@@ -303,11 +305,12 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         assertThat(nextPlain(alice)).contains("You can't use that block here");
     }
 
-    @Test
-    void linkedChestDeniedAtHighDoesNotOpen() {
+    @ParameterizedTest
+    @EnumSource(value = EventPriority.class, names = {"HIGH", "HIGHEST"})
+    void linkedChestDeniedByALaterProtectionPluginDoesNotOpen(EventPriority priority) {
         Block chest = chestAt(0, 0);
         sign(alice, chest, "[ChestLink]", "locked");
-        denyInteract(EventPriority.HIGH, chest);
+        denyInteract(priority, chest);
 
         rightClick(alice, chest);
 

@@ -20,6 +20,7 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.Container;
 import org.bukkit.block.Hopper;
 import org.bukkit.entity.ItemDisplay;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
@@ -32,6 +33,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
 class FilterIntegrationTest extends PluginTestBase {
@@ -292,6 +294,21 @@ class FilterIntegrationTest extends PluginTestBase {
 
         assertThat(event.useInteractedBlock()).isEqualTo(org.bukkit.event.Event.Result.DENY);
         assertThat(player.getOpenInventory().getTopInventory().getHolder()).isInstanceOf(FilterEditorHolder.class);
+    }
+
+    @Test
+    void sneakClickDeniedByAProtectionPluginAtHighestDoesNotOpenTheEditor() {
+        Block hopper = hopperAt(0);
+        PlayerMock player = server.addPlayer();
+        player.setSneaking(true);
+        server.getPluginManager().registerEvent(PlayerInteractEvent.class, new Listener() {}, EventPriority.HIGHEST,
+                (listener, event) -> ((PlayerInteractEvent) event).setUseInteractedBlock(Event.Result.DENY), MockBukkit.createMockPlugin(), true);
+
+        server.getPluginManager()
+                .callEvent(new PlayerInteractEvent(player, Action.RIGHT_CLICK_BLOCK, null, hopper, BlockFace.UP, EquipmentSlot.HAND));
+
+        // MockBukkit has no top inventory until one is opened.
+        assertThat(player.getOpenInventory().getTopInventory()).isNull();
     }
 
     private void setHopperFilters(boolean enabled) throws IOException {
