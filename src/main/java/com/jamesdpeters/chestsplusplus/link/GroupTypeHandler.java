@@ -31,6 +31,9 @@ public interface GroupTypeHandler {
     /** Closes every view players have open of this type's groups (inventories, editors). */
     void closeAllViews();
 
+    /** {@code group}'s membership, trust or visibility changed: closes the views of players who may no longer use it. */
+    void closeRevokedViews(StorageGroup group);
+
     /** Opens the group for a player away from its blocks (command, menu, dialog); checks are done by the caller. */
     void openRemote(Player player, StorageGroup group);
 

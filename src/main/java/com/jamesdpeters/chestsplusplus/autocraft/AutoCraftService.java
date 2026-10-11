@@ -109,6 +109,12 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
     }
 
     @Override
+    public void closeRevokedViews(StorageGroup group) {
+        openEditors(group).stream().filter(player -> !services.access().canAccess(player.getUniqueId(), player, group))
+                .forEach(Player::closeInventory);
+    }
+
+    @Override
     public void openRemote(Player player, StorageGroup group) {
         if (group instanceof AutoCraftGroup craft) openEditor(player, craft);
     }

@@ -8,19 +8,22 @@ import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.Node;
 import lombok.RequiredArgsConstructor;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.inventory.InventoryInteractEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 
-/** Opening ChestLinks by clicking a node, viewer open/close bookkeeping, and dirty-marking player edits and hopper transfers. */
+/** Opening ChestLinks by clicking a node, viewer open/close bookkeeping, refusing edits after access is revoked, and dirty-marking player edits and hopper transfers. */
 @RequiredArgsConstructor
 public final class ChestLinkListener implements Listener {
 
@@ -46,6 +49,28 @@ public final class ChestLinkListener implements Listener {
         if (Holders.of(event.getInventory()) instanceof ChestLinkHolder holder) {
             chestLinks.viewerClosed(holder.group(), event.getPlayer());
         }
+    }
+
+    /** Nothing signals a revoked permission, and a viewer who lost access must not keep editing until they close the inventory. */
+    @EventHandler(priority = EventPriority.LOWEST)
+    void refuseRevokedClick(InventoryClickEvent event) {
+        refuseRevoked(event);
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    void refuseRevokedDrag(InventoryDragEvent event) {
+        refuseRevoked(event);
+    }
+
+    private void refuseRevoked(InventoryInteractEvent event) {
+        Inventory top = event.getView().getTopInventory();
+        HumanEntity viewer = event.getWhoClicked();
+        if (!(Holders.of(top) instanceof ChestLinkHolder holder) || chestLinks.mayKeepViewing(viewer, holder.group())) return;
+        event.setCancelled(true);
+        // Paper doesn't allow closing an inventory from inside its own click event.
+        services.plugin().getServer().getScheduler().runTask(services.plugin(), () -> {
+            if (viewer.getOpenInventory().getTopInventory() == top) chestLinks.revoke(viewer, holder.group());
+        });
     }
 
     /**
