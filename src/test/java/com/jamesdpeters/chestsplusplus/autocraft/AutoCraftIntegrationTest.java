@@ -226,6 +226,28 @@ class AutoCraftIntegrationTest extends PluginTestBase {
     }
 
     @Test
+    void aSlotThatAcceptsMoreGivesWayToAPickierOne() {
+        Inventory input = container(world.getBlockAt(5, 64, 5), Material.CHEST);
+        input.setItem(0, ItemStack.of(Material.OAK_PLANKS, 2));
+        input.setItem(1, ItemStack.of(Material.BIRCH_PLANKS, 1));
+        Predicate<ItemStack> anyPlanks = item -> item.getType() == Material.OAK_PLANKS || item.getType() == Material.BIRCH_PLANKS;
+        Predicate<ItemStack> oak = item -> item.getType() == Material.OAK_PLANKS;
+        List<@Nullable Predicate<ItemStack>> slots = new ArrayList<>(java.util.Collections.nCopies(9, null));
+        slots.set(0, anyPlanks);
+        slots.set(1, oak);
+        slots.set(2, oak);
+
+        CraftPlanner.Plan plan = CraftPlanner.plan(slots, List.of(input));
+
+        assertThat(plan).isNotNull();
+        assertThat(plan.matrix()[0].getType()).isEqualTo(Material.BIRCH_PLANKS);
+        assertThat(plan.matrix()[1].getType()).isEqualTo(Material.OAK_PLANKS);
+        assertThat(plan.matrix()[2].getType()).isEqualTo(Material.OAK_PLANKS);
+        slots.set(3, oak);
+        assertThat(CraftPlanner.plan(slots, List.of(input))).isNull();
+    }
+
+    @Test
     void craftsFromAboveIntoHopperBelow() {
         AutoCraftGroup[] group = new AutoCraftGroup[1];
         Block table = crafter(group);

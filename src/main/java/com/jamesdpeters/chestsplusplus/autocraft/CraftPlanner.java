@@ -1,9 +1,7 @@
 package com.jamesdpeters.chestsplusplus.autocraft;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 import org.bukkit.inventory.Inventory;
@@ -31,42 +29,86 @@ public final class CraftPlanner {
     }
 
     /**
-     * Greedily assigns an input stack to each non-empty recipe slot, counting what each stack has already given so a
-     * stack of 1 isn't used twice. Each input's contents are read once. Returns null when some slot can't be filled.
+     * Assigns an input stack to each non-empty recipe slot, counting what each stack has already given so a stack of 1 isn't used twice.
+     * Each slot takes the first stack with an item to spare; when none has, a slot holding a stack it accepts moves to another, so a craft
+     * is found whenever one exists, whatever order the items sit in. Returns null when some slot can't be filled.
      */
     public static @Nullable Plan plan(List<@Nullable Predicate<ItemStack>> slots, List<Inventory> inputs) {
-        List<ItemStack[]> contents = inputs.stream().map(Inventory::getStorageContents).toList();
-        Map<Source, Integer> used = new HashMap<>();
-        List<@Nullable Source> sources = new ArrayList<>(9);
-        @Nullable ItemStack[] matrix = new ItemStack[9];
-        for (int i = 0; i < 9; i++) {
-            Predicate<ItemStack> wants = i < slots.size() ? slots.get(i) : null;
-            if (wants == null) {
-                sources.add(null);
-                continue;
-            }
-            Source found = findSource(wants, inputs, contents, used);
-            if (found == null) return null;
-            used.merge(found, 1, Integer::sum);
-            sources.add(found);
-            matrix[i] = contents.get(inputs.indexOf(found.inventory()))[found.slot()].asOne();
+        Matcher matcher = new Matcher(slots, stacks(inputs));
+        for (int slot = 0; slot < 9; slot++) {
+            if (matcher.wants(slot) != null && !matcher.assign(slot, new boolean[matcher.stacks.size()])) return null;
         }
-        return new Plan(sources, matrix);
+        return matcher.plan();
     }
 
-    /** The first input stack that {@code wants} accepts and that still has an item not already planned. */
-    private static @Nullable Source findSource(Predicate<ItemStack> wants, List<Inventory> inputs, List<ItemStack[]> contents,
-            Map<Source, Integer> used) {
-        for (int input = 0; input < inputs.size(); input++) {
-            ItemStack[] items = contents.get(input);
-            for (int slot = 0; slot < items.length; slot++) {
-                ItemStack item = items[slot];
-                if (item == null || item.isEmpty() || !wants.test(item)) continue;
-                Source source = new Source(inputs.get(input), slot);
-                if (used.getOrDefault(source, 0) < item.getAmount()) return source;
+    private record Stack(Source source, ItemStack item) {}
+
+    /** Every non-empty stack in the inputs, in order. Each input's contents are read once. */
+    private static List<Stack> stacks(List<Inventory> inputs) {
+        List<Stack> stacks = new ArrayList<>();
+        for (Inventory inventory : inputs) {
+            ItemStack[] contents = inventory.getStorageContents();
+            for (int slot = 0; slot < contents.length; slot++) {
+                ItemStack item = contents[slot];
+                if (item != null && !item.isEmpty()) stacks.add(new Stack(new Source(inventory, slot), item));
             }
         }
-        return null;
+        return stacks;
+    }
+
+    /** Matches recipe slots to stacks by augmenting paths: at most nine slots, so the search stays small. */
+    private static final class Matcher {
+        private final List<@Nullable Predicate<ItemStack>> slots;
+        private final List<Stack> stacks;
+        private final int[] used;
+        /** Per recipe slot, the index of the stack it takes from, or -1. */
+        private final int[] assigned = {-1, -1, -1, -1, -1, -1, -1, -1, -1};
+
+        Matcher(List<@Nullable Predicate<ItemStack>> slots, List<Stack> stacks) {
+            this.slots = slots;
+            this.stacks = stacks;
+            this.used = new int[stacks.size()];
+        }
+
+        @Nullable
+        Predicate<ItemStack> wants(int slot) {
+            return slot < slots.size() ? slots.get(slot) : null;
+        }
+
+        /** Fills {@code slot}, from a stack with an item to spare or by moving another slot off a stack it accepts. */
+        boolean assign(int slot, boolean[] visited) {
+            Predicate<ItemStack> wants = Objects.requireNonNull(wants(slot));
+            for (int stack = 0; stack < stacks.size(); stack++) {
+                if (!visited[stack] && used[stack] < stacks.get(stack).item().getAmount() && wants.test(stacks.get(stack).item())) {
+                    used[stack]++;
+                    assigned[slot] = stack;
+                    return true;
+                }
+            }
+            for (int stack = 0; stack < stacks.size(); stack++) {
+                if (visited[stack] || !wants.test(stacks.get(stack).item())) continue;
+                visited[stack] = true;
+                for (int other = 0; other < 9; other++) {
+                    // The other slot moves off this stack and this slot takes its item, so the stack's count is unchanged.
+                    if (assigned[other] == stack && assign(other, visited)) {
+                        assigned[slot] = stack;
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        Plan plan() {
+            List<@Nullable Source> sources = new ArrayList<>(9);
+            @Nullable ItemStack[] matrix = new ItemStack[9];
+            for (int slot = 0; slot < 9; slot++) {
+                @Nullable Stack stack = assigned[slot] < 0 ? null : stacks.get(assigned[slot]);
+                sources.add(stack == null ? null : stack.source());
+                if (stack != null) matrix[slot] = stack.item().asOne();
+            }
+            return new Plan(sources, matrix);
+        }
     }
 
     /** Can {@code output} take all of {@code items}? Scans slots once per item type; no inventory copies. */
