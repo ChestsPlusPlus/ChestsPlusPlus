@@ -1,15 +1,17 @@
 package com.jamesdpeters.chestsplusplus.autocraft;
 
 import com.jamesdpeters.chestsplusplus.core.BlockPos;
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * When each AutoCraft node next tries to craft. A node that crafted tries again one interval later; a node that failed backs off
  * (doubling, capped at the larger of {@link #MAX_BACKOFF_TICKS} and its interval) and watches the blocks and ChestLink groups it depends on, so a change there retries it on the next tick instead.
- * Nodes are kept in per-tick buckets, so a tick only touches the nodes due then.
+ * Nodes are kept in per-tick buckets, so a tick only touches the nodes due then. Buckets and watcher lists are insertion-ordered sets:
+ * waking every node that watches a busy group stays linear, and nodes still craft in the order they were scheduled.
  */
 final class CraftScheduler {
 
@@ -22,19 +24,19 @@ final class CraftScheduler {
         List<Long> groups = List.of();
     }
 
-    private final Map<Long, List<BlockPos>> due = new HashMap<>();
+    private final Map<Long, Set<BlockPos>> due = new HashMap<>();
     private final Map<BlockPos, State> states = new HashMap<>();
     /** Watched block → the failing nodes next to it. */
-    private final Map<BlockPos, List<BlockPos>> blockWatchers = new HashMap<>();
+    private final Map<BlockPos, Set<BlockPos>> blockWatchers = new HashMap<>();
     /** Watched ChestLink group → the failing nodes using it. */
-    private final Map<Long, List<BlockPos>> groupWatchers = new HashMap<>();
+    private final Map<Long, Set<BlockPos>> groupWatchers = new HashMap<>();
     private long now;
 
     /** Advances one tick and returns the nodes due now. They stay tracked until reported through {@link #crafted}, {@link #failed} or {@link #forget}. */
-    List<BlockPos> advance() {
+    Set<BlockPos> advance() {
         now++;
-        List<BlockPos> nodes = due.remove(now);
-        return nodes == null ? List.of() : nodes;
+        Set<BlockPos> nodes = due.remove(now);
+        return nodes == null ? Set.of() : nodes;
     }
 
     boolean tracks(BlockPos node) {
@@ -64,8 +66,8 @@ final class CraftScheduler {
         reschedule(node, state, now + backoff(interval, state.failures));
         state.blocks = blocks;
         state.groups = groups;
-        blocks.forEach(block -> blockWatchers.computeIfAbsent(block, _ -> new ArrayList<>(1)).add(node));
-        groups.forEach(group -> groupWatchers.computeIfAbsent(group, _ -> new ArrayList<>(1)).add(node));
+        blocks.forEach(block -> blockWatchers.computeIfAbsent(block, _ -> new LinkedHashSet<>()).add(node));
+        groups.forEach(group -> groupWatchers.computeIfAbsent(group, _ -> new LinkedHashSet<>()).add(node));
     }
 
     /** Stops tracking {@code node}; the sweep picks it up again if it's still a crafter. */
@@ -87,12 +89,12 @@ final class CraftScheduler {
     }
 
     void blockChanged(BlockPos block) {
-        List<BlockPos> nodes = blockWatchers.get(block);
+        Set<BlockPos> nodes = blockWatchers.get(block);
         if (nodes != null) List.copyOf(nodes).forEach(this::soon);
     }
 
     void groupChanged(long group) {
-        List<BlockPos> nodes = groupWatchers.get(group);
+        Set<BlockPos> nodes = groupWatchers.get(group);
         if (nodes != null) List.copyOf(nodes).forEach(this::soon);
     }
 
@@ -104,11 +106,11 @@ final class CraftScheduler {
     private void reschedule(BlockPos node, State state, long at) {
         if (state.dueAt != 0) removeFromBucket(node, state.dueAt);
         state.dueAt = at;
-        due.computeIfAbsent(at, _ -> new ArrayList<>()).add(node);
+        due.computeIfAbsent(at, _ -> new LinkedHashSet<>()).add(node);
     }
 
     private void removeFromBucket(BlockPos node, long at) {
-        List<BlockPos> bucket = due.get(at);
+        Set<BlockPos> bucket = due.get(at);
         if (bucket == null) return;
         bucket.remove(node);
         if (bucket.isEmpty()) due.remove(at);
@@ -121,8 +123,8 @@ final class CraftScheduler {
         state.groups = List.of();
     }
 
-    private static <K> void drop(Map<K, List<BlockPos>> watchers, K key, BlockPos node) {
-        List<BlockPos> nodes = watchers.get(key);
+    private static <K> void drop(Map<K, Set<BlockPos>> watchers, K key, BlockPos node) {
+        Set<BlockPos> nodes = watchers.get(key);
         if (nodes == null) return;
         nodes.remove(node);
         if (nodes.isEmpty()) watchers.remove(key);
