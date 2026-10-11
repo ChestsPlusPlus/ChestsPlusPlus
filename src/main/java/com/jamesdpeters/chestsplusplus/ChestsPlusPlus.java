@@ -168,9 +168,9 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
                 new V2FilterMigration(state, services.get(FilterService.class), new NamespacedKey(this, "v2_filters_scanned")));
         V2FilterConversion conversion = services.add(V2FilterConversion.class,
                 new V2FilterConversion(this, services, state, filters, cleanup, worldCleanup, services.get(V2PendingLocations.class)));
-        V2Importer importer = new V2Importer(services.groups(), services.nodes(), services.trust(), services.groupStore(), cleanup,
-                new WorldUids(getServer(), getServer()::getWorldContainer), state, services.get(V2PendingLocations.class), services::settings,
-                displays::nodeAdded);
+        V2Importer importer = new V2Importer(services.groups(), services.nodes(), services.trust(), services.groupStore(), services.persistence(),
+                cleanup, new WorldUids(getServer(), getServer()::getWorldContainer), state, services.get(V2PendingLocations.class),
+                services::settings, displays::nodeAdded);
         V2LocationRecovery recovery = services.add(V2LocationRecovery.class,
                 new V2LocationRecovery(getServer(), services.get(V2PendingLocations.class),
                         services.groups(), services.nodes(), services.groupStore(), services.get(LinkService.class), displays, cleanup,
