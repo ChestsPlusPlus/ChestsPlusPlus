@@ -514,7 +514,9 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
                         : null;
     }
 
+    /** Also wakes crafters waiting on {@code inventory}: an output can feed another crafter, and an emptied input can be another's full output. */
     private void markChanged(Inventory inventory) {
+        inventoryChanged(inventory);
         if (Holders.of(inventory) instanceof ChestLinkHolder holder) {
             services.groupStore().markDirty(holder.group());
             displays.requestUpdate(holder.group());

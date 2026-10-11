@@ -106,11 +106,10 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         LinkService links = services.add(LinkService.class, new LinkService(services, displays));
         services.add(LinkItem.class, new LinkItem(this));
 
-        ChestLinkService chestLinks = services.add(ChestLinkService.class, new ChestLinkService(services, displays));
+        AutoCraftService autoCraft = services.add(AutoCraftService.class, new AutoCraftService(services, displays, CraftingBackend.bukkit()));
+        ChestLinkService chestLinks = services.add(ChestLinkService.class, new ChestLinkService(services, displays, autoCraft::inventoryChanged));
         links.register(chestLinks);
         displays.register(GroupType.CHESTLINK, chestLinks);
-
-        AutoCraftService autoCraft = services.add(AutoCraftService.class, new AutoCraftService(services, displays, CraftingBackend.bukkit()));
         links.register(autoCraft);
         displays.register(GroupType.AUTOCRAFT, autoCraft);
 
@@ -208,7 +207,8 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
                 new GolemBridge(services, services.get(ChestLinkService.class)),
                 services.get(MenuListener.class),
                 new AutoCraftListener(services, links, services.get(AutoCraftService.class)),
-                new FilterListener(services, services.get(FilterService.class), links, services.get(ChestLinkService.class)),
+                new FilterListener(services, services.get(FilterService.class), links, services.get(ChestLinkService.class),
+                        services.get(AutoCraftService.class)::inventoryChanged),
                 services.get(V2LocationRecovery.class),
                 services.get(V2WorldCleanup.class),
                 services.get(V2FilterMigration.class),
