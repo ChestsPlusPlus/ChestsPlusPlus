@@ -62,7 +62,8 @@ public final class ImportReport {
     }
 
     void missingRecipe(String group, String key) {
-        details.add(group + "'s recipe " + key + " no longer exists; it was imported without one");
+        details.add(group + "'s recipe " + key
+                + " isn't registered; it was imported without one, and gets it back if the recipe is registered by the time the server has loaded");
     }
 
     void overLimit(String owner, GroupType type, int count, int limit) {

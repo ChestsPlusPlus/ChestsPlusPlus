@@ -29,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -187,11 +188,28 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
 
     /** Re-resolves a loaded group's stored matrix against the live recipe list (results aren't persisted). */
     public void resolveLoaded(AutoCraftGroup group) {
-        if (group.matrixIsEmpty()) return;
+        if (group.matrixIsEmpty() && !rebuildMatrix(group)) return;
         World world = firstWorld();
         CraftingBackend.ResolvedRecipe resolved = world == null ? null : backend.resolve(group.matrix(), world);
         if (resolved == null) leaveUnresolved(group);
         else applyRecipe(group, group.matrix(), resolved);
+    }
+
+    /**
+     * A v2 import stores only the key of a recipe that wasn't registered yet; rebuilds its matrix once the recipe exists. False while it
+     * can't, leaving the group for {@link #resolveDeferred()}.
+     */
+    private boolean rebuildMatrix(AutoCraftGroup group) {
+        NamespacedKey key = group.recipeKey();
+        if (key == null) return false;
+        @Nullable ItemStack @Nullable [] matrix = RecipeMatrix.of(key);
+        if (matrix == null) {
+            unresolved.add(group.id());
+            return false;
+        }
+        group.setRecipe(matrix, key, null);
+        services.groupStore().markDirty(group);
+        return true;
     }
 
     /** Keeps the stored key, so the next save doesn't lose a recipe that another plugin may only register later. */
