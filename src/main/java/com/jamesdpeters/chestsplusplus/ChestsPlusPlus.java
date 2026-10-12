@@ -57,8 +57,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import lombok.extern.slf4j.Slf4j;
+import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Tag;
 import org.bukkit.block.Chest;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -204,13 +207,18 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
                 services.get(MenuListener.class),
                 new AutoCraftListener(services, links, services.get(AutoCraftService.class)),
                 new FilterListener(services, services.get(FilterService.class), links, services.get(ChestLinkService.class),
-                        services.get(AutoCraftService.class)::inventoryChanged),
+                        services.get(AutoCraftService.class)::inventoryChanged, furnaceBottomItems()),
                 services.get(V2LocationRecovery.class),
                 services.get(V2WorldCleanup.class),
                 services.get(V2FilterMigration.class),
                 services.get(V2Migration.class));
         listeners.forEach(listener -> getServer().getPluginManager().registerEvents(listener, this));
         services.shutdown().add("open inventories", this::closePluginInventories);
+    }
+
+    private Predicate<Material> furnaceBottomItems() {
+        Tag<Material> takeable = getServer().getTag(Tag.REGISTRY_ITEMS, FilterListener.FURNACE_FUEL_BOTTOM_TAKEABLE, Material.class);
+        return type -> takeable != null && takeable.isTagged(type);
     }
 
     /**

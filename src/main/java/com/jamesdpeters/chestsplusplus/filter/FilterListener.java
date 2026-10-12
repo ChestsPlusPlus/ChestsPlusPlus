@@ -10,8 +10,10 @@ import com.jamesdpeters.chestsplusplus.link.LinkService;
 import com.jamesdpeters.chestsplusplus.link.SyntheticMoveEvent;
 import com.jamesdpeters.chestsplusplus.message.Message;
 import java.util.Map;
+import java.util.function.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Hopper;
@@ -41,12 +43,14 @@ public final class FilterListener implements Listener {
 
     /** Minimum ticks between manual stall-avoidance moves per hopper (vanilla hopper cooldown). */
     static final int STALL_COOLDOWN_TICKS = 8;
+    public static final NamespacedKey FURNACE_FUEL_BOTTOM_TAKEABLE = NamespacedKey.minecraft("furnace_fuel_bottom_takeable");
 
     private final Services services;
     private final FilterService filters;
     private final LinkService links;
     private final ChestLinkService chestLinks;
     private final InventoryChanges changes;
+    private final Predicate<Material> furnaceFuelTakeable;
 
     private boolean enabled() {
         return services.settings().features().hopperFilters();
@@ -89,7 +93,7 @@ public final class FilterListener implements Listener {
         ItemStack[] contents = source.getContents();
         for (int slot = 0; slot < contents.length; slot++) {
             ItemStack item = contents[slot];
-            if (item == null || item.isEmpty() || !filter.accepts(item)) continue;
+            if (item == null || item.isEmpty() || !canExtract(source, slot, item) || !filter.accepts(item)) continue;
             ItemStack moving = item.asQuantity(Math.min(amount, item.getAmount()));
             if (!SyntheticMoveEvent.allows(source, moving, destination)) {
                 filter.allowManualMoveAt(now + STALL_COOLDOWN_TICKS);
@@ -106,6 +110,15 @@ public final class FilterListener implements Listener {
             changes.changed(destination);
             return;
         }
+    }
+
+    /** Stall avoidance must obey the slots and items vanilla hoppers can take from a machine's bottom face. */
+    private boolean canExtract(Inventory source, int slot, ItemStack item) {
+        return switch (source.getType()) {
+            case FURNACE, BLAST_FURNACE, SMOKER -> slot == 2 || slot == 1 && furnaceFuelTakeable.test(item.getType());
+            case BREWING -> slot < 3 || slot == 3 && item.getType() == Material.GLASS_BOTTLE;
+            default -> true;
+        };
     }
 
     /** At MONITOR, like {@link LinkService#claimNodeClick}: the DENY cancels the event, so every protection plugin must have passed it first. */
