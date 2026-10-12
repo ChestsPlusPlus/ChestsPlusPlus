@@ -1,16 +1,10 @@
 package com.jamesdpeters.chestsplusplus.persistence;
 
 import com.jamesdpeters.chestsplusplus.ChestsPlusPlus;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
+import com.jamesdpeters.chestsplusplus.persistence.BatchWriter.Result;
+import com.jamesdpeters.chestsplusplus.persistence.PendingChanges.Flush;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -18,30 +12,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.JdbiException;
-import org.jspecify.annotations.Nullable;
 
-/**
- * Write-behind persistence. The in-memory model is authoritative: stores mark keys dirty, and a flush snapshots them on the main thread
- * and writes them in one transaction on a single I/O thread. Batches run in order, so a key that changes while its batch is being written
- * is simply saved again by a later flush. A failed batch marks its keys dirty again, and the retry snapshots their current state.
- * <p>
- * A retry that fails again is split up, one transaction per store and then per key, so a key that can never be written doesn't block the
- * rest. Such a key is given up on after {@link #MAX_ATTEMPTS} failures, until it next changes, when it gets the full budget again. A
- * failure only counts against a key when something else committed, so a database outage retries everything instead of giving up on it.
- * Keys changed {@link #together} are never split up: they are retried, and given up on, as one.
- * <p>
- * Completions queue up for the main thread to run, so they survive a scheduler that has stopped taking tasks. {@link #close} runs them
- * itself, retrying failed keys for a few rounds before logging what it couldn't save. {@link #markDirty}, {@link #flush}, {@link #load}
- * and {@link #close} are main-thread only.
- */
+/** Write-behind persistence: main-thread snapshots, ordered I/O transactions and main-thread completions. */
 @Slf4j(topic = ChestsPlusPlus.NAME)
 @RequiredArgsConstructor
 public final class Persistence {
@@ -51,88 +27,71 @@ public final class Persistence {
     private static final int CLOSE_TIMEOUT_SECONDS = 30;
 
     private final Database database;
-    /** Runs a task on the server thread, or drops it once the plugin is disabling; {@link #close} picks up what it drops. */
+    /** The scheduler can drop tasks during disable; close drains the completion queue itself. */
     private final Consumer<Runnable> mainThread;
+    private final PendingChanges changes = new PendingChanges();
     private final Queue<Runnable> completions = new ConcurrentLinkedQueue<>();
     private final ExecutorService io = Executors.newSingleThreadExecutor(runnable -> {
         Thread thread = new Thread(runnable, "ChestsPlusPlus-persistence-io");
         thread.setDaemon(true);
         return thread;
     });
-    private final Map<Store<?, ?>, Set<?>> dirty = new LinkedHashMap<>();
-    /** Failed attempts per {@link StoreKey}, or per {@link Unit} for keys changed together. */
-    private final Map<Object, Integer> failures = new HashMap<>();
-    /** Keys changed together that haven't all committed yet. */
-    private final List<Unit> units = new ArrayList<>();
-    private @Nullable Set<StoreKey> recording;
     private int inFlight;
-    private boolean failing;
 
-    public void register(Store<?, ?> store) {
-        dirty.put(store, new LinkedHashSet<>());
+    public <S extends Store<?, ?>> S register(S store) {
+        changes.register(store);
+        return store;
     }
 
-    /** One hash-set add, outside {@link #together}. */
+    /** Main thread: one hash-set add outside together. */
     public <K> void markDirty(Store<K, ?> store, K key) {
-        keys(store).add(key);
-        if (recording != null) recording.add(new StoreKey(store, key));
+        changes.markDirty(store, key);
     }
 
     /**
-     * Runs {@code changes}, then saves every key they marked dirty in one transaction until all of them have committed. A retry never splits
-     * them, a later change to any one saves them all again, and they are given up on as one. For changes that are only valid together,
-     * like imported rows and the marker saying the import is done. If {@code changes} throws, its keys are saved independently.
+     * Saves the keys marked by changes as one transaction, including retries and later edits until they commit. Nested or overlapping
+     * changes share a unit. This groups persistence only: if changes throws, it leaves model edits in place and saves their keys independently.
      */
     public <T> T together(Supplier<T> changes) {
-        Set<StoreKey> changed = new LinkedHashSet<>();
-        recording = changed;
-        T result;
-        try {
-            result = changes.get();
-        } finally {
-            recording = null;
-        }
-        if (!changed.isEmpty()) units.add(new Unit(Set.copyOf(changed)));
-        return result;
+        return this.changes.together(changes);
+    }
+
+    public void together(Runnable changes) {
+        together(() -> {
+            changes.run();
+            return null;
+        });
     }
 
     public boolean isDirty(Store<?, ?> store, Object key) {
-        return keys(store).contains(key);
+        return changes.isDirty(store, key);
     }
 
     /** Dirty keys plus keys in batches still being written. */
     public int pending() {
-        return inFlight + dirty.values().stream().mapToInt(Set::size).sum();
+        return inFlight + changes.size();
     }
 
-    /** Runs each store's load, in registration order, before anything is flushed. */
+    /** Main thread, at startup, in registration order. */
     public void load() {
-        dirty.keySet().forEach(store -> store.load(database.handle()));
+        changes.load(database);
     }
 
-    /** Writes every dirty key. The future completes on the main thread once they are committed, or fails if any of them failed. */
+    /** Main thread: snapshots dirty keys. The future completes on the main thread once they commit, or fails if any failed. */
     public CompletableFuture<Void> flush() {
-        dirty.keySet().forEach(Store::beforeFlush);
-        units.forEach(this::pullTogether);
-        List<Batch<?, ?>> batches = dirty.keySet().stream().<Batch<?, ?>>map(this::take).filter(batch -> !batch.writes().isEmpty()).toList();
-        int keys = batches.stream().mapToInt(batch -> batch.writes().size()).sum();
-        if (keys == 0) return CompletableFuture.completedFuture(null);
-        inFlight += keys;
-        boolean isolate = failing || batches.stream().flatMap(Batch::keys).anyMatch(failures::containsKey);
-        List<Unit> together = List.copyOf(units);
+        Flush flush = changes.take();
+        if (flush.size() == 0) return CompletableFuture.completedFuture(null);
+        inFlight += flush.size();
         CompletableFuture<Void> done = new CompletableFuture<>();
         io.execute(() -> {
-            Attempts attempts = write(batches, isolate, together);
-            completions.add(() -> written(batches, keys, together, attempts, done));
+            Result result = new BatchWriter(database.handle()).write(flush);
+            completions.add(() -> written(flush, result, done));
             mainThread.accept(this::runCompletions);
         });
         return done;
     }
 
-    /**
-     * Saves everything and closes the database. Runs write completions on the calling thread, so a failed write is logged and retried, for
-     * up to {@link #CLOSE_ROUNDS} flushes; changes still unsaved after that are logged at error level.
-     */
+    /** Main thread: drains writes and completions, retries failures, then closes the database. */
     public void close() {
         for (int round = 0; round < CLOSE_ROUNDS; round++) {
             flush();
@@ -149,12 +108,19 @@ public final class Persistence {
         }
     }
 
+    private void written(Flush flush, Result result, CompletableFuture<Void> done) {
+        inFlight -= flush.size();
+        RuntimeException error = changes.written(flush, result);
+        if (error == null) done.complete(null);
+        else done.completeExceptionally(error);
+    }
+
     private void runCompletions() {
         Runnable completion;
         while ((completion = completions.poll()) != null) completion.run();
     }
 
-    /** Waits for every write submitted so far, without shutting the I/O thread down. */
+    /** Waits for every submitted write without stopping the I/O thread, so close can retry. */
     private boolean awaitIdle() {
         try {
             CompletableFuture.runAsync(() -> {}, io).orTimeout(CLOSE_TIMEOUT_SECONDS, TimeUnit.SECONDS).join();
@@ -166,159 +132,8 @@ public final class Persistence {
     }
 
     private Map<String, Integer> unsaved() {
-        Map<String, Integer> unsaved = new LinkedHashMap<>();
-        dirty.forEach((store, keys) -> {
-            if (!keys.isEmpty()) unsaved.merge(store.getClass().getSimpleName(), keys.size(), Integer::sum);
-        });
+        Map<String, Integer> unsaved = changes.unsaved();
         if (inFlight > 0) unsaved.put("still being written", inFlight);
         return unsaved;
-    }
-
-    /** A unit with any key dirty is saved whole, so its rows never commit apart. */
-    private void pullTogether(Unit unit) {
-        if (unit.keys().stream().anyMatch(key -> dirtyKeys(key).contains(key.key()))) unit.keys().forEach(key -> dirtyKeys(key).add(key.key()));
-    }
-
-    private Attempts write(List<Batch<?, ?>> batches, boolean isolate, List<Unit> together) {
-        Attempts attempts = new Attempts();
-        if (attempts.run(batches)) return attempts;
-        if (isolate) attempts.isolate(batches, together);
-        else attempts.failAll(batches);
-        return attempts;
-    }
-
-    private void written(List<Batch<?, ?>> batches, int keys, List<Unit> together, Attempts attempts, CompletableFuture<Void> done) {
-        inFlight -= keys;
-        Set<StoreKey> saved = batches.stream().flatMap(Batch::keys).filter(key -> !attempts.failed.containsKey(key)).collect(Collectors.toSet());
-        saved.forEach(failures::remove);
-        together.stream().filter(unit -> saved.containsAll(unit.keys())).forEach(unit -> {
-            units.remove(unit);
-            failures.remove(unit);
-        });
-        if (attempts.failed.isEmpty()) {
-            failing = false;
-            done.complete(null);
-            return;
-        }
-        RuntimeException error = attempts.failed.values().iterator().next();
-        if (!failing) log.warn("Failed to save {} ChestsPlusPlus change(s); will retry", attempts.failed.size(), error);
-        failing = true;
-        List<Unit> failedUnits = together.stream().filter(unit -> unit.keys().stream().anyMatch(attempts.failed::containsKey)).toList();
-        attempts.failed.forEach((key, keyError) -> {
-            if (failedUnits.stream().noneMatch(unit -> unit.keys().contains(key))) retryOrGiveUp(key, Set.of(key), keyError, attempts.committed);
-        });
-        failedUnits.forEach(unit -> retryOrGiveUp(unit, unit.keys(), error, attempts.committed));
-        done.completeExceptionally(error);
-    }
-
-    /** {@code counted} is the key, or the unit of keys, that the failure counts against. */
-    private void retryOrGiveUp(Object counted, Collection<StoreKey> keys, RuntimeException error, boolean databaseWorks) {
-        int failed = databaseWorks ? failures.merge(counted, 1, Integer::sum) : 0;
-        if (failed < MAX_ATTEMPTS) {
-            keys.forEach(key -> dirtyKeys(key).add(key.key()));
-            return;
-        }
-        failures.remove(counted);
-        log.error("Gave up saving {} after {} failed attempts; it is saved again when it next changes", counted, failed, error);
-    }
-
-    private <K, S> Batch<K, S> take(Store<K, S> store) {
-        Set<K> dirtyKeys = keys(store);
-        List<Write<K, S>> writes = dirtyKeys.stream().map(key -> new Write<>(key, store.snapshot(key))).toList();
-        dirtyKeys.clear();
-        return new Batch<>(store, writes);
-    }
-
-    private Set<Object> dirtyKeys(StoreKey key) {
-        return keys(key.store());
-    }
-
-    @SuppressWarnings("unchecked")
-    private <K> Set<K> keys(Store<?, ?> store) {
-        Set<?> keys = dirty.get(store);
-        if (keys == null) throw new IllegalStateException(store.getClass().getSimpleName() + " is not registered");
-        return (Set<K>) keys;
-    }
-
-    /** The transactions one flush tries on the I/O thread, and the keys that failed. */
-    private final class Attempts {
-
-        final Map<StoreKey, RuntimeException> failed = new LinkedHashMap<>();
-        boolean committed;
-        @Nullable RuntimeException lastError;
-
-        boolean run(List<Batch<?, ?>> batches) {
-            try {
-                database.handle().useTransaction(handle -> batches.forEach(batch -> batch.apply(handle)));
-                committed = true;
-                return true;
-            } catch (RuntimeException e) {
-                lastError = e;
-                return false;
-            }
-        }
-
-        /** Each unit in its own transaction, then the remaining keys a store at a time. */
-        void isolate(List<Batch<?, ?>> batches, List<Unit> together) {
-            for (Unit unit : together) {
-                List<Batch<?, ?>> part = only(batches, unit.keys()::contains);
-                if (!part.isEmpty() && !run(part)) failAll(part);
-            }
-            only(batches, key -> together.stream().noneMatch(unit -> unit.keys().contains(key))).forEach(this::isolate);
-        }
-
-        private static List<Batch<?, ?>> only(List<Batch<?, ?>> batches, Predicate<StoreKey> keep) {
-            return batches.stream().<Batch<?, ?>>map(batch -> batch.only(keep)).filter(batch -> !batch.writes().isEmpty()).toList();
-        }
-
-        void isolate(Batch<?, ?> batch) {
-            if (run(List.of(batch))) return;
-            batch.singles().stream().filter(single -> !run(List.of(single))).forEach(single -> failAll(List.of(single)));
-        }
-
-        void failAll(List<Batch<?, ?>> batches) {
-            RuntimeException error = Objects.requireNonNull(lastError);
-            batches.stream().flatMap(Batch::keys).forEach(key -> failed.put(key, error));
-        }
-    }
-
-    private record StoreKey(Store<?, ?> store, Object key) {
-
-        @Override
-        public String toString() {
-            return store.getClass().getSimpleName() + " " + key;
-        }
-    }
-
-    private record Unit(Set<StoreKey> keys) {
-
-        @Override
-        public String toString() {
-            return keys.size() + " change(s) made together";
-        }
-    }
-
-    private record Write<K, S>(K key, @Nullable S snapshot) {}
-
-    private record Batch<K, S>(Store<K, S> store, List<Write<K, S>> writes) {
-
-        Stream<StoreKey> keys() {
-            return writes.stream().map(write -> new StoreKey(store, write.key()));
-        }
-
-        Batch<K, S> only(Predicate<StoreKey> keep) {
-            return new Batch<>(store, writes.stream().filter(write -> keep.test(new StoreKey(store, write.key()))).toList());
-        }
-
-        List<Batch<K, S>> singles() {
-            return writes.stream().map(write -> new Batch<>(store, List.of(write))).toList();
-        }
-
-        void apply(Handle handle) {
-            List<K> deletes = writes.stream().filter(write -> write.snapshot() == null).map(Write::key).toList();
-            List<S> snapshots = writes.stream().map(Write::snapshot).filter(Objects::nonNull).toList();
-            if (!deletes.isEmpty()) store.delete(handle, deletes);
-            if (!snapshots.isEmpty()) store.write(handle, snapshots);
-        }
     }
 }

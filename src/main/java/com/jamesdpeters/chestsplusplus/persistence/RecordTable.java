@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.jdbi.v3.core.Handle;
@@ -14,7 +15,7 @@ import org.jdbi.v3.core.statement.PreparedBatch;
 
 /**
  * The routine SQL for a table whose columns are a record's components in snake_case. Table and column names come from code, never from
- * user input. Anything beyond these four operations belongs in the store that needs it, as a plain JDBI call.
+ * user input. Special queries belong in the store that needs them, as plain JDBI calls.
  */
 public final class RecordTable<R extends Record> {
 
@@ -23,6 +24,8 @@ public final class RecordTable<R extends Record> {
     @Getter private final List<String> columns;
     @Getter private final String upsertSql;
     private final String allSql;
+    private final List<String> keyNames;
+    private final String deleteSql;
 
     /** {@code key} is the primary key (or other unique columns) the upsert conflicts on. */
     public RecordTable(Class<R> type, String table, String... key) {
@@ -32,12 +35,24 @@ public final class RecordTable<R extends Record> {
         this.columns = names.stream().map(RecordTable::snakeCase).toList();
         List<String> keys = List.of(key);
         if (keys.isEmpty() || !columns.containsAll(keys)) throw new IllegalArgumentException("Bad key " + keys + " for " + table);
+        this.keyNames = keys.stream().map(column -> names.get(columns.indexOf(column))).toList();
         this.upsertSql = upsertSql(names, keys);
         this.allSql = "SELECT " + String.join(", ", columns) + " FROM " + table + " ORDER BY rowid";
+        this.deleteSql = "DELETE FROM " + table + " WHERE " + keys.stream()
+                .map(column -> column + " = :" + names.get(columns.indexOf(column)))
+                .collect(Collectors.joining(" AND "));
     }
 
     public void upsert(Handle handle, Collection<R> rows) {
         batch(handle, upsertSql, rows, PreparedBatch::bindMethods);
+    }
+
+    /** Single-column keys are values; composite keys are records with matching component names. */
+    public void deleteKeys(Handle handle, Collection<?> keys) {
+        batch(handle, deleteSql, keys, (batch, key) -> {
+            if (keyNames.size() == 1) batch.bind(keyNames.getFirst(), key);
+            else batch.bindMethods(key);
+        });
     }
 
     /** Deletes every row whose {@code column} equals one of {@code values}. */
@@ -50,6 +65,13 @@ public final class RecordTable<R extends Record> {
     public void replaceFor(Handle handle, String column, Collection<?> values, Collection<R> rows) {
         deleteWhere(handle, column, values);
         upsert(handle, rows);
+    }
+
+    /** Deletes all parents' old rows before inserting any new ones, including when children move between parents. */
+    public <S, K> void replaceFor(Handle handle, String column, Collection<S> snapshots, Function<S, K> key,
+            Function<S, ? extends Collection<R>> children) {
+        replaceFor(handle, column, snapshots.stream().map(key).toList(),
+                snapshots.stream().flatMap(snapshot -> children.apply(snapshot).stream()).toList());
     }
 
     /** Every row, in insertion order. */

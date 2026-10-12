@@ -131,10 +131,8 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         Database database = Database.open("jdbc:sqlite:" + new File(dataFolder, DATABASE_FILE).getAbsolutePath());
         Persistence persistence = new Persistence(database, this::runOnMainThread);
         services.shutdown().add("persistence", persistence::close);
-        GroupStore groupStore = new GroupStore(persistence, services.groups(), services.nodes(), attachLoaded(services));
-        TrustStore trustStore = new TrustStore(persistence, services.trust());
-        persistence.register(groupStore);
-        persistence.register(trustStore);
+        GroupStore groupStore = persistence.register(new GroupStore(persistence, services.groups(), services.nodes(), attachLoaded(services)));
+        TrustStore trustStore = persistence.register(new TrustStore(persistence, services.trust()));
         services.trust().onChange(trustStore::markDirty);
         registerMigrationStores(services, persistence);
         services.persistence(persistence, groupStore, trustStore);
@@ -145,12 +143,10 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
     private static void registerMigrationStores(Services services, Persistence persistence) {
         V2Cleanup cleanup = services.get(V2Cleanup.class);
         MigrationState state = services.get(MigrationState.class);
-        V2CleanupStore cleanupStore = new V2CleanupStore(persistence, cleanup);
-        MigrationStateStore stateStore = new MigrationStateStore(persistence, state);
-        persistence.register(cleanupStore);
-        persistence.register(stateStore);
-        V2PendingLocationStore pendingStore = new V2PendingLocationStore(persistence, services.groups(), services.get(V2PendingLocations.class));
-        persistence.register(pendingStore);
+        V2CleanupStore cleanupStore = persistence.register(new V2CleanupStore(persistence, cleanup));
+        MigrationStateStore stateStore = persistence.register(new MigrationStateStore(persistence, state));
+        V2PendingLocationStore pendingStore = persistence.register(
+                new V2PendingLocationStore(persistence, services.groups(), services.get(V2PendingLocations.class)));
         services.get(V2PendingLocations.class).onChange(pendingStore::markDirty);
         cleanup.onChange(cleanupStore::markDirty);
         state.onChange(stateStore::markDirty);

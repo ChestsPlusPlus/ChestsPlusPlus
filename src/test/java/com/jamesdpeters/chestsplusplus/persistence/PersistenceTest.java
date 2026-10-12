@@ -1,6 +1,7 @@
 package com.jamesdpeters.chestsplusplus.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 import com.jamesdpeters.chestsplusplus.ChestsPlusPlus;
@@ -26,6 +27,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @Tag(Tags.UNIT)
 class PersistenceTest {
@@ -41,6 +44,7 @@ class PersistenceTest {
         volatile boolean failNextWrite;
         volatile boolean failEveryWrite;
         volatile @Nullable String failingName;
+        volatile @Nullable String failingValue;
 
         EntryStore() {
             this("entries");
@@ -70,7 +74,7 @@ class PersistenceTest {
                 failNextWrite = false;
                 throw new IllegalStateException("simulated failure");
             }
-            if (failEveryWrite || snapshots.stream().anyMatch(entry -> entry.name().equals(failingName))) {
+            if (failEveryWrite || snapshots.stream().anyMatch(entry -> entry.name().equals(failingName) || entry.value().equals(failingValue))) {
                 throw new IllegalStateException("simulated failure");
             }
             table.upsert(handle, snapshots);
@@ -277,7 +281,6 @@ class PersistenceTest {
                 store.set(persistence, "a", "1");
                 store.set(persistence, "bad", "2");
                 marker.set(persistence, "done", "yes");
-                return null;
             });
             for (int attempt = 0; attempt <= Persistence.MAX_ATTEMPTS; attempt++) {
                 store.set(persistence, "good" + attempt, "1");
@@ -308,6 +311,133 @@ class PersistenceTest {
             flushAndWait(persistence);
         }
         assertThat(persistence.pending()).isZero();
+    }
+
+    @Test
+    void duplicateRegistrationDoesNotDiscardPendingChanges() throws InterruptedException {
+        EntryStore store = new EntryStore();
+        try (Database database = database()) {
+            Persistence persistence = start(database, store);
+            store.set(persistence, "a", "1");
+
+            assertThatThrownBy(() -> persistence.register(store)).hasMessageContaining("already registered");
+            flushAndWait(persistence);
+
+            assertThat(rows(database)).containsExactly(Map.entry("a", "1"));
+        }
+    }
+
+    @Test
+    void nestedChangesAreRetriedAsOneUnit() throws InterruptedException {
+        EntryStore store = new EntryStore();
+        EntryStore marker = new EntryStore("markers");
+        try (Database database = database()) {
+            Persistence persistence = start(database, store, marker);
+            store.failingName = "bad";
+            String value = persistence.together(() -> {
+                store.set(persistence, "before", "1");
+                persistence.together(() -> {
+                    store.set(persistence, "bad", "2");
+                    marker.set(persistence, "done", "yes");
+                });
+                store.set(persistence, "after", "3");
+                return "result";
+            });
+            assertThat(value).isEqualTo("result");
+            store.set(persistence, "unrelated", "4");
+            flushAndWait(persistence);
+            flushAndWait(persistence);
+
+            assertThat(rows(database)).containsExactly(Map.entry("unrelated", "4"));
+            assertThat(rows(database, "markers")).isEmpty();
+
+            store.failingName = null;
+            flushAndWait(persistence);
+            assertThat(rows(database)).containsOnlyKeys("before", "bad", "after", "unrelated");
+            assertThat(rows(database, "markers")).containsExactly(Map.entry("done", "yes"));
+        }
+    }
+
+    @Test
+    void overlappingChangesAreRetriedAsOneUnit() throws InterruptedException {
+        EntryStore store = new EntryStore();
+        try (Database database = database()) {
+            Persistence persistence = start(database, store);
+            store.failingName = "bad";
+            persistence.together(() -> {
+                store.set(persistence, "a", "1");
+                store.set(persistence, "shared", "2");
+            });
+            persistence.together(() -> {
+                store.set(persistence, "shared", "3");
+                store.set(persistence, "bad", "4");
+            });
+            store.set(persistence, "unrelated", "5");
+            flushAndWait(persistence);
+            flushAndWait(persistence);
+
+            assertThat(rows(database)).containsExactly(Map.entry("unrelated", "5"));
+
+            store.failingName = null;
+            flushAndWait(persistence);
+            assertThat(rows(database)).containsEntry("a", "1").containsEntry("shared", "3").containsEntry("bad", "4");
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void earlierSuccessfulFlushDoesNotSplitALaterFailedUnit(boolean submitBeforeCompletion) throws InterruptedException {
+        EntryStore store = new EntryStore();
+        EntryStore marker = new EntryStore("markers");
+        try (Database database = database()) {
+            Persistence persistence = start(database, store, marker);
+            store.gate = new CountDownLatch(1);
+            store.failingValue = "bad-new";
+            persistence.together(() -> {
+                store.set(persistence, "a", "old");
+                marker.set(persistence, "done", "old");
+            });
+            var first = persistence.flush();
+            store.set(persistence, "a", "bad-new");
+            marker.values.put("done", "new");
+            if (!submitBeforeCompletion) {
+                store.gate.countDown();
+                drainUntil(first::isDone);
+            }
+            var second = persistence.flush();
+            store.gate.countDown();
+            drainUntil(() -> first.isDone() && second.isDone());
+
+            flushAndWait(persistence);
+
+            assertThat(rows(database)).containsExactly(Map.entry("a", "old"));
+            assertThat(rows(database, "markers")).containsExactly(Map.entry("done", "old"));
+
+            store.failingValue = null;
+            flushAndWait(persistence);
+            assertThat(rows(database)).containsExactly(Map.entry("a", "bad-new"));
+            assertThat(rows(database, "markers")).containsExactly(Map.entry("done", "new"));
+        }
+    }
+
+    @Test
+    void throwingChangesRemainDirtyWithoutFormingAnAtomicUnit() throws InterruptedException {
+        EntryStore store = new EntryStore();
+        try (Database database = database()) {
+            Persistence persistence = start(database, store);
+            store.failingName = "bad";
+            assertThatThrownBy(() -> persistence.together(() -> {
+                store.set(persistence, "a", "1");
+                store.set(persistence, "bad", "2");
+                throw new IllegalStateException("changes failed");
+            })).hasMessage("changes failed");
+
+            flushAndWait(persistence);
+            flushAndWait(persistence);
+
+            assertThat(rows(database)).containsExactly(Map.entry("a", "1"));
+            assertThat(persistence.isDirty(store, "bad")).isTrue();
+        }
     }
 
     @Test

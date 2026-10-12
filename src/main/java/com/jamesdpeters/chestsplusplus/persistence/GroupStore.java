@@ -23,8 +23,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.BlockFace;
@@ -35,7 +35,7 @@ import org.jspecify.annotations.Nullable;
 
 /** Groups: a {@code groups} row each (with a ChestLink's inventory or an AutoCraft recipe), plus their members and nodes. */
 @RequiredArgsConstructor
-public final class GroupStore implements Store<Long, GroupSnapshot> {
+public final class GroupStore implements TrackedStore<Long, GroupSnapshot> {
 
     /**
      * {@code items} is a ChestLink's inventory or an AutoCraft matrix; {@code matches} is an AutoCraft's comma-separated
@@ -59,7 +59,7 @@ public final class GroupStore implements Store<Long, GroupSnapshot> {
     private static final RecordTable<NodeRow> NODES = new RecordTable<>(NodeRow.class, "nodes", "world", "x", "y", "z");
     private static final String ID_KIND = "groups";
 
-    private final Persistence persistence;
+    @Getter private final Persistence persistence;
     private final GroupRegistry groups;
     private final NodeIndex nodes;
     /** Called for each loaded group once it is registered and its nodes indexed (e.g. to create ChestLink inventories). */
@@ -73,11 +73,11 @@ public final class GroupStore implements Store<Long, GroupSnapshot> {
     private final Map<Long, @Nullable ItemStack @Nullable []> written = new HashMap<>();
 
     public void markDirty(StorageGroup group) {
-        persistence.markDirty(this, group.id());
+        markDirty(group.id());
     }
 
     public boolean isDirty(StorageGroup group) {
-        return persistence.isDirty(this, group.id());
+        return isDirty(group.id());
     }
 
     /**
@@ -116,17 +116,15 @@ public final class GroupStore implements Store<Long, GroupSnapshot> {
 
     @Override
     public void write(Handle handle, List<GroupSnapshot> snapshots) {
-        List<Long> ids = snapshots.stream().map(snapshot -> snapshot.group().id()).toList();
         GROUPS.upsert(handle, snapshots.stream().map(GroupSnapshot::group).toList());
-        // Every group's old rows go before any new ones are written, so a node that moved between two groups here ends up in its new one.
-        MEMBERS.replaceFor(handle, "group_id", ids, children(snapshots, GroupSnapshot::members));
-        NODES.replaceFor(handle, "group_id", ids, children(snapshots, GroupSnapshot::nodes));
+        MEMBERS.replaceFor(handle, "group_id", snapshots, snapshot -> snapshot.group().id(), GroupSnapshot::members);
+        NODES.replaceFor(handle, "group_id", snapshots, snapshot -> snapshot.group().id(), GroupSnapshot::nodes);
     }
 
     /** Members and nodes go with the group (ON DELETE CASCADE). */
     @Override
     public void delete(Handle handle, List<Long> ids) {
-        GROUPS.deleteWhere(handle, "id", ids);
+        GROUPS.deleteKeys(handle, ids);
         retireIds(handle, ids);
     }
 
@@ -251,10 +249,6 @@ public final class GroupStore implements Store<Long, GroupSnapshot> {
         @Nullable ItemStack[] matrix = new ItemStack[9];
         if (stored != null) System.arraycopy(stored, 0, matrix, 0, Math.min(9, stored.length));
         return matrix;
-    }
-
-    private static <T, C> List<C> children(List<T> parents, Function<T, List<C>> children) {
-        return parents.stream().flatMap(parent -> children.apply(parent).stream()).toList();
     }
 
     /** Reads an enum by name, falling back instead of failing on an unknown or missing value. */

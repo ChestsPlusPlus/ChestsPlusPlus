@@ -5,28 +5,25 @@ import com.jamesdpeters.chestsplusplus.migration.V2PendingLocations.LocationRow;
 import com.jamesdpeters.chestsplusplus.model.GroupRegistry;
 import com.jamesdpeters.chestsplusplus.persistence.Persistence;
 import com.jamesdpeters.chestsplusplus.persistence.RecordTable;
-import com.jamesdpeters.chestsplusplus.persistence.Store;
+import com.jamesdpeters.chestsplusplus.persistence.TrackedStore;
 import java.util.List;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jdbi.v3.core.Handle;
 import org.jspecify.annotations.Nullable;
 
 /** Saved after groups, in the same transaction as node attachments and group deletions. */
 @RequiredArgsConstructor
-public final class V2PendingLocationStore implements Store<Long, Snapshot> {
+public final class V2PendingLocationStore implements TrackedStore<Long, Snapshot> {
 
     public record Snapshot(long groupId, List<LocationRow> locations) {}
 
     private static final RecordTable<LocationRow> LOCATIONS = new RecordTable<>(LocationRow.class, "v2_pending_locations", "group_id", "world_name",
             "x", "y", "z");
 
-    private final Persistence persistence;
+    @Getter private final Persistence persistence;
     private final GroupRegistry groups;
     private final V2PendingLocations pending;
-
-    public void markDirty(long id) {
-        persistence.markDirty(this, id);
-    }
 
     @Override
     public @Nullable Snapshot snapshot(Long id) {
@@ -35,8 +32,7 @@ public final class V2PendingLocationStore implements Store<Long, Snapshot> {
 
     @Override
     public void write(Handle handle, List<Snapshot> snapshots) {
-        LOCATIONS.replaceFor(handle, "group_id", snapshots.stream().map(Snapshot::groupId).toList(),
-                snapshots.stream().flatMap(snapshot -> snapshot.locations().stream()).toList());
+        LOCATIONS.replaceFor(handle, "group_id", snapshots, Snapshot::groupId, Snapshot::locations);
     }
 
     @Override
