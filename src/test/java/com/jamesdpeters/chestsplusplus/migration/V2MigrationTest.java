@@ -300,6 +300,29 @@ class V2MigrationTest extends PluginTestBase {
     }
 
     @Test
+    void isolatedRetryKeepsPendingLocationUntilItsNodeIsSaved() throws Exception {
+        ChestLinkGroup group = importUnresolved("later", 0);
+        var initial = services.persistence().flush();
+        tickUntil(initial::isDone);
+        initial.join();
+        try (Database database = Database.open("jdbc:sqlite:" + plugin.getDataFolder().toPath().resolve("data.db"))) {
+            database.handle().execute("CREATE TRIGGER fail_nodes BEFORE INSERT ON nodes BEGIN SELECT RAISE(FAIL, 'simulated failure'); END");
+            World later = server.addSimpleWorld("later");
+            later.loadChunk(0, 0);
+            later.getBlockAt(0, 64, 0).setType(Material.CHEST);
+            services.get(V2LocationRecovery.class).finishLoaded();
+            for (int attempt = 0; attempt < 2; attempt++) {
+                var failed = services.persistence().flush();
+                tickUntil(failed::isDone);
+                assertThat(failed.isCompletedExceptionally()).isTrue();
+            }
+            assertThat(database.handle().createQuery("SELECT count(*) FROM nodes WHERE group_id = :id").bind("id", group.id()).mapTo(int.class).one())
+                    .isZero();
+            assertThat(database.handle().createQuery("SELECT count(*) FROM v2_pending_locations").mapTo(int.class).one()).isEqualTo(1);
+        }
+    }
+
+    @Test
     void deletedGroupAndSameNameReplacementCannotInheritPendingLocations() throws Exception {
         ChestLinkGroup group = importUnresolved("later", 0);
         var initial = services.persistence().flush();

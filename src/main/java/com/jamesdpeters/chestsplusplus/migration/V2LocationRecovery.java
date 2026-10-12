@@ -10,6 +10,7 @@ import com.jamesdpeters.chestsplusplus.model.Node;
 import com.jamesdpeters.chestsplusplus.model.NodeIndex;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import com.jamesdpeters.chestsplusplus.persistence.GroupStore;
+import com.jamesdpeters.chestsplusplus.persistence.Persistence;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bukkit.Chunk;
@@ -33,6 +34,7 @@ public final class V2LocationRecovery implements Listener {
     private final GroupRegistry groups;
     private final NodeIndex nodes;
     private final GroupStore groupStore;
+    private final Persistence persistence;
     private final LinkService links;
     private final DisplayService displays;
     private final V2Cleanup cleanup;
@@ -85,11 +87,14 @@ public final class V2LocationRecovery implements Listener {
             discard(row, "block is stale or already claimed");
             return;
         }
-        Node node = new Node(pos, BlockFace.NORTH, group.id());
-        nodes.put(node);
-        groupStore.markDirty(group);
-        cleanup.add(pos);
-        pending.remove(row);
+        // One unit, so a retry can never commit the pending row's removal without the node it became.
+        persistence.together(() -> {
+            nodes.put(new Node(pos, BlockFace.NORTH, group.id()));
+            groupStore.markDirty(group);
+            cleanup.add(pos);
+            pending.remove(row);
+            return null;
+        });
         worldCleanup.finish(chunk);
         displays.nodeAdded(nodes.get(pos));
         log.info("Recovered v2 location {} for group {}", pos, group.id());
