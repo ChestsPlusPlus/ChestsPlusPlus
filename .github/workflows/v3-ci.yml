@@ -1,9 +1,10 @@
 name: v3 CI
 
 on:
+  # Feature branches run through pull_request, avoiding a second run when the PR opens or is updated.
   # Tags are left to v3-release.yml, which runs this workflow itself before drafting the release.
   push:
-    branches: ["**"]
+    branches: ["v3"]
   pull_request:
   workflow_dispatch:
   workflow_call:
