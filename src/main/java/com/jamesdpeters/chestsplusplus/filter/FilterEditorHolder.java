@@ -1,5 +1,6 @@
 package com.jamesdpeters.chestsplusplus.filter;
 
+import com.jamesdpeters.chestsplusplus.core.Items;
 import com.jamesdpeters.chestsplusplus.message.Message;
 import com.jamesdpeters.chestsplusplus.message.Messages;
 import com.jamesdpeters.chestsplusplus.ui.menu.GhostEditor;
@@ -109,7 +110,7 @@ public final class FilterEditorHolder extends GhostEditor {
         }
         if (slot < 0 || slot >= ROW * 2) return false;
         HopperFilter.Mode mode = slot < ROW ? HopperFilter.Mode.ALLOW : HopperFilter.Mode.DENY;
-        boolean changed = cursor != null && !cursor.isEmpty() ? place(mode, slot % ROW, cursor) : edit(mode, slot % ROW, click);
+        boolean changed = Items.present(cursor) ? place(mode, slot % ROW, cursor) : edit(mode, slot % ROW, click);
         if (changed) render();
         return changed;
     }

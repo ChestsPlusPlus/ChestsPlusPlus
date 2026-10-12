@@ -1,5 +1,6 @@
 package com.jamesdpeters.chestsplusplus.autocraft;
 
+import com.jamesdpeters.chestsplusplus.core.Items;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -50,7 +51,7 @@ public final class CraftPlanner {
             ItemStack[] contents = inventory.getStorageContents();
             for (int slot = 0; slot < contents.length; slot++) {
                 ItemStack item = contents[slot];
-                if (item != null && !item.isEmpty()) stacks.add(new Stack(new Source(inventory, slot), item));
+                if (Items.present(item)) stacks.add(new Stack(new Source(inventory, slot), item));
             }
         }
         return stacks;
@@ -118,7 +119,7 @@ public final class CraftPlanner {
         boolean[] empty = new boolean[contents.length];
         for (int i = 0; i < contents.length; i++) {
             ItemStack item = contents[i];
-            empty[i] = item == null || item.isEmpty();
+            empty[i] = !Items.present(item);
             space[i] = empty[i] ? 0 : Math.max(0, item.getMaxStackSize() - item.getAmount());
         }
         for (ItemStack wanted : items) {

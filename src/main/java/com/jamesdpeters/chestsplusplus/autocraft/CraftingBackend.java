@@ -1,5 +1,6 @@
 package com.jamesdpeters.chestsplusplus.autocraft;
 
+import com.jamesdpeters.chestsplusplus.core.Items;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -80,7 +81,7 @@ public interface CraftingBackend {
         List<@Nullable Predicate<ItemStack>> slots = new ArrayList<>(9);
         for (int i = 0; i < 9; i++) {
             ItemStack ghost = i < matrix.length ? matrix[i] : null;
-            if (ghost == null || ghost.isEmpty()) {
+            if (!Items.present(ghost)) {
                 slots.add(null);
                 continue;
             }

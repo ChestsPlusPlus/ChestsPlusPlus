@@ -1,5 +1,6 @@
 package com.jamesdpeters.chestsplusplus.chestlink;
 
+import com.jamesdpeters.chestsplusplus.core.Items;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import io.papermc.paper.event.entity.ItemTransportingEntityValidateTargetEvent;
@@ -117,7 +118,7 @@ public final class GolemBridge implements Listener {
         Inventory inventory = group.inventory();
         for (int slot = 0; slot < inventory.getSize(); slot++) {
             ItemStack stack = inventory.getItem(slot);
-            if (stack == null || stack.isEmpty()) continue;
+            if (!Items.present(stack)) continue;
             int amount = Math.min(LOAD, stack.getAmount());
             equipment.setItemInMainHand(stack.asQuantity(amount));
             inventory.setItem(slot, stack.getAmount() == amount ? null : stack.asQuantity(stack.getAmount() - amount));
@@ -141,7 +142,7 @@ public final class GolemBridge implements Listener {
         boolean similar = false;
         boolean room = false;
         for (ItemStack stack : inventory.getContents()) {
-            if (stack == null || stack.isEmpty()) {
+            if (!Items.present(stack)) {
                 room = true;
             } else if (stack.isSimilar(held)) {
                 similar = true;

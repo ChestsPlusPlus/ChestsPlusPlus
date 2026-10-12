@@ -4,6 +4,7 @@ import com.jamesdpeters.chestsplusplus.ChestsPlusPlus;
 import com.jamesdpeters.chestsplusplus.chestlink.ChestLinkHolder;
 import com.jamesdpeters.chestsplusplus.core.BlockPos;
 import com.jamesdpeters.chestsplusplus.core.Holders;
+import com.jamesdpeters.chestsplusplus.core.Items;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.display.DisplayService;
 import com.jamesdpeters.chestsplusplus.link.GroupTypeHandler;
@@ -158,7 +159,7 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
     void edit(Player player, RecipeEditorHolder editor, int slot, @Nullable ItemStack cursor, ClickType click) {
         AutoCraftGroup group = editor.group();
         if (!mayEdit(player, group)) return;
-        if (click.isRightClick() && (cursor == null || cursor.isEmpty())) {
+        if (click.isRightClick() && !Items.present(cursor)) {
             int index = RecipeEditorHolder.matrixIndex(slot);
             if (index >= 0 && group.matrix()[index] != null) setMatch(group, index, group.matches()[index].next(hasRecipeChoice(group, index)));
             return;
@@ -441,7 +442,7 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
         List<ItemStack> produced = new ArrayList<>();
         produced.add(crafted.result());
         for (ItemStack leftover : crafted.remaining()) {
-            if (leftover != null && !leftover.isEmpty()) produced.add(leftover);
+            if (Items.present(leftover)) produced.add(leftover);
         }
         return CraftPlanner.fits(output, produced) ? new Craft(plan, produced.toArray(ItemStack[]::new)) : null;
     }

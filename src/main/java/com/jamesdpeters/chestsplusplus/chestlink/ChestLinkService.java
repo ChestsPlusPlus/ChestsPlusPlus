@@ -5,6 +5,7 @@ import com.jamesdpeters.chestsplusplus.chestlink.sort.Sorter;
 import com.jamesdpeters.chestsplusplus.core.BlockPos;
 import com.jamesdpeters.chestsplusplus.core.Holders;
 import com.jamesdpeters.chestsplusplus.core.InventoryChanges;
+import com.jamesdpeters.chestsplusplus.core.Items;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.display.DisplayService;
 import com.jamesdpeters.chestsplusplus.link.GroupTypeHandler;
@@ -145,7 +146,7 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
         if (!(block.getState(false) instanceof Container container)) return 0;
         Inventory physical = container instanceof Chest chest ? chest.getBlockInventory() : container.getInventory();
         List<ItemStack> moving = new ArrayList<>();
-        for (ItemStack item : physical.getContents()) if (item != null && !item.isEmpty()) moving.add(item);
+        for (ItemStack item : physical.getContents()) if (Items.present(item)) moving.add(item);
         if (moving.isEmpty()) return 0;
         physical.clear();
         Map<Integer, ItemStack> overflow = group.inventory().addItem(moving.toArray(ItemStack[]::new));
@@ -160,7 +161,7 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
         Inventory inventory = group.inventory();
         closeViewers(group);
         for (ItemStack item : inventory.getContents()) {
-            if (item != null && !item.isEmpty() && at.getWorld() != null) at.getWorld().dropItemNaturally(at, item);
+            if (Items.present(item) && at.getWorld() != null) at.getWorld().dropItemNaturally(at, item);
         }
         inventory.clear();
     }
@@ -258,7 +259,7 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
         Material best = null;
         int bestTotal = 0;
         for (ItemStack item : group.inventory().getContents()) {
-            if (item == null || item.isEmpty()) continue;
+            if (!Items.present(item)) continue;
             Material type = item.getType();
             int amount = item.getAmount();
             int total = totals.addTo(type, amount) + amount;

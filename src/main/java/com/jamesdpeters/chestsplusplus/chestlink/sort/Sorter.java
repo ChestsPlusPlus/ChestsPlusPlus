@@ -1,5 +1,6 @@
 package com.jamesdpeters.chestsplusplus.chestlink.sort;
 
+import com.jamesdpeters.chestsplusplus.core.Items;
 import com.jamesdpeters.chestsplusplus.model.SortMode;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -28,7 +29,7 @@ public final class Sorter {
         Map<ItemStack, Pile> grouped = new LinkedHashMap<>();
         for (int slot = 0; slot < contents.length; slot++) {
             ItemStack item = contents[slot];
-            if (item == null || item.isEmpty()) continue;
+            if (!Items.present(item)) continue;
             ItemStack template = item.asOne();
             Pile pile = grouped.get(template);
             grouped.put(template, pile == null

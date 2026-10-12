@@ -1,6 +1,7 @@
 package com.jamesdpeters.chestsplusplus.migration;
 
 import com.jamesdpeters.chestsplusplus.autocraft.RecipeMatrix;
+import com.jamesdpeters.chestsplusplus.core.Items;
 import org.bukkit.inventory.ItemStack;
 import org.jspecify.annotations.Nullable;
 
@@ -19,7 +20,7 @@ final class V2Recipes {
 
     private static @Nullable ItemStack[] fromItems(@Nullable ItemStack[] items) {
         @Nullable ItemStack[] matrix = new ItemStack[9];
-        for (int i = 0; i < 9 && i < items.length; i++) matrix[i] = items[i] == null || items[i].isEmpty() ? null : items[i].asOne();
+        for (int i = 0; i < 9 && i < items.length; i++) matrix[i] = Items.present(items[i]) ? items[i].asOne() : null;
         return matrix;
     }
 }

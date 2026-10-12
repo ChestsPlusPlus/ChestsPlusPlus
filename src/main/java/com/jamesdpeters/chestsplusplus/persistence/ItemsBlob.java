@@ -1,5 +1,6 @@
 package com.jamesdpeters.chestsplusplus.persistence;
 
+import com.jamesdpeters.chestsplusplus.core.Items;
 import java.sql.Types;
 import org.bukkit.inventory.ItemStack;
 import org.jdbi.v3.core.Jdbi;
@@ -35,7 +36,7 @@ final class ItemsBlob {
         @Nullable ItemStack[] items = ItemStack.deserializeItemsFromBytes(bytes);
         for (int i = 0; i < items.length; i++) {
             ItemStack item = items[i];
-            if (item == null || item.isEmpty()) items[i] = null;
+            if (!Items.present(item)) items[i] = null;
         }
         return items;
     }
