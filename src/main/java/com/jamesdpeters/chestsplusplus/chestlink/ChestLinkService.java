@@ -15,9 +15,9 @@ import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.Node;
 import com.jamesdpeters.chestsplusplus.model.SortMode;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -254,15 +254,17 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
 
     /** The most common item by total amount (the display item), or null when empty. */
     public static @Nullable ItemStack mostCommon(ChestLinkGroup group) {
-        Map<Material, Integer> totals = new EnumMap<>(Material.class);
+        Object2IntOpenHashMap<Material> totals = new Object2IntOpenHashMap<>(8);
         Material best = null;
         int bestTotal = 0;
         for (ItemStack item : group.inventory().getContents()) {
             if (item == null || item.isEmpty()) continue;
-            int total = totals.merge(item.getType(), item.getAmount(), Integer::sum);
+            Material type = item.getType();
+            int amount = item.getAmount();
+            int total = totals.addTo(type, amount) + amount;
             if (total > bestTotal) {
                 bestTotal = total;
-                best = item.getType();
+                best = type;
             }
         }
         return best == null ? null : ItemStack.of(best);
