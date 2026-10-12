@@ -12,7 +12,12 @@ comments, no repeated logic.
 - `./gradlew benchmarkWorlds` then `./gradlew benchmark` measure v3's server cost against v2's. See [docs/benchmarking.md](docs/benchmarking.md).
 - The build's server tasks live in `buildSrc` as convention plugins (`chestsplusplus.e2e`, `.v2-upgrade`, `.benchmark`, `.dev-server`);
   `build.gradle.kts` only configures the plugin itself.
-- The compiler runs with `-Xlint:all -Werror`, so any warning fails the build.
+- The compiler runs with `-Xlint:all -Werror`, so any warning fails the build. That includes Error Prone and NullAway (JSpecify
+  mode, main code only). Paper calls NullAway misreads go through `PaperApi`.
+- `ArchitectureTest` (part of `unitTest`) checks the package, `Services`, logging and SQL rules below. `lombok.config` rejects the
+  banned Lombok annotations.
+- `unitTest` and `integrationTest` write JaCoCo reports to `build/reports/jacoco/<task>/html`; `jacocoMergedReport` runs both and
+  combines them.
 - `./gradlew runServer` runs on the JetBrains Runtime with a hot-swap agent. While it runs, `./gradlew classes` (or `-t classes`,
   or an IntelliJ build) swaps changed classes into the live server, including added methods, fields and classes. New static
   fields get their initialisers run, but new instance fields stay null on objects that already exist. Restart for
