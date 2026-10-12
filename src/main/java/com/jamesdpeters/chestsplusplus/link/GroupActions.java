@@ -15,7 +15,6 @@ import com.jamesdpeters.chestsplusplus.model.SortMode;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import java.util.List;
-import java.util.Locale;
 import java.util.UUID;
 import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
@@ -89,7 +88,7 @@ public final class GroupActions {
         if (!isEnabled(player, group.type()) || !require(player, Permissions.CHESTLINK_SORT) || !canManage(player, group)) return false;
         chestLinks.setSortMode(group, mode);
         services.send(player, Message.CHESTLINK_SORT_MODE, Messages.group(group),
-                Messages.text("mode", mode.name().toLowerCase(Locale.ROOT)));
+                Messages.text("mode", mode.key()));
         return true;
     }
 

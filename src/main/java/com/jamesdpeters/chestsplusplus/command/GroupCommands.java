@@ -25,11 +25,10 @@ import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
-import java.util.Locale;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 
@@ -38,6 +37,7 @@ import org.bukkit.entity.Player;
 final class GroupCommands {
 
     private static final int TARGET_RANGE = 6;
+    private static final String SORT_MODES = Stream.of(SortMode.values()).map(SortMode::key).collect(Collectors.joining(", "));
 
     private final GroupType type;
     private final CommandBodies bodies;
@@ -70,10 +70,10 @@ final class GroupCommands {
 
     private LiteralArgumentBuilder<CommandSourceStack> sort() {
         RequiredArgumentBuilder<CommandSourceStack, String> mode = argument("mode", StringArgumentType.word()).suggests((context, builder) -> {
-            for (SortMode sortMode : SortMode.values()) builder.suggest(sortMode.name().toLowerCase(Locale.ROOT));
+            for (SortMode sortMode : SortMode.values()) builder.suggest(sortMode.key());
             return builder.buildFuture();
         });
-        return literal("sort").requires(permission(Permissions.CHESTLINK_SORT)).then(group().then(mode.executes(withGroup(this::sort))));
+        return literal("sort").requires(permission(Permissions.CHESTLINK_SORT)).then(group().then(mode.executes(bodies.player(this::sort))));
     }
 
     private void add(Services services, Player player, CommandContext<CommandSourceStack> context) {
@@ -103,15 +103,13 @@ final class GroupCommands {
         actions.setPublic(player, group, BoolArgumentType.getBool(context, "public"));
     }
 
-    private void sort(GroupActions actions, Player player, StorageGroup group, CommandContext<CommandSourceStack> context) {
-        SortMode mode;
-        try {
-            mode = SortMode.valueOf(StringArgumentType.getString(context, "mode").toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException e) {
-            player.sendMessage(Component.text("Sort modes: off, name, amount_asc, amount_desc", NamedTextColor.RED));
-            return;
-        }
-        if (group instanceof ChestLinkGroup chest) actions.sort(player, chest, mode);
+    /** Not a {@link #withGroup} body, since an unknown mode is refused with a message that needs the services. */
+    private void sort(Services services, Player player, CommandContext<CommandSourceStack> context) {
+        GroupActions actions = services.get(GroupActions.class);
+        if (!(actions.find(player, type, StringArgumentType.getString(context, "group")) instanceof ChestLinkGroup group)) return;
+        SortMode mode = SortMode.parse(StringArgumentType.getString(context, "mode"));
+        if (mode == null) services.send(player, Message.ERROR_UNKNOWN_SORT_MODE, Messages.text("modes", SORT_MODES));
+        else actions.sort(player, group, mode);
     }
 
     private RequiredArgumentBuilder<CommandSourceStack, String> group() {

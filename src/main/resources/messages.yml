@@ -28,6 +28,7 @@ error:
   already-member: "<prefix> <red><yellow><player></yellow> is already a member of <yellow><group></yellow>."
   not-member: "<prefix> <red><yellow><player></yellow> isn't a member of <yellow><group></yellow>."
   stale-link-item: "<prefix> <red>The group that item was linked to no longer exists, so it was placed as a normal block."
+  unknown-sort-mode: "<prefix> <red>Sort modes: <modes>."
 
 chestlink:
   created: "<prefix> <green>Created ChestLink <yellow><group></yellow>."

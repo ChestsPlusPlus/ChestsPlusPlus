@@ -9,7 +9,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -85,12 +84,8 @@ public final class V2Storage {
     }
 
     private static SortMode sortMode(@Nullable Object value) {
-        if (value == null) return SortMode.OFF;
-        try {
-            return SortMode.valueOf(value.toString().toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException e) {
-            return SortMode.OFF;
-        }
+        SortMode mode = value == null ? null : SortMode.parse(value.toString());
+        return mode == null ? SortMode.OFF : mode;
     }
 
     /** v2 kept either {@code locationInfo: [LocationInfo{Location}]} or, in older files, {@code locations: [Location]}. */
