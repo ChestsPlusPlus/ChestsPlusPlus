@@ -63,7 +63,11 @@ public final class GolemBridge implements Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR)
     void onValidated(ItemTransportingEntityValidateTargetEvent event) {
-        if (!event.isAllowed() || !(event.getEntity() instanceof CopperGolem golem)) return;
+        if (!(event.getEntity() instanceof CopperGolem golem)) return;
+        if (!event.isAllowed()) {
+            targets.remove(golem, event.getBlock());
+            return;
+        }
         if (services.groupAt(event.getBlock()) instanceof ChestLinkGroup) {
             targets.put(golem, event.getBlock());
         } else {
