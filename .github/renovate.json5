@@ -1,0 +1,71 @@
+{
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  // Renovate reads this file from the default branch (master), so it only takes effect once it's there.
+  extends: ['config:recommended', 'schedule:weekly'],
+  baseBranchPatterns: ['v3'],
+  // config:recommended ignores **/test/**, which would skip the E2E package in src/test/e2e.
+  ignorePaths: ['**/node_modules/**'],
+  labels: ['dependencies'],
+  lockFileMaintenance: {
+    enabled: true,
+    schedule: ['before 4am on the first day of the month'],
+  },
+  packageRules: [
+    {
+      description: 'Build and test tooling: one weekly PR for everything non-major.',
+      matchManagers: ['gradle'],
+      matchUpdateTypes: ['minor', 'patch'],
+      groupName: 'build and test tooling',
+    },
+    {
+      description: 'Libraries the plugin ships or Paper downloads for it, kept apart from tooling.',
+      matchPackageNames: ['org.jdbi:**', 'de.exlll:**', 'org.bstats:**'],
+      matchUpdateTypes: ['minor', 'patch'],
+      groupName: 'runtime libraries',
+    },
+    {
+      description: 'Paper API builds and MockBukkit move together.',
+      matchPackageNames: ['io.papermc.paper:paper-api', 'org.mockbukkit.mockbukkit:**'],
+      groupName: 'Paper and MockBukkit',
+    },
+    {
+      description: 'Only real Paper builds: Maven ordering puts 26.3-pre-2.build.0-alpha after 26.3.build.146-beta.',
+      matchPackageNames: ['io.papermc.paper:paper-api'],
+      allowedVersions: '/^\\d+\\.\\d+(\\.\\d+)?\\.build\\.\\d+-(beta|stable)$/',
+    },
+    {
+      description: 'A new Minecraft version means a new apiVersion, server download and MockBukkit artifact, so wait for approval.',
+      matchPackageNames: ['io.papermc.paper:paper-api'],
+      matchUpdateTypes: ['major', 'minor'],
+      dependencyDashboardApproval: true,
+    },
+    {
+      description: 'Tests run on the Paper version MockBukkit supports (26.2) until mockbukkit-v26.3 exists.',
+      matchPackageNames: ['io.papermc.paper:paper-api'],
+      matchCurrentValue: '/^26\\.2\\./',
+      allowedVersions: '/^26\\.2\\.build\\.\\d+-(beta|stable)$/',
+    },
+    {
+      description: 'The v2 upgrade test bed stays on Paper 1.21.7.',
+      matchPackageNames: ['io.papermc.paper:paper-api'],
+      matchCurrentValue: '/^1\\.21\\./',
+      enabled: false,
+    },
+    {
+      matchManagers: ['github-actions'],
+      groupName: 'GitHub Actions',
+    },
+    {
+      description: "CI's JDK follows JAVA_VERSION in buildSrc and gradle-daemon-jvm.properties, so it's bumped by hand.",
+      matchManagers: ['github-actions'],
+      matchDepNames: ['java-jdk'],
+      enabled: false,
+    },
+    {
+      description: 'The E2E suite (src/test/e2e).',
+      matchManagers: ['npm'],
+      groupName: 'E2E npm packages',
+      minimumReleaseAge: '3 days',
+    },
+  ],
+}
