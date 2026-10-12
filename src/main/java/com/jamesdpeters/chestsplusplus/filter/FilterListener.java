@@ -6,6 +6,7 @@ import com.jamesdpeters.chestsplusplus.chestlink.ChestLinkService;
 import com.jamesdpeters.chestsplusplus.core.Holders;
 import com.jamesdpeters.chestsplusplus.core.InventoryChanges;
 import com.jamesdpeters.chestsplusplus.core.Items;
+import com.jamesdpeters.chestsplusplus.core.PaperApi;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.link.LinkService;
 import com.jamesdpeters.chestsplusplus.link.SyntheticMoveEvent;
@@ -87,7 +88,7 @@ public final class FilterListener implements Listener {
     private void avoidStall(Inventory source, Inventory destination, CompiledFilter filter, int amount) {
         int now = services.plugin().getServer().getCurrentTick();
         if (!filter.manualMoveAllowed(now)) return;
-        ItemStack[] contents = source.getContents();
+        @Nullable ItemStack[] contents = PaperApi.contents(source);
         for (int slot = 0; slot < contents.length; slot++) {
             ItemStack item = contents[slot];
             if (!Items.present(item) || !filter.accepts(item)) continue;

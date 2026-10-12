@@ -88,14 +88,15 @@ public final class V2LocationRecovery implements Listener {
             return;
         }
         // One unit, so a retry can never commit the pending row's removal without the node it became.
+        Node node = new Node(pos, BlockFace.NORTH, group.id());
         persistence.together(() -> {
-            nodes.put(new Node(pos, BlockFace.NORTH, group.id()));
+            nodes.put(node);
             groupStore.markDirty(group);
             cleanup.add(pos);
             pending.remove(row);
         });
         worldCleanup.finish(chunk);
-        displays.nodeAdded(nodes.get(pos));
+        displays.nodeAdded(node);
         log.info("Recovered v2 location {} for group {}", pos, group.id());
     }
 

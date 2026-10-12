@@ -70,12 +70,12 @@ public final class NodeListener implements Listener {
         StorageGroup group = services.groups().byId(node.groupId());
         Location dropAt = block.getLocation().clone().add(0.5, 0.5, 0.5);
         ItemStack tool = player.getInventory().getItemInMainHand();
-        boolean silkTouch = player.getGameMode() != GameMode.CREATIVE && tool.containsEnchantment(Enchantment.SILK_TOUCH) && group != null;
-        if (silkTouch) {
+        StorageGroup silkTouched = player.getGameMode() != GameMode.CREATIVE && tool.containsEnchantment(Enchantment.SILK_TOUCH) ? group : null;
+        if (silkTouched != null) {
             event.setDropItems(false);
-            block.getWorld().dropItemNaturally(dropAt, linkItems.create(group, block.getType(), services.messages()));
+            block.getWorld().dropItemNaturally(dropAt, linkItems.create(silkTouched, block.getType(), services.messages()));
         }
-        links.unlink(node.pos(), dropAt, silkTouch);
+        links.unlink(node.pos(), dropAt, silkTouched != null);
         if (group == null) return;
         boolean removed = services.groups().byId(group.id()) == null;
         Message message = removed
@@ -113,7 +113,8 @@ public final class NodeListener implements Listener {
 
     private @Nullable StorageGroup linkedGroup(ItemStack item) {
         LinkItem.Link link = linkItems.read(item);
-        StorageGroup group = link == null ? null : services.groups().byId(link.groupId());
+        if (link == null) return null;
+        StorageGroup group = services.groups().byId(link.groupId());
         return group != null && group.type() == link.type() ? group : null;
     }
 

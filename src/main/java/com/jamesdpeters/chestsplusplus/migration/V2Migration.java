@@ -2,6 +2,7 @@ package com.jamesdpeters.chestsplusplus.migration;
 
 import com.jamesdpeters.chestsplusplus.ChestsPlusPlus;
 import com.jamesdpeters.chestsplusplus.Permissions;
+import com.jamesdpeters.chestsplusplus.core.PaperApi;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.message.Message;
 import com.jamesdpeters.chestsplusplus.message.Messages;
@@ -11,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -81,6 +83,7 @@ public final class V2Migration implements Listener {
         run(sender, file, apply);
     }
 
+    @SuppressWarnings("FutureReturnValueIgnored") // The callback reports a failed flush.
     private void run(Audience sender, Path file, boolean apply) {
         try {
             V2Data data = V2Storage.read(file);
@@ -143,7 +146,7 @@ public final class V2Migration implements Listener {
 
     private void writeLog(Path file, ImportReport report) {
         List<String> out = new ArrayList<>();
-        out.add("ChestsPlusPlus v2 import from " + file + " at " + LocalDateTime.now());
+        out.add("ChestsPlusPlus v2 import from " + file + " at " + LocalDateTime.now(ZoneId.systemDefault()));
         out.add(report.chestLinks() + " ChestLink(s), " + report.autoCrafters() + " AutoCrafter(s), " + report.nodes() + " linked block(s), "
                 + report.itemStacks() + " item stack(s), " + report.trusted() + " trusted player(s)");
         out.addAll(report.lines());
@@ -186,9 +189,10 @@ public final class V2Migration implements Listener {
     }
 
     /** Loads the chunks within {@code radius} chunks of the player that still have imported blocks waiting. */
+    @SuppressWarnings("FutureReturnValueIgnored") // Paper's chunk futures don't fail.
     public void cleanupNear(Player player, int radius) {
         World world = player.getWorld();
-        Chunk center = player.getLocation().getChunk();
+        Chunk center = PaperApi.location(player).getChunk();
         List<V2Cleanup.ChunkRef> chunks = cleanup.chunks().stream().filter(ref -> ref.world().equals(world.getUID()))
                 .filter(ref -> Math.abs(ref.x() - center.getX()) <= radius && Math.abs(ref.z() - center.getZ()) <= radius).toList();
         services.send(player, Message.MIGRATE_CLEANUP_STARTED, Messages.text("chunks", chunks.size()));
@@ -251,6 +255,6 @@ public final class V2Migration implements Listener {
     }
 
     private static String stamp() {
-        return LocalDateTime.now().format(STAMP);
+        return LocalDateTime.now(ZoneId.systemDefault()).format(STAMP);
     }
 }

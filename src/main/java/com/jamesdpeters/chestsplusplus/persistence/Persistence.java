@@ -1,5 +1,6 @@
 package com.jamesdpeters.chestsplusplus.persistence;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.jamesdpeters.chestsplusplus.ChestsPlusPlus;
 import com.jamesdpeters.chestsplusplus.persistence.BatchWriter.Result;
 import com.jamesdpeters.chestsplusplus.persistence.PendingChanges.Flush;
@@ -77,7 +78,11 @@ public final class Persistence {
         changes.load(database);
     }
 
-    /** Main thread: snapshots dirty keys. The future completes on the main thread once they commit, or fails if any failed. */
+    /**
+     * Main thread: snapshots dirty keys. The future completes on the main thread once they commit, or fails if any failed. Failed keys
+     * are logged and retried by the next flush, so callers that don't need to know can ignore it.
+     */
+    @CanIgnoreReturnValue
     public CompletableFuture<Void> flush() {
         Flush flush = changes.take();
         if (flush.size() == 0) return CompletableFuture.completedFuture(null);

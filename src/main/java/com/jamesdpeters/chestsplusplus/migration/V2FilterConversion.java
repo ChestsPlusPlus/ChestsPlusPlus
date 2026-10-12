@@ -48,7 +48,7 @@ public final class V2FilterConversion {
         }
     }
 
-    private final class Job {
+    private static final class Job {
         final Audience sender;
         final boolean allWorlds;
         final boolean worldsAvailable;
@@ -91,6 +91,7 @@ public final class V2FilterConversion {
     }
 
     /** Finds the chunks off the main thread, then starts converting them. */
+    @SuppressWarnings("FutureReturnValueIgnored") // The callback handles a failed scan.
     public void start(Audience sender, List<World> worlds, boolean allWorlds) {
         if (isRunning()) {
             services.send(sender, Message.MIGRATE_FILTERS_RUNNING);
@@ -131,6 +132,7 @@ public final class V2FilterConversion {
         return new ArrayList<>(targets);
     }
 
+    @SuppressWarnings("FutureReturnValueIgnored") // Paper's chunk futures don't fail.
     public void cancel(Audience sender) {
         Job current = job;
         if (scanning) {

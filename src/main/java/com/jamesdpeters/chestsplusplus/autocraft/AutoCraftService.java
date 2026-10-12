@@ -5,6 +5,7 @@ import com.jamesdpeters.chestsplusplus.chestlink.ChestLinkHolder;
 import com.jamesdpeters.chestsplusplus.core.BlockPos;
 import com.jamesdpeters.chestsplusplus.core.Holders;
 import com.jamesdpeters.chestsplusplus.core.Items;
+import com.jamesdpeters.chestsplusplus.core.PaperApi;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.core.Viewers;
 import com.jamesdpeters.chestsplusplus.display.DisplayService;
@@ -250,7 +251,7 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
         craftSoon(group);
         services.groupStore().markDirty(group);
         displays.requestUpdate(group);
-        if (editor != null && resolved != null) editor.playSound(editor.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.6f, 1.4f);
+        if (editor != null && resolved != null) editor.playSound(PaperApi.location(editor), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.6f, 1.4f);
         renderEditors(group);
         return resolved == null ? null : resolved.result();
     }

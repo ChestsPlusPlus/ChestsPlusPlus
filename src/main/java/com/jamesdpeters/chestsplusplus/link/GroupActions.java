@@ -4,7 +4,7 @@ import com.destroystokyo.paper.profile.PlayerProfile;
 import com.jamesdpeters.chestsplusplus.Permissions;
 import com.jamesdpeters.chestsplusplus.access.AccessService;
 import com.jamesdpeters.chestsplusplus.access.AccessibleGroups;
-import com.jamesdpeters.chestsplusplus.chestlink.ChestLinkService;
+import com.jamesdpeters.chestsplusplus.core.PaperApi;
 import com.jamesdpeters.chestsplusplus.core.PlayerNames;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.message.Message;
@@ -16,6 +16,7 @@ import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.text.event.ClickEvent;
@@ -35,7 +36,8 @@ public final class GroupActions {
 
     private final Services services;
     private final LinkService links;
-    private final ChestLinkService chestLinks;
+    /** {@code ChestLinkService::setSortMode}, passed in because link can't depend on chestlink. */
+    private final BiConsumer<ChestLinkGroup, SortMode> setSortMode;
 
     /** Resolves {@code input} for {@code player}; messages and returns null if it isn't an accessible group. */
     public @Nullable StorageGroup find(Player player, GroupType type, String input) {
@@ -45,8 +47,8 @@ public final class GroupActions {
                 services.send(player, Message.ERROR_UNKNOWN_GROUP, Messages.text("group", input));
                 yield null;
             }
-            case LinkService.Resolved.Error error -> {
-                links.send(player, error);
+            case LinkService.Resolved.Refused refused -> {
+                links.send(player, refused);
                 yield null;
             }
         };
@@ -64,7 +66,7 @@ public final class GroupActions {
 
     public boolean remove(Player player, StorageGroup group) {
         if (!isEnabled(player, group.type()) || !require(player, Permissions.remove(group.type())) || !canManage(player, group)) return false;
-        links.removeGroup(group, player.getLocation());
+        links.removeGroup(group, PaperApi.location(player));
         services.send(player, group.type().pick(Message.CHESTLINK_REMOVED, Message.AUTOCRAFT_REMOVED),
                 Messages.group(group));
         return true;
@@ -86,7 +88,7 @@ public final class GroupActions {
 
     public boolean sort(Player player, ChestLinkGroup group, SortMode mode) {
         if (!isEnabled(player, group.type()) || !require(player, Permissions.CHESTLINK_SORT) || !canManage(player, group)) return false;
-        chestLinks.setSortMode(group, mode);
+        setSortMode.accept(group, mode);
         services.send(player, Message.CHESTLINK_SORT_MODE, Messages.group(group),
                 Messages.text("mode", mode.key()));
         return true;
@@ -231,6 +233,7 @@ public final class GroupActions {
      * Resolves a player name without blocking the main thread: the cache first, then an async profile
      * lookup whose result is applied back on the main thread.
      */
+    @SuppressWarnings("FutureReturnValueIgnored") // The callback handles a failed lookup.
     private void lookup(Player requester, String name, Consumer<UUID> onFound) {
         OfflinePlayer cached = Bukkit.getOfflinePlayerIfCached(name);
         if (cached != null) {

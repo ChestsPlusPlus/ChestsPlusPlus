@@ -3,6 +3,7 @@ package com.jamesdpeters.chestsplusplus.persistence;
 import static java.util.stream.Collectors.groupingBy;
 
 import com.jamesdpeters.chestsplusplus.core.BlockPos;
+import com.jamesdpeters.chestsplusplus.core.PaperApi;
 import com.jamesdpeters.chestsplusplus.model.AutoCraftGroup;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupRegistry;
@@ -205,7 +206,7 @@ public final class GroupStore implements TrackedStore<Long, GroupSnapshot> {
     /** Clones every slot: {@code getContents()} returns live mirrors, and the items are serialised later on the I/O thread. */
     private static @Nullable ItemStack @Nullable [] contents(ChestLinkGroup chest) {
         if (!chest.hasInventory()) return null;
-        @Nullable ItemStack[] items = chest.inventory().getContents();
+        @Nullable ItemStack[] items = PaperApi.contents(chest.inventory());
         for (int i = 0; i < items.length; i++) {
             ItemStack item = items[i];
             if (item != null) items[i] = item.clone();

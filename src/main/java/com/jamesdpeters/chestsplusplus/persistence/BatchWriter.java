@@ -1,7 +1,6 @@
 package com.jamesdpeters.chestsplusplus.persistence;
 
 import com.jamesdpeters.chestsplusplus.persistence.PendingChanges.Flush;
-import com.jamesdpeters.chestsplusplus.persistence.PendingChanges.Key;
 import com.jamesdpeters.chestsplusplus.persistence.PendingChanges.Unit;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -16,10 +15,10 @@ import org.jspecify.annotations.Nullable;
 @RequiredArgsConstructor
 final class BatchWriter {
 
-    record Result(Map<Key, RuntimeException> failed, boolean committed) {}
+    record Result(Map<PendingChanges.Key, RuntimeException> failed, boolean committed) {}
 
     private final Handle handle;
-    private final Map<Key, RuntimeException> failed = new LinkedHashMap<>();
+    private final Map<PendingChanges.Key, RuntimeException> failed = new LinkedHashMap<>();
     private boolean committed;
     private @Nullable RuntimeException lastError;
 

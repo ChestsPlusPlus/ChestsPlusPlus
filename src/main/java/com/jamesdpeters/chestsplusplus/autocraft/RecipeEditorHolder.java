@@ -52,9 +52,9 @@ public final class RecipeEditorHolder extends GhostEditor {
         int index = matrixIndex(slot);
         if (index < 0) return null;
         @Nullable ItemStack[] matrix = group.matrix();
-        boolean hasCursor = Items.present(cursor);
-        if (!hasCursor && matrix[index] == null) return null;
-        matrix[index] = hasCursor ? cursor.asOne() : null;
+        ItemStack placed = Items.present(cursor) ? cursor.asOne() : null;
+        if (placed == null && matrix[index] == null) return null;
+        matrix[index] = placed;
         return matrix;
     }
 

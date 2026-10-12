@@ -1,3 +1,5 @@
+import net.ltgt.gradle.errorprone.CheckSeverity
+import net.ltgt.gradle.errorprone.errorprone
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import xyz.jpenilla.resourcefactory.bukkit.Permission
 
@@ -5,9 +7,11 @@ import xyz.jpenilla.resourcefactory.bukkit.Permission
 // chestsplusplus.e2e, chestsplusplus.v2-upgrade and chestsplusplus.benchmark.
 plugins {
     java
+    jacoco
     id("com.gradleup.shadow")
     id("xyz.jpenilla.resource-factory-paper-convention")
     alias(libs.plugins.spotless)
+    alias(libs.plugins.errorprone)
     id("chestsplusplus.dev-server")
     id("chestsplusplus.e2e")
     id("chestsplusplus.v2-upgrade")
@@ -43,9 +47,12 @@ dependencies {
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.assertj.core)
     testImplementation(libs.sqlite.jdbc)
+    testImplementation(libs.archunit.junit5)
     testRuntimeOnly(libs.slf4j.jdk14)
     testCompileOnly(libs.jspecify)
     testRuntimeOnly(libs.junit.platform.launcher)
+    errorprone(libs.errorprone.core)
+    errorprone(libs.nullaway)
 }
 
 tasks.withType<JavaCompile>().configureEach {
@@ -55,6 +62,21 @@ tasks.withType<JavaCompile>().configureEach {
     // -processing: Lombok is the only annotation processor, so every other annotation is "unclaimed".
     // -parameters: JDBI binds :named SQL parameters and maps columns onto records by parameter name.
     options.compilerArgs.addAll(listOf("-Xlint:all,-classfile,-processing", "-Werror", "-parameters"))
+    options.errorprone {
+        // Tests build fixtures with nulls on purpose and aren't null-checked. Lombok marks what it generates with
+        // @lombok.Generated (lombok.config), which NullAway skips.
+        check("NullAway", if (name == "compileJava") CheckSeverity.ERROR else CheckSeverity.OFF)
+        option("NullAway:AnnotatedPackages", PLUGIN_PACKAGE)
+        option("NullAway:JSpecifyMode", "true")
+        // ConfigLib and Bukkit call these reflectively.
+        option("UnusedMethod:ExemptingMethodAnnotations", "de.exlll.configlib.PostProcess,org.bukkit.event.EventHandler")
+        // Bukkit hands out registry constants and wrapper objects (CraftInventory) whose equals() isn't identity; we mean identity.
+        disable("ReferenceEquality")
+        // Records carry Bukkit's ItemStack[] (and varargs placeholders) through to array APIs and aren't compared by contents.
+        disable("ArrayRecordComponent")
+        // String.split dropping trailing empty strings suits every split here (versions, slot matches, message lines).
+        disable("StringSplitter")
+    }
 }
 
 val paperLibrariesDir = layout.buildDirectory.dir("generated/paperLibraries")
@@ -149,15 +171,35 @@ tasks.withType<Test>().configureEach {
     }
 }
 
-fun taggedTests(name: String, tag: String, what: String) = tasks.register<Test>(name) {
-    group = "verification"
-    description = "Runs tests tagged '$tag' ($what)."
-    testClassesDirs = sourceSets.test.get().output.classesDirs
-    classpath = sourceSets.test.get().runtimeClasspath
-    useJUnitPlatform { includeTags(tag) }
+fun taggedTests(name: String, tag: String, what: String): TaskProvider<Test> {
+    val tests = tasks.register<Test>(name) {
+        group = "verification"
+        description = "Runs tests tagged '$tag' ($what)."
+        testClassesDirs = sourceSets.test.get().output.classesDirs
+        classpath = sourceSets.test.get().runtimeClasspath
+        useJUnitPlatform { includeTags(tag) }
+    }
+    val report = coverageReport("jacoco${name.replaceFirstChar(Char::titlecase)}Report", tests)
+    tests { finalizedBy(report) }
+    return tests
 }
-taggedTests("unitTest", "unit", "pure logic, no server")
-taggedTests("integrationTest", "integration", "MockBukkit")
+
+/** An HTML coverage report, in build/reports/jacoco/<name>, of the main code the given test tasks ran. Reporting only, no thresholds. */
+fun coverageReport(name: String, vararg tests: TaskProvider<Test>) = tasks.register<JacocoReport>(name) {
+    group = "verification"
+    description = "Reports the coverage of ${tests.joinToString { it.name }}."
+    executionData(*tests.map { it.get() }.toTypedArray())
+    sourceSets(sourceSets.main.get())
+}
+
+val unitTest = taggedTests("unitTest", "unit", "pure logic, no server")
+val integrationTest = taggedTests("integrationTest", "integration", "MockBukkit")
+coverageReport("jacocoMergedReport", unitTest, integrationTest).configure { dependsOn(unitTest, integrationTest) }
+
+// build runs test, which runs every tag, so CI gets the full report.
+tasks.test {
+    finalizedBy(tasks.jacocoTestReport)
+}
 
 spotless {
     java {

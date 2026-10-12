@@ -1,6 +1,7 @@
 package com.jamesdpeters.chestsplusplus.chestlink;
 
 import com.jamesdpeters.chestsplusplus.core.Items;
+import com.jamesdpeters.chestsplusplus.core.PaperApi;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import io.papermc.paper.event.entity.ItemTransportingEntityValidateTargetEvent;
@@ -141,7 +142,7 @@ public final class GolemBridge implements Listener {
         if (inventory.isEmpty()) return true;
         boolean similar = false;
         boolean room = false;
-        for (ItemStack stack : inventory.getContents()) {
+        for (ItemStack stack : PaperApi.contents(inventory)) {
             if (!Items.present(stack)) {
                 room = true;
             } else if (stack.isSimilar(held)) {
