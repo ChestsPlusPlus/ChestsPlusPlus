@@ -12,26 +12,24 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
-import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.argument.CustomArgumentType;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.bukkit.entity.Player;
-import org.jspecify.annotations.Nullable;
 
 /**
  * A group reference: {@code name} for your own group, or {@code owner:name} for one you can access. Quote it when the name
  * has a space ({@code "Iron Ore"}, {@code "Steve:Iron Ore"}); unquoted it runs to the next space, so {@code owner:name} needs
  * no quotes. Resolution and access checks happen when the command runs; suggestions list the groups the sender can access.
  */
-@RequiredArgsConstructor
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 public final class GroupArgument implements CustomArgumentType<String, String> {
 
     private final GroupType type;
-    private final Supplier<@Nullable Services> services;
+    private final CommandBodies bodies;
 
     @Override
     public String parse(StringReader reader) throws CommandSyntaxException {
@@ -53,16 +51,15 @@ public final class GroupArgument implements CustomArgumentType<String, String> {
 
     @Override
     public <S> CompletableFuture<Suggestions> listSuggestions(CommandContext<S> context, SuggestionsBuilder builder) {
-        Services current = services.get();
-        if (current == null || !(context.getSource() instanceof CommandSourceStack source) || !(source.getExecutor() instanceof Player player)) {
-            return builder.buildFuture();
-        }
+        return bodies.suggest(context, builder, this::suggest);
+    }
+
+    private void suggest(Services services, Player player, SuggestionsBuilder builder) {
         String typed = builder.getRemaining().replace("\"", "").toLowerCase(Locale.ROOT);
-        AccessibleGroups accessible = current.access().accessibleGroups(player.getUniqueId(), AccessService.hasBypass(player), type);
+        AccessibleGroups accessible = services.access().accessibleGroups(player.getUniqueId(), AccessService.hasBypass(player), type);
         for (StorageGroup group : accessible.groups()) {
             String reference = accessible.reference(group);
             if (reference.toLowerCase(Locale.ROOT).startsWith(typed)) builder.suggest(StringArgumentType.escapeIfRequired(reference));
         }
-        return builder.buildFuture();
     }
 }
