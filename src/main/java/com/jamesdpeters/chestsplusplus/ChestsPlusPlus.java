@@ -173,8 +173,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         V2LocationRecovery recovery = services.add(V2LocationRecovery.class,
                 new V2LocationRecovery(getServer(), services.get(V2PendingLocations.class),
                         services.groups(), services.nodes(), services.groupStore(), services.persistence(), services.get(LinkService.class), displays,
-                        cleanup,
-                        worldCleanup));
+                        cleanup, worldCleanup));
         services.add(V2Migration.class,
                 new V2Migration(this, services, importer, cleanup, worldCleanup, state, filters, conversion, recovery,
                         services.get(V2PendingLocations.class)))
