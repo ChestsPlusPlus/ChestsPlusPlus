@@ -319,6 +319,15 @@ class V2MigrationTest extends PluginTestBase {
             assertThat(database.handle().createQuery("SELECT count(*) FROM nodes WHERE group_id = :id").bind("id", group.id()).mapTo(int.class).one())
                     .isZero();
             assertThat(database.handle().createQuery("SELECT count(*) FROM v2_pending_locations").mapTo(int.class).one()).isEqualTo(1);
+
+            database.handle().execute("DROP TRIGGER fail_nodes");
+            var recovered = services.persistence().flush();
+            tickUntil(recovered::isDone);
+            recovered.join();
+
+            assertThat(database.handle().createQuery("SELECT count(*) FROM nodes WHERE group_id = :id").bind("id", group.id()).mapTo(int.class).one())
+                    .isEqualTo(1);
+            assertThat(database.handle().createQuery("SELECT count(*) FROM v2_pending_locations").mapTo(int.class).one()).isZero();
         }
     }
 
