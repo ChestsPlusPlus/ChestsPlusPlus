@@ -68,7 +68,7 @@ public final class ChestLinkListener implements Listener {
         if (!(Holders.of(top) instanceof ChestLinkHolder holder) || chestLinks.mayKeepViewing(viewer, holder.group())) return;
         event.setCancelled(true);
         // Paper doesn't allow closing an inventory from inside its own click event.
-        services.plugin().getServer().getScheduler().runTask(services.plugin(), () -> {
+        services.mainThread().nextTick(() -> {
             if (viewer.getOpenInventory().getTopInventory() == top) chestLinks.revoke(viewer, holder.group());
         });
     }

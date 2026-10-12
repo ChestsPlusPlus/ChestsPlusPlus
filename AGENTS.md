@@ -80,6 +80,7 @@ comments, no repeated logic.
 | Groups a player can use, with owner names and command references | `services.access().accessibleGroups(...)`, then `ownerName(group)` / `reference(group)`, never `PlayerNames.of(group.owner())` per group |
 | Right-click on a linked block | `LinkService.claimNodeClick(event, type)` |
 | Repeating work | `Tickers.every` / `Tickers.everyInterval`. Never one task per group or node. |
+| Work on the main thread | `services.mainThread().run(task)` (inline when already on it) or `.nextTick(task)` (after the current event). Both drop work once the plugin is disabled |
 | Ghost-item inventories | extend `GhostEditor`; `MenuListener` enforces the no-real-items rules |
 | Clickable chest menus | `Menu` / `PaginatedMenu` |
 | A new custom inventory | its holder implements `CppInventoryHolder`, so disabling the plugin closes it |

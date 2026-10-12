@@ -114,7 +114,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         displays.register(GroupType.AUTOCRAFT, autoCraft);
 
         GroupActions actions = services.add(GroupActions.class, new GroupActions(services, links, chestLinks));
-        MenuListener menus = services.add(MenuListener.class, new MenuListener(this));
+        MenuListener menus = services.add(MenuListener.class, new MenuListener(services.mainThread()));
         services.add(UiService.class, new UiService(services, links, actions, menus));
         FilterService filters = services.add(FilterService.class,
                 new FilterService(this, new FilterCodec(this), ItemGrouping.fromServerTags(), services::settings));
@@ -129,7 +129,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         File dataFolder = getDataFolder();
         if (!dataFolder.isDirectory() && !dataFolder.mkdirs()) throw new IOException("Cannot create " + dataFolder);
         Database database = Database.open("jdbc:sqlite:" + new File(dataFolder, DATABASE_FILE).getAbsolutePath());
-        Persistence persistence = new Persistence(database, this::runOnMainThread);
+        Persistence persistence = new Persistence(database, services.mainThread()::nextTick);
         services.shutdown().add("persistence", persistence::close);
         GroupStore groupStore = persistence.register(new GroupStore(persistence, services.groups(), services.nodes(), attachLoaded(services)));
         TrustStore trustStore = persistence.register(new TrustStore(persistence, services.trust()));
@@ -187,19 +187,15 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         };
     }
 
-    private void runOnMainThread(Runnable task) {
-        if (isEnabled()) getServer().getScheduler().runTask(this, task);
-    }
-
     private void registerListeners(Services services) {
         LinkService links = services.get(LinkService.class);
         List<Listener> listeners = List.of(
                 this,
                 new NodeListener(services, links, services.get(DisplayService.class), services.get(LinkItem.class)),
-                new SignLinkListener(this, services, links),
+                new SignLinkListener(services.mainThread(), services, links),
                 new NameTagLinkListener(services, links),
                 new ChestLinkListener(services, links, services.get(ChestLinkService.class)),
-                new HopperBridge(this, services, services.get(ChestLinkService.class)),
+                new HopperBridge(services.mainThread(), services, services.get(ChestLinkService.class)),
                 new GolemBridge(services, services.get(ChestLinkService.class)),
                 services.get(MenuListener.class),
                 new AutoCraftListener(services, links, services.get(AutoCraftService.class)),

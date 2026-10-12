@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -107,7 +106,6 @@ public final class V2FilterConversion {
         boolean worldsAvailable = pending.isEmpty()
                 && cleanup.chunks().stream().allMatch(ref -> plugin.getServer().getWorld(ref.world()) != null);
         Set<UUID> scannedWorlds = worlds.stream().map(World::getUID).collect(Collectors.toSet());
-        Executor mainThread = task -> plugin.getServer().getScheduler().runTask(plugin, task);
         CompletableFuture.supplyAsync(() -> targets(worlds, waiting)).whenCompleteAsync((targets, error) -> {
             if (thisRun != run) return;
             scanning = false;
@@ -118,7 +116,7 @@ public final class V2FilterConversion {
             }
             job = new Job(sender, targets, filters.converted(), allWorlds, worldsAvailable, scannedWorlds);
             report(sender, Message.MIGRATE_FILTERS_STARTED, Messages.text("chunks", targets.size()));
-        }, mainThread);
+        }, services.mainThread()::nextTick);
     }
 
     private static List<Target> targets(List<World> worlds, Set<V2Cleanup.ChunkRef> waiting) {

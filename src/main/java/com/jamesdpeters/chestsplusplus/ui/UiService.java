@@ -43,7 +43,6 @@ import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import net.kyori.adventure.text.object.ObjectContents;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
@@ -402,8 +401,7 @@ public final class UiService {
             action.accept(player);
             if (!dialogShown && player.getOpenInventory().getType() == InventoryType.CRAFTING) player.closeDialog();
         };
-        if (Bukkit.isPrimaryThread()) run.run();
-        else Bukkit.getScheduler().runTask(services.plugin(), run);
+        services.mainThread().run(run);
     }
 
     private Component text(Message message, TagResolver... placeholders) {

@@ -1,6 +1,7 @@
 package com.jamesdpeters.chestsplusplus.link;
 
 import com.jamesdpeters.chestsplusplus.core.Services;
+import com.jamesdpeters.chestsplusplus.core.scheduler.MainThread;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import java.util.Locale;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +18,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.plugin.Plugin;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -32,7 +32,7 @@ public final class SignLinkListener implements Listener {
 
     private static final PlainTextComponentSerializer PLAIN = PlainTextComponentSerializer.plainText();
 
-    private final Plugin plugin;
+    private final MainThread mainThread;
     private final Services services;
     private final LinkService links;
 
@@ -58,7 +58,7 @@ public final class SignLinkListener implements Listener {
         if (links.link(player, type, input, target, facing, false) == null) return;
         boolean refund = !services.settings().linking().consumeSigns() && player.getGameMode() != GameMode.CREATIVE;
         // Remove the sign once the edit has been processed; the display replaces it.
-        plugin.getServer().getScheduler().runTask(plugin, () -> removeSign(sign, refund ? player : null));
+        mainThread.nextTick(() -> removeSign(sign, refund ? player : null));
     }
 
     /** Only a sign still standing is refunded: one broken in the meantime has already dropped. */

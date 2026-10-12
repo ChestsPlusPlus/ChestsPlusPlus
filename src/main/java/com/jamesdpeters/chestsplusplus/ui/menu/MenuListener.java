@@ -1,6 +1,7 @@
 package com.jamesdpeters.chestsplusplus.ui.menu;
 
 import com.jamesdpeters.chestsplusplus.core.Holders;
+import com.jamesdpeters.chestsplusplus.core.scheduler.MainThread;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,7 +16,6 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.plugin.Plugin;
 
 /**
  * Dispatches menu clicks and handles "return to the menu you came from": when a player opens something from a menu
@@ -24,7 +24,7 @@ import org.bukkit.plugin.Plugin;
 @RequiredArgsConstructor
 public final class MenuListener implements Listener {
 
-    private final Plugin plugin;
+    private final MainThread mainThread;
     private final Map<UUID, Runnable> returnTo = new HashMap<>();
 
     /** After {@code player} next closes a non-menu inventory, run {@code reopen} (e.g. show the grid again). */
@@ -94,7 +94,7 @@ public final class MenuListener implements Listener {
         }
         Runnable back = returnTo.remove(player.getUniqueId());
         if (back != null && event.getReason() == InventoryCloseEvent.Reason.PLAYER) {
-            plugin.getServer().getScheduler().runTask(plugin, () -> {
+            mainThread.nextTick(() -> {
                 if (player.isOnline()) back.run();
             });
         }
