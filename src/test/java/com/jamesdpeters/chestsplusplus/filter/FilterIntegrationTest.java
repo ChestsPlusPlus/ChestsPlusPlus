@@ -21,6 +21,7 @@ import java.util.function.Predicate;
 import net.kyori.adventure.text.Component;
 import org.bukkit.ExplosionResult;
 import org.bukkit.Material;
+import org.bukkit.Tag;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -36,12 +37,17 @@ import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.BrewerInventory;
 import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.FurnaceInventory;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockbukkit.mockbukkit.MockBukkit;
+import org.mockbukkit.mockbukkit.ServerMock;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
 class FilterIntegrationTest extends PluginTestBase {
@@ -49,6 +55,14 @@ class FilterIntegrationTest extends PluginTestBase {
     private final ItemGrouping grouping = new ItemGrouping(List.of(Set.of(Material.OAK_LOG, Material.BIRCH_LOG)));
     private World world;
     private FilterService filters;
+
+    /** MockBukkit's 26.2 tag registry predates the 26.3 furnace extraction tag. */
+    @Override
+    protected ServerMock createServer() {
+        ServerMock mockServer = super.createServer();
+        mockServer.createMaterialTag(FilterListener.FURNACE_FUEL_BOTTOM_TAKEABLE, Tag.REGISTRY_ITEMS, Material.BUCKET, Material.WATER_BUCKET);
+        return mockServer;
+    }
 
     @BeforeEach
     void setUp() {
@@ -189,7 +203,7 @@ class FilterIntegrationTest extends PluginTestBase {
         Inventory into = inventoryOf(hopper);
         List<Inventory> changed = new ArrayList<>();
         FilterListener listener = new FilterListener(plugin.services(), filters, plugin.services().get(LinkService.class),
-                plugin.services().get(ChestLinkService.class), changed::add);
+                plugin.services().get(ChestLinkService.class), changed::add, _ -> false);
 
         listener.onMove(new InventoryMoveItemEvent(source, ItemStack.of(Material.DIRT), into, false));
 
@@ -233,6 +247,76 @@ class FilterIntegrationTest extends PluginTestBase {
 
         assertThat(filters.get(hopper)).isNull();
         assertThat(filters.displayCount()).isZero();
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = Material.class, names = {"FURNACE", "BLAST_FURNACE", "SMOKER"})
+    void stallAvoidanceLeavesCookingIngredientsAndFuelAlone(Material machine) {
+        Block hopper = hopperAt(0);
+        filters.write(hopper, List.of(filter(Material.COAL, Mode.ALLOW, Match.TYPE), filter(Material.IRON_ORE, Mode.ALLOW, Match.TYPE)));
+        Block sourceBlock = hopper.getRelative(BlockFace.UP);
+        sourceBlock.setType(machine);
+        FurnaceInventory source = (FurnaceInventory) inventoryOf(sourceBlock);
+        source.setSmelting(ItemStack.of(Material.IRON_ORE, 5));
+        source.setFuel(ItemStack.of(Material.COAL, 5));
+        source.setResult(ItemStack.of(Material.GLASS, 5));
+
+        server.getPluginManager().callEvent(new InventoryMoveItemEvent(source, ItemStack.of(Material.GLASS), inventoryOf(hopper), false));
+
+        assertThat(inventoryOf(hopper).isEmpty()).isTrue();
+        assertThat(source.getSmelting()).isEqualTo(ItemStack.of(Material.IRON_ORE, 5));
+        assertThat(source.getFuel()).isEqualTo(ItemStack.of(Material.COAL, 5));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = Material.class, names = {"BUCKET", "WATER_BUCKET"})
+    void stallAvoidanceCanStillDrainFurnaceBuckets(Material bucket) {
+        Block hopper = hopperAt(0);
+        filters.write(hopper, List.of(filter(bucket, Mode.ALLOW, Match.TYPE)));
+        Block sourceBlock = hopper.getRelative(BlockFace.UP);
+        sourceBlock.setType(Material.FURNACE);
+        FurnaceInventory source = (FurnaceInventory) inventoryOf(sourceBlock);
+        source.setFuel(ItemStack.of(bucket));
+        source.setResult(ItemStack.of(Material.GLASS, 5));
+
+        server.getPluginManager().callEvent(new InventoryMoveItemEvent(source, ItemStack.of(Material.GLASS), inventoryOf(hopper), false));
+
+        assertThat(inventoryOf(hopper).contains(bucket)).isTrue();
+        assertThat(source.getItem(1)).isNull();
+    }
+
+    @Test
+    void stallAvoidanceLeavesBrewingIngredientsAndFuelAlone() {
+        Block hopper = hopperAt(0);
+        filters.write(hopper, List.of(filter(Material.NETHER_WART, Mode.ALLOW, Match.TYPE), filter(Material.BLAZE_POWDER, Mode.ALLOW, Match.TYPE)));
+        Block sourceBlock = hopper.getRelative(BlockFace.UP);
+        sourceBlock.setType(Material.BREWING_STAND);
+        BrewerInventory source = (BrewerInventory) inventoryOf(sourceBlock);
+        source.setItem(0, ItemStack.of(Material.POTION));
+        source.setIngredient(ItemStack.of(Material.NETHER_WART, 5));
+        source.setFuel(ItemStack.of(Material.BLAZE_POWDER, 5));
+
+        server.getPluginManager().callEvent(new InventoryMoveItemEvent(source, ItemStack.of(Material.POTION), inventoryOf(hopper), false));
+
+        assertThat(inventoryOf(hopper).isEmpty()).isTrue();
+        assertThat(source.getIngredient()).isEqualTo(ItemStack.of(Material.NETHER_WART, 5));
+        assertThat(source.getFuel()).isEqualTo(ItemStack.of(Material.BLAZE_POWDER, 5));
+    }
+
+    @Test
+    void stallAvoidanceCanStillDrainReturnedBrewingBottles() {
+        Block hopper = hopperAt(0);
+        filters.write(hopper, List.of(filter(Material.GLASS_BOTTLE, Mode.ALLOW, Match.TYPE)));
+        Block sourceBlock = hopper.getRelative(BlockFace.UP);
+        sourceBlock.setType(Material.BREWING_STAND);
+        BrewerInventory source = (BrewerInventory) inventoryOf(sourceBlock);
+        source.setItem(0, ItemStack.of(Material.POTION));
+        source.setIngredient(ItemStack.of(Material.GLASS_BOTTLE));
+
+        server.getPluginManager().callEvent(new InventoryMoveItemEvent(source, ItemStack.of(Material.POTION), inventoryOf(hopper), false));
+
+        assertThat(inventoryOf(hopper).contains(Material.GLASS_BOTTLE)).isTrue();
+        assertThat(source.getItem(3)).isNull();
     }
 
     /** Another plugin refusing hopper moves of {@code refused}, at {@code priority}. */
