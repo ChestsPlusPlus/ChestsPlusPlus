@@ -9,8 +9,8 @@ import com.jamesdpeters.chestsplusplus.chestlink.GolemBridge;
 import com.jamesdpeters.chestsplusplus.chestlink.HopperBridge;
 import com.jamesdpeters.chestsplusplus.config.Settings;
 import com.jamesdpeters.chestsplusplus.core.CppInventoryHolder;
-import com.jamesdpeters.chestsplusplus.core.Holders;
 import com.jamesdpeters.chestsplusplus.core.Services;
+import com.jamesdpeters.chestsplusplus.core.Viewers;
 import com.jamesdpeters.chestsplusplus.core.scheduler.Tickers;
 import com.jamesdpeters.chestsplusplus.display.DisplayLayout.Surface;
 import com.jamesdpeters.chestsplusplus.display.DisplayService;
@@ -214,9 +214,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
      * still run, and before persistence closes, so the close handlers can still save.
      */
     private void closePluginInventories() {
-        getServer().getOnlinePlayers().stream()
-                .filter(player -> Holders.of(player.getOpenInventory().getTopInventory()) instanceof CppInventoryHolder)
-                .forEach(Player::closeInventory);
+        Viewers.withHolder(CppInventoryHolder.class).forEach(Player::closeInventory);
     }
 
     /** A few central tickers rather than one task per group. */

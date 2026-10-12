@@ -6,6 +6,7 @@ import com.jamesdpeters.chestsplusplus.core.BlockPos;
 import com.jamesdpeters.chestsplusplus.core.Holders;
 import com.jamesdpeters.chestsplusplus.core.Items;
 import com.jamesdpeters.chestsplusplus.core.Services;
+import com.jamesdpeters.chestsplusplus.core.Viewers;
 import com.jamesdpeters.chestsplusplus.display.DisplayService;
 import com.jamesdpeters.chestsplusplus.link.GroupTypeHandler;
 import com.jamesdpeters.chestsplusplus.link.SyntheticMoveEvent;
@@ -106,7 +107,7 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
 
     @Override
     public void closeAllViews() {
-        services.plugin().getServer().getOnlinePlayers().stream().filter(player -> editorOf(player) != null).forEach(Player::closeInventory);
+        Viewers.withHolder(RecipeEditorHolder.class).forEach(Player::closeInventory);
     }
 
     @Override
@@ -288,21 +289,12 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
 
     private void renderEditors(AutoCraftGroup group) {
         for (Player viewer : openEditors(group)) {
-            if (editorOf(viewer) instanceof RecipeEditorHolder holder) holder.render();
+            if (Viewers.topHolder(viewer) instanceof RecipeEditorHolder holder) holder.render();
         }
     }
 
-    private static @Nullable RecipeEditorHolder editorOf(Player player) {
-        // The top inventory can be null for players with nothing open on some platforms (MockBukkit).
-        @Nullable Inventory top = player.getOpenInventory().getTopInventory();
-        return top != null && Holders.of(top) instanceof RecipeEditorHolder holder ? holder : null;
-    }
-
-    private List<Player> openEditors(StorageGroup group) {
-        return services.plugin().getServer().getOnlinePlayers().stream()
-                .filter(player -> editorOf(player) instanceof RecipeEditorHolder holder && holder.group().id() == group.id())
-                .map(Player.class::cast)
-                .toList();
+    private static List<Player> openEditors(StorageGroup group) {
+        return Viewers.withHolder(RecipeEditorHolder.class, editor -> editor.group().id() == group.id());
     }
 
     /**

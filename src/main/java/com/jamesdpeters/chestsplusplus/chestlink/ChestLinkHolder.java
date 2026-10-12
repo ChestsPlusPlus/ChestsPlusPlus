@@ -1,12 +1,11 @@
 package com.jamesdpeters.chestsplusplus.chestlink;
 
 import com.jamesdpeters.chestsplusplus.core.CppInventoryHolder;
+import com.jamesdpeters.chestsplusplus.core.Viewers;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
-import java.util.List;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
-import org.bukkit.entity.HumanEntity;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.jspecify.annotations.Nullable;
@@ -39,7 +38,7 @@ public final class ChestLinkHolder implements CppInventoryHolder {
      */
     public void retitle(Component title) {
         @Nullable ItemStack[] contents = inventory.getContents();
-        List.copyOf(inventory.getViewers()).forEach(HumanEntity::closeInventory);
+        Viewers.close(inventory);
         inventory = Bukkit.createInventory(this, ChestLinkGroup.SIZE, title);
         inventory.setContents(contents);
         group.attachInventory(inventory);

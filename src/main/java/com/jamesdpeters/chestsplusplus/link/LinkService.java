@@ -5,6 +5,7 @@ import com.jamesdpeters.chestsplusplus.Permissions;
 import com.jamesdpeters.chestsplusplus.access.AccessService;
 import com.jamesdpeters.chestsplusplus.core.BlockPos;
 import com.jamesdpeters.chestsplusplus.core.Services;
+import com.jamesdpeters.chestsplusplus.core.Viewers;
 import com.jamesdpeters.chestsplusplus.display.DisplayService;
 import com.jamesdpeters.chestsplusplus.message.Message;
 import com.jamesdpeters.chestsplusplus.message.Messages;
@@ -30,7 +31,6 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.Container;
 import org.bukkit.block.data.Directional;
 import org.bukkit.block.data.type.Chest;
-import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.block.Action;
@@ -208,7 +208,7 @@ public final class LinkService {
     /** Players still viewing the block's own (possibly double-chest) inventory would deposit into storage the group no longer uses. */
     private static void closePhysicalViewers(Block block) {
         if (block.getState(false) instanceof Container container)
-            List.copyOf(container.getInventory().getViewers()).forEach(HumanEntity::closeInventory);
+            Viewers.close(container.getInventory());
     }
 
     /** Chests and barrels show their link on their front; blocks without a horizontal front use {@code fallback}. */

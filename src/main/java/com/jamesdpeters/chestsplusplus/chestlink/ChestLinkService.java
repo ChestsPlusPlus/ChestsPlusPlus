@@ -7,6 +7,7 @@ import com.jamesdpeters.chestsplusplus.core.Holders;
 import com.jamesdpeters.chestsplusplus.core.InventoryChanges;
 import com.jamesdpeters.chestsplusplus.core.Items;
 import com.jamesdpeters.chestsplusplus.core.Services;
+import com.jamesdpeters.chestsplusplus.core.Viewers;
 import com.jamesdpeters.chestsplusplus.display.DisplayService;
 import com.jamesdpeters.chestsplusplus.link.GroupTypeHandler;
 import com.jamesdpeters.chestsplusplus.message.Message;
@@ -89,15 +90,14 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
     @Override
     public void closeAllViews() {
         for (StorageGroup group : services.groups().all(GroupType.CHESTLINK)) {
-            if (group instanceof ChestLinkGroup chest && chest.hasInventory()) closeViewers(chest);
+            if (group instanceof ChestLinkGroup chest && chest.hasInventory()) Viewers.close(chest.inventory());
         }
     }
 
     @Override
     public void closeRevokedViews(StorageGroup group) {
         if (!(group instanceof ChestLinkGroup chest) || !chest.hasInventory()) return;
-        List.copyOf(chest.inventory().getViewers()).stream().filter(viewer -> !mayKeepViewing(viewer, chest))
-                .forEach(viewer -> revoke(viewer, chest));
+        Viewers.close(chest.inventory(), viewer -> !mayKeepViewing(viewer, chest)).forEach(viewer -> refuse(viewer, chest));
     }
 
     @Override
@@ -159,15 +159,11 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
     /** Drops every stack (each exactly once; v2 removed similar stacks too) and empties the inventory. */
     public void dropContents(ChestLinkGroup group, Location at) {
         Inventory inventory = group.inventory();
-        closeViewers(group);
+        Viewers.close(inventory);
         for (ItemStack item : inventory.getContents()) {
             if (Items.present(item) && at.getWorld() != null) at.getWorld().dropItemNaturally(at, item);
         }
         inventory.clear();
-    }
-
-    private static void closeViewers(ChestLinkGroup group) {
-        List.copyOf(group.inventory().getViewers()).forEach(HumanEntity::closeInventory);
     }
 
     /** Opens the group for {@code player}; {@code from} is the clicked node, or null for a remote open. */
@@ -187,6 +183,10 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
 
     public void revoke(HumanEntity viewer, ChestLinkGroup group) {
         viewer.closeInventory();
+        refuse(viewer, group);
+    }
+
+    private void refuse(HumanEntity viewer, ChestLinkGroup group) {
         services.send(viewer, Message.ERROR_NO_ACCESS, Messages.group(group));
     }
 
