@@ -62,6 +62,12 @@
       enabled: false,
     },
     {
+      description: "No Gradle lockfiles here, so Gradle's lockfile maintenance would only add an empty PR.",
+      matchManagers: ['gradle'],
+      matchUpdateTypes: ['lockFileMaintenance'],
+      enabled: false,
+    },
+    {
       description: 'The E2E suite (src/test/e2e).',
       matchManagers: ['npm'],
       groupName: 'E2E npm packages',
