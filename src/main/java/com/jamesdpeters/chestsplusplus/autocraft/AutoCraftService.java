@@ -350,7 +350,7 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
 
     private static List<BlockPos> watchedBlocks(BlockPos table) {
         List<BlockPos> blocks = new ArrayList<>(WATCHED_FACES.length);
-        for (BlockFace face : WATCHED_FACES) blocks.add(table.offset(face.getModX(), face.getModY(), face.getModZ()));
+        for (BlockFace face : WATCHED_FACES) blocks.add(table.relative(face));
         return blocks;
     }
 
@@ -358,7 +358,7 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
     private List<Long> watchedGroups(BlockPos table) {
         List<Long> groups = new ArrayList<>(1);
         for (BlockFace face : WATCHED_FACES) {
-            Node neighbour = services.nodes().get(table.offset(face.getModX(), face.getModY(), face.getModZ()));
+            Node neighbour = services.nodes().get(table.relative(face));
             if (neighbour != null && services.groups().byId(neighbour.groupId()) instanceof ChestLinkGroup) groups.add(neighbour.groupId());
         }
         return groups;

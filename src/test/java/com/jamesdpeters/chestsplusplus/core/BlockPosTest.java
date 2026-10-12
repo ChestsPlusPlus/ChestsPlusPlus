@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.jamesdpeters.chestsplusplus.testing.Tags;
 import java.util.UUID;
+import org.bukkit.block.BlockFace;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -37,6 +38,14 @@ class BlockPosTest {
         assertThat(pos.chunkX()).isEqualTo(-2);
         assertThat(pos.chunkZ()).isEqualTo(2);
         assertThat(pos.chunkKey()).isEqualTo((-2 & 0xFFFFFFFFL) | (2L << 32));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"NORTH,0,0,-1", "SOUTH,0,0,1", "EAST,1,0,0", "WEST,-1,0,0", "UP,0,1,0", "DOWN,0,-1,0", "SELF,0,0,0", "NORTH_EAST,1,0,-1"})
+    void relativeStepsTowardsTheFace(BlockFace face, int dx, int dy, int dz) {
+        BlockPos pos = new BlockPos(WORLD, 10, 64, -10);
+
+        assertThat(pos.relative(face)).isEqualTo(new BlockPos(WORLD, 10 + dx, 64 + dy, -10 + dz));
     }
 
     @Test
