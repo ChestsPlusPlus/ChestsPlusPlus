@@ -23,6 +23,7 @@ public record HopperFilter(ItemStack template, Mode mode, Match match) {
         /** Shares an item-tag group (all logs, all wool, all seeds...). */
         SIMILAR;
 
+        @SuppressWarnings("EnumOrdinal") // Cycles in declaration order; the ordinal is never stored.
         public Match next() {
             return values()[(ordinal() + 1) % values().length];
         }

@@ -1,3 +1,5 @@
+import net.ltgt.gradle.errorprone.CheckSeverity
+import net.ltgt.gradle.errorprone.errorprone
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import xyz.jpenilla.resourcefactory.bukkit.Permission
 
@@ -8,6 +10,7 @@ plugins {
     id("com.gradleup.shadow")
     id("xyz.jpenilla.resource-factory-paper-convention")
     alias(libs.plugins.spotless)
+    alias(libs.plugins.errorprone)
     id("chestsplusplus.dev-server")
     id("chestsplusplus.e2e")
     id("chestsplusplus.v2-upgrade")
@@ -46,6 +49,8 @@ dependencies {
     testRuntimeOnly(libs.slf4j.jdk14)
     testCompileOnly(libs.jspecify)
     testRuntimeOnly(libs.junit.platform.launcher)
+    errorprone(libs.errorprone.core)
+    errorprone(libs.nullaway)
 }
 
 tasks.withType<JavaCompile>().configureEach {
@@ -55,6 +60,21 @@ tasks.withType<JavaCompile>().configureEach {
     // -processing: Lombok is the only annotation processor, so every other annotation is "unclaimed".
     // -parameters: JDBI binds :named SQL parameters and maps columns onto records by parameter name.
     options.compilerArgs.addAll(listOf("-Xlint:all,-classfile,-processing", "-Werror", "-parameters"))
+    options.errorprone {
+        // Tests build fixtures with nulls on purpose and aren't null-checked. Lombok marks what it generates with
+        // @lombok.Generated (lombok.config), which NullAway skips.
+        check("NullAway", if (name == "compileJava") CheckSeverity.ERROR else CheckSeverity.OFF)
+        option("NullAway:AnnotatedPackages", PLUGIN_PACKAGE)
+        option("NullAway:JSpecifyMode", "true")
+        // ConfigLib and Bukkit call these reflectively.
+        option("UnusedMethod:ExemptingMethodAnnotations", "de.exlll.configlib.PostProcess,org.bukkit.event.EventHandler")
+        // Bukkit hands out registry constants and wrapper objects (CraftInventory) whose equals() isn't identity; we mean identity.
+        disable("ReferenceEquality")
+        // Records carry Bukkit's ItemStack[] (and varargs placeholders) through to array APIs and aren't compared by contents.
+        disable("ArrayRecordComponent")
+        // String.split dropping trailing empty strings suits every split here (versions, slot matches, message lines).
+        disable("StringSplitter")
+    }
 }
 
 val paperLibrariesDir = layout.buildDirectory.dir("generated/paperLibraries")

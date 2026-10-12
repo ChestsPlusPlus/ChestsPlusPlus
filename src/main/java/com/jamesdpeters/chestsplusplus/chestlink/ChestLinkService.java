@@ -6,6 +6,7 @@ import com.jamesdpeters.chestsplusplus.core.BlockPos;
 import com.jamesdpeters.chestsplusplus.core.Holders;
 import com.jamesdpeters.chestsplusplus.core.InventoryChanges;
 import com.jamesdpeters.chestsplusplus.core.Items;
+import com.jamesdpeters.chestsplusplus.core.PaperApi;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.core.Viewers;
 import com.jamesdpeters.chestsplusplus.display.DisplayService;
@@ -146,7 +147,7 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
         if (!(block.getState(false) instanceof Container container)) return 0;
         Inventory physical = container instanceof Chest chest ? chest.getBlockInventory() : container.getInventory();
         List<ItemStack> moving = new ArrayList<>();
-        for (ItemStack item : physical.getContents()) if (Items.present(item)) moving.add(item);
+        for (ItemStack item : PaperApi.contents(physical)) if (Items.present(item)) moving.add(item);
         if (moving.isEmpty()) return 0;
         physical.clear();
         Map<Integer, ItemStack> overflow = group.inventory().addItem(moving.toArray(ItemStack[]::new));
@@ -160,7 +161,7 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
     public void dropContents(ChestLinkGroup group, Location at) {
         Inventory inventory = group.inventory();
         Viewers.close(inventory);
-        for (ItemStack item : inventory.getContents()) {
+        for (ItemStack item : PaperApi.contents(inventory)) {
             if (Items.present(item) && at.getWorld() != null) at.getWorld().dropItemNaturally(at, item);
         }
         inventory.clear();
@@ -172,7 +173,7 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
         if (from != null) openedFrom.put(player.getUniqueId(), from.pos());
         else openedFrom.remove(player.getUniqueId());
         player.openInventory(group.inventory());
-        if (from == null) player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 0.5f, 1f);
+        if (from == null) player.playSound(PaperApi.location(player), Sound.BLOCK_CHEST_OPEN, 0.5f, 1f);
     }
 
     /** Can {@code viewer} still use the open inventory? It needs the permission it was opened with, as well as access to the group. */
@@ -239,7 +240,7 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
     public void sort(ChestLinkGroup group) {
         if (group.sortMode() == SortMode.OFF) return;
         Inventory inventory = group.inventory();
-        inventory.setContents(Sorter.sort(inventory.getContents(), group.sortMode(), inventory.getSize()));
+        inventory.setContents(Sorter.sort(PaperApi.contents(inventory), group.sortMode(), inventory.getSize()));
     }
 
     public void changed(ChestLinkGroup group) {
@@ -258,7 +259,7 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
         Object2IntOpenHashMap<Material> totals = new Object2IntOpenHashMap<>(8);
         Material best = null;
         int bestTotal = 0;
-        for (ItemStack item : group.inventory().getContents()) {
+        for (ItemStack item : PaperApi.contents(group.inventory())) {
             if (!Items.present(item)) continue;
             Material type = item.getType();
             int amount = item.getAmount();

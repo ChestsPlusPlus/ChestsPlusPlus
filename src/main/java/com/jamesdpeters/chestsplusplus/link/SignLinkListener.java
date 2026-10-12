@@ -1,5 +1,6 @@
 package com.jamesdpeters.chestsplusplus.link;
 
+import com.jamesdpeters.chestsplusplus.core.PaperApi;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.core.scheduler.MainThread;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
@@ -69,7 +70,7 @@ public final class SignLinkListener implements Listener {
     }
 
     private static void give(Player player, ItemStack item) {
-        player.getInventory().addItem(item).values().forEach(left -> player.getWorld().dropItem(player.getLocation(), left));
+        player.getInventory().addItem(item).values().forEach(left -> player.getWorld().dropItem(PaperApi.location(player), left));
     }
 
     private static String plain(@Nullable Component line) {

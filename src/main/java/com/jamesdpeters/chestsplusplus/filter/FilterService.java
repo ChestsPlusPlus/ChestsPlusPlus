@@ -104,7 +104,7 @@ public final class FilterService {
         long chunkKey = BlockPos.chunkKey(block.getX() >> 4, block.getZ() >> 4);
         Long2ObjectMap<Long2ObjectMap<CompiledFilter>> chunks = index.get(block.getWorld().getUID());
         Long2ObjectMap<CompiledFilter> filters = chunks == null ? null : chunks.get(chunkKey);
-        if (filters != null) {
+        if (chunks != null && filters != null) {
             filters.remove(BlockPos.packed(block.getX(), block.getY(), block.getZ()));
             if (filters.isEmpty()) chunks.remove(chunkKey);
         }

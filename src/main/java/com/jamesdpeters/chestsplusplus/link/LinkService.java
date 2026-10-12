@@ -54,7 +54,7 @@ public final class LinkService {
         /** No group: the caller may create {@code name} for {@code owner} (only when owner is the requester). */
         record Missing(UUID owner, String name) implements Resolved {}
 
-        record Error(Message message, TagResolver... placeholders) implements Resolved {}
+        record Refused(Message message, TagResolver... placeholders) implements Resolved {}
     }
 
     private final Services services;
@@ -97,18 +97,18 @@ public final class LinkService {
             String ownerName = input.substring(0, colon);
             owned = input.substring(colon + 1);
             OfflinePlayer player = Bukkit.getOfflinePlayerIfCached(ownerName);
-            if (player == null) return new Resolved.Error(Message.ERROR_PLAYER_NOT_FOUND, Messages.player(ownerName));
+            if (player == null) return new Resolved.Refused(Message.ERROR_PLAYER_NOT_FOUND, Messages.player(ownerName));
             owner = player.getUniqueId();
         }
-        if (!GroupNames.isValid(owned)) return new Resolved.Error(Message.ERROR_INVALID_NAME, Messages.text("name", owned));
+        if (!GroupNames.isValid(owned)) return new Resolved.Refused(Message.ERROR_INVALID_NAME, Messages.text("name", owned));
         StorageGroup group = services.groups().find(type, owner, owned);
         if (group == null) {
             return owner.equals(requester)
                     ? new Resolved.Missing(owner, owned)
-                    : new Resolved.Error(Message.ERROR_UNKNOWN_GROUP, Messages.text("group", input));
+                    : new Resolved.Refused(Message.ERROR_UNKNOWN_GROUP, Messages.text("group", input));
         }
         if (!services.access().canAccess(requester, bypass, group)) {
-            return new Resolved.Error(Message.ERROR_NO_ACCESS, Messages.text("group", input));
+            return new Resolved.Refused(Message.ERROR_NO_ACCESS, Messages.text("group", input));
         }
         return new Resolved.Found(group);
     }
@@ -121,7 +121,7 @@ public final class LinkService {
      *     protection plugins already approved using it; otherwise a synthetic interact event is fired first
      */
     public @Nullable StorageGroup link(Player player, GroupType type, String input, Block block, BlockFace facing, boolean protectionChecked) {
-        Resolved.Error refusal = linkRefusal(player, type, block, facing, protectionChecked);
+        Resolved.Refused refusal = linkRefusal(player, type, block, facing, protectionChecked);
         if (refusal != null) {
             send(player, refusal);
             return null;
@@ -131,8 +131,8 @@ public final class LinkService {
         StorageGroup group = switch (target) {
             case Resolved.Found found -> found.group();
             case Resolved.Missing missing -> createGroup(player, handler, missing);
-            case Resolved.Error error -> {
-                send(player, error);
+            case Resolved.Refused refused -> {
+                send(player, refused);
                 yield null;
             }
         };
@@ -154,17 +154,17 @@ public final class LinkService {
     }
 
     /** Why {@code player} may not link {@code block}, or null if they may. The protection check runs last as it fires an event. */
-    private Resolved.@Nullable Error linkRefusal(Player player, GroupType type, Block block, BlockFace facing, boolean protectionChecked) {
+    private Resolved.@Nullable Refused linkRefusal(Player player, GroupType type, Block block, BlockFace facing, boolean protectionChecked) {
         Message refusal = linkingRefusal(player, type, block.getWorld());
-        if (refusal != null) return new Resolved.Error(refusal);
+        if (refusal != null) return new Resolved.Refused(refusal);
         GroupTypeHandler handler = Objects.requireNonNull(handlers.get(type));
-        if (!handler.isValidBlock(block)) return new Resolved.Error(Message.ERROR_INVALID_BLOCK, Messages.text("type", type.displayName()));
+        if (!handler.isValidBlock(block)) return new Resolved.Refused(Message.ERROR_INVALID_BLOCK, Messages.text("type", type.displayName()));
         Node existing = services.nodes().at(block);
         if (existing != null) {
             StorageGroup linkedTo = services.groups().byId(existing.groupId());
-            return new Resolved.Error(Message.ERROR_ALREADY_LINKED, Messages.text("group", linkedTo == null ? "?" : linkedTo.name()));
+            return new Resolved.Refused(Message.ERROR_ALREADY_LINKED, Messages.text("group", linkedTo == null ? "?" : linkedTo.name()));
         }
-        if (!protectionChecked && !passesProtection(player, block, facing)) return new Resolved.Error(Message.ERROR_PROTECTED);
+        if (!protectionChecked && !passesProtection(player, block, facing)) return new Resolved.Refused(Message.ERROR_PROTECTED);
         return null;
     }
 
@@ -189,8 +189,8 @@ public final class LinkService {
         return group;
     }
 
-    public void send(Audience audience, Resolved.Error error) {
-        services.send(audience, error.message(), error.placeholders());
+    public void send(Audience audience, Resolved.Refused refusal) {
+        services.send(audience, refusal.message(), refusal.placeholders());
     }
 
     /** Adds a node without checks (used after validation, and by silk-touch re-linking). */
@@ -241,7 +241,7 @@ public final class LinkService {
             StorageGroup group = services.groups().byId(node.groupId());
             GroupTypeHandler handler = group == null ? null : handlers.get(group.type());
             Block block = node.pos().block();
-            if (handler == null || block == null || handler.isValidBlock(block)) continue;
+            if (group == null || handler == null || block == null || handler.isValidBlock(block)) continue;
             log.warn("Unlinking {} from {}: block is now {}", node.pos(), group.name(), block.getType());
             unlink(node.pos(), block.getLocation(), true);
         }
@@ -347,7 +347,7 @@ public final class LinkService {
         Block block = event.getClickedBlock();
         Node node = block == null ? null : services.nodes().at(block);
         StorageGroup group = node == null ? null : services.groups().byId(node.groupId());
-        if (group == null || group.type() != type) return null;
+        if (block == null || group == null || group.type() != type) return null;
         Player player = event.getPlayer();
         if (player.isSneaking() && !player.getInventory().getItemInMainHand().isEmpty()) return null;
         if (event.useInteractedBlock() == Event.Result.DENY) return null;

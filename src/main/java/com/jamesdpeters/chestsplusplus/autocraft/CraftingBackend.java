@@ -60,8 +60,8 @@ public interface CraftingBackend {
         };
     }
 
-    private static ItemStack[] copy(@Nullable ItemStack[] matrix) {
-        ItemStack[] copy = new ItemStack[9];
+    private static @Nullable ItemStack[] copy(@Nullable ItemStack[] matrix) {
+        @Nullable ItemStack[] copy = new ItemStack[9];
         for (int i = 0; i < 9 && i < matrix.length; i++) copy[i] = matrix[i] == null ? null : matrix[i].clone();
         return copy;
     }

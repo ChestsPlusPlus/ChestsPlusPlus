@@ -16,7 +16,7 @@ public abstract sealed class StorageGroup permits ChestLinkGroup, AutoCraftGroup
     private final Set<UUID> members = new LinkedHashSet<>();
     @Getter private String name;
     @Getter private boolean isPublic;
-    /** The v2 group this one was imported from ({@code type:owner:name}), so a repeated import recognises it. */
+    /** The v2 group this one was imported from (type:owner:name), so a repeated import recognises it. */
     @Getter private @Nullable String v2Source;
 
     protected StorageGroup(long id, UUID owner, String name, long createdAt) {

@@ -3,6 +3,7 @@ package com.jamesdpeters.chestsplusplus.access;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Predicate;
 
@@ -12,8 +13,9 @@ import java.util.function.Predicate;
  */
 public record AccessibleGroups(UUID viewer, List<StorageGroup> groups, Map<UUID, String> ownerNames) {
 
+    /** {@code group} is one of {@link #groups}, whose owners all have a name. */
     public String ownerName(StorageGroup group) {
-        return ownerNames.get(group.owner());
+        return Objects.requireNonNull(ownerNames.get(group.owner()));
     }
 
     /** How the viewer refers to the group in commands: {@code name}, or {@code owner:name} if it isn't theirs. */

@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -33,7 +34,7 @@ public final class Messages {
 
     private Messages(Map<Message, String> templates) {
         this.templates = templates;
-        this.prefix = Placeholder.parsed("prefix", templates.get(Message.PREFIX));
+        this.prefix = Placeholder.parsed("prefix", template(Message.PREFIX));
     }
 
     /** Loads the bundled defaults, then applies overrides from {@code override} if it exists. */
@@ -62,17 +63,22 @@ public final class Messages {
     }
 
     public Component get(Message message, TagResolver... placeholders) {
-        return MINI_MESSAGE.deserialize(templates.get(message), TagResolver.resolver(prefix, TagResolver.resolver(placeholders)));
+        return MINI_MESSAGE.deserialize(template(message), TagResolver.resolver(prefix, TagResolver.resolver(placeholders)));
     }
 
     /** The message split into lines on {@code <newline>} (item lore can't contain line breaks), non-italic. */
     public List<Component> lines(Message message, TagResolver... placeholders) {
         TagResolver resolver = TagResolver.resolver(prefix, TagResolver.resolver(placeholders));
         List<Component> lines = new ArrayList<>();
-        for (String line : templates.get(message).split("<newline>|<br>")) {
+        for (String line : template(message).split("<newline>|<br>")) {
             lines.add(MINI_MESSAGE.deserialize(line, resolver).decoration(TextDecoration.ITALIC, false));
         }
         return lines;
+    }
+
+    /** Never null: {@link #load} fails on a missing template. */
+    private String template(Message message) {
+        return Objects.requireNonNull(templates.get(message));
     }
 
     public String plain(Message message, TagResolver... placeholders) {

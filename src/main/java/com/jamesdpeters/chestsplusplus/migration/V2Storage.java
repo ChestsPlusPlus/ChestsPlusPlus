@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import org.bukkit.NamespacedKey;
@@ -75,7 +76,7 @@ public final class V2Storage {
     }
 
     private V2Data.Group group(GroupType type, String name, Map<?, ?> raw) {
-        Map<?, ?> map = (Map<?, ?>) walk(raw);
+        Map<?, ?> map = (Map<?, ?>) Objects.requireNonNull(walk(raw));
         UUID owner = UUID.fromString(String.valueOf(map.get("playerUUID")));
         boolean isPublic = Boolean.TRUE.equals(map.get("isPublic"));
         return new V2Data.Group(type, owner, name, isPublic, uuids(map.get("members")), sortMode(map.get("sortMethod")),

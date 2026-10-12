@@ -1,6 +1,7 @@
 package com.jamesdpeters.chestsplusplus.chestlink;
 
 import com.jamesdpeters.chestsplusplus.core.CppInventoryHolder;
+import com.jamesdpeters.chestsplusplus.core.PaperApi;
 import com.jamesdpeters.chestsplusplus.core.Viewers;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import lombok.Getter;
@@ -37,7 +38,7 @@ public final class ChestLinkHolder implements CppInventoryHolder {
      * viewers are closed first, as the old inventory is discarded.
      */
     public void retitle(Component title) {
-        @Nullable ItemStack[] contents = inventory.getContents();
+        @Nullable ItemStack[] contents = PaperApi.contents(inventory);
         Viewers.close(inventory);
         inventory = Bukkit.createInventory(this, ChestLinkGroup.SIZE, title);
         inventory.setContents(contents);

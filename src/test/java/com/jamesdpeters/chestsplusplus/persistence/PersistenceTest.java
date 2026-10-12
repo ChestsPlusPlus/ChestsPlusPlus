@@ -523,6 +523,7 @@ class PersistenceTest {
     }
 
     @Test
+    @SuppressWarnings("FutureReturnValueIgnored") // The delayed gate release is fire-and-forget.
     void batchStillBeingWrittenWhenCloseStartsIsRetriedIfItFails() {
         EntryStore store = new EntryStore();
         Persistence persistence = start(database(), store);

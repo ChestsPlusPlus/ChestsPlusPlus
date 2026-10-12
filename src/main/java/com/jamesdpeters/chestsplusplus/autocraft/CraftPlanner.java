@@ -1,6 +1,7 @@
 package com.jamesdpeters.chestsplusplus.autocraft;
 
 import com.jamesdpeters.chestsplusplus.core.Items;
+import com.jamesdpeters.chestsplusplus.core.PaperApi;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -48,7 +49,7 @@ public final class CraftPlanner {
     private static List<Stack> stacks(List<Inventory> inputs) {
         List<Stack> stacks = new ArrayList<>();
         for (Inventory inventory : inputs) {
-            ItemStack[] contents = inventory.getStorageContents();
+            @Nullable ItemStack[] contents = PaperApi.storageContents(inventory);
             for (int slot = 0; slot < contents.length; slot++) {
                 ItemStack item = contents[slot];
                 if (Items.present(item)) stacks.add(new Stack(new Source(inventory, slot), item));
@@ -114,18 +115,18 @@ public final class CraftPlanner {
 
     /** Can {@code output} take all of {@code items}? Scans slots once per item type; no inventory copies. */
     public static boolean fits(Inventory output, List<ItemStack> items) {
-        ItemStack[] contents = output.getStorageContents();
+        @Nullable ItemStack[] contents = PaperApi.storageContents(output);
         int[] space = new int[contents.length];
         boolean[] empty = new boolean[contents.length];
         for (int i = 0; i < contents.length; i++) {
             ItemStack item = contents[i];
-            empty[i] = !Items.present(item);
-            space[i] = empty[i] ? 0 : Math.max(0, item.getMaxStackSize() - item.getAmount());
+            if (Items.present(item)) space[i] = Math.max(0, item.getMaxStackSize() - item.getAmount());
+            else empty[i] = true;
         }
         for (ItemStack wanted : items) {
             int remaining = wanted.getAmount();
             for (int i = 0; i < contents.length && remaining > 0; i++) {
-                if (!empty[i] && space[i] > 0 && contents[i].isSimilar(wanted)) {
+                if (!empty[i] && space[i] > 0 && contents[i] != null && contents[i].isSimilar(wanted)) {
                     int take = Math.min(space[i], remaining);
                     space[i] -= take;
                     remaining -= take;
