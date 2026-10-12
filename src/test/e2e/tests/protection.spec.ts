@@ -1,4 +1,5 @@
 import { sleep, test } from '@plugwright/runner';
+import { expectContains, type Server } from './support.js';
 
 // Container-lock plugins (Bolt, LWC, BlockLocker) stop hoppers by cancelling InventoryMoveItemEvent for a locked block. `cpptest lock`
 // stands in for one. A linked block must behave exactly like the vanilla container it is: whatever a hopper or AutoCrafter can't do to
@@ -6,8 +7,6 @@ import { sleep, test } from '@plugwright/runner';
 
 const OWNER = 'E2EOwner';
 const COBBLE = '{Slot:0b,id:"minecraft:cobblestone",count:3}';
-
-type Server = { execute(cmd: string): Promise<string> };
 
 // Its own chunk, clear of the other specs' blocks: a vanilla chest, a locked ChestLink and an unlocked ChestLink side by side.
 const VANILLA = 18;
@@ -17,10 +16,6 @@ const SETUP = ['cpptest reset', 'forceload add 16 0'];
 
 async function run(server: Server, ...commands: string[]) {
   for (const command of commands) await server.execute(command);
-}
-
-function expectContains(text: string, needle: string) {
-  if (!text.includes(needle)) throw new Error(`expected ${JSON.stringify(needle)} in ${JSON.stringify(text)}`);
 }
 
 /** A chest holding three cobblestone at (x, -50, z), linked into its own group when {@code group} is given. */
