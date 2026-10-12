@@ -9,6 +9,7 @@ import com.jamesdpeters.chestsplusplus.testing.WallSigns;
 import io.papermc.paper.event.entity.ItemTransportingEntityValidateTargetEvent;
 import java.util.UUID;
 import org.bukkit.GameEvent;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -68,8 +69,12 @@ class GolemBridgeIntegrationTest extends PluginTestBase {
     }
 
     private CopperGolem golemBeside(Block block, CopperGolem.State state, ItemStack held) {
+        return golemAt(block.getLocation().clone().add(0.5, 0, 1.5), state, held);
+    }
+
+    private CopperGolem golemAt(Location location, CopperGolem.State state, ItemStack held) {
         StatefulGolem golem = new StatefulGolem(server);
-        golem.setLocation(block.getLocation().clone().add(0.5, 0, 1.5));
+        golem.setLocation(location);
         server.registerEntity(golem);
         golem.setGolemState(state);
         golem.getEquipment().setItemInMainHand(held);
@@ -154,6 +159,7 @@ class GolemBridgeIntegrationTest extends PluginTestBase {
         group.inventory().addItem(new ItemStack(Material.COBBLESTONE, 40));
         CopperGolem golem = golemBeside(chest, CopperGolem.State.GETTING_NO_ITEM, ItemStack.empty());
 
+        assertThat(validate(golem, chest)).isTrue();
         gameEvent(GameEvent.CONTAINER_OPEN, chest);
 
         assertThat(golem.getEquipment().getItemInMainHand()).isEqualTo(new ItemStack(Material.COBBLESTONE, GolemBridge.LOAD));
@@ -166,10 +172,64 @@ class GolemBridgeIntegrationTest extends PluginTestBase {
         ChestLinkGroup group = link(chest, "dst");
         CopperGolem golem = golemBeside(chest, CopperGolem.State.DROPPING_ITEM, new ItemStack(Material.DIRT, 16));
 
+        assertThat(validate(golem, chest)).isTrue();
         gameEvent(GameEvent.CONTAINER_OPEN, chest);
 
         assertThat(golem.getEquipment().getItemInMainHand().isEmpty()).isTrue();
         assertThat(group.inventory().contains(Material.DIRT, 16)).isTrue();
+    }
+
+    @Test
+    void aNearerGolemTheBlockRefusedGetsNothing() {
+        Block chest = place(Material.COPPER_CHEST, 0);
+        ChestLinkGroup group = link(chest, "src");
+        group.inventory().addItem(new ItemStack(Material.DIAMOND, 32));
+        CopperGolem opener = golemAt(new Location(world, -0.8, 64, 0.5), CopperGolem.State.GETTING_NO_ITEM, ItemStack.empty());
+        CopperGolem refused = golemAt(new Location(world, 1.3, 64, 1.2), CopperGolem.State.GETTING_NO_ITEM, ItemStack.empty());
+        server.getPluginManager().registerEvent(ItemTransportingEntityValidateTargetEvent.class, new Listener() {}, EventPriority.LOW,
+                (listener, event) -> {
+                    if (event instanceof ItemTransportingEntityValidateTargetEvent validate && validate.getEntity().equals(refused))
+                        validate.setAllowed(false);
+                }, plugin);
+
+        assertThat(validate(opener, chest)).isTrue();
+        assertThat(validate(refused, chest)).isFalse();
+        gameEvent(GameEvent.CONTAINER_OPEN, chest);
+
+        assertThat(refused.getEquipment().getItemInMainHand().isEmpty()).isTrue();
+        assertThat(opener.getEquipment().getItemInMainHand()).isEqualTo(new ItemStack(Material.DIAMOND, GolemBridge.LOAD));
+    }
+
+    @Test
+    void aGolemDeliveringToTheNextChestKeepsItsLoad() {
+        Block diamonds = place(Material.CHEST, 0);
+        Block iron = place(Material.CHEST, 1);
+        ChestLinkGroup group = link(diamonds, "diamonds");
+        group.inventory().addItem(new ItemStack(Material.DIAMOND, 1));
+        CopperGolem opener = golemAt(new Location(world, -0.8, 64, 0.5), CopperGolem.State.DROPPING_ITEM, new ItemStack(Material.DIAMOND, 16));
+        CopperGolem neighbour = golemAt(new Location(world, 1.3, 64, 1.2), CopperGolem.State.DROPPING_ITEM, new ItemStack(Material.IRON_INGOT, 16));
+
+        assertThat(validate(opener, diamonds)).isTrue();
+        assertThat(validate(neighbour, iron)).isTrue();
+        gameEvent(GameEvent.CONTAINER_OPEN, diamonds);
+
+        assertThat(neighbour.getEquipment().getItemInMainHand()).isEqualTo(new ItemStack(Material.IRON_INGOT, 16));
+        assertThat(group.inventory().contains(Material.IRON_INGOT)).isFalse();
+        assertThat(group.inventory().contains(Material.DIAMOND, 17)).isTrue();
+    }
+
+    @Test
+    void aGolemThatChoseANearerUnlinkedChestIsLeftAlone() {
+        Block linked = place(Material.COPPER_CHEST, 0);
+        Block unlinked = place(Material.COPPER_CHEST, 1);
+        link(linked, "src").inventory().addItem(new ItemStack(Material.COBBLESTONE, 40));
+        CopperGolem golem = golemBeside(linked, CopperGolem.State.GETTING_NO_ITEM, ItemStack.empty());
+
+        assertThat(validate(golem, linked)).isTrue();
+        assertThat(validate(golem, unlinked)).isTrue();
+        gameEvent(GameEvent.CONTAINER_OPEN, linked);
+
+        assertThat(golem.getEquipment().getItemInMainHand().isEmpty()).isTrue();
     }
 
     @Test
