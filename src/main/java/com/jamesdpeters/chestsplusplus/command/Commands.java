@@ -39,17 +39,17 @@ public final class Commands {
     public static final List<String> AUTOCRAFT_ALIASES = List.of("ac");
 
     private final Supplier<@Nullable ChestsPlusPlus> plugin;
-    private final Supplier<@Nullable Services> services;
+    private final CommandBodies bodies;
     private final String version;
     private final List<LiteralCommandNode<CommandSourceStack>> roots = new ArrayList<>();
 
     /** @param plugin the plugin instance once it exists (commands are registered during bootstrap, before it is constructed) */
     public Commands(Supplier<@Nullable ChestsPlusPlus> plugin, String version) {
         this.plugin = plugin;
-        this.services = () -> {
+        this.bodies = new CommandBodies(() -> {
             ChestsPlusPlus instance = plugin.get();
             return instance == null ? null : instance.services();
-        };
+        });
         this.version = version;
     }
 
@@ -66,59 +66,46 @@ public final class Commands {
     }
 
     public LiteralCommandNode<CommandSourceStack> chestLink() {
-        return new GroupCommands(GroupType.CHESTLINK, services).build(CHESTLINK);
+        return new GroupCommands(GroupType.CHESTLINK, bodies).build(CHESTLINK);
     }
 
     public LiteralCommandNode<CommandSourceStack> autoCraft() {
-        return new GroupCommands(GroupType.AUTOCRAFT, services).build(AUTOCRAFT);
+        return new GroupCommands(GroupType.AUTOCRAFT, bodies).build(AUTOCRAFT);
     }
 
     /** The {@code /chestsplusplus} tree. Builds nodes only, so it can be inspected in unit tests. */
     public LiteralCommandNode<CommandSourceStack> root() {
         return literal(ROOT)
-                .executes(this::help)
-                .then(literal("help").executes(this::help))
-                .then(literal("version").requires(permission(Permissions.ADMIN_VERSION)).executes(this::version))
+                .executes(bodies.enabled(this::help))
+                .then(literal("help").executes(bodies.enabled(this::help)))
+                .then(literal("version").requires(permission(Permissions.ADMIN_VERSION)).executes(bodies.enabled(this::version)))
                 .then(literal("reload").requires(permission(Permissions.ADMIN_RELOAD)).executes(this::reload))
                 .then(literal("trust")
                         .requires(permission(Permissions.TRUST))
                         .then(literal("add").then(playerArgument().executes(trustBody(true))))
                         .then(literal("remove").then(playerArgument().executes(trustBody(false))))
-                        .then(literal("list").executes(this::listTrust)))
-                .then(new MigrateCommands(services).build())
+                        .then(literal("list").executes(bodies.player((services, p, context) -> services.get(GroupActions.class).listTrust(p)))))
+                .then(new MigrateCommands(bodies).build())
                 .build();
     }
 
     private Command<CommandSourceStack> trustBody(boolean add) {
-        return context -> {
-            if (!(context.getSource().getExecutor() instanceof Player p)) return playersOnly(context);
-            Services current = services(context);
-            if (current == null) return 0;
+        return bodies.player((services, p, context) -> {
             String name = StringArgumentType.getString(context, "player");
-            GroupActions actions = current.get(GroupActions.class);
+            GroupActions actions = services.get(GroupActions.class);
             if (add) actions.trust(p, name, () -> {});
             else actions.untrust(p, name, () -> {});
-            return Command.SINGLE_SUCCESS;
-        };
+        });
     }
 
-    private int listTrust(CommandContext<CommandSourceStack> context) {
-        if (!(context.getSource().getExecutor() instanceof Player p)) return playersOnly(context);
-        Services current = services(context);
-        if (current != null) current.get(GroupActions.class).listTrust(p);
-        return Command.SINGLE_SUCCESS;
+    private void version(Services services, CommandContext<CommandSourceStack> context) {
+        services.send(context.getSource().getSender(), Message.COMMAND_VERSION, Messages.text("version", version));
     }
 
-    private int version(CommandContext<CommandSourceStack> context) {
-        Services current = services(context);
-        if (current == null) return 0;
-        current.send(context.getSource().getSender(), Message.COMMAND_VERSION, Messages.text("version", version));
-        return Command.SINGLE_SUCCESS;
-    }
-
+    /** Not a {@link CommandBodies#enabled} body, since a failed reload returns 0. */
     private int reload(CommandContext<CommandSourceStack> context) {
         ChestsPlusPlus instance = plugin.get();
-        Services current = services(context);
+        Services current = bodies.services(context);
         if (instance == null || current == null) return 0;
         try {
             instance.reload();
@@ -131,13 +118,10 @@ public final class Commands {
     }
 
     /** Generated help: every command path the sender can use. */
-    private int help(CommandContext<CommandSourceStack> context) {
-        Services current = services(context);
-        if (current == null) return 0;
+    private void help(Services services, CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
-        current.send(source.getSender(), Message.COMMAND_HELP_HEADER);
-        for (String usage : usages(source)) current.send(source.getSender(), Message.COMMAND_HELP_ENTRY, Messages.text("usage", usage));
-        return Command.SINGLE_SUCCESS;
+        services.send(source.getSender(), Message.COMMAND_HELP_HEADER);
+        for (String usage : usages(source)) services.send(source.getSender(), Message.COMMAND_HELP_ENTRY, Messages.text("usage", usage));
     }
 
     /** Executable command paths visible to {@code source}, e.g. {@code chestlink rename <group> <new>}. */
@@ -154,18 +138,6 @@ public final class Commands {
             String part = child instanceof LiteralCommandNode<?> ? child.getName() : "<" + child.getName() + ">";
             collect(child, path + " " + part, source, out);
         }
-    }
-
-    private @Nullable Services services(CommandContext<CommandSourceStack> context) {
-        Services current = services.get();
-        if (current == null) context.getSource().getSender().sendMessage(Component.text("ChestsPlusPlus is not enabled.", NamedTextColor.RED));
-        return current;
-    }
-
-    private int playersOnly(CommandContext<CommandSourceStack> context) {
-        Services current = services.get();
-        if (current != null) current.send(context.getSource().getSender(), Message.ERROR_PLAYERS_ONLY);
-        return 0;
     }
 
     static LiteralArgumentBuilder<CommandSourceStack> literal(String name) {

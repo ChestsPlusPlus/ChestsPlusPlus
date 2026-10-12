@@ -15,7 +15,6 @@ import com.jamesdpeters.chestsplusplus.model.SortMode;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import java.util.List;
-import java.util.Locale;
 import java.util.UUID;
 import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
@@ -89,7 +88,7 @@ public final class GroupActions {
         if (!isEnabled(player, group.type()) || !require(player, Permissions.CHESTLINK_SORT) || !canManage(player, group)) return false;
         chestLinks.setSortMode(group, mode);
         services.send(player, Message.CHESTLINK_SORT_MODE, Messages.group(group),
-                Messages.text("mode", mode.name().toLowerCase(Locale.ROOT)));
+                Messages.text("mode", mode.key()));
         return true;
     }
 
@@ -240,7 +239,7 @@ public final class GroupActions {
         }
         services.send(requester, Message.TRUST_LOOKING_UP, Messages.player(name));
         PlayerProfile profile = Bukkit.createProfile(name);
-        profile.update().whenComplete((completed, error) -> Bukkit.getScheduler().runTask(services.plugin(), () -> {
+        profile.update().whenComplete((completed, error) -> services.mainThread().nextTick(() -> {
             UUID id = error == null && completed != null && completed.isComplete() ? completed.getId() : null;
             if (id == null) {
                 services.send(requester, Message.ERROR_PLAYER_NOT_FOUND, Messages.player(name));

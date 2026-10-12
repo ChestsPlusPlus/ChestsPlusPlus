@@ -1,5 +1,6 @@
 package com.jamesdpeters.chestsplusplus.display;
 
+import com.jamesdpeters.chestsplusplus.core.Items;
 import java.util.List;
 import java.util.Set;
 import org.bukkit.Material;
@@ -159,7 +160,7 @@ public final class DisplayLayout {
      * as flat. A heuristic: Paper doesn't expose item model types.
      */
     public static Shape shapeOf(@Nullable ItemStack item) {
-        if (item == null || item.isEmpty()) return Shape.FLAT;
+        if (!Items.present(item)) return Shape.FLAT;
         Material type = item.getType();
         if (!type.isBlock()) return Shape.FLAT;
         if (type.isOccluding()) return Shape.BLOCK;

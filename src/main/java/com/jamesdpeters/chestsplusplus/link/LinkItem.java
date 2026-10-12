@@ -1,5 +1,6 @@
 package com.jamesdpeters.chestsplusplus.link;
 
+import com.jamesdpeters.chestsplusplus.core.Items;
 import com.jamesdpeters.chestsplusplus.message.Message;
 import com.jamesdpeters.chestsplusplus.message.Messages;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
@@ -46,7 +47,7 @@ public final class LinkItem {
     }
 
     public @Nullable Link read(@Nullable ItemStack item) {
-        if (item == null || item.isEmpty()) return null;
+        if (!Items.present(item)) return null;
         PersistentDataContainerView pdc = item.getPersistentDataContainer();
         Long id = pdc.get(groupKey, PersistentDataType.LONG);
         String type = pdc.get(typeKey, PersistentDataType.STRING);

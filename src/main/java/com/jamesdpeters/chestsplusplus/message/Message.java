@@ -27,6 +27,7 @@ public enum Message {
     ERROR_ALREADY_MEMBER("error.already-member"),
     ERROR_NOT_MEMBER("error.not-member"),
     ERROR_STALE_LINK_ITEM("error.stale-link-item"),
+    ERROR_UNKNOWN_SORT_MODE("error.unknown-sort-mode"),
     CHESTLINK_CREATED("chestlink.created"),
     CHESTLINK_LINKED("chestlink.linked"),
     CHESTLINK_UNLINKED("chestlink.unlinked"),

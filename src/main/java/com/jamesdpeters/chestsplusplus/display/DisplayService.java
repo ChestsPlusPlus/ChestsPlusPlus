@@ -2,6 +2,7 @@ package com.jamesdpeters.chestsplusplus.display;
 
 import com.jamesdpeters.chestsplusplus.config.Settings;
 import com.jamesdpeters.chestsplusplus.core.BlockPos;
+import com.jamesdpeters.chestsplusplus.core.Items;
 import com.jamesdpeters.chestsplusplus.model.GroupRegistry;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.Node;
@@ -249,7 +250,7 @@ public final class DisplayService {
 
     /** Displays show a plain single item of the type, so meta differences don't cause entity updates. */
     private static @Nullable ItemStack normalise(@Nullable ItemStack item) {
-        return item == null || item.isEmpty() ? null : ItemStack.of(item.getType());
+        return Items.present(item) ? ItemStack.of(item.getType()) : null;
     }
 
     /** Is this entity one of ours (by PDC marker)? */

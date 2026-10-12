@@ -3,6 +3,7 @@ package com.jamesdpeters.chestsplusplus.chestlink;
 import com.jamesdpeters.chestsplusplus.core.BlockPos;
 import com.jamesdpeters.chestsplusplus.core.Holders;
 import com.jamesdpeters.chestsplusplus.core.Services;
+import com.jamesdpeters.chestsplusplus.core.scheduler.MainThread;
 import com.jamesdpeters.chestsplusplus.link.SyntheticMoveEvent;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import java.util.HashSet;
@@ -24,7 +25,6 @@ import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.plugin.Plugin;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -36,7 +36,7 @@ import org.jspecify.annotations.Nullable;
 @RequiredArgsConstructor
 public final class HopperBridge implements Listener {
 
-    private final Plugin plugin;
+    private final MainThread mainThread;
     private final Services services;
     private final ChestLinkService chestLinks;
     /** Linked blocks a crafter pushed into this tick, absorbed together on the next. */
@@ -139,7 +139,7 @@ public final class HopperBridge implements Listener {
      */
     private void absorbNextTick(Block block) {
         if (pendingAbsorbs.add(BlockPos.of(block)) && pendingAbsorbs.size() == 1) {
-            plugin.getServer().getScheduler().runTask(plugin, this::absorbPending);
+            mainThread.nextTick(this::absorbPending);
         }
     }
 

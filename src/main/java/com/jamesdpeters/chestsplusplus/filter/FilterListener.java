@@ -5,6 +5,7 @@ import com.jamesdpeters.chestsplusplus.chestlink.ChestLinkHolder;
 import com.jamesdpeters.chestsplusplus.chestlink.ChestLinkService;
 import com.jamesdpeters.chestsplusplus.core.Holders;
 import com.jamesdpeters.chestsplusplus.core.InventoryChanges;
+import com.jamesdpeters.chestsplusplus.core.Items;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.link.LinkService;
 import com.jamesdpeters.chestsplusplus.link.SyntheticMoveEvent;
@@ -89,7 +90,7 @@ public final class FilterListener implements Listener {
         ItemStack[] contents = source.getContents();
         for (int slot = 0; slot < contents.length; slot++) {
             ItemStack item = contents[slot];
-            if (item == null || item.isEmpty() || !filter.accepts(item)) continue;
+            if (!Items.present(item) || !filter.accepts(item)) continue;
             ItemStack moving = item.asQuantity(Math.min(amount, item.getAmount()));
             if (!SyntheticMoveEvent.allows(source, moving, destination)) {
                 filter.allowManualMoveAt(now + STALL_COOLDOWN_TICKS);

@@ -1,5 +1,6 @@
 package com.jamesdpeters.chestsplusplus.model;
 
+import com.jamesdpeters.chestsplusplus.core.Items;
 import java.util.Arrays;
 import java.util.UUID;
 import org.bukkit.NamespacedKey;
@@ -36,12 +37,12 @@ public final class AutoCraftGroup extends StorageGroup {
         if (newMatrix.length != 9) throw new IllegalArgumentException("Matrix must have 9 slots");
         for (int i = 0; i < 9; i++) {
             ItemStack item = newMatrix[i];
-            ItemStack ghost = item == null || item.isEmpty() ? null : item.asOne();
+            ItemStack ghost = Items.present(item) ? item.asOne() : null;
             if (ghost == null ? matrix[i] != null : !ghost.isSimilar(matrix[i])) matches[i] = SlotMatch.RECIPE;
             matrix[i] = ghost;
         }
         this.recipeKey = key;
-        this.result = result == null || result.isEmpty() ? null : result.clone();
+        this.result = Items.present(result) ? result.clone() : null;
     }
 
     /** A copy of each slot's match mode. */

@@ -5,8 +5,6 @@ import static com.jamesdpeters.chestsplusplus.command.Commands.literal;
 import static com.jamesdpeters.chestsplusplus.command.Commands.permission;
 
 import com.jamesdpeters.chestsplusplus.Permissions;
-import com.jamesdpeters.chestsplusplus.core.Services;
-import com.jamesdpeters.chestsplusplus.message.Message;
 import com.jamesdpeters.chestsplusplus.migration.V2Migration;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
@@ -16,15 +14,12 @@ import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import java.util.function.BiConsumer;
-import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
-import org.jspecify.annotations.Nullable;
 
 /** {@code /chestsplusplus migrate v2 ...}: the v2 import and the hopper-filter conversion. Works from the console. */
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
@@ -33,7 +28,7 @@ final class MigrateCommands {
     private static final int DEFAULT_CLEANUP_RADIUS = 4;
     private static final int MAX_CLEANUP_RADIUS = 32;
 
-    private final Supplier<@Nullable Services> services;
+    private final CommandBodies bodies;
 
     LiteralArgumentBuilder<CommandSourceStack> build() {
         return literal("migrate")
@@ -74,25 +69,11 @@ final class MigrateCommands {
     }
 
     private Command<CommandSourceStack> cleanup(ToIntFunction<CommandContext<CommandSourceStack>> radius) {
-        return context -> {
-            Services current = services.get();
-            if (current == null) return 0;
-            if (!(context.getSource().getExecutor() instanceof Player player)) {
-                current.send(sender(context), Message.ERROR_PLAYERS_ONLY);
-                return 0;
-            }
-            current.get(V2Migration.class).cleanupNear(player, radius.applyAsInt(context));
-            return Command.SINGLE_SUCCESS;
-        };
+        return bodies.player((services, player, context) -> services.get(V2Migration.class).cleanupNear(player, radius.applyAsInt(context)));
     }
 
     private Command<CommandSourceStack> run(BiConsumer<V2Migration, CommandContext<CommandSourceStack>> body) {
-        return context -> {
-            Services current = services.get();
-            if (current == null) return 0;
-            body.accept(current.get(V2Migration.class), context);
-            return Command.SINGLE_SUCCESS;
-        };
+        return bodies.enabled((services, context) -> body.accept(services.get(V2Migration.class), context));
     }
 
     private static CommandSender sender(CommandContext<CommandSourceStack> context) {

@@ -4,7 +4,9 @@ import com.jamesdpeters.chestsplusplus.ChestsPlusPlus;
 import com.jamesdpeters.chestsplusplus.chestlink.ChestLinkHolder;
 import com.jamesdpeters.chestsplusplus.core.BlockPos;
 import com.jamesdpeters.chestsplusplus.core.Holders;
+import com.jamesdpeters.chestsplusplus.core.Items;
 import com.jamesdpeters.chestsplusplus.core.Services;
+import com.jamesdpeters.chestsplusplus.core.Viewers;
 import com.jamesdpeters.chestsplusplus.display.DisplayService;
 import com.jamesdpeters.chestsplusplus.link.GroupTypeHandler;
 import com.jamesdpeters.chestsplusplus.link.SyntheticMoveEvent;
@@ -105,7 +107,7 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
 
     @Override
     public void closeAllViews() {
-        services.plugin().getServer().getOnlinePlayers().stream().filter(player -> editorOf(player) != null).forEach(Player::closeInventory);
+        Viewers.withHolder(RecipeEditorHolder.class).forEach(Player::closeInventory);
     }
 
     @Override
@@ -158,7 +160,7 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
     void edit(Player player, RecipeEditorHolder editor, int slot, @Nullable ItemStack cursor, ClickType click) {
         AutoCraftGroup group = editor.group();
         if (!mayEdit(player, group)) return;
-        if (click.isRightClick() && (cursor == null || cursor.isEmpty())) {
+        if (click.isRightClick() && !Items.present(cursor)) {
             int index = RecipeEditorHolder.matrixIndex(slot);
             if (index >= 0 && group.matrix()[index] != null) setMatch(group, index, group.matches()[index].next(hasRecipeChoice(group, index)));
             return;
@@ -287,21 +289,12 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
 
     private void renderEditors(AutoCraftGroup group) {
         for (Player viewer : openEditors(group)) {
-            if (editorOf(viewer) instanceof RecipeEditorHolder holder) holder.render();
+            if (Viewers.topHolder(viewer) instanceof RecipeEditorHolder holder) holder.render();
         }
     }
 
-    private static @Nullable RecipeEditorHolder editorOf(Player player) {
-        // The top inventory can be null for players with nothing open on some platforms (MockBukkit).
-        @Nullable Inventory top = player.getOpenInventory().getTopInventory();
-        return top != null && Holders.of(top) instanceof RecipeEditorHolder holder ? holder : null;
-    }
-
-    private List<Player> openEditors(StorageGroup group) {
-        return services.plugin().getServer().getOnlinePlayers().stream()
-                .filter(player -> editorOf(player) instanceof RecipeEditorHolder holder && holder.group().id() == group.id())
-                .map(Player.class::cast)
-                .toList();
+    private static List<Player> openEditors(StorageGroup group) {
+        return Viewers.withHolder(RecipeEditorHolder.class, editor -> editor.group().id() == group.id());
     }
 
     /**
@@ -350,7 +343,7 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
 
     private static List<BlockPos> watchedBlocks(BlockPos table) {
         List<BlockPos> blocks = new ArrayList<>(WATCHED_FACES.length);
-        for (BlockFace face : WATCHED_FACES) blocks.add(table.offset(face.getModX(), face.getModY(), face.getModZ()));
+        for (BlockFace face : WATCHED_FACES) blocks.add(table.relative(face));
         return blocks;
     }
 
@@ -358,7 +351,7 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
     private List<Long> watchedGroups(BlockPos table) {
         List<Long> groups = new ArrayList<>(1);
         for (BlockFace face : WATCHED_FACES) {
-            Node neighbour = services.nodes().get(table.offset(face.getModX(), face.getModY(), face.getModZ()));
+            Node neighbour = services.nodes().get(table.relative(face));
             if (neighbour != null && services.groups().byId(neighbour.groupId()) instanceof ChestLinkGroup) groups.add(neighbour.groupId());
         }
         return groups;
@@ -441,7 +434,7 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
         List<ItemStack> produced = new ArrayList<>();
         produced.add(crafted.result());
         for (ItemStack leftover : crafted.remaining()) {
-            if (leftover != null && !leftover.isEmpty()) produced.add(leftover);
+            if (Items.present(leftover)) produced.add(leftover);
         }
         return CraftPlanner.fits(output, produced) ? new Craft(plan, produced.toArray(ItemStack[]::new)) : null;
     }

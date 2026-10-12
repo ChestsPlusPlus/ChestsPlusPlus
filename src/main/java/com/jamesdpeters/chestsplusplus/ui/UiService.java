@@ -43,13 +43,11 @@ import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import net.kyori.adventure.text.object.ObjectContents;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.ItemStack;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Menus: the Dialog hub (a row per group with its icon, then search, paging and a toolbar), the group, members, trust and confirm dialogs, and the icon grid. Every
@@ -213,7 +211,7 @@ public final class UiService {
         if (group instanceof ChestLinkGroup chest && player.hasPermission(Permissions.CHESTLINK_SORT)) {
             List<SingleOptionDialogInput.OptionEntry> modes = new ArrayList<>();
             for (SortMode mode : SortMode.values()) {
-                Component label = Component.text(mode.name().toLowerCase(Locale.ROOT));
+                Component label = Component.text(mode.key());
                 modes.add(SingleOptionDialogInput.OptionEntry.create(mode.name(), label, mode == chest.sortMode()));
             }
             inputs.add(DialogInput.singleOption(SORT_INPUT, text(Message.MENU_GROUP_SORT_MODE), modes).build());
@@ -246,17 +244,9 @@ public final class UiService {
         if (name != null && !name.isBlank() && !name.equals(group.name())) actions.rename(player, group, name.trim());
         Boolean isPublic = view.getBoolean(PUBLIC_INPUT);
         if (isPublic != null && isPublic != group.isPublic()) actions.setPublic(player, group, isPublic);
-        SortMode mode = parseSortMode(view.getText(SORT_INPUT));
+        String sort = view.getText(SORT_INPUT);
+        SortMode mode = sort == null ? null : SortMode.parse(sort);
         if (mode != null && group instanceof ChestLinkGroup chest && mode != chest.sortMode()) actions.sort(player, chest, mode);
-    }
-
-    private static @Nullable SortMode parseSortMode(@Nullable String option) {
-        if (option == null) return null;
-        try {
-            return SortMode.valueOf(option);
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
     }
 
     public void confirmRemove(Player player, StorageGroup group) {
@@ -402,8 +392,7 @@ public final class UiService {
             action.accept(player);
             if (!dialogShown && player.getOpenInventory().getType() == InventoryType.CRAFTING) player.closeDialog();
         };
-        if (Bukkit.isPrimaryThread()) run.run();
-        else Bukkit.getScheduler().runTask(services.plugin(), run);
+        services.mainThread().run(run);
     }
 
     private Component text(Message message, TagResolver... placeholders) {

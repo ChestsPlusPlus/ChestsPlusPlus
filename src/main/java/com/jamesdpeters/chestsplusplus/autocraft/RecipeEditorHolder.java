@@ -1,5 +1,6 @@
 package com.jamesdpeters.chestsplusplus.autocraft;
 
+import com.jamesdpeters.chestsplusplus.core.Items;
 import com.jamesdpeters.chestsplusplus.message.Message;
 import com.jamesdpeters.chestsplusplus.message.Messages;
 import com.jamesdpeters.chestsplusplus.model.AutoCraftGroup;
@@ -51,7 +52,7 @@ public final class RecipeEditorHolder extends GhostEditor {
         int index = matrixIndex(slot);
         if (index < 0) return null;
         @Nullable ItemStack[] matrix = group.matrix();
-        boolean hasCursor = cursor != null && !cursor.isEmpty();
+        boolean hasCursor = Items.present(cursor);
         if (!hasCursor && matrix[index] == null) return null;
         matrix[index] = hasCursor ? cursor.asOne() : null;
         return matrix;

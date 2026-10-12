@@ -3,6 +3,7 @@ package com.jamesdpeters.chestsplusplus.core;
 import com.jamesdpeters.chestsplusplus.access.AccessService;
 import com.jamesdpeters.chestsplusplus.access.TrustService;
 import com.jamesdpeters.chestsplusplus.config.Settings;
+import com.jamesdpeters.chestsplusplus.core.scheduler.MainThread;
 import com.jamesdpeters.chestsplusplus.core.scheduler.Tickers;
 import com.jamesdpeters.chestsplusplus.message.Message;
 import com.jamesdpeters.chestsplusplus.message.Messages;
@@ -31,6 +32,7 @@ public final class Services {
     @Getter private final TrustService trust = new TrustService();
     @Getter private final AccessService access = new AccessService(trust, groups);
     @Getter private final Tickers tickers;
+    @Getter private final MainThread mainThread;
     @Getter private final Shutdown shutdown = new Shutdown();
     @Getter private volatile Settings settings;
     @Getter private volatile Messages messages;
@@ -44,6 +46,7 @@ public final class Services {
         this.settings = settings;
         this.messages = messages;
         this.tickers = new Tickers(plugin);
+        this.mainThread = new MainThread(plugin);
     }
 
     public void send(Audience audience, Message message, TagResolver... placeholders) {

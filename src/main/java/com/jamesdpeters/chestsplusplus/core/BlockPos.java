@@ -5,6 +5,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -77,6 +78,11 @@ public record BlockPos(UUID world, int x, int y, int z) {
 
     public BlockPos offset(int dx, int dy, int dz) {
         return new BlockPos(world, x + dx, y + dy, z + dz);
+    }
+
+    /** The neighbouring position on {@code face}, like {@link Block#getRelative(BlockFace)}. */
+    public BlockPos relative(BlockFace face) {
+        return offset(face.getModX(), face.getModY(), face.getModZ());
     }
 
     public @Nullable Block block() {
