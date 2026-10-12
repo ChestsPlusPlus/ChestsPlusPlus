@@ -1,21 +1,29 @@
 name: v3 Release
 
-# Runs when a v3 tag is pushed (e.g. v3.0.0), or when v3-tag-release.yml dispatches it on a tag it created. Runs the full CI
+# Runs when a v3 tag is pushed (e.g. v3.0.0), or when v3-tag-release.yml calls it with a tag it created. Runs the full CI
 # (build, tests and E2E) first, then builds, runs the release-jar guard, and attaches the jar to a draft GitHub release, with
 # that version's CHANGELOG.md section as its notes, for review before publishing. Publishing the draft uploads the same jar to
 # Modrinth (v3-modrinth.yml).
 on:
   push:
     tags: ["v3.*"]
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      tag:
+        type: string
+        required: true
 
 permissions:
   contents: write
 
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
+
 jobs:
   ci:
-    if: startsWith(github.ref, 'refs/tags/v3.')
     uses: ./.github/workflows/v3-ci.yml
+    with:
+      ref: ${{ inputs.tag || github.ref_name }}
     secrets: inherit
 
   release:
@@ -23,16 +31,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TAG }}
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 25
       - uses: gradle/actions/setup-gradle@v6
       - name: Build release jar
-        run: ./gradlew build verifyReleaseJar -PreleaseVersion=${GITHUB_REF_NAME#v} --stacktrace
+        run: ./gradlew build verifyReleaseJar -PreleaseVersion=${TAG#v} --stacktrace
       - name: Extract release notes
         run: |
-          base="${GITHUB_REF_NAME#v}"
+          base="${TAG#v}"
           base="${base%%-*}"
           awk -v heading="## $base " 'index($0, heading) == 1 { found = 1; next } found && /^## / { exit } found' CHANGELOG.md > build/release-notes.md
           [ -s build/release-notes.md ] || { echo "::error::CHANGELOG.md has no section for $base"; exit 1; }
@@ -40,7 +50,8 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           draft: true
-          prerelease: ${{ contains(github.ref_name, '-') }}
-          name: ChestsPlusPlus ${{ github.ref_name }}
+          tag_name: ${{ env.TAG }}
+          prerelease: ${{ contains(env.TAG, '-') }}
+          name: ChestsPlusPlus ${{ env.TAG }}
           body_path: build/release-notes.md
           files: build/libs/ChestsPlusPlus-*[0-9].jar

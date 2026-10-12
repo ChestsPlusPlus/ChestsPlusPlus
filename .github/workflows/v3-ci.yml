@@ -8,6 +8,11 @@ on:
   pull_request:
   workflow_dispatch:
   workflow_call:
+    inputs:
+      ref:
+        description: Ref to build, for v3-release.yml; empty builds the event's own commit
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -22,6 +27,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
@@ -55,6 +62,8 @@ jobs:
       ACCEPT_MINECRAFT_EULA: "true"
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
       - uses: actions/setup-java@v6
         with:
           distribution: temurin

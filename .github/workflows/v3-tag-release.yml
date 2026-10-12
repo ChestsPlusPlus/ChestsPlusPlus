@@ -1,7 +1,7 @@
 name: v3 Tag release
 
-# Runs when a release/v<version> PR from v3-prepare-release.yml is merged: tags the merge commit and runs v3-release.yml on the
-# tag. A tag created with GITHUB_TOKEN doesn't trigger push workflows, but a workflow_dispatch does.
+# Runs when any PR into v3 closes, and is skipped unless it is a merged release/v<version> PR from v3-prepare-release.yml.
+# Tags the merge commit and calls v3-release.yml with the tag: a tag created with GITHUB_TOKEN doesn't trigger push workflows.
 on:
   pull_request:
     types: [closed]
@@ -9,7 +9,6 @@ on:
 
 permissions:
   contents: write
-  actions: write
 
 jobs:
   tag:
@@ -18,14 +17,24 @@ jobs:
       startsWith(github.event.pull_request.head.ref, 'release/v3.') &&
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
     env:
       GH_TOKEN: ${{ github.token }}
       BRANCH: ${{ github.event.pull_request.head.ref }}
       SHA: ${{ github.event.pull_request.merge_commit_sha }}
     steps:
-      - name: Tag the merge commit and start the release
+      - name: Tag the merge commit
+        id: tag
         run: |
           tag="${BRANCH#release/}"
           gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$tag" -f sha="$SHA"
-          gh workflow run v3-release.yml --repo "$GITHUB_REPOSITORY" --ref "$tag"
           gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$BRANCH"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+  release:
+    needs: tag
+    uses: ./.github/workflows/v3-release.yml
+    with:
+      tag: ${{ needs.tag.outputs.tag }}
+    secrets: inherit
