@@ -41,6 +41,8 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
@@ -364,6 +366,26 @@ class FilterIntegrationTest extends PluginTestBase {
 
         server.getPluginManager().disablePlugin(plugin);
 
+        assertThat(player.getOpenInventory().getTopInventory()).isNotSameAs(editor.getInventory());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"feature", "world"})
+    void anOpenEditorStopsSavingWhenSettingsRevokeAccess(String reason) {
+        Block hopper = hopperAt(0);
+        List<HopperFilter> original = List.of(filter(Material.COAL, Mode.ALLOW, Match.TYPE));
+        filters.write(hopper, original);
+        PlayerMock player = server.addPlayer();
+        FilterEditorHolder editor = openEditorOn(hopper, player);
+        switch (reason) {
+            case "feature" -> reconfigure("features.hopper-filters", false);
+            case "world" -> reconfigure("worlds.blacklist", List.of("world"));
+            default -> throw new IllegalArgumentException(reason);
+        }
+
+        editor.onClick(player, FilterEditorHolder.CLEAR_SLOT, null, ClickType.LEFT);
+
+        assertThat(filters.read(hopper)).containsExactlyElementsOf(original);
         assertThat(player.getOpenInventory().getTopInventory()).isNotSameAs(editor.getInventory());
     }
 
