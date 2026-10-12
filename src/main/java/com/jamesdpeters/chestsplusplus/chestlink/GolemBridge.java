@@ -3,14 +3,14 @@ package com.jamesdpeters.chestsplusplus.chestlink;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import io.papermc.paper.event.entity.ItemTransportingEntityValidateTargetEvent;
-import java.util.Comparator;
 import java.util.Map;
+import java.util.WeakHashMap;
 import lombok.RequiredArgsConstructor;
 import org.bukkit.GameEvent;
-import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.CopperGolem;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.world.GenericGameEvent;
 import org.bukkit.inventory.EntityEquipment;
@@ -33,6 +33,8 @@ public final class GolemBridge implements Listener {
 
     private final Services services;
     private final ChestLinkService chestLinks;
+    /** The linked block each golem last chose as its target. Weak keys, since golems unload without telling us. */
+    private final Map<CopperGolem, Block> targets = new WeakHashMap<>();
 
     private boolean enabled() {
         var features = services.settings().features();
@@ -53,6 +55,20 @@ public final class GolemBridge implements Listener {
         }
         ItemStack held = golem.getEquipment().getItemInMainHand();
         event.setAllowed(held.isEmpty() ? !group.inventory().isEmpty() : accepts(group.inventory(), held));
+    }
+
+    /**
+     * Records each golem's chosen target, since the open callback doesn't say which golem opened the block. A golem only validates a
+     * block nearer than its best so far, so its last allowed block is the one it heads for. Same hot path as {@link #onValidate}.
+     */
+    @EventHandler(priority = EventPriority.MONITOR)
+    void onValidated(ItemTransportingEntityValidateTargetEvent event) {
+        if (!event.isAllowed() || !(event.getEntity() instanceof CopperGolem golem)) return;
+        if (services.groupAt(event.getBlock()) instanceof ChestLinkGroup) {
+            targets.put(golem, event.getBlock());
+        } else {
+            targets.remove(golem);
+        }
     }
 
     /**
@@ -79,13 +95,16 @@ public final class GolemBridge implements Listener {
         }
     }
 
-    private static @Nullable CopperGolem interactingGolem(Block block) {
-        Location center = block.getLocation().toCenterLocation();
-        return block.getWorld()
-                .getNearbyEntitiesByType(CopperGolem.class, center, REACH, golem -> golem.getGolemState() != CopperGolem.State.IDLE)
+    /** The golem that chose this block, if it's now interacting with it. Nearness alone could pick a golem working the next chest. */
+    private @Nullable CopperGolem interactingGolem(Block block) {
+        CopperGolem golem = block.getWorld()
+                .getNearbyEntitiesByType(CopperGolem.class, block.getLocation().toCenterLocation(), REACH,
+                        nearby -> nearby.getGolemState() != CopperGolem.State.IDLE && block.equals(targets.get(nearby)))
                 .stream()
-                .min(Comparator.comparingDouble(golem -> golem.getLocation().distanceSquared(center)))
+                .findFirst()
                 .orElse(null);
+        if (golem != null) targets.remove(golem);
+        return golem;
     }
 
     /** Hands an empty-handed golem up to a load of the group's first stack. */
