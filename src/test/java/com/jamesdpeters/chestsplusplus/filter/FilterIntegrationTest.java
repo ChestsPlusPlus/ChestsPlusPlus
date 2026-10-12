@@ -2,6 +2,7 @@ package com.jamesdpeters.chestsplusplus.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.jamesdpeters.chestsplusplus.Permissions;
 import com.jamesdpeters.chestsplusplus.chestlink.ChestLinkService;
 import com.jamesdpeters.chestsplusplus.filter.HopperFilter.Match;
 import com.jamesdpeters.chestsplusplus.filter.HopperFilter.Mode;
@@ -32,6 +33,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockExplodeEvent;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
@@ -311,7 +313,7 @@ class FilterIntegrationTest extends PluginTestBase {
     @Test
     void editorAddsCyclesMovesRemovesAndClears() {
         Block hopper = hopperAt(0);
-        FilterEditorHolder editor = new FilterEditorHolder(hopper, List.of(), plugin.services().messages(), filters);
+        FilterEditorHolder editor = new FilterEditorHolder(hopper, List.of(), plugin.services().messages(), filters, (p, b) -> null);
         var LEFT = FilterEditorHolder.Click.LEFT;
 
         // Empty rows show coloured placeholders explaining what to do.
@@ -357,12 +359,77 @@ class FilterIntegrationTest extends PluginTestBase {
         Block hopper = hopperAt(0);
         PlayerMock player = server.addPlayer();
         FilterEditorHolder editor = new FilterEditorHolder(hopper, List.of(filter(Material.DIAMOND, Mode.ALLOW, Match.EXACT)),
-                plugin.services().messages(), filters);
+                plugin.services().messages(), filters, (p, b) -> null);
         player.openInventory(editor.getInventory());
 
         server.getPluginManager().disablePlugin(plugin);
 
         assertThat(player.getOpenInventory().getTopInventory()).isNotSameAs(editor.getInventory());
+    }
+
+    private FilterEditorHolder openEditorOn(Block hopper, PlayerMock player) {
+        player.setSneaking(true);
+        server.getPluginManager()
+                .callEvent(new PlayerInteractEvent(player, Action.RIGHT_CLICK_BLOCK, null, hopper, BlockFace.UP, EquipmentSlot.HAND));
+        return (FilterEditorHolder) player.getOpenInventory().getTopInventory().getHolder();
+    }
+
+    @Test
+    void anOpenEditorSavesNothingOnceThePlayerLosesTheFilterPermission() {
+        Block hopper = hopperAt(0);
+        filters.write(hopper, List.of(filter(Material.DIAMOND, Mode.ALLOW, Match.EXACT)));
+        PlayerMock player = server.addPlayer();
+        FilterEditorHolder editor = openEditorOn(hopper, player);
+
+        player.addAttachment(plugin, Permissions.FILTER, false);
+        editor.onClick(player, FilterEditorHolder.CLEAR_SLOT, null, ClickType.LEFT);
+
+        assertThat(filters.read(hopper)).containsExactly(filter(Material.DIAMOND, Mode.ALLOW, Match.EXACT));
+        assertThat(player.getOpenInventory().getTopInventory()).isNotSameAs(editor.getInventory());
+    }
+
+    @Test
+    void anOpenEditorSavesNothingOnceAProtectionPluginDeniesTheHopper() {
+        Block hopper = hopperAt(0);
+        filters.write(hopper, List.of(filter(Material.DIAMOND, Mode.ALLOW, Match.EXACT)));
+        PlayerMock player = server.addPlayer();
+        FilterEditorHolder editor = openEditorOn(hopper, player);
+
+        server.getPluginManager().registerEvent(PlayerInteractEvent.class, new Listener() {}, EventPriority.HIGHEST,
+                (listener, event) -> ((PlayerInteractEvent) event).setUseInteractedBlock(Event.Result.DENY), MockBukkit.createMockPlugin(), true);
+        editor.onClick(player, FilterEditorHolder.CLEAR_SLOT, null, ClickType.LEFT);
+
+        assertThat(filters.read(hopper)).containsExactly(filter(Material.DIAMOND, Mode.ALLOW, Match.EXACT));
+        assertThat(player.getOpenInventory().getTopInventory()).isNotSameAs(editor.getInventory());
+    }
+
+    @Test
+    void anOpenEditorLeavesAReplacementHopperAlone() {
+        Block hopper = hopperAt(0);
+        filters.write(hopper, List.of(filter(Material.DIAMOND, Mode.ALLOW, Match.EXACT)));
+        PlayerMock player = server.addPlayer();
+        FilterEditorHolder editor = openEditorOn(hopper, player);
+
+        hopper.setType(Material.AIR);
+        hopper.setType(Material.HOPPER);
+        editor.onClick(player, 0, ItemStack.of(Material.STONE), ClickType.LEFT);
+
+        assertThat(filters.read(hopper)).isEmpty();
+        assertThat(player.getOpenInventory().getTopInventory()).isNotSameAs(editor.getInventory());
+    }
+
+    @Test
+    void anOpenEditorKeepsSavingWhileThePlayerMayEdit() {
+        Block hopper = hopperAt(0);
+        filters.write(hopper, List.of(filter(Material.DIAMOND, Mode.ALLOW, Match.EXACT)));
+        PlayerMock player = server.addPlayer();
+        FilterEditorHolder editor = openEditorOn(hopper, player);
+
+        editor.onClick(player, 9, ItemStack.of(Material.DIRT), ClickType.LEFT);
+        editor.onClick(player, 0, null, ClickType.SHIFT_LEFT);
+
+        assertThat(filters.read(hopper)).containsExactly(filter(Material.DIRT, Mode.DENY, Match.EXACT));
+        assertThat(player.getOpenInventory().getTopInventory()).isSameAs(editor.getInventory());
     }
 
     @Test

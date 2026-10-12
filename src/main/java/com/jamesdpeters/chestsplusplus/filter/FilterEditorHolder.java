@@ -7,6 +7,7 @@ import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.ItemLore;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiFunction;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
@@ -22,7 +23,8 @@ import org.jspecify.annotations.Nullable;
  * The sneak-click filter editor. Row 1 is the Allow row and row 2 the Deny row; empty slots are lime/red
  * panes that say what clicking them does. Click a row with an item on the cursor to add a ghost copy (the item isn't
  * consumed). On an entry: left-click cycles exact → type → similar, right-click moves it to the other row, shift-click
- * removes it. Row 3 holds the help item and the clear button. Every change is saved straight to the hopper.
+ * removes it. Row 3 holds the help item and the clear button. Every change is saved straight to the hopper, after rechecking that
+ * the player may still edit it and that it is still the hopper the editor opened.
  */
 public final class FilterEditorHolder extends GhostEditor {
 
@@ -40,15 +42,21 @@ public final class FilterEditorHolder extends GhostEditor {
     @Getter private final Block hopper;
     private final Messages messages;
     private final FilterService filterService;
+    private final BiFunction<Player, Block, @Nullable Message> editRefusal;
+    /** What the hopper held when last read or written, so a hopper replaced or edited elsewhere is never overwritten. */
+    private List<HopperFilter> saved;
     private final List<HopperFilter> allows = new ArrayList<>();
     private final List<HopperFilter> denies = new ArrayList<>();
     private final Inventory inventory;
 
     @SuppressWarnings("this-escape") // a custom holder must pass itself to createInventory
-    public FilterEditorHolder(Block hopper, List<HopperFilter> filters, Messages messages, FilterService filterService) {
+    public FilterEditorHolder(Block hopper, List<HopperFilter> filters, Messages messages, FilterService filterService,
+            BiFunction<Player, Block, @Nullable Message> editRefusal) {
         this.hopper = hopper;
         this.messages = messages;
         this.filterService = filterService;
+        this.editRefusal = editRefusal;
+        this.saved = filters;
         for (HopperFilter filter : filters) {
             List<HopperFilter> row = filter.mode() == HopperFilter.Mode.ALLOW ? allows : denies;
             if (row.size() < ROW) row.add(filter);
@@ -64,15 +72,26 @@ public final class FilterEditorHolder extends GhostEditor {
         return all;
     }
 
-    /** Applies the click and saves the result straight to the hopper. The editor closes if the hopper has gone. */
+    /**
+     * Applies the click and saves the result straight to the hopper. The editor closes if the hopper has gone or changed underneath it, or
+     * the player may no longer edit it.
+     */
     @Override
     public void onClick(Player player, int slot, @Nullable ItemStack cursor, ClickType type) {
-        if (hopper.getType() != Material.HOPPER) {
+        if (hopper.getType() != Material.HOPPER || !filterService.read(hopper).equals(saved)) {
+            player.closeInventory();
+            return;
+        }
+        Message refusal = editRefusal.apply(player, hopper);
+        if (refusal != null) {
+            messages.send(player, refusal);
             player.closeInventory();
             return;
         }
         Click click = type.isShiftClick() ? Click.SHIFT : type.isRightClick() ? Click.RIGHT : Click.LEFT;
-        if (click(slot, cursor, click)) filterService.write(hopper, filters());
+        if (!click(slot, cursor, click)) return;
+        saved = filters();
+        filterService.write(hopper, saved);
     }
 
     /**

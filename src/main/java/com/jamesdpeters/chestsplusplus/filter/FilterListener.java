@@ -13,6 +13,7 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.Hopper;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -32,6 +33,7 @@ import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.jspecify.annotations.Nullable;
 
 /** Hopper filter enforcement, the editor, and index upkeep. */
 @RequiredArgsConstructor
@@ -118,13 +120,27 @@ public final class FilterListener implements Listener {
         event.setUseInteractedBlock(Event.Result.DENY);
         event.setUseItemInHand(Event.Result.DENY);
         if (event.getHand() != EquipmentSlot.HAND) return;
-        Message refusal = !player.hasPermission(Permissions.FILTER)
-                ? Message.ERROR_NO_PERMISSION
-                : services.settings().isBlacklisted(block.getWorld().getName())
-                        ? Message.ERROR_WORLD_BLACKLISTED
-                        : null;
+        Message refusal = editRefusal(player, block, true);
         if (refusal != null) services.send(player, refusal);
-        else player.openInventory(new FilterEditorHolder(block, filters.read(block), services.messages(), filters).getInventory());
+        else player.openInventory(new FilterEditorHolder(block, filters.read(block), services.messages(), filters, this::editRefusal).getInventory());
+    }
+
+    private @Nullable Message editRefusal(Player player, Block hopper) {
+        return editRefusal(player, hopper, false);
+    }
+
+    /**
+     * Why {@code player} may not edit {@code hopper}'s filters, or null if they may. The open editor asks again before every save. The
+     * protection check runs last as it fires an event.
+     *
+     * @param protectionChecked true only for a real right-click on {@code hopper} that no plugin denied
+     */
+    private @Nullable Message editRefusal(Player player, Block hopper, boolean protectionChecked) {
+        if (!enabled()) return Message.ERROR_FEATURE_DISABLED;
+        if (!player.hasPermission(Permissions.FILTER)) return Message.ERROR_NO_PERMISSION;
+        if (services.settings().isBlacklisted(hopper.getWorld().getName())) return Message.ERROR_WORLD_BLACKLISTED;
+        if (!protectionChecked && !links.passesProtection(player, hopper, BlockFace.UP)) return Message.ERROR_PROTECTED;
+        return null;
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
