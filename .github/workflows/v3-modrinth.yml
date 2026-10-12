@@ -1,0 +1,51 @@
+name: v3 Modrinth
+
+# Runs when a reviewed v3 draft release is published, and uploads its jar to Modrinth unchanged. A tag with a pre-release
+# part (v3.0.0-beta.1) becomes a Modrinth beta, or an alpha when it says alpha; the update checker only shows those to
+# servers already running a pre-release. Needs a MODRINTH_TOKEN secret with the "Create versions" scope.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  modrinth:
+    if: startsWith(github.event.release.tag_name, 'v3.')
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+      TAG: ${{ github.event.release.tag_name }}
+      CHANGELOG: ${{ github.event.release.body }}
+    steps:
+      - name: Download the release jar
+        run: gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern 'ChestsPlusPlus-*.jar' --dir dist
+      - name: Upload to Modrinth
+        run: |
+          version="${TAG#v}"
+          case "$version" in
+            *alpha*) type=alpha ;;
+            *-*) type=beta ;;
+            *) type=release ;;
+          esac
+          jar=$(ls dist/ChestsPlusPlus-*.jar)
+          jq -n --arg version "$version" --arg type "$type" --arg changelog "$CHANGELOG" '{
+            project_id: "DXfVvKr8",
+            name: "ChestsPlusPlus \($version)",
+            version_number: $version,
+            version_type: $type,
+            changelog: $changelog,
+            loaders: ["paper", "purpur"],
+            game_versions: ["26.3"],
+            dependencies: [],
+            featured: ($type == "release"),
+            file_parts: ["jar"],
+            primary_file: "jar"
+          }' > data.json
+          curl --fail-with-body -sS https://api.modrinth.com/v2/version \
+            -H "Authorization: $MODRINTH_TOKEN" \
+            -H "User-Agent: ChestsPlusPlus release (github.com/ChestsPlusPlus/ChestsPlusPlus)" \
+            -F "data=<data.json;type=application/json" \
+            -F "jar=@$jar;type=application/java-archive"

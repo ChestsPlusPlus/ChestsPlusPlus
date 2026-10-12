@@ -27,6 +27,10 @@ public final class Versions {
         return compare(candidate, current) > 0;
     }
 
+    public static boolean isPreRelease(String version) {
+        return !parse(version).preRelease.isEmpty();
+    }
+
     private static int comparePreRelease(String a, String b) {
         String[] identifiersA = a.split("\\.");
         String[] identifiersB = b.split("\\.");
