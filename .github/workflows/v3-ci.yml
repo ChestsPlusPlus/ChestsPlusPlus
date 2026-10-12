@@ -36,7 +36,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
       - name: Build
         run: ./gradlew build --stacktrace
-      - name: Upload test reports
+      - name: Upload test and coverage reports
         if: always()
         uses: actions/upload-artifact@v7
         with:
@@ -44,6 +44,7 @@ jobs:
           path: |
             build/reports/tests/
             build/test-results/
+            build/reports/jacoco/
             build/reports/verifyReleaseJar.txt
           if-no-files-found: ignore
       - name: Upload plugin jar

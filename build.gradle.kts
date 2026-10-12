@@ -7,6 +7,7 @@ import xyz.jpenilla.resourcefactory.bukkit.Permission
 // chestsplusplus.e2e, chestsplusplus.v2-upgrade and chestsplusplus.benchmark.
 plugins {
     java
+    jacoco
     id("com.gradleup.shadow")
     id("xyz.jpenilla.resource-factory-paper-convention")
     alias(libs.plugins.spotless)
@@ -170,15 +171,35 @@ tasks.withType<Test>().configureEach {
     }
 }
 
-fun taggedTests(name: String, tag: String, what: String) = tasks.register<Test>(name) {
-    group = "verification"
-    description = "Runs tests tagged '$tag' ($what)."
-    testClassesDirs = sourceSets.test.get().output.classesDirs
-    classpath = sourceSets.test.get().runtimeClasspath
-    useJUnitPlatform { includeTags(tag) }
+fun taggedTests(name: String, tag: String, what: String): TaskProvider<Test> {
+    val tests = tasks.register<Test>(name) {
+        group = "verification"
+        description = "Runs tests tagged '$tag' ($what)."
+        testClassesDirs = sourceSets.test.get().output.classesDirs
+        classpath = sourceSets.test.get().runtimeClasspath
+        useJUnitPlatform { includeTags(tag) }
+    }
+    val report = coverageReport("jacoco${name.replaceFirstChar(Char::titlecase)}Report", tests)
+    tests { finalizedBy(report) }
+    return tests
 }
-taggedTests("unitTest", "unit", "pure logic, no server")
-taggedTests("integrationTest", "integration", "MockBukkit")
+
+/** An HTML coverage report, in build/reports/jacoco/<name>, of the main code the given test tasks ran. Reporting only, no thresholds. */
+fun coverageReport(name: String, vararg tests: TaskProvider<Test>) = tasks.register<JacocoReport>(name) {
+    group = "verification"
+    description = "Reports the coverage of ${tests.joinToString { it.name }}."
+    executionData(*tests.map { it.get() }.toTypedArray())
+    sourceSets(sourceSets.main.get())
+}
+
+val unitTest = taggedTests("unitTest", "unit", "pure logic, no server")
+val integrationTest = taggedTests("integrationTest", "integration", "MockBukkit")
+coverageReport("jacocoMergedReport", unitTest, integrationTest).configure { dependsOn(unitTest, integrationTest) }
+
+// build runs test, which runs every tag, so CI gets the full report.
+tasks.test {
+    finalizedBy(tasks.jacocoTestReport)
+}
 
 spotless {
     java {
