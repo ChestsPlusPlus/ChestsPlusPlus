@@ -1,7 +1,9 @@
 rootProject.name = "ChestsPlusPlus"
 
 pluginManagement {
+    // Plugins' own dependencies come straight from Maven Central rather than through the plugin portal's flaky mirror.
     repositories {
+        mavenCentral()
         gradlePluginPortal()
     }
 }
