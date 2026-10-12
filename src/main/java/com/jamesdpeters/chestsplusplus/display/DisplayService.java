@@ -88,7 +88,7 @@ public final class DisplayService {
 
     /** Queues a group's displays to be refreshed on the next update tick (debounced). */
     public void requestUpdate(StorageGroup group) {
-        pendingGroups.add(group.id());
+        if (config(group.type()).enabled()) pendingGroups.add(group.id());
     }
 
     public void chunkLoaded(UUID world, long chunkKey) {
@@ -148,11 +148,17 @@ public final class DisplayService {
         return displays.size();
     }
 
+    private Settings.Display config(GroupType type) {
+        Settings current = settings.get();
+        return type.pick(current.chestlink().display(), current.autocraft().display());
+    }
+
     private void update(StorageGroup group) {
+        Settings.Display config = config(group.type());
         Content content = contents.get(group.type());
-        if (content == null) return;
+        if (content == null || !config.enabled()) return;
         @Nullable ItemStack item = normalise(content.item(group));
-        Component label = content.label(group);
+        Component label = config.label() ? content.label(group) : Component.empty();
         for (Node node : nodes.nodesOf(group.id())) updateNode(node, item, label);
     }
 
@@ -178,7 +184,7 @@ public final class DisplayService {
         StorageGroup group = groups.byId(node.groupId());
         Content content = group == null ? null : contents.get(group.type());
         if (group == null || content == null) return;
-        Settings.Display config = group.type().pick(settings.get().chestlink().display(), settings.get().autocraft().display());
+        Settings.Display config = config(group.type());
         if (!config.enabled()) return;
         Block block = node.pos().block();
         if (block == null) return;
