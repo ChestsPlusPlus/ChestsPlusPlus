@@ -93,7 +93,6 @@ public final class V2LocationRecovery implements Listener {
             groupStore.markDirty(group);
             cleanup.add(pos);
             pending.remove(row);
-            return null;
         });
         worldCleanup.finish(chunk);
         displays.nodeAdded(nodes.get(pos));

@@ -26,6 +26,10 @@ class RecordTableTest {
 
     public record Slot(long thingId, int slot, String value) {}
 
+    public record SlotKey(long thingId, int slot) {}
+
+    public record SlotSnapshot(long thingId, List<Slot> rows) {}
+
     private static final UUID OWNER = UUID.randomUUID();
 
     private final Database db = Database.open("jdbc:sqlite::memory:");
@@ -84,6 +88,36 @@ class RecordTableTest {
         things.deleteWhere(handle, "id", List.of());
 
         assertThat(things.all(handle)).extracting(Thing::id).containsExactly(2L);
+    }
+
+    @Test
+    void deleteKeysUsesSingleColumnValues() {
+        things.upsert(handle, List.of(new Thing(1, OWNER, Colour.RED, null), new Thing(2, OWNER, Colour.BLUE, null)));
+
+        things.deleteKeys(handle, List.of(1L));
+        things.deleteKeys(handle, List.of());
+
+        assertThat(things.all(handle)).extracting(Thing::id).containsExactly(2L);
+    }
+
+    @Test
+    void deleteKeysMatchesEveryCompositeKeyComponent() {
+        slots.upsert(handle, List.of(new Slot(1, 0, "a"), new Slot(1, 1, "b"), new Slot(2, 0, "c")));
+
+        slots.deleteKeys(handle, List.of(new SlotKey(1, 0), new SlotKey(2, 0)));
+        slots.deleteKeys(handle, List.of());
+
+        assertThat(slots.all(handle)).containsExactly(new Slot(1, 1, "b"));
+    }
+
+    @Test
+    void replaceSnapshotsClearsEmptyParentsAndLeavesOtherParentsAlone() {
+        slots.upsert(handle, List.of(new Slot(1, 0, "a"), new Slot(2, 0, "b"), new Slot(3, 0, "c")));
+        List<SlotSnapshot> snapshots = List.of(new SlotSnapshot(1, List.of()), new SlotSnapshot(2, List.of(new Slot(2, 1, "B"))));
+
+        slots.replaceFor(handle, "thing_id", snapshots, SlotSnapshot::thingId, SlotSnapshot::rows);
+
+        assertThat(slots.all(handle)).containsExactly(new Slot(3, 0, "c"), new Slot(2, 1, "B"));
     }
 
     @Test

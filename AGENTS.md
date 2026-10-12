@@ -85,7 +85,7 @@ comments, no repeated logic.
 | A new custom inventory | its holder implements `CppInventoryHolder`, so disabling the plugin closes it |
 | Save a model change | `services.groupStore().markDirty(group)` (or `trustStore().markDirty(owner)`); the next flush saves the whole group |
 | SQL | a `RecordTable` in the store that owns the table; anything it can't do is a plain JDBI call in that store. Schema: edit `V1.sql` until v3 ships (then clear your dev database), afterwards a new `db/migration/V<n>.sql` with `Database.SCHEMA_VERSION` bumped |
-| Persist a new kind of thing | a row record, its `CREATE TABLE`, a `Store` of about 15 lines using `RecordTable`, `persistence.register(store)` in `ChestsPlusPlus`, and `markDirty` wherever the data changes |
+| Persist a new kind of thing | a row record, its `CREATE TABLE`, a `RowStore` for one row per key or a `TrackedStore` for aggregates, `persistence.register(store)` in `ChestsPlusPlus`, and `markDirty` wherever the data changes |
 | Command tree pieces | `Commands.literal`, `argument`, `permission`, `playerArgument` |
 
 ## Runtime libraries
