@@ -82,7 +82,7 @@ comments, no repeated logic.
 | Common placeholders | `Messages.group(group)`, `Messages.player(name)`, `Messages.text(key, int)` |
 | Node or group at a block (no allocation) | `services.nodes().at(block)`, `services.groupAt(block)` |
 | Player names | `PlayerNames.of(uuid)`, `PlayerNames.join(uuids)` |
-| A slot holds a real item (not null, air or amount 0) | `Items.present(item)` |
+| A slot holds a real item (not null, air or amount 0) | `Items.present(item)`. NullAway knows the item is non-null where it returned true, so test it in the condition itself rather than saving it to a boolean |
 | Groups a player can use, with owner names and command references | `services.access().accessibleGroups(...)`, then `ownerName(group)` / `reference(group)`, never `PlayerNames.of(group.owner())` per group |
 | Right-click on a linked block | `LinkService.claimNodeClick(event, type)` |
 | Repeating work | `Tickers.every` / `Tickers.everyInterval`. Never one task per group or node. |
