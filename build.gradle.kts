@@ -46,6 +46,7 @@ dependencies {
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.assertj.core)
     testImplementation(libs.sqlite.jdbc)
+    testImplementation(libs.archunit.junit5)
     testRuntimeOnly(libs.slf4j.jdk14)
     testCompileOnly(libs.jspecify)
     testRuntimeOnly(libs.junit.platform.launcher)

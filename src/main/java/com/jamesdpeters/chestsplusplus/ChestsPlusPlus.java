@@ -113,7 +113,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         links.register(autoCraft);
         displays.register(GroupType.AUTOCRAFT, autoCraft);
 
-        GroupActions actions = services.add(GroupActions.class, new GroupActions(services, links, chestLinks));
+        GroupActions actions = services.add(GroupActions.class, new GroupActions(services, links, chestLinks::setSortMode));
         MenuListener menus = services.add(MenuListener.class, new MenuListener(services.mainThread()));
         services.add(UiService.class, new UiService(services, links, actions, menus));
         FilterService filters = services.add(FilterService.class,

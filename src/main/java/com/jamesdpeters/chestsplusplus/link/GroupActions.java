@@ -4,7 +4,6 @@ import com.destroystokyo.paper.profile.PlayerProfile;
 import com.jamesdpeters.chestsplusplus.Permissions;
 import com.jamesdpeters.chestsplusplus.access.AccessService;
 import com.jamesdpeters.chestsplusplus.access.AccessibleGroups;
-import com.jamesdpeters.chestsplusplus.chestlink.ChestLinkService;
 import com.jamesdpeters.chestsplusplus.core.PaperApi;
 import com.jamesdpeters.chestsplusplus.core.PlayerNames;
 import com.jamesdpeters.chestsplusplus.core.Services;
@@ -17,6 +16,7 @@ import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.text.event.ClickEvent;
@@ -36,7 +36,8 @@ public final class GroupActions {
 
     private final Services services;
     private final LinkService links;
-    private final ChestLinkService chestLinks;
+    /** {@code ChestLinkService::setSortMode}, passed in because link can't depend on chestlink. */
+    private final BiConsumer<ChestLinkGroup, SortMode> setSortMode;
 
     /** Resolves {@code input} for {@code player}; messages and returns null if it isn't an accessible group. */
     public @Nullable StorageGroup find(Player player, GroupType type, String input) {
@@ -87,7 +88,7 @@ public final class GroupActions {
 
     public boolean sort(Player player, ChestLinkGroup group, SortMode mode) {
         if (!isEnabled(player, group.type()) || !require(player, Permissions.CHESTLINK_SORT) || !canManage(player, group)) return false;
-        chestLinks.setSortMode(group, mode);
+        setSortMode.accept(group, mode);
         services.send(player, Message.CHESTLINK_SORT_MODE, Messages.group(group),
                 Messages.text("mode", mode.key()));
         return true;
