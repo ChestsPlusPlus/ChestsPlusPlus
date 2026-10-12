@@ -180,6 +180,42 @@ class GolemBridgeIntegrationTest extends PluginTestBase {
     }
 
     @Test
+    void aGolemWhoseTargetWasRevokedGetsNothing() {
+        Block chest = place(Material.COPPER_CHEST, 0);
+        ChestLinkGroup group = link(chest, "src");
+        group.inventory().addItem(new ItemStack(Material.DIAMOND, 32));
+        CopperGolem golem = golemBeside(chest, CopperGolem.State.GETTING_NO_ITEM, ItemStack.empty());
+        assertThat(validate(golem, chest)).isTrue();
+        server.getPluginManager().registerEvent(ItemTransportingEntityValidateTargetEvent.class, new Listener() {}, EventPriority.HIGHEST,
+                (listener, event) -> {
+                    if (event instanceof ItemTransportingEntityValidateTargetEvent validate && validate.getBlock().equals(chest))
+                        validate.setAllowed(false);
+                }, plugin);
+
+        assertThat(validate(golem, chest)).isFalse();
+        gameEvent(GameEvent.CONTAINER_OPEN, chest);
+
+        assertThat(golem.getEquipment().getItemInMainHand().isEmpty()).isTrue();
+        assertThat(group.inventory().contains(Material.DIAMOND, 32)).isTrue();
+    }
+
+    @Test
+    void rejectingAnotherCandidatePreservesTheAllowedTarget() {
+        Block chest = place(Material.COPPER_CHEST, 0);
+        Block rejected = place(Material.COPPER_CHEST, 2);
+        ChestLinkGroup group = link(chest, "src");
+        group.inventory().addItem(new ItemStack(Material.DIAMOND, 32));
+        link(rejected, "empty");
+        CopperGolem golem = golemBeside(chest, CopperGolem.State.GETTING_NO_ITEM, ItemStack.empty());
+
+        assertThat(validate(golem, chest)).isTrue();
+        assertThat(validate(golem, rejected)).isFalse();
+        gameEvent(GameEvent.CONTAINER_OPEN, chest);
+
+        assertThat(golem.getEquipment().getItemInMainHand()).isEqualTo(new ItemStack(Material.DIAMOND, GolemBridge.LOAD));
+    }
+
+    @Test
     void aNearerGolemTheBlockRefusedGetsNothing() {
         Block chest = place(Material.COPPER_CHEST, 0);
         ChestLinkGroup group = link(chest, "src");
