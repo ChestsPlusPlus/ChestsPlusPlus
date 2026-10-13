@@ -83,10 +83,10 @@ class V2ImporterTest extends PluginTestBase {
         persistence.register(cleanupStore);
         persistence.register(stateStore);
         persistence.register(pendingStore);
-        trust.onChange(trustStore::markDirty);
-        cleanup.onChange(cleanupStore::markDirty);
-        state.onChange(stateStore::markDirty);
-        pending.onChange(pendingStore::markDirty);
+        trust.listen(trustStore::markDirty);
+        cleanup.listen(cleanupStore::markDirty);
+        state.listen(stateStore::markDirty);
+        pending.listen(pendingStore::markDirty);
         groups.listen(groupStore::markDirty);
         groups.listen(GroupListener.removals(group -> pending.removeGroup(group.id())));
         persistence.load();

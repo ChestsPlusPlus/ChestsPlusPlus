@@ -1,5 +1,6 @@
 package com.jamesdpeters.chestsplusplus.access;
 
+import com.jamesdpeters.chestsplusplus.core.Listeners;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -14,18 +15,18 @@ public final class TrustService {
 
     private final Map<UUID, Set<UUID>> trusted = new HashMap<>();
     private final Map<UUID, Set<UUID>> trustedBy = new HashMap<>();
-    private Consumer<UUID> onChange = owner -> {};
+    private final Listeners<UUID> listeners = new Listeners<>();
 
-    /** Called with the owner whose trust list changed (persistence marks it dirty). */
-    public void onChange(Consumer<UUID> listener) {
-        this.onChange = listener;
+    /** Told the owner whose trust list changed (persistence marks it dirty). */
+    public void listen(Consumer<UUID> listener) {
+        listeners.add(listener);
     }
 
     public boolean trust(UUID owner, UUID player) {
         if (owner.equals(player)) return false;
         if (!trusted.computeIfAbsent(owner, k -> new LinkedHashSet<>()).add(player)) return false;
         trustedBy.computeIfAbsent(player, k -> new LinkedHashSet<>()).add(owner);
-        onChange.accept(owner);
+        listeners.fire(owner);
         return true;
     }
 
@@ -38,7 +39,7 @@ public final class TrustService {
             reverse.remove(owner);
             if (reverse.isEmpty()) trustedBy.remove(player);
         }
-        onChange.accept(owner);
+        listeners.fire(owner);
         return true;
     }
 

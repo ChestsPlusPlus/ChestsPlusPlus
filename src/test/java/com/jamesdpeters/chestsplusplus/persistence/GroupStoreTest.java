@@ -61,7 +61,7 @@ class GroupStoreTest extends PluginTestBase {
             persistence.register(trustStore);
             groups.listen(groupStore::markDirty);
             groups.listen(events::add);
-            trust.onChange(trustStore::markDirty);
+            trust.listen(trustStore::markDirty);
             persistence.load();
         }
 

@@ -51,7 +51,7 @@ class AccessServiceTest {
     @Test
     void trustIndexesBothDirectionsAndNotifies() {
         List<UUID> changed = new ArrayList<>();
-        trust.onChange(changed::add);
+        trust.listen(changed::add);
 
         assertThat(trust.trust(OWNER, OTHER)).isTrue();
         assertThat(trust.trust(OWNER, OTHER)).isFalse();

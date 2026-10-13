@@ -139,7 +139,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         GroupStore groupStore = persistence.register(new GroupStore(persistence, services.groups(), services.nodes(), attachLoaded(services)));
         services.groups().listen(groupStore::markDirty);
         TrustStore trustStore = persistence.register(new TrustStore(persistence, services.trust()));
-        services.trust().onChange(trustStore::markDirty);
+        services.trust().listen(trustStore::markDirty);
         registerMigrationStores(services, persistence);
         services.persistence(persistence, groupStore, trustStore);
         persistence.load();
@@ -153,9 +153,9 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         MigrationStateStore stateStore = persistence.register(new MigrationStateStore(persistence, state));
         V2PendingLocationStore pendingStore = persistence.register(
                 new V2PendingLocationStore(persistence, services.groups(), services.get(V2PendingLocations.class)));
-        services.get(V2PendingLocations.class).onChange(pendingStore::markDirty);
-        cleanup.onChange(cleanupStore::markDirty);
-        state.onChange(stateStore::markDirty);
+        services.get(V2PendingLocations.class).listen(pendingStore::markDirty);
+        cleanup.listen(cleanupStore::markDirty);
+        state.listen(stateStore::markDirty);
     }
 
     /** Builds the v2 migration and runs the one-time import if a v2 install left its data behind. */
