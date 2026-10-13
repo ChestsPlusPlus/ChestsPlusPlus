@@ -73,5 +73,11 @@
       groupName: 'E2E npm packages',
       minimumReleaseAge: '3 days',
     },
+    {
+      description: 'Lockfile maintenance has no release date, so the age check would stay pending. npm still runs with --before, so it only picks versions 3 days old.',
+      matchManagers: ['npm'],
+      matchUpdateTypes: ['lockFileMaintenance'],
+      minimumReleaseAgeBehaviour: 'timestamp-optional',
+    },
   ],
 }
