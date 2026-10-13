@@ -146,8 +146,8 @@ public final class LinkService {
 
     /** Why {@code player} may not link {@code block}, or null if they may. The protection check runs last as it fires an event. */
     private @Nullable Refusal linkRefusal(Player player, GroupType type, Block block, BlockFace facing, boolean protectionChecked) {
-        Message refusal = linkingRefusal(player, type, block.getWorld());
-        if (refusal != null) return new Refusal(refusal);
+        Refusal refusal = linkingRefusal(player, type, block.getWorld());
+        if (refusal != null) return refusal;
         if (!handlers.of(type).isValidBlock(block)) return new Refusal(Message.ERROR_INVALID_BLOCK, Messages.text("type", type.displayName()));
         Node existing = services.nodes().at(block);
         if (existing != null) {
@@ -160,11 +160,8 @@ public final class LinkService {
 
     /** The checks every way of linking shares: feature enabled, create permission, world not blacklisted. */
     @Nullable
-    Message linkingRefusal(Player player, GroupType type, World world) {
-        if (!checks.isFeatureEnabled(type)) return Message.ERROR_FEATURE_DISABLED;
-        if (!player.hasPermission(Permissions.create(type))) return Message.ERROR_NO_PERMISSION;
-        if (services.settings().isBlacklisted(world.getName())) return Message.ERROR_WORLD_BLACKLISTED;
-        return null;
+    Refusal linkingRefusal(Player player, GroupType type, World world) {
+        return Checks.first(checks.enabled(type), checks.permission(player, Permissions.create(type)), checks.allowedWorld(world));
     }
 
     private @Nullable StorageGroup createGroup(Player player, GroupTypeHandler<?> handler, Resolved.Missing missing) {
@@ -337,18 +334,13 @@ public final class LinkService {
         event.setUseItemInHand(Event.Result.DENY);
         if (event.getHand() != EquipmentSlot.HAND) return null;
 
-        Message refusal = openRefusal(player, group, block);
-        if (refusal == null) return node;
-        services.send(player, refusal, Messages.group(group));
-        return null;
+        return checks.refused(player, openRefusal(player, group, block)) ? null : node;
     }
 
-    private @Nullable Message openRefusal(Player player, StorageGroup group, Block block) {
-        if (!checks.isFeatureEnabled(group.type())) return Message.ERROR_FEATURE_DISABLED;
-        if (services.settings().isBlacklisted(block.getWorld().getName())) return Message.ERROR_WORLD_BLACKLISTED;
-        if (!player.hasPermission(Permissions.open(group.type()))) return Message.ERROR_NO_PERMISSION;
-        if (!services.access().canAccess(player.getUniqueId(), player, group)) return Message.ERROR_NO_ACCESS;
-        return null;
+    private @Nullable Refusal openRefusal(Player player, StorageGroup group, Block block) {
+        GroupType type = group.type();
+        return Checks.first(checks.enabled(type), checks.allowedWorld(block.getWorld()), checks.permission(player, Permissions.open(type)),
+                checks.use(player, group));
     }
 
     /**

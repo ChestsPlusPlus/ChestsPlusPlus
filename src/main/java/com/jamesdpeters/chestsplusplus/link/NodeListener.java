@@ -5,6 +5,7 @@ import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.display.DisplayService;
 import com.jamesdpeters.chestsplusplus.message.Message;
 import com.jamesdpeters.chestsplusplus.message.Messages;
+import com.jamesdpeters.chestsplusplus.message.Refusal;
 import com.jamesdpeters.chestsplusplus.model.Node;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import java.util.List;
@@ -58,9 +59,7 @@ public final class NodeListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     void onBreakWhileDisabled(BlockBreakEvent event) {
         StorageGroup group = services.groupAt(event.getBlock());
-        if (group == null || checks.isFeatureEnabled(group.type())) return;
-        event.setCancelled(true);
-        services.send(event.getPlayer(), Message.ERROR_FEATURE_DISABLED);
+        if (group != null && checks.refused(event.getPlayer(), checks.enabled(group.type()))) event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -92,10 +91,7 @@ public final class NodeListener implements Listener {
         StorageGroup group = linkedGroup(event.getItemInHand());
         if (group == null) return;
         Player player = event.getPlayer();
-        Message refusal = relinkRefusal(player, group, event.getBlockPlaced());
-        if (refusal == null) return;
-        services.send(player, refusal, Messages.group(group));
-        event.setCancelled(true);
+        if (checks.refused(player, relinkRefusal(player, group, event.getBlockPlaced()))) event.setCancelled(true);
     }
 
     /**
@@ -130,11 +126,8 @@ public final class NodeListener implements Listener {
         return true;
     }
 
-    private @Nullable Message relinkRefusal(Player player, StorageGroup group, Block block) {
-        Message refusal = links.linkingRefusal(player, group.type(), block.getWorld());
-        if (refusal != null) return refusal;
-        if (!services.access().canAccess(player.getUniqueId(), player, group)) return Message.ERROR_NO_ACCESS;
-        return null;
+    private @Nullable Refusal relinkRefusal(Player player, StorageGroup group, Block block) {
+        return Checks.first(links.linkingRefusal(player, group.type(), block.getWorld()), checks.use(player, group));
     }
 
     /** A chest placed next to a linked chest must not merge with it. */

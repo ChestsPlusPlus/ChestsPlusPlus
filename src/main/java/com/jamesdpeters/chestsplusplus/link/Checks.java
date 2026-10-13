@@ -46,12 +46,16 @@ public final class Checks {
 
     /** Sends the first refusal in {@code checks}, if any, and returns whether it did. */
     public boolean refused(Audience audience, @Nullable Refusal... checks) {
+        Refusal refusal = first(checks);
+        if (refusal != null) services.send(audience, refusal);
+        return refusal != null;
+    }
+
+    /** The first refusal in {@code checks}, or null if they all pass. */
+    public static @Nullable Refusal first(@Nullable Refusal... checks) {
         for (Refusal refusal : checks) {
-            if (refusal != null) {
-                services.send(audience, refusal);
-                return true;
-            }
+            if (refusal != null) return refusal;
         }
-        return false;
+        return null;
     }
 }
