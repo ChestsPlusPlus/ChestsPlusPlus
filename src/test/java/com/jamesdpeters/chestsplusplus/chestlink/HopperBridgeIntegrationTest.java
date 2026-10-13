@@ -48,7 +48,7 @@ class HopperBridgeIntegrationTest extends PluginTestBase {
 
     private ChestLinkGroup link(Block block, String name) {
         WallSigns.write(alice, block, "[ChestLink]", name);
-        return (ChestLinkGroup) plugin.services().groups().find(GroupType.CHESTLINK, alice.getUniqueId(), name);
+        return (ChestLinkGroup) services().groups().find(GroupType.CHESTLINK, alice.getUniqueId(), name);
     }
 
     /** MockBukkit reports every block inventory's location as 0,5,0, so the linked chest has to sit there. */
@@ -162,7 +162,7 @@ class HopperBridgeIntegrationTest extends PluginTestBase {
 
         assertThat(group.inventory().contains(Material.OAK_PLANKS, 4)).isTrue();
         assertThat(inventoryOf(chest).isEmpty()).isTrue();
-        assertThat(plugin.services().groupStore().isDirty(group)).isTrue();
+        assertThat(storage().groupStore().isDirty(group)).isTrue();
     }
 
     @Test
@@ -209,7 +209,7 @@ class HopperBridgeIntegrationTest extends PluginTestBase {
 
     @Test
     void idleHopperDoesNotSaveTheGroupButATransferWithoutAMoveEventDoes() throws InterruptedException {
-        Persistence persistence = plugin.services().persistence();
+        Persistence persistence = storage().persistence();
         Block hopper = world.getBlockAt(0, 4, 0);
         hopper.setType(Material.HOPPER);
         persistence.flush();

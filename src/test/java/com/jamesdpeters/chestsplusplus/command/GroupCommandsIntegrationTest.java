@@ -57,10 +57,10 @@ class GroupCommandsIntegrationTest extends PluginTestBase {
     private ChestLinkGroup create(PlayerMock owner, String name, int x) {
         Block block = world.getBlockAt(x, 64, 0);
         block.setType(Material.CHEST);
-        LinkService links = plugin.services().get(LinkService.class);
+        LinkService links = links();
         links.link(owner, GroupType.CHESTLINK, name, block, BlockFace.NORTH, true);
         drain(owner);
-        return (ChestLinkGroup) plugin.services().groups().find(GroupType.CHESTLINK, owner.getUniqueId(), name);
+        return (ChestLinkGroup) services().groups().find(GroupType.CHESTLINK, owner.getUniqueId(), name);
     }
 
     private static List<String> drain(PlayerMock player) {
@@ -79,7 +79,7 @@ class GroupCommandsIntegrationTest extends PluginTestBase {
     void listShowsOwnAndTrustedGroupsWithReferences() {
         create(alice, "ores", 0);
         create(bob, "wood", 2);
-        plugin.services().trust().trust(bob.getUniqueId(), alice.getUniqueId());
+        services().trust().trust(bob.getUniqueId(), alice.getUniqueId());
 
         List<String> lines = run(alice, "cl list");
 
@@ -91,7 +91,7 @@ class GroupCommandsIntegrationTest extends PluginTestBase {
         ChestLinkGroup group = create(alice, "ores", 0);
 
         assertThat(run(bob, "cl rename Alice:ores mine")).anyMatch(l -> l.contains("don't have access"));
-        plugin.services().groups().setPublic(group, true);
+        services().groups().setPublic(group, true);
         assertThat(run(bob, "cl rename Alice:ores mine")).anyMatch(l -> l.contains("Only the owner"));
 
         run(alice, "cl rename ores metals");
@@ -101,13 +101,13 @@ class GroupCommandsIntegrationTest extends PluginTestBase {
         assertThat(group.isPublic()).isFalse();
         run(alice, "cl sort metals amount_desc");
         assertThat(group.sortMode()).isEqualTo(SortMode.AMOUNT_DESC);
-        assertThat(plugin.services().groupStore().isDirty(group)).isTrue();
+        assertThat(storage().groupStore().isDirty(group)).isTrue();
     }
 
     @Test
     void quotedNamesCanHaveSpaces() {
         ChestLinkGroup group = create(alice, "ores", 0);
-        plugin.services().groups().setPublic(group, true);
+        services().groups().setPublic(group, true);
 
         run(alice, "cl rename ores \"Iron Ore\"");
         assertThat(group.name()).isEqualTo("Iron Ore");
@@ -123,10 +123,10 @@ class GroupCommandsIntegrationTest extends PluginTestBase {
                 StorageGroup group;
                 if (type == GroupType.CHESTLINK) group = create(owner, "Iron Ore", owner == alice ? 0 : 2);
                 else {
-                    group = new AutoCraftGroup(plugin.services().groups().nextId(), owner.getUniqueId(), "Iron Ore", 0);
-                    plugin.services().groups().add(group);
+                    group = new AutoCraftGroup(services().groups().nextId(), owner.getUniqueId(), "Iron Ore", 0);
+                    services().groups().add(group);
                 }
-                plugin.services().groups().setPublic(group, true);
+                services().groups().setPublic(group, true);
             }
             server.dispatchCommand(alice, type == GroupType.CHESTLINK ? "cl list" : "ac list");
             List<String> commands = new ArrayList<>();
@@ -134,7 +134,7 @@ class GroupCommandsIntegrationTest extends PluginTestBase {
             while ((message = alice.nextComponentMessage()) != null) collectCommands(message, commands);
             assertThat(commands).hasSize(2);
             for (String command : commands) {
-                StorageGroup expected = plugin.services().groups().find(type,
+                StorageGroup expected = services().groups().find(type,
                         command.contains("Bob:") ? bob.getUniqueId() : alice.getUniqueId(), "Iron Ore");
                 assertThat(command).contains("\"");
                 assertThat(server.dispatchCommand(alice, command.substring(1))).isTrue();
@@ -163,12 +163,12 @@ class GroupCommandsIntegrationTest extends PluginTestBase {
         assertThat(group.members()).isEmpty();
 
         run(alice, "cpp trust add Bob");
-        assertThat(plugin.services().trust().isTrusted(alice.getUniqueId(), bob.getUniqueId())).isTrue();
+        assertThat(services().trust().isTrusted(alice.getUniqueId(), bob.getUniqueId())).isTrue();
         assertThat(run(alice, "cpp trust list")).anyMatch(l -> l.contains("Bob"));
         run(bob, "cl open Alice:ores");
         assertThat(bob.getOpenInventory().getTopInventory()).isSameAs(group.inventory());
         run(alice, "cpp trust remove Bob");
-        assertThat(plugin.services().trust().isTrusted(alice.getUniqueId(), bob.getUniqueId())).isFalse();
+        assertThat(services().trust().isTrusted(alice.getUniqueId(), bob.getUniqueId())).isFalse();
         assertThat(run(alice, "cpp trust add Alice")).anyMatch(l -> l.contains("yourself"));
     }
 
@@ -189,7 +189,7 @@ class GroupCommandsIntegrationTest extends PluginTestBase {
     @Test
     void refusedMemberChangesSkipTheFollowUp() {
         ChestLinkGroup group = create(alice, "ores", 0);
-        GroupActions actions = plugin.services().get(GroupActions.class);
+        GroupActions actions = features().actions();
         List<String> followUps = new ArrayList<>();
 
         actions.removeMember(alice, group, "Bob", () -> followUps.add("remove"));
@@ -227,7 +227,7 @@ class GroupCommandsIntegrationTest extends PluginTestBase {
         finishLookup("Carol", carol);
 
         assertThat(group.members()).isEmpty();
-        assertThat(plugin.services().groups().memberOf(carol)).isEmpty();
+        assertThat(services().groups().memberOf(carol)).isEmpty();
         assertThat(drain(alice)).anyMatch(l -> l.contains("No group named ores")).noneMatch(l -> l.contains("Added"));
     }
 
@@ -235,7 +235,7 @@ class GroupCommandsIntegrationTest extends PluginTestBase {
     void memberRemoveFinishingAfterGroupRemovalChangesNothing() {
         ChestLinkGroup group = create(alice, "ores", 0);
         UUID carol = UUID.randomUUID();
-        plugin.services().get(LinkService.class).addMember(group, carol);
+        links().addMember(group, carol);
 
         run(alice, "cl members remove ores Carol");
         run(alice, "cl remove ores");
@@ -252,8 +252,8 @@ class GroupCommandsIntegrationTest extends PluginTestBase {
 
         run(alice, "cl remove ores");
 
-        assertThat(plugin.services().groups().byId(group.id())).isNull();
-        assertThat(plugin.services().nodes().get(BlockPos.of(world.getBlockAt(0, 64, 0)))).isNull();
+        assertThat(services().groups().byId(group.id())).isNull();
+        assertThat(services().nodes().get(BlockPos.of(world.getBlockAt(0, 64, 0)))).isNull();
         assertThat(world.getEntitiesByClass(Item.class)).anyMatch(i -> i.getItemStack().getType() == Material.COAL);
     }
 
@@ -269,7 +269,7 @@ class GroupCommandsIntegrationTest extends PluginTestBase {
     @Test
     void gridOpensGroupOnLeftClickAndReturnsAfterwards() {
         ChestLinkGroup group = create(alice, "ores", 0);
-        UiService ui = plugin.services().get(UiService.class);
+        UiService ui = features().ui();
 
         PaginatedMenu menu = ui.openGrid(alice, GroupType.CHESTLINK);
         assertThat(alice.getOpenInventory().getTopInventory()).isSameAs(menu.getInventory());
@@ -286,7 +286,7 @@ class GroupCommandsIntegrationTest extends PluginTestBase {
     void hubSearchFiltersByNameAndOwner() {
         create(alice, "ores", 0);
         create(alice, "wood", 2);
-        UiService ui = plugin.services().get(UiService.class);
+        UiService ui = features().ui();
 
         assertThat(ui.hubGroups(alice, GroupType.CHESTLINK, "OR").groups()).extracting(g -> g.name()).containsExactly("ores");
         assertThat(ui.hubGroups(alice, GroupType.CHESTLINK, "alice").groups()).hasSize(2);

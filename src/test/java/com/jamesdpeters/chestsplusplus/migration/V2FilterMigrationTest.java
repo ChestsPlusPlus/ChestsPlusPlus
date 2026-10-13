@@ -68,7 +68,7 @@ class V2FilterMigrationTest extends PluginTestBase {
     void framesConvertOnlyOnceTheAdminHasChosenTo() {
         List<ItemFrame> frames = List.of(frame(BlockFace.NORTH, Material.COAL, Rotation.NONE),
                 frame(BlockFace.EAST, Material.DIRT, Rotation.CLOCKWISE));
-        MigrationState state = plugin.services().get(MigrationState.class);
+        MigrationState state = migration().models().state();
         state.setFilters(MigrationState.Filters.PENDING);
 
         entitiesLoad(frames);
@@ -77,7 +77,7 @@ class V2FilterMigrationTest extends PluginTestBase {
         state.setFilters(MigrationState.Filters.ON_LOAD);
         entitiesLoad(frames);
 
-        assertThat(plugin.services().get(FilterService.class).read(hopper)).containsExactly(
+        assertThat(features().filters().read(hopper)).containsExactly(
                 new HopperFilter(ItemStack.of(Material.COAL), Mode.ALLOW, Match.EXACT),
                 new HopperFilter(ItemStack.of(Material.DIRT), Mode.DENY, Match.EXACT));
         assertThat(frames).allMatch(ItemFrame::isDead);
@@ -87,27 +87,27 @@ class V2FilterMigrationTest extends PluginTestBase {
 
     @Test
     void aChunkIsScannedOnlyOnce() {
-        plugin.services().get(MigrationState.class).setFilters(MigrationState.Filters.ON_LOAD);
+        migration().models().state().setFilters(MigrationState.Filters.ON_LOAD);
         entitiesLoad(List.of(frame(BlockFace.NORTH, Material.COAL, Rotation.NONE)));
 
         ItemFrame later = frame(BlockFace.SOUTH, Material.DIRT, Rotation.NONE);
         entitiesLoad(List.of(later));
 
         assertThat(later.isDead()).isFalse();
-        assertThat(plugin.services().get(FilterService.class).read(hopper)).hasSize(1);
+        assertThat(features().filters().read(hopper)).hasSize(1);
     }
 
     @Test
     void aFailedHopperKeepsItsFramesForARetry() {
         Block second = world.getBlockAt(5, 64, 1);
         second.setType(Material.HOPPER);
-        FilterService real = plugin.services().get(FilterService.class);
+        FilterService real = features().filters();
         AtomicBoolean failing = new AtomicBoolean(true);
         FilterService filters = new FilterService(plugin, new FilterCodec(plugin), real.grouping(), () -> {
             if (failing.get() && !real.read(second).isEmpty()) throw new IllegalStateException("injected after the second hopper's write");
-            return plugin.services().settings();
+            return services().settings();
         });
-        V2FilterMigration migration = new V2FilterMigration(plugin.services().get(MigrationState.class), filters, new NamespacedKey(plugin, "test"));
+        V2FilterMigration migration = new V2FilterMigration(migration().models().state(), filters, new NamespacedKey(plugin, "test"));
         ItemFrame first = frame(BlockFace.NORTH, Material.COAL, Rotation.NONE);
         ItemFrame pending = frame(second, BlockFace.NORTH, Material.DIRT, Rotation.CLOCKWISE);
 

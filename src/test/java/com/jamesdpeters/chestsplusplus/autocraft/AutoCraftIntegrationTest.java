@@ -4,14 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.jamesdpeters.chestsplusplus.core.BlockPos;
 import com.jamesdpeters.chestsplusplus.core.Holders;
-import com.jamesdpeters.chestsplusplus.display.DisplayService;
-import com.jamesdpeters.chestsplusplus.filter.FilterService;
 import com.jamesdpeters.chestsplusplus.filter.HopperFilter;
 import com.jamesdpeters.chestsplusplus.filter.HopperFilter.Match;
 import com.jamesdpeters.chestsplusplus.filter.HopperFilter.Mode;
-import com.jamesdpeters.chestsplusplus.link.Checks;
-import com.jamesdpeters.chestsplusplus.link.GroupActions;
-import com.jamesdpeters.chestsplusplus.link.Handlers;
 import com.jamesdpeters.chestsplusplus.link.LinkItem;
 import com.jamesdpeters.chestsplusplus.link.LinkService;
 import com.jamesdpeters.chestsplusplus.link.SyntheticMoveEvent;
@@ -138,7 +133,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
     }
 
     private AutoCraftService autoCraft(CraftingBackend backend) {
-        return new AutoCraftService(plugin.services(), plugin.services().get(DisplayService.class), plugin.services().get(Checks.class), backend);
+        return new AutoCraftService(services(), features().displays(), features().checks(), backend);
     }
 
     private static ItemStack namedCoal() {
@@ -148,7 +143,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
     }
 
     private RecipeEditorHolder editor(AutoCraftGroup group) {
-        return new RecipeEditorHolder(group, Component.text(group.name()), autoCraft, plugin.services().messages());
+        return new RecipeEditorHolder(group, Component.text(group.name()), autoCraft, services().messages());
     }
 
     private static @Nullable ItemStack[] torchMatrix() {
@@ -169,9 +164,9 @@ class AutoCraftIntegrationTest extends PluginTestBase {
     private Block linkedCrafter(AutoCraftGroup[] out) {
         Block table = world.getBlockAt(0, 64, 0);
         table.setType(Material.CRAFTING_TABLE);
-        LinkService links = plugin.services().get(LinkService.class);
+        LinkService links = links();
         links.link(alice, GroupType.AUTOCRAFT, "torches", table, BlockFace.NORTH, true);
-        out[0] = (AutoCraftGroup) plugin.services().groups().find(GroupType.AUTOCRAFT, alice.getUniqueId(), "torches");
+        out[0] = (AutoCraftGroup) services().groups().find(GroupType.AUTOCRAFT, alice.getUniqueId(), "torches");
         return table;
     }
 
@@ -184,7 +179,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
     }
 
     private void serverFinishesLoading(AutoCraftService service) {
-        server.getPluginManager().registerEvents(new AutoCraftListener(plugin.services(), plugin.services().get(LinkService.class), service), plugin);
+        server.getPluginManager().registerEvents(new AutoCraftListener(services(), links(), service), plugin);
         server.getPluginManager().callEvent(new ServerLoadEvent(ServerLoadEvent.LoadType.STARTUP));
     }
 
@@ -204,8 +199,8 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         server.getPluginManager()
                 .callEvent(new PlayerInteractEvent(alice, Action.RIGHT_CLICK_BLOCK, tag, table, BlockFace.NORTH, EquipmentSlot.HAND));
 
-        assertThat(plugin.services().groups().find(GroupType.AUTOCRAFT, alice.getUniqueId(), "torches")).isNotNull();
-        assertThat(plugin.services().nodes().get(BlockPos.of(table))).isNotNull();
+        assertThat(services().groups().find(GroupType.AUTOCRAFT, alice.getUniqueId(), "torches")).isNotNull();
+        assertThat(services().nodes().get(BlockPos.of(table))).isNotNull();
         assertThat(tag.isEmpty()).isTrue();
     }
 
@@ -258,7 +253,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         input.addItem(ItemStack.of(Material.COAL, 2), ItemStack.of(Material.STICK, 2));
         Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
 
-        Node node = plugin.services().nodes().get(BlockPos.of(table));
+        Node node = services().nodes().get(BlockPos.of(table));
         assertThat(autoCraft.craftAt(group[0], node)).isTrue();
         assertThat(autoCraft.craftAt(group[0], node)).isTrue();
         assertThat(autoCraft.craftAt(group[0], node)).isFalse();
@@ -278,7 +273,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         Hopper data = (Hopper) below.getBlockData();
         data.setEnabled(false);
         below.setBlockData(data);
-        Node node = plugin.services().nodes().get(BlockPos.of(table));
+        Node node = services().nodes().get(BlockPos.of(table));
 
         assertThat(autoCraft.craftAt(group[0], node)).isFalse();
         // The "container below crafts only while powered" rule needs redstone, which MockBukkit doesn't implement;
@@ -291,15 +286,15 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         Block table = crafter(group);
         Block side = table.getRelative(BlockFace.EAST);
         side.setType(Material.CHEST);
-        plugin.services().get(LinkService.class).link(alice, GroupType.CHESTLINK, "mats", side, BlockFace.EAST, true);
-        ChestLinkGroup mats = (ChestLinkGroup) plugin.services().groups().find(GroupType.CHESTLINK, alice.getUniqueId(), "mats");
+        links().link(alice, GroupType.CHESTLINK, "mats", side, BlockFace.EAST, true);
+        ChestLinkGroup mats = (ChestLinkGroup) services().groups().find(GroupType.CHESTLINK, alice.getUniqueId(), "mats");
         mats.inventory().addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
         Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
 
-        assertThat(autoCraft.craftAt(group[0], plugin.services().nodes().get(BlockPos.of(table)))).isTrue();
+        assertThat(autoCraft.craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isTrue();
         assertThat(output.contains(Material.TORCH, 4)).isTrue();
         assertThat(mats.inventory().isEmpty()).isTrue();
-        assertThat(plugin.services().groupStore().isDirty(mats)).isTrue();
+        assertThat(storage().groupStore().isDirty(mats)).isTrue();
     }
 
     @Test
@@ -308,14 +303,14 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         Block table = crafter(group);
         Block side = table.getRelative(BlockFace.EAST);
         side.setType(Material.CHEST);
-        plugin.services().get(LinkService.class).link(alice, GroupType.CHESTLINK, "mats", side, BlockFace.EAST, true);
-        ChestLinkGroup mats = (ChestLinkGroup) plugin.services().groups().find(GroupType.CHESTLINK, alice.getUniqueId(), "mats");
+        links().link(alice, GroupType.CHESTLINK, "mats", side, BlockFace.EAST, true);
+        ChestLinkGroup mats = (ChestLinkGroup) services().groups().find(GroupType.CHESTLINK, alice.getUniqueId(), "mats");
         mats.inventory().addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
         Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
 
         reconfigure("features.chestlinks", false);
 
-        assertThat(autoCraft.craftAt(group[0], plugin.services().nodes().get(BlockPos.of(table)))).isFalse();
+        assertThat(autoCraft.craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isFalse();
         assertThat(output.isEmpty()).isTrue();
         assertThat(mats.inventory().contains(Material.COAL)).isTrue();
     }
@@ -332,11 +327,11 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         PlayerInteractEvent click = new PlayerInteractEvent(alice, Action.RIGHT_CLICK_BLOCK, null, table, BlockFace.NORTH, EquipmentSlot.HAND);
         server.getPluginManager().callEvent(click);
         assertThat(click.useInteractedBlock()).isEqualTo(Event.Result.DENY);
-        assertThat(plugin.services().get(GroupActions.class).openRemote(alice, group[0])).isFalse();
+        assertThat(features().actions().openRemote(alice, group[0])).isFalse();
         assertThat(editorOpen()).isFalse();
 
         reconfigure("features.autocraft", true);
-        assertThat(plugin.services().get(GroupActions.class).openRemote(alice, group[0])).isTrue();
+        assertThat(features().actions().openRemote(alice, group[0])).isTrue();
         assertThat(editorOpen()).isTrue();
         assertThat(group[0].result()).isEqualTo(ItemStack.of(Material.TORCH, 4));
     }
@@ -376,7 +371,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
 
     @Test
     void placingALinkItemCraftsOnTheNextTick() {
-        plugin.services().get(Handlers.class).register(autoCraft);
+        features().handlers().register(autoCraft);
         AutoCraftGroup[] group = new AutoCraftGroup[1];
         Block original = crafter(group);
         ItemStack pickaxe = ItemStack.of(Material.DIAMOND_PICKAXE);
@@ -386,7 +381,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         server.getPluginManager().callEvent(breakEvent);
         assertThat(breakEvent.isDropItems()).isFalse();
         ItemStack linkItem = world.getEntitiesByClass(Item.class).iterator().next().getItemStack();
-        assertThat(plugin.services().get(LinkItem.class).read(linkItem)).isEqualTo(new LinkItem.Link(group[0].id(), GroupType.AUTOCRAFT));
+        assertThat(features().linkItem().read(linkItem)).isEqualTo(new LinkItem.Link(group[0].id(), GroupType.AUTOCRAFT));
         ticks(1);
 
         Block placed = world.getBlockAt(9, 64, 9);
@@ -397,7 +392,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
                 EquipmentSlot.HAND);
         server.getPluginManager().callEvent(event);
         assertThat(event.isCancelled()).isFalse();
-        assertThat(plugin.services().nodes().at(placed).groupId()).isEqualTo(group[0].id());
+        assertThat(services().nodes().at(placed).groupId()).isEqualTo(group[0].id());
         assertThat(output.isEmpty()).isTrue();
 
         ticks(1);
@@ -433,7 +428,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
 
         InventoryView view = alice.openInventory(input);
         input.addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
-        AutoCraftListener listener = new AutoCraftListener(plugin.services(), plugin.services().get(LinkService.class), autoCraft);
+        AutoCraftListener listener = new AutoCraftListener(services(), links(), autoCraft);
         listener.onClick(new InventoryClickEvent(view, InventoryType.SlotType.CONTAINER, 0, ClickType.LEFT, InventoryAction.PLACE_ALL));
         ticks(1);
         assertThat(output.contains(Material.TORCH, 4)).isTrue();
@@ -459,8 +454,8 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         Block table = crafter(group);
         Block side = table.getRelative(BlockFace.EAST);
         side.setType(Material.CHEST);
-        plugin.services().get(LinkService.class).link(alice, GroupType.CHESTLINK, "mats", side, BlockFace.EAST, true);
-        ChestLinkGroup mats = (ChestLinkGroup) plugin.services().groups().find(GroupType.CHESTLINK, alice.getUniqueId(), "mats");
+        links().link(alice, GroupType.CHESTLINK, "mats", side, BlockFace.EAST, true);
+        ChestLinkGroup mats = (ChestLinkGroup) services().groups().find(GroupType.CHESTLINK, alice.getUniqueId(), "mats");
         Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
         ticks(1);
 
@@ -477,7 +472,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         Block shared = first.getRelative(BlockFace.UP);
         Block second = shared.getRelative(BlockFace.UP);
         second.setType(Material.CRAFTING_TABLE);
-        plugin.services().get(LinkService.class).link(alice, GroupType.AUTOCRAFT, "torches", second, BlockFace.NORTH, true);
+        links().link(alice, GroupType.AUTOCRAFT, "torches", second, BlockFace.NORTH, true);
         autoCraft.setMatrix(group[0], torchMatrix(), null);
         Inventory between = container(shared, Material.HOPPER);
         between.setContents(new ItemStack[]{ItemStack.of(Material.COAL), ItemStack.of(Material.STICK), ItemStack.of(Material.DIRT, 64),
@@ -534,7 +529,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         Block first = crafter(group);
         Block second = world.getBlockAt(4, 64, 0);
         second.setType(Material.CRAFTING_TABLE);
-        plugin.services().get(LinkService.class).link(alice, GroupType.AUTOCRAFT, "torches", second, BlockFace.NORTH, true);
+        links().link(alice, GroupType.AUTOCRAFT, "torches", second, BlockFace.NORTH, true);
         List<Inventory> outputs = new ArrayList<>();
         for (Block table : List.of(first, second)) {
             container(table.getRelative(BlockFace.UP), Material.CHEST).addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
@@ -669,7 +664,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
         Lock lock = lock(locked);
 
-        assertThat(autoCraft.craftAt(group[0], plugin.services().nodes().get(BlockPos.of(table)))).isFalse();
+        assertThat(autoCraft.craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isFalse();
         assertThat(locked.contains(Material.COAL, 1)).isTrue();
         assertThat(locked.contains(Material.STICK, 1)).isTrue();
         assertThat(output.isEmpty()).isTrue();
@@ -690,7 +685,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
         Lock lock = lock(locked);
 
-        assertThat(autoCraft.craftAt(group[0], plugin.services().nodes().get(BlockPos.of(table)))).isTrue();
+        assertThat(autoCraft.craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isTrue();
         assertThat(output.contains(Material.TORCH, 4)).isTrue();
         assertThat(allowed.isEmpty()).isTrue();
         assertThat(locked.contains(Material.COAL, 1)).isTrue();
@@ -707,7 +702,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         Inventory locked = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
         lock(locked);
 
-        assertThat(autoCraft.craftAt(group[0], plugin.services().nodes().get(BlockPos.of(table)))).isFalse();
+        assertThat(autoCraft.craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isFalse();
         assertThat(locked.isEmpty()).isTrue();
         assertThat(input.contains(Material.COAL, 1)).isTrue();
     }
@@ -724,7 +719,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         filter(below, Mode.ALLOW);
         Lock lock = lock(server.createInventory(null, 9));
 
-        assertThat(autoCraft.craftAt(group[0], plugin.services().nodes().get(BlockPos.of(table)))).isTrue();
+        assertThat(autoCraft.craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isTrue();
         assertThat(lock.seen).singleElement().isInstanceOf(SyntheticMoveEvent.class).satisfies(event -> {
             assertThat(event.isCancelled()).isFalse();
             assertThat(event.getSource()).isEqualTo(input);
@@ -747,7 +742,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         Inventory output = container(below, Material.HOPPER);
         filter(below, Mode.DENY);
 
-        assertThat(autoCraft.craftAt(group[0], plugin.services().nodes().get(BlockPos.of(table)))).isFalse();
+        assertThat(autoCraft.craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isFalse();
         assertThat(output.isEmpty()).isTrue();
         assertThat(input.contains(Material.COAL, 1)).isTrue();
         assertThat(input.contains(Material.STICK, 1)).isTrue();
@@ -764,14 +759,14 @@ class AutoCraftIntegrationTest extends PluginTestBase {
             if (event instanceof InventoryMoveItemEvent move && move.getItem().getType() == Material.TORCH) move.setCancelled(true);
         }, plugin);
 
-        assertThat(autoCraft.craftAt(group[0], plugin.services().nodes().get(BlockPos.of(table)))).isFalse();
+        assertThat(autoCraft.craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isFalse();
         assertThat(output.isEmpty()).isTrue();
         assertThat(input.contains(Material.COAL, 1)).isTrue();
         assertThat(input.contains(Material.STICK, 1)).isTrue();
     }
 
     private void filter(Block hopper, Mode torches) {
-        plugin.services().get(FilterService.class).write(hopper, List.of(new HopperFilter(ItemStack.of(Material.TORCH), torches, Match.TYPE)));
+        features().filters().write(hopper, List.of(new HopperFilter(ItemStack.of(Material.TORCH), torches, Match.TYPE)));
     }
 
     @Test
@@ -780,14 +775,14 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         Block table = crafter(group);
         Block side = table.getRelative(BlockFace.EAST);
         side.setType(Material.CHEST);
-        plugin.services().get(LinkService.class).link(alice, GroupType.CHESTLINK, "mats", side, BlockFace.EAST, true);
-        ChestLinkGroup mats = (ChestLinkGroup) plugin.services().groups().find(GroupType.CHESTLINK, alice.getUniqueId(), "mats");
+        links().link(alice, GroupType.CHESTLINK, "mats", side, BlockFace.EAST, true);
+        ChestLinkGroup mats = (ChestLinkGroup) services().groups().find(GroupType.CHESTLINK, alice.getUniqueId(), "mats");
         mats.inventory().addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
         container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
         Inventory linkedChest = ((Container) side.getState(false)).getInventory();
         Lock lock = lock(linkedChest);
 
-        assertThat(autoCraft.craftAt(group[0], plugin.services().nodes().get(BlockPos.of(table)))).isFalse();
+        assertThat(autoCraft.craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isFalse();
         assertThat(lock.seen).singleElement().satisfies(event -> assertThat(event.getSource()).isEqualTo(linkedChest));
         assertThat(mats.inventory().contains(Material.COAL)).isTrue();
     }
@@ -796,8 +791,8 @@ class AutoCraftIntegrationTest extends PluginTestBase {
     void editorClicksPlaceGhostItemsAndResolveTheRecipe() {
         Block table = world.getBlockAt(0, 64, 0);
         table.setType(Material.CRAFTING_TABLE);
-        plugin.services().get(LinkService.class).link(alice, GroupType.AUTOCRAFT, "t", table, BlockFace.NORTH, true);
-        AutoCraftGroup group = (AutoCraftGroup) plugin.services().groups().find(GroupType.AUTOCRAFT, alice.getUniqueId(), "t");
+        links().link(alice, GroupType.AUTOCRAFT, "t", table, BlockFace.NORTH, true);
+        AutoCraftGroup group = (AutoCraftGroup) services().groups().find(GroupType.AUTOCRAFT, alice.getUniqueId(), "t");
         RecipeEditorHolder editor = editor(group);
 
         ItemStack[] matrix = editor.click(2, ItemStack.of(Material.COAL, 64));
@@ -811,7 +806,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         assertThat(result.getAmount()).isEqualTo(4);
         assertThat(editor.getInventory().getItem(2).getType()).isEqualTo(Material.COAL);
         assertThat(group.recipeKey()).isEqualTo(NamespacedKey.minecraft("torch"));
-        assertThat(plugin.services().groupStore().isDirty(group)).isTrue();
+        assertThat(storage().groupStore().isDirty(group)).isTrue();
         assertThat(editor.click(9, null)).isNull();
     }
 
@@ -822,7 +817,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         Inventory input = container(table.getRelative(BlockFace.UP), Material.CHEST);
         input.addItem(namedCoal(), ItemStack.of(Material.STICK));
         container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
-        Node node = plugin.services().nodes().get(BlockPos.of(table));
+        Node node = services().nodes().get(BlockPos.of(table));
 
         autoCraft.setMatch(group[0], 1, SlotMatch.EXACT);
         assertThat(autoCraft.craftAt(group[0], node)).isFalse();
@@ -832,7 +827,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         input.addItem(namedCoal(), ItemStack.of(Material.STICK));
         autoCraft.setMatch(group[0], 1, SlotMatch.TYPE);
         assertThat(autoCraft.craftAt(group[0], node)).isTrue();
-        assertThat(plugin.services().groupStore().isDirty(group[0])).isTrue();
+        assertThat(storage().groupStore().isDirty(group[0])).isTrue();
     }
 
     @Test
@@ -842,7 +837,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         Block table = crafter(group);
         container(table.getRelative(BlockFace.UP), Material.CHEST).addItem(namedCoal(), ItemStack.of(Material.STICK));
         container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
-        Node node = plugin.services().nodes().get(BlockPos.of(table));
+        Node node = services().nodes().get(BlockPos.of(table));
 
         assertThat(autoCraft.hasRecipeChoice(group[0], 1)).isFalse();
         assertThat(autoCraft.craftAt(group[0], node)).isFalse();

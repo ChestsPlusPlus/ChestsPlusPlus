@@ -1,10 +1,10 @@
 package com.jamesdpeters.chestsplusplus.testharness;
 
 import com.jamesdpeters.chestsplusplus.ChestsPlusPlus;
+import com.jamesdpeters.chestsplusplus.Components;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.display.DisplayService;
 import com.jamesdpeters.chestsplusplus.link.GroupTypeHandler;
-import com.jamesdpeters.chestsplusplus.link.Handlers;
 import com.jamesdpeters.chestsplusplus.link.LinkService;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
@@ -126,11 +126,14 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
         return reply(context, "cpptest chunk " + x + "," + z + " level=" + chunk.getLoadLevel() + " forced=" + chunk.isForceLoaded());
     }
 
+    private Components components() {
+        Components components = JavaPlugin.getPlugin(ChestsPlusPlus.class).components();
+        if (components == null) throw new IllegalStateException("ChestsPlusPlus is not enabled");
+        return components;
+    }
+
     private Services services() {
-        ChestsPlusPlus plugin = JavaPlugin.getPlugin(ChestsPlusPlus.class);
-        Services services = plugin.services();
-        if (services == null) throw new IllegalStateException("ChestsPlusPlus is not enabled");
-        return services;
+        return components().services();
     }
 
     private int pluginState(CommandContext<CommandSourceStack> context) {
@@ -160,13 +163,12 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
             items = totals.toString();
         }
         return reply(context, "cpptest group " + group.name() + " nodes=" + services.nodes().count(group.id()) + " public=" + group.isPublic()
-                + " dirty=" + services.groupStore().isDirty(group) + " items=" + items);
+                + " dirty=" + components().storage().groupStore().isDirty(group) + " items=" + items);
     }
 
     /** {@code cpptest displays} → counts of our display entities (by PDC marker) vs tracked displays. */
     private int displays(CommandContext<CommandSourceStack> context) {
-        Services services = services();
-        DisplayService displays = services.get(DisplayService.class);
+        DisplayService displays = components().features().displays();
         int entities = 0;
         for (World world : Bukkit.getWorlds()) {
             for (Display display : world.getEntitiesByClass(Display.class)) if (displays.isOurs(display)) entities++;
@@ -181,8 +183,8 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
         UUID owner = owner(context);
         String name = StringArgumentType.getString(context, "name");
         Block block = block(context);
-        LinkService links = services.get(LinkService.class);
-        GroupTypeHandler<?> handler = services.get(Handlers.class).of(type);
+        LinkService links = components().features().links();
+        GroupTypeHandler<?> handler = components().features().handlers().of(type);
         if (!handler.isValidBlock(block)) {
             return reply(context, "cpptest link failed: " + block.getType() + " is not valid for " + type);
         }
@@ -212,7 +214,7 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
             org.bukkit.Material material = org.bukkit.Material.matchMaterial(parts[i].trim());
             matrix[i] = material == null ? null : org.bukkit.inventory.ItemStack.of(material);
         }
-        var result = services.get(com.jamesdpeters.chestsplusplus.autocraft.AutoCraftService.class).setMatrix(craft, matrix, null);
+        var result = components().features().autoCraft().setMatrix(craft, matrix, null);
         return reply(context, "cpptest recipe result=" + (result == null ? "none" : result.getType() + "x" + result.getAmount()));
     }
 
@@ -239,7 +241,7 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
             }
             matrix[i] = part.equals("-") ? null : Bukkit.getItemFactory().createItemStack(part);
         }
-        var autoCraft = services.get(com.jamesdpeters.chestsplusplus.autocraft.AutoCraftService.class);
+        var autoCraft = components().features().autoCraft();
         var result = autoCraft.setMatrix(craft, matrix, null);
         for (int i = 0; i < 9; i++) if (matches[i] != null) autoCraft.setMatch(craft, i, matches[i]);
         List<String> effective = new ArrayList<>();
@@ -268,13 +270,12 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
 
     /** Fixture: {@code cpptest filter <x> <y> <z> <allow|deny> <material>} sets one TYPE filter on a hopper. */
     private int filter(CommandContext<CommandSourceStack> context) {
-        Services services = services();
         Block block = block(context);
         org.bukkit.Material material = org.bukkit.Material.matchMaterial(StringArgumentType.getString(context, "material"));
         if (material == null) return reply(context, "cpptest filter failed: unknown material");
         var mode = com.jamesdpeters.chestsplusplus.filter.HopperFilter.Mode
                 .valueOf(StringArgumentType.getString(context, "mode").toUpperCase(Locale.ROOT));
-        var filters = services.get(com.jamesdpeters.chestsplusplus.filter.FilterService.class);
+        var filters = components().features().filters();
         filters.write(block, List.of(new com.jamesdpeters.chestsplusplus.filter.HopperFilter(org.bukkit.inventory.ItemStack.of(material), mode,
                 com.jamesdpeters.chestsplusplus.filter.HopperFilter.Match.TYPE)));
         return reply(context, "cpptest filter ok indexed=" + (filters.get(block) != null));
@@ -325,7 +326,7 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
         lock.clear();
         watch.clear();
         Services services = services();
-        LinkService links = services.get(LinkService.class);
+        LinkService links = components().features().links();
         List<StorageGroup> all = new ArrayList<>(services.groups().all());
         for (StorageGroup group : all) {
             if (group instanceof ChestLinkGroup chest) chest.inventory().clear();

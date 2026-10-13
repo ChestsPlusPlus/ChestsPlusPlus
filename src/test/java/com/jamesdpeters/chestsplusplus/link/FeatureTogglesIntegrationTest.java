@@ -8,7 +8,6 @@ import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.SortMode;
 import com.jamesdpeters.chestsplusplus.testing.PluginTestBase;
 import com.jamesdpeters.chestsplusplus.testing.TileEntityWorld;
-import com.jamesdpeters.chestsplusplus.ui.UiService;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -46,9 +45,9 @@ class FeatureTogglesIntegrationTest extends PluginTestBase {
         alice = server.addPlayer("Alice");
         chest = world.getBlockAt(0, 64, 0);
         chest.setType(Material.CHEST);
-        group = (ChestLinkGroup) plugin.services().get(LinkService.class).link(alice, GroupType.CHESTLINK, "loot", chest, BlockFace.NORTH, true);
+        group = (ChestLinkGroup) links().link(alice, GroupType.CHESTLINK, "loot", chest, BlockFace.NORTH, true);
         group.inventory().addItem(ItemStack.of(Material.DIAMOND, 5));
-        actions = plugin.services().get(GroupActions.class);
+        actions = features().actions();
         lastMessage();
     }
 
@@ -92,7 +91,7 @@ class FeatureTogglesIntegrationTest extends PluginTestBase {
         rightClick(chest);
         assertThat(groupOpen()).isTrue();
         assertThat(group.inventory().contains(Material.DIAMOND, 5)).isTrue();
-        assertThat(plugin.services().nodes().get(BlockPos.of(chest))).isNotNull();
+        assertThat(services().nodes().get(BlockPos.of(chest))).isNotNull();
     }
 
     @Test
@@ -107,11 +106,11 @@ class FeatureTogglesIntegrationTest extends PluginTestBase {
         assertThat(actions.remove(alice, group)).isFalse();
         actions.list(alice, GroupType.CHESTLINK);
         assertThat(lastMessage()).contains(DISABLED);
-        plugin.services().get(UiService.class).openHub(alice, GroupType.CHESTLINK, "", 0);
+        features().ui().openHub(alice, GroupType.CHESTLINK, "", 0);
         assertThat(lastMessage()).contains(DISABLED);
 
         assertThat(groupOpen()).isFalse();
-        assertThat(plugin.services().groups().byId(group.id())).isSameAs(group);
+        assertThat(services().groups().byId(group.id())).isSameAs(group);
         assertThat(group.name()).isEqualTo("loot");
         assertThat(group.isPublic()).isFalse();
         assertThat(group.sortMode()).isEqualTo(SortMode.OFF);
@@ -134,8 +133,8 @@ class FeatureTogglesIntegrationTest extends PluginTestBase {
 
         assertThat(event.isCancelled()).isTrue();
         assertThat(lastMessage()).contains(DISABLED);
-        assertThat(plugin.services().groups().byId(group.id())).isSameAs(group);
-        assertThat(plugin.services().nodes().get(BlockPos.of(chest))).isNotNull();
+        assertThat(services().groups().byId(group.id())).isSameAs(group);
+        assertThat(services().nodes().get(BlockPos.of(chest))).isNotNull();
         assertThat(group.inventory().contains(Material.DIAMOND, 5)).isTrue();
         assertThat(world.getEntitiesByClass(Item.class)).isEmpty();
         assertThat(((Container) chest.getState(false)).getInventory().isEmpty()).isTrue();

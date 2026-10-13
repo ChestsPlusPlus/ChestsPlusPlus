@@ -40,7 +40,7 @@ class GolemBridgeIntegrationTest extends PluginTestBase {
 
     private ChestLinkGroup link(Block block, String name) {
         WallSigns.write(alice, block, "[ChestLink]", name);
-        return (ChestLinkGroup) plugin.services().groups().find(GroupType.CHESTLINK, alice.getUniqueId(), name);
+        return (ChestLinkGroup) services().groups().find(GroupType.CHESTLINK, alice.getUniqueId(), name);
     }
 
     private Block place(Material type, int x) {
