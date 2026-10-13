@@ -37,6 +37,7 @@ public final class GroupActions {
     private final Services services;
     private final LinkService links;
     private final Handlers handlers;
+    private final Checks checks;
     /** {@code ChestLinkService::setSortMode}, passed in because link can't depend on chestlink. */
     private final BiConsumer<ChestLinkGroup, SortMode> setSortMode;
 
@@ -181,9 +182,8 @@ public final class GroupActions {
         }
     }
 
-    /** Disabled features keep their groups, but players can't use or change them until the feature is turned back on. */
     public boolean isEnabled(Player player, GroupType type) {
-        if (links.isFeatureEnabled(type)) return true;
+        if (checks.isFeatureEnabled(type)) return true;
         services.send(player, Message.ERROR_FEATURE_DISABLED);
         return false;
     }

@@ -42,6 +42,7 @@ public final class NodeListener implements Listener {
 
     private final Services services;
     private final LinkService links;
+    private final Checks checks;
     private final Handlers handlers;
     private final DisplayService displays;
     private final LinkItem linkItems;
@@ -57,7 +58,7 @@ public final class NodeListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     void onBreakWhileDisabled(BlockBreakEvent event) {
         StorageGroup group = services.groupAt(event.getBlock());
-        if (group == null || links.isFeatureEnabled(group.type())) return;
+        if (group == null || checks.isFeatureEnabled(group.type())) return;
         event.setCancelled(true);
         services.send(event.getPlayer(), Message.ERROR_FEATURE_DISABLED);
     }

@@ -59,16 +59,12 @@ public final class LinkService {
     private final Services services;
     private final DisplayService displays;
     private final Handlers handlers;
+    private final Checks checks;
     private boolean firingSyntheticInteract;
-
-    public boolean isFeatureEnabled(GroupType type) {
-        var features = services.settings().features();
-        return type.pick(features.chestlinks(), features.autocraft());
-    }
 
     /** Closes what players have open of every group whose feature is now off, so {@code /cpp reload} takes effect at once. */
     public void closeDisabledViews() {
-        Arrays.stream(GroupType.values()).filter(type -> !isFeatureEnabled(type)).map(handlers::of).forEach(GroupTypeHandler::closeAllViews);
+        Arrays.stream(GroupType.values()).filter(type -> !checks.isFeatureEnabled(type)).map(handlers::of).forEach(GroupTypeHandler::closeAllViews);
     }
 
     /** Is the synthetic protection-check interact event being fired right now? Listeners must ignore it. */
@@ -165,7 +161,7 @@ public final class LinkService {
     /** The checks every way of linking shares: feature enabled, create permission, world not blacklisted. */
     @Nullable
     Message linkingRefusal(Player player, GroupType type, World world) {
-        if (!isFeatureEnabled(type)) return Message.ERROR_FEATURE_DISABLED;
+        if (!checks.isFeatureEnabled(type)) return Message.ERROR_FEATURE_DISABLED;
         if (!player.hasPermission(Permissions.create(type))) return Message.ERROR_NO_PERMISSION;
         if (services.settings().isBlacklisted(world.getName())) return Message.ERROR_WORLD_BLACKLISTED;
         return null;
@@ -348,7 +344,7 @@ public final class LinkService {
     }
 
     private @Nullable Message openRefusal(Player player, StorageGroup group, Block block) {
-        if (!isFeatureEnabled(group.type())) return Message.ERROR_FEATURE_DISABLED;
+        if (!checks.isFeatureEnabled(group.type())) return Message.ERROR_FEATURE_DISABLED;
         if (services.settings().isBlacklisted(block.getWorld().getName())) return Message.ERROR_WORLD_BLACKLISTED;
         if (!player.hasPermission(Permissions.open(group.type()))) return Message.ERROR_NO_PERMISSION;
         if (!services.access().canAccess(player.getUniqueId(), player, group)) return Message.ERROR_NO_ACCESS;
