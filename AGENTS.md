@@ -53,7 +53,7 @@ comments, no repeated logic.
   collection queries, early returns.
 - Use imports, not fully qualified names. The one exception is Paper's `io.papermc.paper.command.brigadier.Commands`, which clashes
   with our own `Commands` class.
-- Name string keys that are defined in one place and read in another, like dialog input keys (`UiService.NAME_INPUT`).
+- Name string keys that are defined in one place and read in another, like dialog input keys (`GroupScreen.NAME_INPUT`).
 - Don't take nullable callbacks. Accept a `Runnable` and have callers pass `() -> {}`.
 - When a class starts doing several jobs, move the extra jobs out (as was done with `PlayerNames`, `DoubleChests` and
   `AccessService.accessibleGroups`).
@@ -92,6 +92,10 @@ comments, no repeated logic.
 | A slot holds a real item (not null, air or amount 0) | `Items.present(item)`. NullAway knows the item is non-null where it returned true, so test it in the condition itself rather than saving it to a boolean |
 | Groups a player can use, with owner names and command references | `services.access().accessibleGroups(...)`, then `ownerName(group)` / `reference(group)`, never `PlayerNames.of(group.owner())` per group |
 | Right-click on a linked block | `LinkService.claimNodeClick(event, type)` |
+| Ask protection plugins about a block the player didn't click | `ProtectionCheck.passes(player, block, face)`; interact listeners return early while `isFiringSyntheticInteract()` |
+| Values by block position, per world, with a chunk's values on demand | `BlockMap<V>`: `get(world, packed)` allocates nothing, plus `inChunk` and `removeChunk` |
+| Display entities that are never saved and can be told from other plugins' | `MarkerDisplays.spawn(block, placement, type, viewRange, setup)` and `isOurs(entity)` |
+| A dialog screen | build it from `Dialogs` (single-use buttons and links that run on the main thread, `onGroup`, `show`, `multiAction`, icons); open other screens through `Navigator`, never by holding them |
 | Repeating work | `Tickers.every` / `Tickers.everyInterval`. Never one task per group or node. |
 | Work on the main thread | `services.mainThread().run(task)` (inline when already on it) or `.nextTick(task)` (after the current event). Both drop work once the plugin is disabled |
 | Ghost-item inventories | extend `GhostEditor`; `MenuListener` enforces the no-real-items rules |
@@ -118,4 +122,5 @@ comments, no repeated logic.
   `load` replaces state silently, and `GroupRegistry.add` is silent, as is anything done to a group before it is added.
 - Hot paths run every tick per hopper, so keep them to a few hash lookups with no allocation. These are
   `HopperBridge.onSearch` and `FilterListener.onMove`, plus `GolemBridge.onValidate` and `onValidated` (several times per tick per
-  searching golem) and `GolemBridge.onGameEvent` (every game event, footsteps included).
+  searching golem) and `GolemBridge.onGameEvent` (every game event, footsteps included). Their lookups, `NodeIndex.at` / `get` and
+  `FilterIndex.get`, are each a `BlockMap.get`.

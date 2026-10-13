@@ -214,7 +214,7 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
             org.bukkit.Material material = org.bukkit.Material.matchMaterial(parts[i].trim());
             matrix[i] = material == null ? null : org.bukkit.inventory.ItemStack.of(material);
         }
-        var result = components().features().autoCraft().setMatrix(craft, matrix, null);
+        var result = components().features().autoCraft().recipes().setMatrix(craft, matrix, null);
         return reply(context, "cpptest recipe result=" + (result == null ? "none" : result.getType() + "x" + result.getAmount()));
     }
 
@@ -241,13 +241,13 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
             }
             matrix[i] = part.equals("-") ? null : Bukkit.getItemFactory().createItemStack(part);
         }
-        var autoCraft = components().features().autoCraft();
-        var result = autoCraft.setMatrix(craft, matrix, null);
-        for (int i = 0; i < 9; i++) if (matches[i] != null) autoCraft.setMatch(craft, i, matches[i]);
+        var recipes = components().features().autoCraft().recipes();
+        var result = recipes.setMatrix(craft, matrix, null);
+        for (int i = 0; i < 9; i++) if (matches[i] != null) recipes.setMatch(craft, i, matches[i]);
         List<String> effective = new ArrayList<>();
         SlotMatch[] stored = craft.matches();
         for (int i = 0; i < 9; i++) {
-            if (matrix[i] != null) effective.add(i + "=" + stored[i].effective(autoCraft.hasRecipeChoice(craft, i)));
+            if (matrix[i] != null) effective.add(i + "=" + stored[i].effective(recipes.hasRecipeChoice(craft, i)));
         }
         var recipe = craft.recipeKey() == null ? null : Bukkit.getRecipe(craft.recipeKey());
         return reply(context, "cpptest recipe result=" + (result == null ? "none" : result.getType() + "x" + result.getAmount()) + " key="
@@ -278,7 +278,7 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
         var filters = components().features().filters();
         filters.write(block, List.of(new com.jamesdpeters.chestsplusplus.filter.HopperFilter(org.bukkit.inventory.ItemStack.of(material), mode,
                 com.jamesdpeters.chestsplusplus.filter.HopperFilter.Match.TYPE)));
-        return reply(context, "cpptest filter ok indexed=" + (filters.get(block) != null));
+        return reply(context, "cpptest filter ok indexed=" + (filters.index().get(block) != null));
     }
 
     /** Fixture: {@code cpptest lock <x> <y> <z>} locks a container against hopper moves, like a lock plugin would. */

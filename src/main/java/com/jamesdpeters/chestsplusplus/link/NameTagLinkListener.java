@@ -33,12 +33,13 @@ public final class NameTagLinkListener implements Listener {
 
     private final Services services;
     private final LinkService links;
+    private final ProtectionCheck protection;
     private final Handlers handlers;
     private final Checks checks;
 
     @EventHandler(priority = EventPriority.HIGHEST)
     void onInteract(PlayerInteractEvent event) {
-        if (event.getAction() != Action.RIGHT_CLICK_BLOCK || links.isFiringSyntheticInteract()) return;
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK || protection.isFiringSyntheticInteract()) return;
         Block block = event.getClickedBlock();
         ItemStack item = event.getItem();
         if (block == null || item == null || item.getType() != Material.NAME_TAG) return;

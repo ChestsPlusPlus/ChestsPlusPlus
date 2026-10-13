@@ -1,7 +1,8 @@
 package com.jamesdpeters.chestsplusplus;
 
+import com.jamesdpeters.chestsplusplus.autocraft.AutoCraft;
 import com.jamesdpeters.chestsplusplus.autocraft.AutoCraftListener;
-import com.jamesdpeters.chestsplusplus.autocraft.AutoCraftService;
+import com.jamesdpeters.chestsplusplus.autocraft.Recipes;
 import com.jamesdpeters.chestsplusplus.chestlink.ChestLinkListener;
 import com.jamesdpeters.chestsplusplus.chestlink.ChestLinkService;
 import com.jamesdpeters.chestsplusplus.chestlink.GolemBridge;
@@ -101,11 +102,11 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
 
     private static Consumer<LoadedGroup> attachLoaded(Features features) {
         ChestLinkService chestLinks = features.chestLinks();
-        AutoCraftService autoCraft = features.autoCraft();
+        Recipes recipes = features.autoCraft().recipes();
         return loaded -> {
             switch (loaded.group()) {
                 case ChestLinkGroup chest -> chestLinks.attachLoaded(chest, loaded.items());
-                case AutoCraftGroup craft -> autoCraft.resolveLoaded(craft);
+                case AutoCraftGroup craft -> recipes.resolveLoaded(craft);
             }
         };
     }
@@ -117,17 +118,19 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         Handlers handlers = features.handlers();
         Checks checks = features.checks();
         ChestLinkService chestLinks = features.chestLinks();
+        AutoCraft autoCraft = features.autoCraft();
         List<Listener> listeners = new ArrayList<>(List.of(
                 this,
                 new NodeListener(services, links, checks, handlers, features.displays(), features.linkItem()),
                 new SignLinkListener(services.mainThread(), services::settings, links),
-                new NameTagLinkListener(services, links, handlers, checks),
+                new NameTagLinkListener(services, links, features.protection(), handlers, checks),
                 new ChestLinkListener(services, links, chestLinks),
                 new HopperBridge(services.mainThread(), services, components.storage().groupStore(), chestLinks),
                 new GolemBridge(services, chestLinks),
                 features.menus(),
-                new AutoCraftListener(services, links, features.autoCraft()),
-                new FilterListener(services, features.filters(), links, chestLinks, features.autoCraft()::inventoryChanged)));
+                new AutoCraftListener(services, links, autoCraft.editor(), autoCraft.recipes(), autoCraft.crafter()),
+                new FilterListener(services, features.filters(), features.filters().index(), features.protection(), chestLinks,
+                        autoCraft.crafter()::inventoryChanged)));
         listeners.addAll(components.migration().listeners());
         listeners.forEach(listener -> getServer().getPluginManager().registerEvents(listener, this));
         services.shutdown().add("open inventories", this::closePluginInventories);
@@ -149,7 +152,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         services.shutdown().add("tickers", tickers::stopAll);
         tickers.everyInterval("persistence-flush", () -> services.settings().storage().flushIntervalSeconds() * 20, ticks -> persistence.flush());
         tickers.every("displays", 1, components.features().displays()::tick);
-        tickers.every("autocraft", 1, components.features().autoCraft()::tick);
+        tickers.every("autocraft", 1, components.features().autoCraft().crafter()::tick);
         tickers.every("v2-filter-conversion", 1, components.migration()::tick);
     }
 

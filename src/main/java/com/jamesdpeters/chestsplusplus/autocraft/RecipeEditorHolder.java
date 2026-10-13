@@ -29,14 +29,16 @@ public final class RecipeEditorHolder extends GhostEditor {
     public static final int RESULT_SLOT = 0;
 
     @Getter private final AutoCraftGroup group;
-    private final AutoCraftService autoCraft;
+    private final RecipeEditor editor;
+    private final Recipes recipes;
     private final Messages messages;
     private final Inventory inventory;
 
     @SuppressWarnings("this-escape") // a custom holder must pass itself to createInventory
-    public RecipeEditorHolder(AutoCraftGroup group, Component title, AutoCraftService autoCraft, Messages messages) {
+    public RecipeEditorHolder(AutoCraftGroup group, Component title, RecipeEditor editor, Recipes recipes, Messages messages) {
         this.group = group;
-        this.autoCraft = autoCraft;
+        this.editor = editor;
+        this.recipes = recipes;
         this.messages = messages;
         this.inventory = Bukkit.createInventory(this, InventoryType.WORKBENCH, title);
         render();
@@ -73,12 +75,12 @@ public final class RecipeEditorHolder extends GhostEditor {
 
     @Override
     public void onClick(Player player, int slot, @Nullable ItemStack cursor, ClickType click) {
-        autoCraft.edit(player, this, slot, cursor, click);
+        editor.edit(player, this, slot, cursor, click);
     }
 
     @Override
     public void onDrag(Player player, List<Integer> slots, ItemStack cursor) {
-        autoCraft.drag(player, this, slots, cursor);
+        editor.drag(player, this, slots, cursor);
     }
 
     public void render() {
@@ -86,7 +88,7 @@ public final class RecipeEditorHolder extends GhostEditor {
         SlotMatch[] matches = group.matches();
         for (int i = 0; i < 9; i++) {
             ItemStack ghost = matrix[i];
-            inventory.setItem(i + 1, ghost == null ? null : icon(ghost, matches[i].effective(autoCraft.hasRecipeChoice(group, i))));
+            inventory.setItem(i + 1, ghost == null ? null : icon(ghost, matches[i].effective(recipes.hasRecipeChoice(group, i))));
         }
         ItemStack result = group.result();
         inventory.setItem(RESULT_SLOT, result == null ? null : withLore(result, messages.lines(Message.AUTOCRAFT_EDITOR_RESULT)));
