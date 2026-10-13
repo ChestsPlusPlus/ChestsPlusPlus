@@ -73,23 +73,33 @@ jobs:
         with:
           distribution: temurin
           java-version: 25
-      # As in build. The Paper and Node downloads are left to the next step's cache, so they aren't stored twice.
+      # As in build. The Paper and Node downloads are left to the caches below, so they aren't stored twice.
       - uses: gradle/actions/setup-gradle@v6
         with:
           cache-read-only: ${{ github.event_name == 'pull_request' }}
           gradle-home-cache-excludes: |
             caches/chestsplusplus-e2e
             caches/plugwright
-      - name: Cache Paper, plugins and Node
+      # Keyed on only the catalog lines that pick each download, so a dependency or npm update elsewhere keeps them.
+      - name: Key the E2E caches
+        id: e2e-keys
+        run: |
+          echo "paper=$(grep -E '^(paperServer|viaversion|viabackwards|jdbi|configlib)' gradle/libs.versions.toml | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+          echo "node=$(grep -E '^plugwright ' gradle/libs.versions.toml | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+      - name: Cache Paper and plugins
         uses: actions/cache@v6
         with:
           path: |
             ~/.gradle/caches/chestsplusplus-e2e
-            ~/.gradle/caches/plugwright
             run/e2e/cache
             run/e2e/libraries
             run/e2e/versions
-          key: e2e-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml', 'src/test/e2e/package-lock.json') }}
+          key: e2e-paper-${{ runner.os }}-${{ steps.e2e-keys.outputs.paper }}
+      - name: Cache Node
+        uses: actions/cache@v6
+        with:
+          path: ~/.gradle/caches/plugwright
+          key: e2e-node-${{ runner.os }}-${{ steps.e2e-keys.outputs.node }}
       - name: Run E2E suite
         run: ./gradlew e2e --stacktrace
       - name: Upload Plugwright reports and server log
