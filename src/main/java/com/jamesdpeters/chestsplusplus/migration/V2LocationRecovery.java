@@ -3,7 +3,7 @@ package com.jamesdpeters.chestsplusplus.migration;
 import com.jamesdpeters.chestsplusplus.ChestsPlusPlus;
 import com.jamesdpeters.chestsplusplus.core.BlockPos;
 import com.jamesdpeters.chestsplusplus.display.DisplayService;
-import com.jamesdpeters.chestsplusplus.link.LinkService;
+import com.jamesdpeters.chestsplusplus.link.Handlers;
 import com.jamesdpeters.chestsplusplus.migration.V2PendingLocations.LocationRow;
 import com.jamesdpeters.chestsplusplus.model.GroupRegistry;
 import com.jamesdpeters.chestsplusplus.model.Node;
@@ -35,7 +35,7 @@ public final class V2LocationRecovery implements Listener {
     private final NodeIndex nodes;
     private final GroupStore groupStore;
     private final Persistence persistence;
-    private final LinkService links;
+    private final Handlers handlers;
     private final DisplayService displays;
     private final V2Cleanup cleanup;
     private final V2WorldCleanup worldCleanup;
@@ -82,8 +82,7 @@ public final class V2LocationRecovery implements Listener {
             return;
         }
         Block block = chunk.getBlock(row.x() & 15, row.y(), row.z() & 15);
-        var handler = links.handler(group.type());
-        if (nodes.get(pos) != null || cleanup.wasImported(pos) || handler == null || !handler.isValidBlock(block)) {
+        if (nodes.get(pos) != null || cleanup.wasImported(pos) || !handlers.of(group).isValidBlock(block)) {
             discard(row, "block is stale or already claimed");
             return;
         }

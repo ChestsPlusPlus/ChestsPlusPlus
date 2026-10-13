@@ -36,6 +36,7 @@ public final class GroupActions {
 
     private final Services services;
     private final LinkService links;
+    private final Handlers handlers;
     /** {@code ChestLinkService::setSortMode}, passed in because link can't depend on chestlink. */
     private final BiConsumer<ChestLinkGroup, SortMode> setSortMode;
 
@@ -58,9 +59,7 @@ public final class GroupActions {
         if (!isEnabled(player, group.type()) || !require(player, Permissions.remote(group.type())) || blacklisted(player) || !canUse(player, group)) {
             return false;
         }
-        GroupTypeHandler handler = links.handler(group.type());
-        if (handler == null) return false;
-        handler.openRemote(player, group);
+        handlers.of(group).openRemote(player, group);
         return true;
     }
 
@@ -170,7 +169,7 @@ public final class GroupActions {
             return;
         }
         services.send(player, type.pick(Message.CHESTLINK_LIST_HEADER, Message.AUTOCRAFT_LIST_HEADER));
-        GroupTypeHandler handler = links.handler(type);
+        GroupTypeHandler handler = handlers.of(type);
         for (StorageGroup group : accessible.groups()) {
             String ref = StringArgumentType.escapeIfRequired(accessible.reference(group));
             String command = type.pick("/chestlink open ", "/autocraft open ") + ref;
@@ -178,7 +177,7 @@ public final class GroupActions {
                     Messages.group(group), Messages.text("ref", ref), TagResolver.resolver("open", Tag.styling(ClickEvent.runCommand(command))),
                     Messages.text("owner", accessible.ownerName(group)),
                     Messages.text("nodes", services.nodes().count(group.id())),
-                    Messages.text("items", handler == null ? "" : handler.summary(group)));
+                    Messages.text("items", handler.summary(group)));
         }
     }
 

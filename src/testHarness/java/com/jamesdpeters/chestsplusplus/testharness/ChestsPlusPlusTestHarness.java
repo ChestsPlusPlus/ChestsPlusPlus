@@ -4,6 +4,7 @@ import com.jamesdpeters.chestsplusplus.ChestsPlusPlus;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.display.DisplayService;
 import com.jamesdpeters.chestsplusplus.link.GroupTypeHandler;
+import com.jamesdpeters.chestsplusplus.link.Handlers;
 import com.jamesdpeters.chestsplusplus.link.LinkService;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
@@ -168,8 +169,8 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
         String name = StringArgumentType.getString(context, "name");
         Block block = block(context);
         LinkService links = services.get(LinkService.class);
-        GroupTypeHandler handler = links.handler(type);
-        if (handler == null || !handler.isValidBlock(block)) {
+        GroupTypeHandler handler = services.get(Handlers.class).of(type);
+        if (!handler.isValidBlock(block)) {
             return reply(context, "cpptest link failed: " + block.getType() + " is not valid for " + type);
         }
         StorageGroup group = services.groups().find(type, owner, name);

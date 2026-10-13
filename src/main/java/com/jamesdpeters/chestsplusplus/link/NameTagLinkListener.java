@@ -33,6 +33,7 @@ public final class NameTagLinkListener implements Listener {
 
     private final Services services;
     private final LinkService links;
+    private final Handlers handlers;
 
     @EventHandler(priority = EventPriority.HIGHEST)
     void onInteract(PlayerInteractEvent event) {
@@ -58,8 +59,7 @@ public final class NameTagLinkListener implements Listener {
     /** The group type whose blocks include {@code block}, if its feature is enabled. */
     private @Nullable GroupType typeFor(Block block) {
         for (GroupType type : GroupType.values()) {
-            GroupTypeHandler handler = links.handler(type);
-            if (handler != null && links.isFeatureEnabled(type) && handler.isValidBlock(block)) return type;
+            if (links.isFeatureEnabled(type) && handlers.of(type).isValidBlock(block)) return type;
         }
         return null;
     }

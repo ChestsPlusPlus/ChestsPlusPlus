@@ -10,6 +10,7 @@ import com.jamesdpeters.chestsplusplus.filter.HopperFilter;
 import com.jamesdpeters.chestsplusplus.filter.HopperFilter.Match;
 import com.jamesdpeters.chestsplusplus.filter.HopperFilter.Mode;
 import com.jamesdpeters.chestsplusplus.link.GroupActions;
+import com.jamesdpeters.chestsplusplus.link.Handlers;
 import com.jamesdpeters.chestsplusplus.link.LinkItem;
 import com.jamesdpeters.chestsplusplus.link.LinkService;
 import com.jamesdpeters.chestsplusplus.link.SyntheticMoveEvent;
@@ -374,7 +375,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
 
     @Test
     void placingALinkItemCraftsOnTheNextTick() {
-        plugin.services().get(LinkService.class).register(autoCraft);
+        plugin.services().get(Handlers.class).register(autoCraft);
         AutoCraftGroup[] group = new AutoCraftGroup[1];
         Block original = crafter(group);
         ItemStack pickaxe = ItemStack.of(Material.DIAMOND_PICKAXE);
