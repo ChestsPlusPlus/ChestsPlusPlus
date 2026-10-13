@@ -11,6 +11,10 @@ they can't.
 
 Performance against v2 is measured separately; see [benchmarking.md](benchmarking.md).
 
+MockBukkit tests extend `PluginTestBase`, which tags them `integration` and gives them a fresh server per test. `tileWorld(name)`
+adds a world whose chunks list the tile entities the test placed, with chunk (0, 0) loaded. Large test classes group their tests
+in `@Nested` classes, which share the outer class's fixture and helpers and inherit its tag.
+
 E2E bots spawn at (1024, -60, 1024), away from the fixtures, so their temporary player chunk tickets don't overlap the fixture chunks.
 Setup force-loads the hopper and crafter fixture chunks and waits for `ENTITY_TICKING` before connecting bots or raising the tick rate.
 A force-load ticket alone does not mean the chunk's neighbours have finished loading; chunk loading takes real time and can outlast
