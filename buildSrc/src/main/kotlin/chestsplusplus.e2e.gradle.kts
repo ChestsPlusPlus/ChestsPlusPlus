@@ -94,6 +94,7 @@ plugwright {
             port.set(e2eServerPort)
             minecraftVersion.set("26.1") // bot protocol; ViaBackwards translates to the 26.3 server
             includeInMatrix.set(true)
+            plugins { local("still-bots") }
             // Offline-mode server without an auth plugin: every lease gets a fresh, never-reused name.
             accounts {
                 autoRegister {
