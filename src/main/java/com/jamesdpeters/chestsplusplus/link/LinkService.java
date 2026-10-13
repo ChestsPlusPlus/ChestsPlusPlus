@@ -1,12 +1,14 @@
 package com.jamesdpeters.chestsplusplus.link;
 
 import com.jamesdpeters.chestsplusplus.ChestsPlusPlus;
+import com.jamesdpeters.chestsplusplus.GroupPermission;
 import com.jamesdpeters.chestsplusplus.Permissions;
 import com.jamesdpeters.chestsplusplus.access.AccessService;
 import com.jamesdpeters.chestsplusplus.core.BlockPos;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.core.Viewers;
 import com.jamesdpeters.chestsplusplus.display.DisplayService;
+import com.jamesdpeters.chestsplusplus.message.GroupMessage;
 import com.jamesdpeters.chestsplusplus.message.Message;
 import com.jamesdpeters.chestsplusplus.message.Messages;
 import com.jamesdpeters.chestsplusplus.message.Refusal;
@@ -129,9 +131,7 @@ public final class LinkService {
         };
         if (group == null) return null;
 
-        Message linked = target instanceof Resolved.Missing
-                ? type.pick(Message.CHESTLINK_CREATED, Message.AUTOCRAFT_CREATED)
-                : type.pick(Message.CHESTLINK_LINKED, Message.AUTOCRAFT_LINKED);
+        Message linked = (target instanceof Resolved.Missing ? GroupMessage.CREATED : GroupMessage.LINKED).of(type);
         join(player, group, block, facing, linked);
         return group;
     }
@@ -161,7 +161,8 @@ public final class LinkService {
     /** The checks every way of linking shares: feature enabled, create permission, world not blacklisted. */
     @Nullable
     Refusal linkingRefusal(Player player, GroupType type, World world) {
-        return Checks.first(checks.enabled(type), checks.permission(player, Permissions.create(type)), checks.allowedWorld(world));
+        return Checks.first(checks.enabled(type), checks.permission(player, Permissions.of(type, GroupPermission.CREATE)),
+                checks.allowedWorld(world));
     }
 
     private @Nullable StorageGroup createGroup(Player player, GroupTypeHandler<?> handler, Resolved.Missing missing) {
@@ -258,8 +259,7 @@ public final class LinkService {
         handlers.of(group).onRenamed(group);
         services.groupStore().markDirty(group);
         displays.requestUpdate(group);
-        services.send(audience, group.type().pick(Message.CHESTLINK_RENAMED, Message.AUTOCRAFT_RENAMED),
-                Messages.text("old", old), Messages.text("new", newName));
+        services.send(audience, GroupMessage.RENAMED.of(group.type()), Messages.text("old", old), Messages.text("new", newName));
         return true;
     }
 
@@ -339,8 +339,8 @@ public final class LinkService {
 
     private @Nullable Refusal openRefusal(Player player, StorageGroup group, Block block) {
         GroupType type = group.type();
-        return Checks.first(checks.enabled(type), checks.allowedWorld(block.getWorld()), checks.permission(player, Permissions.open(type)),
-                checks.use(player, group));
+        return Checks.first(checks.enabled(type), checks.allowedWorld(block.getWorld()),
+                checks.permission(player, Permissions.of(type, GroupPermission.OPEN)), checks.use(player, group));
     }
 
     /**

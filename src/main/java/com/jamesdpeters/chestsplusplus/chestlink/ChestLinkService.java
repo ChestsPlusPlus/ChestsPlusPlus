@@ -1,5 +1,6 @@
 package com.jamesdpeters.chestsplusplus.chestlink;
 
+import com.jamesdpeters.chestsplusplus.GroupPermission;
 import com.jamesdpeters.chestsplusplus.Permissions;
 import com.jamesdpeters.chestsplusplus.chestlink.sort.Sorter;
 import com.jamesdpeters.chestsplusplus.core.BlockPos;
@@ -176,8 +177,8 @@ public final class ChestLinkService extends GroupTypeHandler<ChestLinkGroup> {
 
     /** Can {@code viewer} still use the open inventory? It needs the permission it was opened with, as well as access to the group. */
     public boolean mayKeepViewing(HumanEntity viewer, ChestLinkGroup group) {
-        String permission = openedFrom.containsKey(viewer.getUniqueId()) ? Permissions.CHESTLINK_OPEN : Permissions.CHESTLINK_REMOTE;
-        return viewer.hasPermission(permission) && services.access().canAccess(viewer.getUniqueId(), viewer, group);
+        GroupPermission action = openedFrom.containsKey(viewer.getUniqueId()) ? GroupPermission.OPEN : GroupPermission.REMOTE;
+        return viewer.hasPermission(Permissions.of(GroupType.CHESTLINK, action)) && services.access().canAccess(viewer.getUniqueId(), viewer, group);
     }
 
     public void revoke(HumanEntity viewer, ChestLinkGroup group) {

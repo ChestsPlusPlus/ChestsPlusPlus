@@ -1,12 +1,14 @@
 package com.jamesdpeters.chestsplusplus.link;
 
 import com.destroystokyo.paper.profile.PlayerProfile;
+import com.jamesdpeters.chestsplusplus.GroupPermission;
 import com.jamesdpeters.chestsplusplus.Permissions;
 import com.jamesdpeters.chestsplusplus.access.AccessService;
 import com.jamesdpeters.chestsplusplus.access.AccessibleGroups;
 import com.jamesdpeters.chestsplusplus.core.PaperApi;
 import com.jamesdpeters.chestsplusplus.core.PlayerNames;
 import com.jamesdpeters.chestsplusplus.core.Services;
+import com.jamesdpeters.chestsplusplus.message.GroupMessage;
 import com.jamesdpeters.chestsplusplus.message.Message;
 import com.jamesdpeters.chestsplusplus.message.Messages;
 import com.jamesdpeters.chestsplusplus.message.Refusal;
@@ -59,8 +61,8 @@ public final class GroupActions {
 
     public boolean openRemote(Player player, StorageGroup group) {
         GroupType type = group.type();
-        if (checks.refused(player, checks.enabled(type), checks.permission(player, Permissions.remote(type)), checks.allowedWorld(player.getWorld()),
-                checks.use(player, group))) {
+        if (checks.refused(player, checks.enabled(type), checks.permission(player, Permissions.of(type, GroupPermission.REMOTE)),
+                checks.allowedWorld(player.getWorld()), checks.use(player, group))) {
             return false;
         }
         handlers.of(group).openRemote(player, group);
@@ -69,12 +71,12 @@ public final class GroupActions {
 
     public boolean remove(Player player, StorageGroup group) {
         GroupType type = group.type();
-        if (checks.refused(player, checks.enabled(type), checks.permission(player, Permissions.remove(type)), checks.manage(player, group))) {
+        if (checks.refused(player, checks.enabled(type), checks.permission(player, Permissions.of(type, GroupPermission.REMOVE)),
+                checks.manage(player, group))) {
             return false;
         }
         links.removeGroup(group, PaperApi.location(player));
-        services.send(player, type.pick(Message.CHESTLINK_REMOVED, Message.AUTOCRAFT_REMOVED),
-                Messages.group(group));
+        services.send(player, GroupMessage.REMOVED.of(type), Messages.group(group));
         return true;
     }
 
@@ -86,7 +88,7 @@ public final class GroupActions {
     public boolean setPublic(Player player, StorageGroup group, boolean isPublic) {
         if (checks.refused(player, checks.enabled(group.type()), checks.manage(player, group))) return false;
         links.setPublic(group, isPublic);
-        services.send(player, group.type().pick(Message.CHESTLINK_PUBLIC, Message.AUTOCRAFT_PUBLIC),
+        services.send(player, GroupMessage.PUBLIC.of(group.type()),
                 Messages.group(group),
                 Messages.component("state", services.messages().get(isPublic ? Message.STATE_PUBLIC : Message.STATE_PRIVATE)));
         return true;
@@ -175,15 +177,15 @@ public final class GroupActions {
         if (checks.refused(player, checks.enabled(type))) return;
         AccessibleGroups accessible = services.access().accessibleGroups(player.getUniqueId(), AccessService.hasBypass(player), type);
         if (accessible.groups().isEmpty()) {
-            services.send(player, type.pick(Message.CHESTLINK_LIST_EMPTY, Message.AUTOCRAFT_LIST_EMPTY));
+            services.send(player, GroupMessage.LIST_EMPTY.of(type));
             return;
         }
-        services.send(player, type.pick(Message.CHESTLINK_LIST_HEADER, Message.AUTOCRAFT_LIST_HEADER));
+        services.send(player, GroupMessage.LIST_HEADER.of(type));
         GroupTypeHandler<?> handler = handlers.of(type);
         for (StorageGroup group : accessible.groups()) {
             String ref = StringArgumentType.escapeIfRequired(accessible.reference(group));
             String command = type.pick("/chestlink open ", "/autocraft open ") + ref;
-            services.send(player, type.pick(Message.CHESTLINK_LIST_ENTRY, Message.AUTOCRAFT_LIST_ENTRY),
+            services.send(player, GroupMessage.LIST_ENTRY.of(type),
                     Messages.group(group), Messages.text("ref", ref), TagResolver.resolver("open", Tag.styling(ClickEvent.runCommand(command))),
                     Messages.text("owner", accessible.ownerName(group)),
                     Messages.text("nodes", services.nodes().count(group.id())),
@@ -201,7 +203,7 @@ public final class GroupActions {
     /** Also run after an async lookup returns, when the group may have been deleted or the player's rights changed. */
     private boolean canEditMembers(Player player, StorageGroup group) {
         GroupType type = group.type();
-        return !checks.refused(player, exists(group), checks.enabled(type), checks.permission(player, Permissions.members(type)),
+        return !checks.refused(player, exists(group), checks.enabled(type), checks.permission(player, Permissions.of(type, GroupPermission.MEMBERS)),
                 checks.manage(player, group));
     }
 

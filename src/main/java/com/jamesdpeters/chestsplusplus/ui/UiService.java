@@ -1,5 +1,6 @@
 package com.jamesdpeters.chestsplusplus.ui;
 
+import com.jamesdpeters.chestsplusplus.GroupPermission;
 import com.jamesdpeters.chestsplusplus.Permissions;
 import com.jamesdpeters.chestsplusplus.access.AccessService;
 import com.jamesdpeters.chestsplusplus.access.AccessibleGroups;
@@ -97,7 +98,7 @@ public final class UiService {
     }
 
     public void openHub(Player player, GroupType type, String search, int page) {
-        if (checks.refused(player, checks.permission(player, Permissions.menu(type)), checks.enabled(type))) return;
+        if (checks.refused(player, checks.permission(player, Permissions.of(type, GroupPermission.MENU)), checks.enabled(type))) return;
         AccessibleGroups accessible = hubGroups(player, type, search);
         List<StorageGroup> groups = accessible.groups();
         int pages = Math.max(1, (groups.size() + GROUPS_PER_PAGE - 1) / GROUPS_PER_PAGE);
@@ -225,9 +226,9 @@ public final class UiService {
                 save(p, g, view);
                 openGroup(p, g);
             })));
-            if (player.hasPermission(Permissions.members(type)))
+            if (player.hasPermission(Permissions.of(type, GroupPermission.MEMBERS)))
                 buttons.add(button(text(Message.MENU_GROUP_MEMBERS), onGroup(group, this::openMembers)));
-            if (player.hasPermission(Permissions.remove(type)))
+            if (player.hasPermission(Permissions.of(type, GroupPermission.REMOVE)))
                 buttons.add(button(text(Message.MENU_GROUP_REMOVE), onGroup(group, this::confirmRemove)));
         }
         buttons.add(button(text(Message.MENU_BACK), (view, p) -> openHub(p, type, "", 0)));

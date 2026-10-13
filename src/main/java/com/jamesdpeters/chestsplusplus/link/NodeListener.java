@@ -3,6 +3,7 @@ package com.jamesdpeters.chestsplusplus.link;
 import com.jamesdpeters.chestsplusplus.core.Holders;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.display.DisplayService;
+import com.jamesdpeters.chestsplusplus.message.GroupMessage;
 import com.jamesdpeters.chestsplusplus.message.Message;
 import com.jamesdpeters.chestsplusplus.message.Messages;
 import com.jamesdpeters.chestsplusplus.message.Refusal;
@@ -79,10 +80,7 @@ public final class NodeListener implements Listener {
         links.unlink(node.pos(), dropAt, silkTouched != null);
         if (group == null) return;
         boolean removed = services.groups().byId(group.id()) == null;
-        Message message = removed
-                ? group.type().pick(Message.CHESTLINK_REMOVED, Message.AUTOCRAFT_REMOVED)
-                : group.type().pick(Message.CHESTLINK_UNLINKED, Message.AUTOCRAFT_UNLINKED);
-        services.send(player, message, Messages.group(group));
+        services.send(player, (removed ? GroupMessage.REMOVED : GroupMessage.UNLINKED).of(group.type()), Messages.group(group));
     }
 
     /** Refuses a link item the player may not place. The linking itself waits for {@link #onPlaceFinal}. */
@@ -121,8 +119,7 @@ public final class NodeListener implements Listener {
         Player player = event.getPlayer();
         Block block = event.getBlockPlaced();
         if (!handlers.of(group).isValidBlock(block)) return false;
-        links.join(player, group, block, Holders.facing(player).getOppositeFace(),
-                group.type().pick(Message.CHESTLINK_LINKED, Message.AUTOCRAFT_LINKED));
+        links.join(player, group, block, Holders.facing(player).getOppositeFace(), GroupMessage.LINKED.of(group.type()));
         return true;
     }
 
