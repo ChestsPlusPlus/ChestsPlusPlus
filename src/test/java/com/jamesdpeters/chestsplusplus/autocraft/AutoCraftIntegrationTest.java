@@ -118,7 +118,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
 
     private World world;
     private PlayerMock alice;
-    private AutoCraftService autoCraft;
+    private AutoCraft autoCraft;
 
     @BeforeEach
     void setUp() {
@@ -128,12 +128,12 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         autoCraft = autoCraft(false);
     }
 
-    private AutoCraftService autoCraft(boolean special) {
+    private AutoCraft autoCraft(boolean special) {
         return autoCraft(new TorchBackend(special));
     }
 
-    private AutoCraftService autoCraft(CraftingBackend backend) {
-        return new AutoCraftService(services(), features().displays(), features().checks(), backend);
+    private AutoCraft autoCraft(CraftingBackend backend) {
+        return AutoCraft.create(services(), features().checks(), backend);
     }
 
     private static ItemStack namedCoal() {
@@ -143,7 +143,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
     }
 
     private RecipeEditorHolder editor(AutoCraftGroup group) {
-        return new RecipeEditorHolder(group, Component.text(group.name()), autoCraft, services().messages());
+        return new RecipeEditorHolder(group, Component.text(group.name()), autoCraft.editor(), autoCraft.recipes(), services().messages());
     }
 
     private static @Nullable ItemStack[] torchMatrix() {
@@ -156,7 +156,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
     /** Crafting table at (0,64,0) with a group and the torch recipe; returns the table. */
     private Block crafter(AutoCraftGroup[] out) {
         Block table = linkedCrafter(out);
-        autoCraft.setMatrix(out[0], torchMatrix(), null);
+        autoCraft.recipes().setMatrix(out[0], torchMatrix(), null);
         return table;
     }
 
@@ -171,15 +171,16 @@ class AutoCraftIntegrationTest extends PluginTestBase {
     }
 
     /** A crafter as the store loads it: the saved matrix and key, no result until the service resolves them. */
-    private Block loadedCrafter(AutoCraftGroup[] out, AutoCraftService service) {
+    private Block loadedCrafter(AutoCraftGroup[] out, AutoCraft service) {
         Block table = linkedCrafter(out);
         out[0].setRecipe(torchMatrix(), TORCH, null);
-        service.resolveLoaded(out[0]);
+        service.recipes().resolveLoaded(out[0]);
         return table;
     }
 
-    private void serverFinishesLoading(AutoCraftService service) {
-        server.getPluginManager().registerEvents(new AutoCraftListener(services(), links(), service), plugin);
+    private void serverFinishesLoading(AutoCraft service) {
+        server.getPluginManager().registerEvents(new AutoCraftListener(services(), links(), service.editor(), service.recipes(), service.crafter()),
+                plugin);
         server.getPluginManager().callEvent(new ServerLoadEvent(ServerLoadEvent.LoadType.STARTUP));
     }
 
@@ -254,9 +255,9 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
 
         Node node = services().nodes().get(BlockPos.of(table));
-        assertThat(autoCraft.craftAt(group[0], node)).isTrue();
-        assertThat(autoCraft.craftAt(group[0], node)).isTrue();
-        assertThat(autoCraft.craftAt(group[0], node)).isFalse();
+        assertThat(autoCraft.crafter().craftAt(group[0], node)).isTrue();
+        assertThat(autoCraft.crafter().craftAt(group[0], node)).isTrue();
+        assertThat(autoCraft.crafter().craftAt(group[0], node)).isFalse();
 
         assertThat(output.contains(Material.TORCH, 8)).isTrue();
         assertThat(input.contains(Material.COAL)).isFalse();
@@ -275,7 +276,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         below.setBlockData(data);
         Node node = services().nodes().get(BlockPos.of(table));
 
-        assertThat(autoCraft.craftAt(group[0], node)).isFalse();
+        assertThat(autoCraft.crafter().craftAt(group[0], node)).isFalse();
         // The "container below crafts only while powered" rule needs redstone, which MockBukkit doesn't implement;
         // it is covered by the AutoCraft E2E test.
     }
@@ -291,7 +292,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         mats.inventory().addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
         Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
 
-        assertThat(autoCraft.craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isTrue();
+        assertThat(autoCraft.crafter().craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isTrue();
         assertThat(output.contains(Material.TORCH, 4)).isTrue();
         assertThat(mats.inventory().isEmpty()).isTrue();
         assertThat(storage().groupStore().isDirty(mats)).isTrue();
@@ -310,7 +311,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
 
         reconfigure("features.chestlinks", false);
 
-        assertThat(autoCraft.craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isFalse();
+        assertThat(autoCraft.crafter().craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isFalse();
         assertThat(output.isEmpty()).isTrue();
         assertThat(mats.inventory().contains(Material.COAL)).isTrue();
     }
@@ -371,7 +372,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
 
     @Test
     void placingALinkItemCraftsOnTheNextTick() {
-        features().handlers().register(autoCraft);
+        features().handlers().register(autoCraft.handler());
         AutoCraftGroup[] group = new AutoCraftGroup[1];
         Block original = crafter(group);
         ItemStack pickaxe = ItemStack.of(Material.DIAMOND_PICKAXE);
@@ -407,15 +408,15 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
 
         ticks(1);
-        assertThat(autoCraft.isBackingOff(BlockPos.of(table))).isTrue();
+        assertThat(autoCraft.crafter().isBackingOff(BlockPos.of(table))).isTrue();
         input.addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
         ticks(5);
         assertThat(output.isEmpty()).isTrue();
 
-        autoCraft.inventoryChanged(input);
+        autoCraft.crafter().inventoryChanged(input);
         ticks(1);
         assertThat(output.contains(Material.TORCH, 4)).isTrue();
-        assertThat(autoCraft.isBackingOff(BlockPos.of(table))).isFalse();
+        assertThat(autoCraft.crafter().isBackingOff(BlockPos.of(table))).isFalse();
     }
 
     @Test
@@ -428,7 +429,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
 
         InventoryView view = alice.openInventory(input);
         input.addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
-        AutoCraftListener listener = new AutoCraftListener(services(), links(), autoCraft);
+        AutoCraftListener listener = new AutoCraftListener(services(), links(), autoCraft.editor(), autoCraft.recipes(), autoCraft.crafter());
         listener.onClick(new InventoryClickEvent(view, InventoryType.SlotType.CONTAINER, 0, ClickType.LEFT, InventoryAction.PLACE_ALL));
         ticks(1);
         assertThat(output.contains(Material.TORCH, 4)).isTrue();
@@ -443,7 +444,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
 
         Block below = table.getRelative(BlockFace.DOWN);
         Inventory output = container(below, Material.HOPPER);
-        autoCraft.blockChanged(below);
+        autoCraft.crafter().blockChanged(below);
         ticks(1);
         assertThat(output.contains(Material.TORCH, 4)).isTrue();
     }
@@ -460,7 +461,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         ticks(1);
 
         mats.inventory().addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
-        autoCraft.inventoryChanged(mats.inventory());
+        autoCraft.crafter().inventoryChanged(mats.inventory());
         ticks(1);
         assertThat(output.contains(Material.TORCH, 4)).isTrue();
     }
@@ -473,17 +474,17 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         Block second = shared.getRelative(BlockFace.UP);
         second.setType(Material.CRAFTING_TABLE);
         links().link(alice, GroupType.AUTOCRAFT, "torches", second, BlockFace.NORTH, true);
-        autoCraft.setMatrix(group[0], torchMatrix(), null);
+        autoCraft.recipes().setMatrix(group[0], torchMatrix(), null);
         Inventory between = container(shared, Material.HOPPER);
         between.setContents(new ItemStack[]{ItemStack.of(Material.COAL), ItemStack.of(Material.STICK), ItemStack.of(Material.DIRT, 64),
                 ItemStack.of(Material.DIRT, 64), ItemStack.of(Material.DIRT, 64)});
         container(second.getRelative(BlockFace.UP), Material.CHEST).addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
         Block below = first.getRelative(BlockFace.DOWN);
         ticks(1);
-        assertThat(autoCraft.isBackingOff(BlockPos.of(second))).isTrue();
+        assertThat(autoCraft.crafter().isBackingOff(BlockPos.of(second))).isTrue();
 
         Inventory output = container(below, Material.HOPPER);
-        autoCraft.blockChanged(below);
+        autoCraft.crafter().blockChanged(below);
         ticks(1);
         assertThat(output.contains(Material.TORCH, 4)).isTrue();
         ticks(1);
@@ -535,11 +536,11 @@ class AutoCraftIntegrationTest extends PluginTestBase {
             container(table.getRelative(BlockFace.UP), Material.CHEST).addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
             outputs.add(container(table.getRelative(BlockFace.DOWN), Material.HOPPER));
         }
-        autoCraft.setMatrix(group[0], torchMatrix(), null);
+        autoCraft.recipes().setMatrix(group[0], torchMatrix(), null);
 
         ticks(1);
         assertThat(outputs).filteredOn(output -> output.contains(Material.TORCH, 4)).hasSize(1);
-        assertThat(List.of(first, second)).filteredOn(table -> autoCraft.isBackingOff(BlockPos.of(table))).hasSize(1);
+        assertThat(List.of(first, second)).filteredOn(table -> autoCraft.crafter().isBackingOff(BlockPos.of(table))).hasSize(1);
 
         ticks(CraftScheduler.MAX_BACKOFF_TICKS);
         assertThat(outputs).allMatch(output -> output.contains(Material.TORCH, 4));
@@ -600,7 +601,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         linkedCrafter(group);
         NamespacedKey key = new NamespacedKey(plugin, "late_torch");
         group[0].setRecipe(new ItemStack[9], key, null);
-        autoCraft.resolveLoaded(group[0]);
+        autoCraft.recipes().resolveLoaded(group[0]);
         assertThat(group[0].matrixIsEmpty()).isTrue();
 
         server.addRecipe(new ShapedRecipe(key, ItemStack.of(Material.TORCH, 4)).shape("C", "S")
@@ -621,7 +622,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         AutoCraftGroup[] group = new AutoCraftGroup[1];
         loadedCrafter(group, autoCraft);
 
-        autoCraft.setMatrix(group[0], torchMatrix(), null);
+        autoCraft.recipes().setMatrix(group[0], torchMatrix(), null);
         assertThat(group[0].recipeKey()).isNull();
 
         backend.registered = true;
@@ -630,7 +631,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
     }
 
     private void ticks(int count) {
-        for (int i = 0; i < count; i++) autoCraft.tick();
+        for (int i = 0; i < count; i++) autoCraft.crafter().tick();
     }
 
     /** Stands in for a container-lock plugin: refuses every hopper move into or out of one inventory. */
@@ -664,7 +665,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
         Lock lock = lock(locked);
 
-        assertThat(autoCraft.craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isFalse();
+        assertThat(autoCraft.crafter().craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isFalse();
         assertThat(locked.contains(Material.COAL, 1)).isTrue();
         assertThat(locked.contains(Material.STICK, 1)).isTrue();
         assertThat(output.isEmpty()).isTrue();
@@ -685,7 +686,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
         Lock lock = lock(locked);
 
-        assertThat(autoCraft.craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isTrue();
+        assertThat(autoCraft.crafter().craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isTrue();
         assertThat(output.contains(Material.TORCH, 4)).isTrue();
         assertThat(allowed.isEmpty()).isTrue();
         assertThat(locked.contains(Material.COAL, 1)).isTrue();
@@ -702,7 +703,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         Inventory locked = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
         lock(locked);
 
-        assertThat(autoCraft.craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isFalse();
+        assertThat(autoCraft.crafter().craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isFalse();
         assertThat(locked.isEmpty()).isTrue();
         assertThat(input.contains(Material.COAL, 1)).isTrue();
     }
@@ -719,7 +720,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         filter(below, Mode.ALLOW);
         Lock lock = lock(server.createInventory(null, 9));
 
-        assertThat(autoCraft.craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isTrue();
+        assertThat(autoCraft.crafter().craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isTrue();
         assertThat(lock.seen).singleElement().isInstanceOf(SyntheticMoveEvent.class).satisfies(event -> {
             assertThat(event.isCancelled()).isFalse();
             assertThat(event.getSource()).isEqualTo(input);
@@ -742,7 +743,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         Inventory output = container(below, Material.HOPPER);
         filter(below, Mode.DENY);
 
-        assertThat(autoCraft.craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isFalse();
+        assertThat(autoCraft.crafter().craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isFalse();
         assertThat(output.isEmpty()).isTrue();
         assertThat(input.contains(Material.COAL, 1)).isTrue();
         assertThat(input.contains(Material.STICK, 1)).isTrue();
@@ -759,7 +760,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
             if (event instanceof InventoryMoveItemEvent move && move.getItem().getType() == Material.TORCH) move.setCancelled(true);
         }, plugin);
 
-        assertThat(autoCraft.craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isFalse();
+        assertThat(autoCraft.crafter().craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isFalse();
         assertThat(output.isEmpty()).isTrue();
         assertThat(input.contains(Material.COAL, 1)).isTrue();
         assertThat(input.contains(Material.STICK, 1)).isTrue();
@@ -782,7 +783,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         Inventory linkedChest = ((Container) side.getState(false)).getInventory();
         Lock lock = lock(linkedChest);
 
-        assertThat(autoCraft.craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isFalse();
+        assertThat(autoCraft.crafter().craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isFalse();
         assertThat(lock.seen).singleElement().satisfies(event -> assertThat(event.getSource()).isEqualTo(linkedChest));
         assertThat(mats.inventory().contains(Material.COAL)).isTrue();
     }
@@ -796,9 +797,9 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         RecipeEditorHolder editor = editor(group);
 
         ItemStack[] matrix = editor.click(2, ItemStack.of(Material.COAL, 64));
-        autoCraft.setMatrix(group, matrix, null);
+        autoCraft.recipes().setMatrix(group, matrix, null);
         matrix = editor.click(5, ItemStack.of(Material.STICK, 3));
-        autoCraft.setMatrix(group, matrix, null);
+        autoCraft.recipes().setMatrix(group, matrix, null);
         editor.render();
 
         ItemStack result = editor.getInventory().getItem(RecipeEditorHolder.RESULT_SLOT);
@@ -819,14 +820,14 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
         Node node = services().nodes().get(BlockPos.of(table));
 
-        autoCraft.setMatch(group[0], 1, SlotMatch.EXACT);
-        assertThat(autoCraft.craftAt(group[0], node)).isFalse();
-        autoCraft.setMatch(group[0], 1, SlotMatch.RECIPE);
-        assertThat(autoCraft.craftAt(group[0], node)).isTrue();
+        autoCraft.recipes().setMatch(group[0], 1, SlotMatch.EXACT);
+        assertThat(autoCraft.crafter().craftAt(group[0], node)).isFalse();
+        autoCraft.recipes().setMatch(group[0], 1, SlotMatch.RECIPE);
+        assertThat(autoCraft.crafter().craftAt(group[0], node)).isTrue();
 
         input.addItem(namedCoal(), ItemStack.of(Material.STICK));
-        autoCraft.setMatch(group[0], 1, SlotMatch.TYPE);
-        assertThat(autoCraft.craftAt(group[0], node)).isTrue();
+        autoCraft.recipes().setMatch(group[0], 1, SlotMatch.TYPE);
+        assertThat(autoCraft.crafter().craftAt(group[0], node)).isTrue();
         assertThat(storage().groupStore().isDirty(group[0])).isTrue();
     }
 
@@ -839,10 +840,10 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
         Node node = services().nodes().get(BlockPos.of(table));
 
-        assertThat(autoCraft.hasRecipeChoice(group[0], 1)).isFalse();
-        assertThat(autoCraft.craftAt(group[0], node)).isFalse();
-        autoCraft.setMatch(group[0], 1, SlotMatch.TYPE);
-        assertThat(autoCraft.craftAt(group[0], node)).isTrue();
+        assertThat(autoCraft.recipes().hasRecipeChoice(group[0], 1)).isFalse();
+        assertThat(autoCraft.crafter().craftAt(group[0], node)).isFalse();
+        autoCraft.recipes().setMatch(group[0], 1, SlotMatch.TYPE);
+        assertThat(autoCraft.crafter().craftAt(group[0], node)).isTrue();
     }
 
     @Test

@@ -5,42 +5,25 @@ import com.jamesdpeters.chestsplusplus.chestlink.ChestLinkHolder;
 import com.jamesdpeters.chestsplusplus.core.BlockPos;
 import com.jamesdpeters.chestsplusplus.core.Holders;
 import com.jamesdpeters.chestsplusplus.core.Items;
-import com.jamesdpeters.chestsplusplus.core.PaperApi;
 import com.jamesdpeters.chestsplusplus.core.Services;
-import com.jamesdpeters.chestsplusplus.core.Viewers;
-import com.jamesdpeters.chestsplusplus.display.DisplayService;
-import com.jamesdpeters.chestsplusplus.link.Checks;
-import com.jamesdpeters.chestsplusplus.link.GroupTypeHandler;
 import com.jamesdpeters.chestsplusplus.link.SyntheticMoveEvent;
-import com.jamesdpeters.chestsplusplus.message.Message;
-import com.jamesdpeters.chestsplusplus.message.Messages;
 import com.jamesdpeters.chestsplusplus.model.AutoCraftGroup;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.Node;
-import com.jamesdpeters.chestsplusplus.model.SlotMatch;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 import java.util.function.Predicate;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
-import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Container;
 import org.bukkit.block.data.type.Hopper;
-import org.bukkit.entity.Player;
-import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.BlockInventoryHolder;
 import org.bukkit.inventory.DoubleChestInventory;
 import org.bukkit.inventory.Inventory;
@@ -48,250 +31,22 @@ import org.bukkit.inventory.ItemStack;
 import org.jspecify.annotations.Nullable;
 
 /**
- * AutoCraft: group type handler, display content, recipe editing, and crafting. One ticker runs every tick but only touches the nodes
- * {@link CraftScheduler} says are due, so idle crafters cost close to nothing while a change next to one makes it craft straight away.
+ * Crafts at every AutoCraft node. One ticker runs every tick but only touches the nodes {@link CraftScheduler} says are due, so idle
+ * crafters cost close to nothing while a change next to one makes it craft straight away.
  */
 @Slf4j(topic = ChestsPlusPlus.NAME)
-public final class AutoCraftService extends GroupTypeHandler<AutoCraftGroup> {
+@RequiredArgsConstructor
+public final class Crafter {
 
     static final BlockFace[] INPUT_FACES = {BlockFace.UP, BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST};
     /** The inputs plus the output below: a change at any of them can let a failing crafter succeed. */
     static final BlockFace[] WATCHED_FACES = {BlockFace.UP, BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST, BlockFace.DOWN};
 
     private final Services services;
-    private final DisplayService displays;
-    private final Checks checks;
+    private final Recipes recipes;
     private final CraftingBackend backend;
-    /** Each group's recipe choices per slot, cached until its recipe changes. */
-    private final Map<Long, List<@Nullable Predicate<ItemStack>>> recipeChoices = new HashMap<>();
-    /** What each slot accepts once the group's match modes are applied; what the planner uses. */
-    private final Map<Long, List<@Nullable Predicate<ItemStack>>> slotRules = new HashMap<>();
-    /** Groups whose stored recipe didn't resolve yet, retried by {@link #resolveDeferred()}. */
-    private final Set<Long> unresolved = new HashSet<>();
-
     private final CraftScheduler scheduler = new CraftScheduler();
     private long tick;
-
-    public AutoCraftService(Services services, DisplayService displays, Checks checks, CraftingBackend backend) {
-        super(GroupType.AUTOCRAFT, AutoCraftGroup.class);
-        this.services = services;
-        this.displays = displays;
-        this.checks = checks;
-        this.backend = backend;
-    }
-
-    @Override
-    public boolean isValidBlock(Block block) {
-        return block.getType() == Material.CRAFTING_TABLE;
-    }
-
-    @Override
-    public AutoCraftGroup create(long id, UUID owner, String name) {
-        return new AutoCraftGroup(id, owner, name, System.currentTimeMillis());
-    }
-
-    @Override
-    protected int linked(AutoCraftGroup group, Block block) {
-        scheduler.soon(BlockPos.of(block));
-        return 0;
-    }
-
-    @Override
-    protected void removed(AutoCraftGroup group, Location dropAt) {
-        forgetRules(group);
-        unresolved.remove(group.id());
-        for (Node node : services.nodes().nodesOf(group.id())) scheduler.forget(node.pos());
-        openEditors(group).forEach(Player::closeInventory);
-    }
-
-    @Override
-    protected void renamed(AutoCraftGroup group) {
-        openEditors(group).forEach(Player::closeInventory);
-    }
-
-    @Override
-    public void closeAllViews() {
-        Viewers.withHolder(RecipeEditorHolder.class).forEach(Player::closeInventory);
-    }
-
-    @Override
-    protected void revokedViews(AutoCraftGroup group) {
-        openEditors(group).stream().filter(player -> !services.access().canAccess(player.getUniqueId(), player, group))
-                .forEach(Player::closeInventory);
-    }
-
-    @Override
-    protected void openRemotely(Player player, AutoCraftGroup group) {
-        openEditor(player, group);
-    }
-
-    @Override
-    protected ItemStack iconOf(AutoCraftGroup group) {
-        ItemStack result = group.result();
-        return result == null ? ItemStack.of(Material.CRAFTING_TABLE) : result.asOne();
-    }
-
-    @Override
-    protected String summaryOf(AutoCraftGroup group) {
-        ItemStack result = group.result();
-        if (result == null) return "no recipe";
-        return result.getAmount() + "x " + itemName(result);
-    }
-
-    static String itemName(ItemStack item) {
-        return item.getType().getKey().getKey().replace('_', ' ');
-    }
-
-    @Override
-    protected @Nullable ItemStack itemOf(AutoCraftGroup group) {
-        return group.result();
-    }
-
-    @Override
-    protected Component labelOf(AutoCraftGroup group) {
-        return services.messages().get(Message.AUTOCRAFT_DISPLAY_LABEL, Messages.group(group));
-    }
-
-    public void openEditor(Player player, AutoCraftGroup group) {
-        Component title = services.messages().get(Message.MENU_RECIPE_TITLE, Messages.group(group));
-        player.openInventory(new RecipeEditorHolder(group, title, this, services.messages()).getInventory());
-    }
-
-    /**
-     * A click on a recipe editor slot. Anyone with access may look, but only managers may change the recipe. Right-clicking a ghost with an
-     * empty cursor changes what that slot accepts; any other click places or clears a ghost.
-     */
-    void edit(Player player, RecipeEditorHolder editor, int slot, @Nullable ItemStack cursor, ClickType click) {
-        AutoCraftGroup group = editor.group();
-        if (checks.refused(player, checks.manage(player, group))) return;
-        if (click.isRightClick() && !Items.present(cursor)) {
-            int index = RecipeEditorHolder.matrixIndex(slot);
-            if (index >= 0 && group.matrix()[index] != null) setMatch(group, index, group.matches()[index].next(hasRecipeChoice(group, index)));
-            return;
-        }
-        applyEdit(player, editor, editor.click(slot, cursor));
-    }
-
-    /** Dragging an item across the editor places a ghost in each matrix slot it covered, resolved once. */
-    void drag(Player player, RecipeEditorHolder editor, List<Integer> slots, ItemStack cursor) {
-        if (!checks.refused(player, checks.manage(player, editor.group()))) applyEdit(player, editor, editor.place(slots, cursor));
-    }
-
-    private void applyEdit(Player player, RecipeEditorHolder editor, @Nullable ItemStack @Nullable [] matrix) {
-        if (matrix == null) return;
-        AutoCraftGroup group = editor.group();
-        ItemStack result = setMatrix(group, matrix, player);
-        editor.render();
-        if (result != null) services.send(player, Message.AUTOCRAFT_RECIPE_SET, Messages.group(group), Messages.text("item", itemName(result)));
-    }
-
-    /** Re-resolves a loaded group's stored matrix against the live recipe list (results aren't persisted). */
-    public void resolveLoaded(AutoCraftGroup group) {
-        if (group.matrixIsEmpty() && !rebuildMatrix(group)) return;
-        World world = firstWorld();
-        CraftingBackend.ResolvedRecipe resolved = world == null ? null : backend.resolve(group.matrix(), world);
-        if (resolved == null) leaveUnresolved(group);
-        else applyRecipe(group, group.matrix(), resolved);
-    }
-
-    /**
-     * A v2 import stores only the key of a recipe that wasn't registered yet; rebuilds its matrix once the recipe exists. False while it
-     * can't, leaving the group for {@link #resolveDeferred()}.
-     */
-    private boolean rebuildMatrix(AutoCraftGroup group) {
-        NamespacedKey key = group.recipeKey();
-        if (key == null) return false;
-        @Nullable ItemStack @Nullable [] matrix = RecipeMatrix.of(key);
-        if (matrix == null) {
-            unresolved.add(group.id());
-            return false;
-        }
-        group.setRecipe(matrix, key, null);
-        services.groups().changed(group);
-        return true;
-    }
-
-    /** Keeps the stored key, so the next save doesn't lose a recipe that another plugin may only register later. */
-    private void leaveUnresolved(AutoCraftGroup group) {
-        group.setRecipe(group.matrix(), group.recipeKey(), null);
-        forgetRules(group);
-        unresolved.add(group.id());
-    }
-
-    /** Retries the recipes that didn't resolve at load, once every plugin has had the chance to register its own. */
-    public void resolveDeferred() {
-        for (long id : List.copyOf(unresolved)) {
-            if (services.groups().byId(id) instanceof AutoCraftGroup group) resolveDeferred(group);
-        }
-    }
-
-    private void resolveDeferred(AutoCraftGroup group) {
-        resolveLoaded(group);
-        if (!group.hasRecipe()) {
-            log.warn("AutoCraft group {} has no recipe: its stored recipe {} could not be resolved", group.id(), group.recipeKey());
-            return;
-        }
-        craftSoon(group);
-        displays.requestUpdate(group);
-        renderEditors(group);
-    }
-
-    /**
-     * Sets a new ghost matrix (from the editor): resolves it once, stores key, matrix and result, refreshes displays, persists, and tries
-     * the group's crafters on the next tick. Returns the result, or null when the matrix isn't a recipe.
-     */
-    public @Nullable ItemStack setMatrix(AutoCraftGroup group, @Nullable ItemStack[] matrix, @Nullable Player editor) {
-        World world = editor != null ? editor.getWorld() : firstWorld();
-        CraftingBackend.ResolvedRecipe resolved = world == null ? null : backend.resolve(matrix, world);
-        applyRecipe(group, matrix, resolved);
-        craftSoon(group);
-        services.groups().changed(group);
-        if (editor != null && resolved != null) editor.playSound(PaperApi.location(editor), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.6f, 1.4f);
-        renderEditors(group);
-        return resolved == null ? null : resolved.result();
-    }
-
-    /** Sets what one matrix slot accepts, then re-applies the rules, persists and refreshes open editors. */
-    public void setMatch(AutoCraftGroup group, int index, SlotMatch match) {
-        group.setMatch(index, match);
-        List<@Nullable Predicate<ItemStack>> choices = recipeChoices.get(group.id());
-        if (choices != null) slotRules.put(group.id(), SlotRules.of(group.matrix(), group.matches(), choices));
-        craftSoon(group);
-        services.groups().changed(group);
-        renderEditors(group);
-    }
-
-    /** Whether the recipe itself accepts more than the ghost item in this matrix slot (e.g. any planks). */
-    public boolean hasRecipeChoice(AutoCraftGroup group, int index) {
-        List<@Nullable Predicate<ItemStack>> choices = recipeChoices.get(group.id());
-        return choices != null && choices.get(index) != null;
-    }
-
-    private void applyRecipe(AutoCraftGroup group, @Nullable ItemStack[] matrix, CraftingBackend.@Nullable ResolvedRecipe resolved) {
-        unresolved.remove(group.id());
-        group.setRecipe(matrix, resolved == null ? null : resolved.key(), resolved == null ? null : resolved.result());
-        if (resolved == null) {
-            forgetRules(group);
-            return;
-        }
-        recipeChoices.put(group.id(), resolved.choices());
-        slotRules.put(group.id(), SlotRules.of(group.matrix(), group.matches(), resolved.choices()));
-    }
-
-    private void forgetRules(StorageGroup group) {
-        recipeChoices.remove(group.id());
-        slotRules.remove(group.id());
-    }
-
-    private void renderEditors(AutoCraftGroup group) {
-        for (Player viewer : openEditors(group)) {
-            if (Viewers.topHolder(viewer) instanceof RecipeEditorHolder holder) holder.render();
-        }
-    }
-
-    private static List<Player> openEditors(StorageGroup group) {
-        return Viewers.withHolder(RecipeEditorHolder.class, editor -> editor.group().id() == group.id());
-    }
 
     /**
      * Called every tick: attempts the nodes due now, and every {@code autocraft.tick-interval} ticks sweeps for crafters nothing has
@@ -353,8 +108,14 @@ public final class AutoCraftService extends GroupTypeHandler<AutoCraftGroup> {
         return groups;
     }
 
-    private void craftSoon(StorageGroup group) {
+    /** Tries every crafter of {@code group} on the next tick, forgetting any backoff. */
+    void craftSoon(StorageGroup group) {
         for (Node node : services.nodes().nodesOf(group.id())) scheduler.soon(node.pos());
+    }
+
+    /** The group is being removed. */
+    void forget(StorageGroup group) {
+        for (Node node : services.nodes().nodesOf(group.id())) scheduler.forget(node.pos());
     }
 
     /**
@@ -396,7 +157,7 @@ public final class AutoCraftService extends GroupTypeHandler<AutoCraftGroup> {
         if (output == null) return false;
         List<Inventory> inputs = inputsOf(table, group, output);
         if (inputs.isEmpty()) return false;
-        List<@Nullable Predicate<ItemStack>> slots = slotsFor(group);
+        List<@Nullable Predicate<ItemStack>> slots = recipes.slotsFor(group);
         if (slots == null) return false;
         Craft craft = permittedCraft(slots, inputs, output, table);
         if (craft == null) return false;
@@ -485,11 +246,6 @@ public final class AutoCraftService extends GroupTypeHandler<AutoCraftGroup> {
         return inputs;
     }
 
-    private @Nullable List<@Nullable Predicate<ItemStack>> slotsFor(AutoCraftGroup group) {
-        if (!slotRules.containsKey(group.id())) resolveLoaded(group);
-        return slotRules.get(group.id());
-    }
-
     /**
      * The inventory at a block: a ChestLink's shared inventory if it is linked, ChestLinks are enabled and the crafter's owner may use it,
      * else the container's own inventory. Another linked block, or a ChestLink while they are disabled, is no inventory at all.
@@ -507,10 +263,5 @@ public final class AutoCraftService extends GroupTypeHandler<AutoCraftGroup> {
     private void markChanged(Inventory inventory) {
         inventoryChanged(inventory);
         if (Holders.of(inventory) instanceof ChestLinkHolder holder) services.groups().changed(holder.group());
-    }
-
-    private @Nullable World firstWorld() {
-        List<World> worlds = services.plugin().getServer().getWorlds();
-        return worlds.isEmpty() ? null : worlds.getFirst();
     }
 }

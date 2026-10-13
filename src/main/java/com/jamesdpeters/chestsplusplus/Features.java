@@ -1,6 +1,6 @@
 package com.jamesdpeters.chestsplusplus;
 
-import com.jamesdpeters.chestsplusplus.autocraft.AutoCraftService;
+import com.jamesdpeters.chestsplusplus.autocraft.AutoCraft;
 import com.jamesdpeters.chestsplusplus.autocraft.CraftingBackend;
 import com.jamesdpeters.chestsplusplus.chestlink.ChestLinkService;
 import com.jamesdpeters.chestsplusplus.chestlink.LidAnimator;
@@ -24,7 +24,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 /** The feature services, built once on enable before the database opens. */
 public record Features(Handlers handlers, DisplayService displays, Checks checks, ProtectionCheck protection, LinkService links, LinkItem linkItem,
-        AutoCraftService autoCraft,
+        AutoCraft autoCraft,
         ChestLinkService chestLinks, GroupActions actions, MenuListener menus, UiService ui, FilterService filters) {
 
     public static Features create(Services services) {
@@ -38,11 +38,11 @@ public record Features(Handlers handlers, DisplayService displays, Checks checks
         LinkService links = new LinkService(services, displays, handlers, checks, new GroupLimits(services.groups(), services::settings), protection);
         LinkItem linkItem = new LinkItem(plugin);
 
-        AutoCraftService autoCraft = new AutoCraftService(services, displays, checks, CraftingBackend.bukkit());
-        ChestLinkService chestLinks = new ChestLinkService(services, autoCraft::inventoryChanged,
+        AutoCraft autoCraft = AutoCraft.create(services, checks, CraftingBackend.bukkit());
+        ChestLinkService chestLinks = new ChestLinkService(services, autoCraft.crafter()::inventoryChanged,
                 new LidAnimator(services.nodes(), services::settings));
         handlers.register(chestLinks);
-        handlers.register(autoCraft);
+        handlers.register(autoCraft.handler());
         handlers.requireAll();
 
         GroupActions actions = new GroupActions(services, links, handlers, checks, chestLinks::setSortMode);
