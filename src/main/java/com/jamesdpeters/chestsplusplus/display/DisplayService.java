@@ -18,23 +18,14 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import lombok.AccessLevel;
-import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Color;
-import org.bukkit.Location;
-import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.plugin.Plugin;
-import org.bukkit.util.Transformation;
-import org.joml.AxisAngle4f;
-import org.joml.Vector3f;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -56,7 +47,7 @@ public final class DisplayService {
 
     private static final int UPDATE_INTERVAL_TICKS = 8;
 
-    @Getter(AccessLevel.PACKAGE) private final Plugin plugin;
+    private final MarkerDisplays markers;
     private final GroupRegistry groups;
     private final NodeIndex nodes;
     private final Supplier<Settings> settings;
@@ -64,20 +55,18 @@ public final class DisplayService {
     private final Map<BlockPos, NodeDisplay> displays = new HashMap<>();
     private final Set<Long> pendingGroups = new LinkedHashSet<>();
     private final Set<ChunkRef> pendingChunks = new LinkedHashSet<>();
-    /** Marks entities as ours, for cleanup and for tests. */
-    @Getter private final NamespacedKey marker;
     private Function<Block, DisplayLayout.Surface> surfaces = block -> DisplayLayout.Surface.FULL_BLOCK;
     private int tick;
 
     private record ChunkRef(UUID world, long key) {}
 
-    public DisplayService(Plugin plugin, GroupRegistry groups, NodeIndex nodes, Supplier<Settings> settings, Function<GroupType, Content> contents) {
-        this.plugin = plugin;
+    public DisplayService(MarkerDisplays markers, GroupRegistry groups, NodeIndex nodes, Supplier<Settings> settings,
+            Function<GroupType, Content> contents) {
+        this.markers = markers;
         this.groups = groups;
         this.nodes = nodes;
         this.settings = settings;
         this.contents = contents;
-        this.marker = new NamespacedKey(plugin, "display");
     }
 
     public void surfaces(Function<Block, DisplayLayout.Surface> surfaces) {
@@ -195,17 +184,16 @@ public final class DisplayService {
     }
 
     private ItemDisplay spawnItem(Block block, DisplayLayout.Placement placement, @Nullable ItemStack shown, Settings.Display config) {
-        return block.getWorld().spawn(at(block, placement), ItemDisplay.class, entity -> {
-            prepare(entity, config.viewRange());
+        return markers.spawn(block, placement, ItemDisplay.class, config.viewRange(), entity -> {
             entity.setItemStack(shown);
             entity.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
-            entity.setTransformation(scale(DisplayLayout.NODE_ITEM_SCALE, DisplayLayout.NODE_ITEM_SCALE, DisplayLayout.NODE_ITEM_SCALE));
+            entity.setTransformation(
+                    MarkerDisplays.scale(DisplayLayout.NODE_ITEM_SCALE, DisplayLayout.NODE_ITEM_SCALE, DisplayLayout.NODE_ITEM_SCALE));
         });
     }
 
     private TextDisplay spawnLabel(Block block, DisplayLayout.Placement placement, Component text, Settings.Display config) {
-        return block.getWorld().spawn(at(block, placement), TextDisplay.class, entity -> {
-            prepare(entity, config.viewRange() / 2);
+        return markers.spawn(block, placement, TextDisplay.class, config.viewRange() / 2, entity -> {
             // Labels stay fully lit so names are readable at night; item displays use the world's lighting.
             entity.setBrightness(new Display.Brightness(15, 15));
             entity.text(text);
@@ -214,14 +202,9 @@ public final class DisplayService {
             entity.setBackgroundColor(Color.fromARGB(0x40000000));
             entity.setShadowed(true);
             entity.setLineWidth(DisplayLayout.NODE_LABEL_LINE_WIDTH);
-            entity.setTransformation(scale(DisplayLayout.NODE_LABEL_SCALE, DisplayLayout.NODE_LABEL_SCALE, DisplayLayout.NODE_LABEL_SCALE));
+            entity.setTransformation(
+                    MarkerDisplays.scale(DisplayLayout.NODE_LABEL_SCALE, DisplayLayout.NODE_LABEL_SCALE, DisplayLayout.NODE_LABEL_SCALE));
         });
-    }
-
-    private void prepare(Display entity, float viewRange) {
-        entity.setPersistent(false);
-        entity.setViewRange(viewRange);
-        entity.getPersistentDataContainer().set(marker, PersistentDataType.BOOLEAN, true);
     }
 
     private void despawn(BlockPos pos) {
@@ -234,17 +217,6 @@ public final class DisplayService {
         if (display.label() != null) display.label().remove();
     }
 
-    private static Location at(Block block, DisplayLayout.Placement placement) {
-        Location location = block.getLocation().clone().add(placement.x(), placement.y(), placement.z());
-        location.setYaw(placement.yaw());
-        location.setPitch(0);
-        return location;
-    }
-
-    static Transformation scale(float x, float y, float z) {
-        return new Transformation(new Vector3f(), new AxisAngle4f(), new Vector3f(x, y, z), new AxisAngle4f());
-    }
-
     /** Displays show a plain single item of the type, so meta differences don't cause entity updates. */
     private static @Nullable ItemStack normalise(@Nullable ItemStack item) {
         return Items.present(item) ? ItemStack.of(item.getType()) : null;
@@ -252,6 +224,6 @@ public final class DisplayService {
 
     /** Is this entity one of ours (by PDC marker)? */
     public boolean isOurs(Entity entity) {
-        return entity.getPersistentDataContainer().has(marker, PersistentDataType.BOOLEAN);
+        return markers.isOurs(entity);
     }
 }

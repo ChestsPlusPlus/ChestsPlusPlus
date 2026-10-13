@@ -278,7 +278,7 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
         var filters = components().features().filters();
         filters.write(block, List.of(new com.jamesdpeters.chestsplusplus.filter.HopperFilter(org.bukkit.inventory.ItemStack.of(material), mode,
                 com.jamesdpeters.chestsplusplus.filter.HopperFilter.Match.TYPE)));
-        return reply(context, "cpptest filter ok indexed=" + (filters.get(block) != null));
+        return reply(context, "cpptest filter ok indexed=" + (filters.index().get(block) != null));
     }
 
     /** Fixture: {@code cpptest lock <x> <y> <z>} locks a container against hopper moves, like a lock plugin would. */

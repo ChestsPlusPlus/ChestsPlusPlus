@@ -7,7 +7,10 @@ import com.jamesdpeters.chestsplusplus.chestlink.LidAnimator;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.display.DisplayLayout.Surface;
 import com.jamesdpeters.chestsplusplus.display.DisplayService;
+import com.jamesdpeters.chestsplusplus.display.MarkerDisplays;
 import com.jamesdpeters.chestsplusplus.filter.FilterCodec;
+import com.jamesdpeters.chestsplusplus.filter.FilterDisplays;
+import com.jamesdpeters.chestsplusplus.filter.FilterIndex;
 import com.jamesdpeters.chestsplusplus.filter.FilterService;
 import com.jamesdpeters.chestsplusplus.filter.ItemGrouping;
 import com.jamesdpeters.chestsplusplus.link.Checks;
@@ -30,7 +33,8 @@ public record Features(Handlers handlers, DisplayService displays, Checks checks
     public static Features create(Services services) {
         JavaPlugin plugin = services.plugin();
         Handlers handlers = new Handlers();
-        DisplayService displays = new DisplayService(plugin, services.groups(), services.nodes(), services::settings, handlers::of);
+        DisplayService displays = new DisplayService(new MarkerDisplays(plugin, "display"), services.groups(), services.nodes(), services::settings,
+                handlers::of);
         services.shutdown().add("displays", displays::despawnAll);
         displays.surfaces(block -> block.getState(false) instanceof Chest ? Surface.CHEST : Surface.FULL_BLOCK);
         Checks checks = new Checks(services);
@@ -48,8 +52,11 @@ public record Features(Handlers handlers, DisplayService displays, Checks checks
         GroupActions actions = new GroupActions(services, links, handlers, checks, chestLinks::setSortMode);
         MenuListener menus = new MenuListener(services.mainThread());
         UiService ui = new UiService(services, handlers, checks, actions, menus);
-        FilterService filters = new FilterService(plugin, new FilterCodec(plugin), ItemGrouping.fromServerTags(), services::settings);
-        services.shutdown().add("filter displays", filters::despawnAll);
+        FilterDisplays filterDisplays = new FilterDisplays(new MarkerDisplays(plugin, "filter_display"), services::settings);
+        services.shutdown().add("filter displays", filterDisplays::despawnAll);
+        FilterService filters = new FilterService(plugin, new FilterCodec(plugin), ItemGrouping.fromServerTags(), services::settings,
+                new FilterIndex(),
+                filterDisplays);
         services.groups().listen(displays::requestUpdate);
         return new Features(handlers, displays, checks, protection, links, linkItem, autoCraft, chestLinks, actions, menus, ui, filters);
     }

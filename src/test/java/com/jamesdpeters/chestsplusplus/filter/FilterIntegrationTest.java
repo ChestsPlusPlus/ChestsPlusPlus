@@ -111,11 +111,11 @@ class FilterIntegrationTest extends PluginTestBase {
         filters.write(hopper, stored);
 
         assertThat(filters.read(hopper)).isEqualTo(stored);
-        assertThat(filters.get(hopper)).isNotNull();
+        assertThat(filters.index().get(hopper)).isNotNull();
         FilterCodec codec = new FilterCodec(plugin);
         assertThat(codec.read(((Hopper) hopper.getState(false)).getPersistentDataContainer())).isEqualTo(stored);
         // Per side: an Allow row (green pane + stone) and a Deny row (red pane + log); 4 sides; no glow outline.
-        assertThat(filters.displayCount()).isEqualTo(16);
+        assertThat(filters.displays().displayCount()).isEqualTo(16);
         var icons = world.getEntitiesByClass(org.bukkit.entity.ItemDisplay.class);
         assertThat(icons).noneMatch(e -> e.isGlowing());
         assertThat(icons).allMatch(e -> e.getItemDisplayTransform() == org.bukkit.entity.ItemDisplay.ItemDisplayTransform.GUI);
@@ -123,8 +123,8 @@ class FilterIntegrationTest extends PluginTestBase {
         assertThat(icons).filteredOn(e -> e.getItemStack().getType() == Material.RED_STAINED_GLASS_PANE).hasSize(4);
 
         filters.write(hopper, List.of());
-        assertThat(filters.get(hopper)).isNull();
-        assertThat(filters.displayCount()).isZero();
+        assertThat(filters.index().get(hopper)).isNull();
+        assertThat(filters.displays().displayCount()).isZero();
     }
 
     @Test
@@ -137,10 +137,10 @@ class FilterIntegrationTest extends PluginTestBase {
 
         filters.chunkUnloaded(world.getChunkAt(0, 0));
 
-        assertThat(filters.get(unloading)).isNull();
-        assertThat(filters.get(staying)).isNotNull();
-        assertThat(filters.indexedCount()).isEqualTo(1);
-        assertThat(filters.displayCount()).isEqualTo(8);
+        assertThat(filters.index().get(unloading)).isNull();
+        assertThat(filters.index().get(staying)).isNotNull();
+        assertThat(filters.index().indexedCount()).isEqualTo(1);
+        assertThat(filters.displays().displayCount()).isEqualTo(8);
     }
 
     @Test
@@ -188,7 +188,7 @@ class FilterIntegrationTest extends PluginTestBase {
         Inventory source = chestOfDirtAndStone();
         Inventory into = inventoryOf(hopper);
         List<Inventory> changed = new ArrayList<>();
-        FilterListener listener = new FilterListener(services(), filters, features().protection(),
+        FilterListener listener = new FilterListener(services(), filters, filters.index(), features().protection(),
                 features().chestLinks(), changed::add);
 
         listener.onMove(new InventoryMoveItemEvent(source, ItemStack.of(Material.DIRT), into, false));
@@ -231,8 +231,8 @@ class FilterIntegrationTest extends PluginTestBase {
         server.getPluginManager()
                 .callEvent(new BlockExplodeEvent(hopper, hopper.getState(), new ArrayList<>(List.of(hopper)), 1f, ExplosionResult.DESTROY));
 
-        assertThat(filters.get(hopper)).isNull();
-        assertThat(filters.displayCount()).isZero();
+        assertThat(filters.index().get(hopper)).isNull();
+        assertThat(filters.displays().displayCount()).isZero();
     }
 
     /** Another plugin refusing hopper moves of {@code refused}, at {@code priority}. */
@@ -477,13 +477,13 @@ class FilterIntegrationTest extends PluginTestBase {
     void disablingHopperFiltersOnReloadDropsTheIndexAndDisplays() throws IOException {
         Block hopper = hopperAt(0);
         filters.write(hopper, List.of(filter(Material.STONE, Mode.ALLOW, Match.TYPE)));
-        assertThat(filters.indexedCount()).isEqualTo(1);
+        assertThat(filters.index().indexedCount()).isEqualTo(1);
 
         setHopperFilters(false);
 
-        assertThat(filters.get(hopper)).isNull();
-        assertThat(filters.indexedCount()).isZero();
-        assertThat(filters.displayCount()).isZero();
+        assertThat(filters.index().get(hopper)).isNull();
+        assertThat(filters.index().indexedCount()).isZero();
+        assertThat(filters.displays().displayCount()).isZero();
         assertThat(world.getEntitiesByClass(ItemDisplay.class)).isEmpty();
     }
 
@@ -497,9 +497,9 @@ class FilterIntegrationTest extends PluginTestBase {
         filters.chunkLoaded(hopper.getChunk());
 
         assertThat(filters.read(hopper)).isEqualTo(stored);
-        assertThat(filters.get(hopper)).isNull();
-        assertThat(filters.indexedCount()).isZero();
-        assertThat(filters.displayCount()).isZero();
+        assertThat(filters.index().get(hopper)).isNull();
+        assertThat(filters.index().indexedCount()).isZero();
+        assertThat(filters.displays().displayCount()).isZero();
         assertThat(world.getEntitiesByClass(ItemDisplay.class)).isEmpty();
     }
 
@@ -511,9 +511,9 @@ class FilterIntegrationTest extends PluginTestBase {
 
         setHopperFilters(true);
 
-        assertThat(filters.get(hopper)).isNotNull();
-        assertThat(filters.indexedCount()).isEqualTo(1);
-        assertThat(filters.displayCount()).isEqualTo(8);
+        assertThat(filters.index().get(hopper)).isNotNull();
+        assertThat(filters.index().indexedCount()).isEqualTo(1);
+        assertThat(filters.displays().displayCount()).isEqualTo(8);
     }
 
     @Test
@@ -523,7 +523,7 @@ class FilterIntegrationTest extends PluginTestBase {
 
         server.getPluginManager().callEvent(new BlockBreakEvent(hopper, server.addPlayer()));
 
-        assertThat(filters.get(hopper)).isNull();
-        assertThat(filters.displayCount()).isZero();
+        assertThat(filters.index().get(hopper)).isNull();
+        assertThat(filters.displays().displayCount()).isZero();
     }
 }

@@ -46,6 +46,7 @@ public final class FilterListener implements Listener {
 
     private final Services services;
     private final FilterService filters;
+    private final FilterIndex index;
     private final ProtectionCheck protection;
     private final ChestLinkService chestLinks;
     private final InventoryChanges changes;
@@ -65,7 +66,7 @@ public final class FilterListener implements Listener {
         if (event instanceof SyntheticMoveEvent synthetic && synthetic.relayed()) return;
         // Hopper blocks only (minecart hoppers have an entity holder).
         if (!(Holders.of(destination) instanceof Hopper hopper)) return;
-        CompiledFilter filter = filters.get(hopper.getWorld().getUID(), hopper.getX(), hopper.getY(), hopper.getZ());
+        CompiledFilter filter = index.get(hopper.getWorld().getUID(), hopper.getX(), hopper.getY(), hopper.getZ());
         if (filter == null || filter.accepts(event.getItem())) return;
         event.setCancelled(true);
         if (!(event instanceof SyntheticMoveEvent)) avoidStall(event.getSource(), destination, filter, event.getItem().getAmount());
@@ -76,7 +77,7 @@ public final class FilterListener implements Listener {
         Inventory inventory = event.getInventory();
         if (inventory.getType() != InventoryType.HOPPER || !enabled()) return;
         if (!(Holders.of(inventory) instanceof Hopper hopper)) return;
-        CompiledFilter filter = filters.get(hopper.getWorld().getUID(), hopper.getX(), hopper.getY(), hopper.getZ());
+        CompiledFilter filter = index.get(hopper.getWorld().getUID(), hopper.getX(), hopper.getY(), hopper.getZ());
         if (filter != null && !filter.accepts(event.getItem().getItemStack())) event.setCancelled(true);
     }
 

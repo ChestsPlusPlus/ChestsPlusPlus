@@ -3,7 +3,11 @@ package com.jamesdpeters.chestsplusplus.migration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.jamesdpeters.chestsplusplus.config.Settings;
+import com.jamesdpeters.chestsplusplus.display.MarkerDisplays;
 import com.jamesdpeters.chestsplusplus.filter.FilterCodec;
+import com.jamesdpeters.chestsplusplus.filter.FilterDisplays;
+import com.jamesdpeters.chestsplusplus.filter.FilterIndex;
 import com.jamesdpeters.chestsplusplus.filter.FilterService;
 import com.jamesdpeters.chestsplusplus.filter.HopperFilter;
 import com.jamesdpeters.chestsplusplus.filter.HopperFilter.Match;
@@ -11,6 +15,7 @@ import com.jamesdpeters.chestsplusplus.filter.HopperFilter.Mode;
 import com.jamesdpeters.chestsplusplus.testing.PluginTestBase;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Rotation;
@@ -103,10 +108,12 @@ class V2FilterMigrationTest extends PluginTestBase {
         second.setType(Material.HOPPER);
         FilterService real = features().filters();
         AtomicBoolean failing = new AtomicBoolean(true);
-        FilterService filters = new FilterService(plugin, new FilterCodec(plugin), real.grouping(), () -> {
+        Supplier<Settings> settings = () -> {
             if (failing.get() && !real.read(second).isEmpty()) throw new IllegalStateException("injected after the second hopper's write");
             return services().settings();
-        });
+        };
+        FilterService filters = new FilterService(plugin, new FilterCodec(plugin), real.grouping(), settings, new FilterIndex(),
+                new FilterDisplays(new MarkerDisplays(plugin, "filter_display"), settings));
         V2FilterMigration migration = new V2FilterMigration(migration().models().state(), filters, new NamespacedKey(plugin, "test"));
         ItemFrame first = frame(BlockFace.NORTH, Material.COAL, Rotation.NONE);
         ItemFrame pending = frame(second, BlockFace.NORTH, Material.DIRT, Rotation.CLOCKWISE);

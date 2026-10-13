@@ -129,7 +129,8 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
                 new GolemBridge(services, chestLinks),
                 features.menus(),
                 new AutoCraftListener(services, links, autoCraft.editor(), autoCraft.recipes(), autoCraft.crafter()),
-                new FilterListener(services, features.filters(), features.protection(), chestLinks, autoCraft.crafter()::inventoryChanged)));
+                new FilterListener(services, features.filters(), features.filters().index(), features.protection(), chestLinks,
+                        autoCraft.crafter()::inventoryChanged)));
         listeners.addAll(components.migration().listeners());
         listeners.forEach(listener -> getServer().getPluginManager().registerEvents(listener, this));
         services.shutdown().add("open inventories", this::closePluginInventories);
