@@ -1,6 +1,6 @@
 [versions]
 # Main code compiles against Paper 26.3. Tests run on 26.2 until MockBukkit ships mockbukkit-v26.3.
-paper = "26.3.build.178-stable"
+paper = "26.3.build.181-stable"
 paperServer = "26.3"
 paperServerBuild = "146"
 # Pinned downloads for the E2E server.
