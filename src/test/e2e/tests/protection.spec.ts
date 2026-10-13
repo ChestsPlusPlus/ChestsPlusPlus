@@ -32,41 +32,42 @@ async function group(server: Server, name: string) {
   return server.execute(`cpptest group chestlink ${OWNER} ${name}`);
 }
 
-test('a hopper below a locked chest pulls nothing, linked or not', async ({ server }) => {
-  await run(server, ...SETUP);
+/** Sets one case up in its own row and returns its checks, to run once hoppers and crafters have had time to act. */
+type LockCase = (server: Server) => Promise<() => Promise<void>>;
+
+const hopperBelow: LockCase = async server => {
   await chest(server, VANILLA, 8);
   await chest(server, LINKED, 8, 'pullLocked');
   await chest(server, OPEN, 8, 'pullOpen');
   await lock(server, VANILLA, -50, 8);
   await lock(server, LINKED, -50, 8);
   for (const x of [VANILLA, LINKED, OPEN]) await server.execute(`setblock ${x} -51 8 minecraft:hopper[facing=down]`);
-  await sleep(2000);
+  return async () => {
+    expectContains(await server.execute(`data get block ${VANILLA} -51 8 Items`), '[]');
+    expectContains(await server.execute(`cpptest items ${VANILLA} -50 8`), 'cobblestone');
+    expectContains(await server.execute(`data get block ${LINKED} -51 8 Items`), '[]');
+    expectContains(await group(server, 'pullLocked'), 'items={COBBLESTONE=3}');
+    // Control: the same unlocked ChestLink is drained.
+    expectContains(await server.execute(`data get block ${OPEN} -51 8 Items`), 'minecraft:cobblestone');
+    expectContains(await group(server, 'pullOpen'), 'items={}');
+  };
+};
 
-  expectContains(await server.execute(`data get block ${VANILLA} -51 8 Items`), '[]');
-  expectContains(await server.execute(`cpptest items ${VANILLA} -50 8`), 'cobblestone');
-  expectContains(await server.execute(`data get block ${LINKED} -51 8 Items`), '[]');
-  expectContains(await group(server, 'pullLocked'), 'items={COBBLESTONE=3}');
-  // Control: the same unlocked ChestLink is drained.
-  expectContains(await server.execute(`data get block ${OPEN} -51 8 Items`), 'minecraft:cobblestone');
-  expectContains(await group(server, 'pullOpen'), 'items={}');
-});
-
-test('a hopper above a locked chest pushes nothing, linked or not', async ({ server }) => {
-  await run(server, ...SETUP);
+const hopperAbove: LockCase = async server => {
   for (const x of [VANILLA, LINKED, OPEN]) await server.execute(`setblock ${x} -50 10 minecraft:chest`);
   expectContains(await server.execute(`cpptest link chestlink ${OWNER} pushLocked ${LINKED} -50 10`), 'cpptest link ok');
   expectContains(await server.execute(`cpptest link chestlink ${OWNER} pushOpen ${OPEN} -50 10`), 'cpptest link ok');
   await lock(server, VANILLA, -50, 10);
   await lock(server, LINKED, -50, 10);
   for (const x of [VANILLA, LINKED, OPEN]) await server.execute(`setblock ${x} -49 10 minecraft:hopper[facing=down]{Items:[${COBBLE}]}`);
-  await sleep(2000);
-
-  expectContains(await server.execute(`data get block ${VANILLA} -49 10 Items`), 'count: 3');
-  expectContains(await server.execute(`cpptest items ${VANILLA} -50 10`), 'empty');
-  expectContains(await server.execute(`data get block ${LINKED} -49 10 Items`), 'count: 3');
-  expectContains(await group(server, 'pushLocked'), 'items={}');
-  expectContains(await group(server, 'pushOpen'), 'items={COBBLESTONE=3}');
-});
+  return async () => {
+    expectContains(await server.execute(`data get block ${VANILLA} -49 10 Items`), 'count: 3');
+    expectContains(await server.execute(`cpptest items ${VANILLA} -50 10`), 'empty');
+    expectContains(await server.execute(`data get block ${LINKED} -49 10 Items`), 'count: 3');
+    expectContains(await group(server, 'pushLocked'), 'items={}');
+    expectContains(await group(server, 'pushOpen'), 'items={COBBLESTONE=3}');
+  };
+};
 
 /** A torch AutoCrafter at (x, -51, z) whose only input is the chest above, with a hopper below. */
 async function torchCrafter(server: Server, x: number, z: number, name: string) {
@@ -75,8 +76,7 @@ async function torchCrafter(server: Server, x: number, z: number, name: string) 
   expectContains(await server.execute(`cpptest recipe ${OWNER} ${name} -,minecraft:coal,-,-,minecraft:stick,-,-,-,-`), 'result=TORCHx4');
 }
 
-test('an AutoCrafter takes nothing from a locked chest, linked or not', async ({ server }) => {
-  await run(server, ...SETUP);
+const crafterBelow: LockCase = async server => {
   const torchItems = '{Slot:0b,id:"minecraft:coal",count:1},{Slot:1b,id:"minecraft:stick",count:1}';
   for (const x of [VANILLA, LINKED, OPEN]) await server.execute(`setblock ${x} -50 12 minecraft:chest{Items:[${torchItems}]}`);
   expectContains(await server.execute(`cpptest link chestlink ${OWNER} craftLocked ${LINKED} -50 12`), 'cpptest link ok');
@@ -86,13 +86,32 @@ test('an AutoCrafter takes nothing from a locked chest, linked or not', async ({
   await torchCrafter(server, VANILLA, 12, 'fromLockedChest');
   await torchCrafter(server, LINKED, 12, 'fromLockedLink');
   await torchCrafter(server, OPEN, 12, 'fromOpenLink');
-  await sleep(1500);
+  return async () => {
+    expectContains(await server.execute(`data get block ${VANILLA} -52 12 Items`), '[]');
+    expectContains(await server.execute(`cpptest items ${VANILLA} -50 12`), 'coal');
+    expectContains(await server.execute(`data get block ${LINKED} -52 12 Items`), '[]');
+    expectContains(await group(server, 'craftLocked'), 'COAL=1');
+    expectContains(await server.execute(`data get block ${OPEN} -52 12 Items`), 'minecraft:torch');
+  };
+};
 
-  expectContains(await server.execute(`data get block ${VANILLA} -52 12 Items`), '[]');
-  expectContains(await server.execute(`cpptest items ${VANILLA} -50 12`), 'coal');
-  expectContains(await server.execute(`data get block ${LINKED} -52 12 Items`), '[]');
-  expectContains(await group(server, 'craftLocked'), 'COAL=1');
-  expectContains(await server.execute(`data get block ${OPEN} -52 12 Items`), 'minecraft:torch');
+const LOCK_CASES: [string, LockCase][] = [
+  ['a hopper below pulls nothing', hopperBelow],
+  ['a hopper above pushes nothing', hopperAbove],
+  ['an AutoCrafter takes nothing', crafterBelow],
+];
+
+// Every case is set up before the one wait, so each gets at least as long to act as when they ran one at a time.
+test('hoppers and AutoCrafters get nothing through a locked chest, linked or not', async ({ server }) => {
+  await run(server, ...SETUP);
+  const checks: [string, () => Promise<void>][] = [];
+  for (const [name, setUp] of LOCK_CASES) checks.push([name, await setUp(server)]);
+  await sleep(2000);
+  for (const [name, check] of checks) {
+    await check().catch((error: Error) => {
+      throw new Error(`${name}: ${error.message}`);
+    });
+  }
 });
 
 const GOLEM_SITES = [100, 200, 300];
