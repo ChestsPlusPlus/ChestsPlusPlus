@@ -82,8 +82,8 @@ async function waitingForInput(server: Server) {
   ]) {
     await server.execute(command);
   }
-  const recipe = await torchCrafter(server, 'waiting', 4, 0);
   return async () => {
+    const recipe = await torchCrafter(server, 'waiting', 4, 0);
     await waitUntilTick(server, recipe + SETTLED);
     expectContains(await server.execute('data get block 4 -52 0 Items'), '[]');
     const feed = 'setblock 4 -49 0 minecraft:hopper[facing=down]{Items:[{Slot:0b,id:"minecraft:coal",count:1},{Slot:1b,id:"minecraft:stick",count:1}]}';
@@ -106,8 +106,8 @@ async function blockedByOutput(server: Server) {
   ]) {
     await server.execute(command);
   }
-  const recipe = await torchCrafter(server, 'blocked', 8, 0);
   return async () => {
+    const recipe = await torchCrafter(server, 'blocked', 8, 0);
     await waitUntilTick(server, recipe + SETTLED);
     await wake(server, recipe, 'setblock 8 -53 0 minecraft:chest', '8 -52 0', 20);
   };
@@ -116,5 +116,6 @@ async function blockedByOutput(server: Server) {
 test('a backed-off crafter crafts as soon as its ingredients arrive or its output drains', async ({ server }) => {
   await server.execute('cpptest reset');
   const wakeUps = [await waitingForInput(server), await blockedByOutput(server)];
+  // Building the second fixture after starting the first clock can miss the wake-up window at 1000 TPS.
   await Promise.all(wakeUps.map(wakeUp => wakeUp()));
 });

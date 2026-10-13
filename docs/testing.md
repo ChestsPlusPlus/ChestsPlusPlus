@@ -11,6 +11,11 @@ they can't.
 
 Performance against v2 is measured separately; see [benchmarking.md](benchmarking.md).
 
+E2E bots spawn at (1024, -60, 1024), away from the fixtures, so their temporary player chunk tickets don't overlap the fixture chunks.
+Setup force-loads the hopper and crafter fixture chunks and waits for `ENTITY_TICKING` before connecting bots or raising the tick rate.
+A force-load ticket alone does not mean the chunk's neighbours have finished loading; chunk loading takes real time and can outlast
+a short tick deadline at 1000 TPS. The AutoCraft wake-up test builds both fixtures before starting either backoff clock.
+
 Known automation limits:
 - **MockBukkit** doesn't implement `TextDisplay#setBillboard`, redstone power, recipe matching or `PluginBootstrap`.
   `FailOnUnimplemented` turns any such gap into a test failure, so nothing is silently skipped.
