@@ -7,6 +7,7 @@ import com.jamesdpeters.chestsplusplus.core.scheduler.MainThread;
 import com.jamesdpeters.chestsplusplus.core.scheduler.Tickers;
 import com.jamesdpeters.chestsplusplus.message.Message;
 import com.jamesdpeters.chestsplusplus.message.Messages;
+import com.jamesdpeters.chestsplusplus.message.Refusal;
 import com.jamesdpeters.chestsplusplus.model.GroupRegistry;
 import com.jamesdpeters.chestsplusplus.model.Node;
 import com.jamesdpeters.chestsplusplus.model.NodeIndex;
@@ -51,6 +52,10 @@ public final class Services {
 
     public void send(Audience audience, Message message, TagResolver... placeholders) {
         messages.send(audience, message, placeholders);
+    }
+
+    public void send(Audience audience, Refusal refusal) {
+        send(audience, refusal.message(), refusal.placeholders());
     }
 
     public void reconfigure(Settings settings, Messages messages) {

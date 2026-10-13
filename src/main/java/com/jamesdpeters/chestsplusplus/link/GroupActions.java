@@ -49,7 +49,7 @@ public final class GroupActions {
                 yield null;
             }
             case LinkService.Resolved.Refused refused -> {
-                links.send(player, refused);
+                services.send(player, refused.refusal());
                 yield null;
             }
         };
