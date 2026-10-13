@@ -8,6 +8,8 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noFields;
 import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 
 import com.jamesdpeters.chestsplusplus.core.Services;
+import com.jamesdpeters.chestsplusplus.model.StorageGroup;
+import com.jamesdpeters.chestsplusplus.persistence.GroupStore;
 import com.jamesdpeters.chestsplusplus.testing.Tags;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.importer.ImportOption;
@@ -44,6 +46,18 @@ class ArchitectureTest {
             .and(not(belongToAnyOf(ChestsPlusPlus.class)))
             .should().callMethod(Services.class, "get", Class.class)
             .because("collaborators come in through the constructor; commands are built before any services exist");
+
+    @ArchTest static final ArchRule modelKnowsNoListener = noClasses().that().resideInAPackage("com.jamesdpeters.chestsplusplus.model..")
+            .should().dependOnClassesThat().resideInAnyPackage("com.jamesdpeters.chestsplusplus.persistence..",
+                    "com.jamesdpeters.chestsplusplus.display..", "com.jamesdpeters.chestsplusplus.migration..")
+            .because("stores, displays and the migration hear of model changes through the listeners ChestsPlusPlus adds");
+
+    @ArchTest static final ArchRule groupChangesGoThroughTheRegistry = noClasses().that()
+            .resideOutsideOfPackage("com.jamesdpeters.chestsplusplus.persistence..")
+            .and(not(belongToAnyOf(ChestsPlusPlus.class)))
+            .should().callMethod(Services.class, "groupStore")
+            .orShould().callMethod(GroupStore.class, "markDirty", StorageGroup.class)
+            .because("groups.changed(group) saves and redisplays a group; GroupStore listens to the registry");
 
     @ArchTest static final ArchRule noJulLoggers = noFields().should().haveRawType(Logger.class)
             .because("logging goes through @Slf4j(topic = ChestsPlusPlus.NAME)");
