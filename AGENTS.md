@@ -14,6 +14,8 @@ comments, no repeated logic.
   `build.gradle.kts` only configures the plugin itself.
 - The compiler runs with `-Xlint:all -Werror`, so any warning fails the build. That includes Error Prone and NullAway (JSpecify
   mode, main code only). Paper calls NullAway misreads go through `PaperApi`.
+- Declare every new permission node, with its description and default, in `build.gradle.kts`'s `permissions { }` block. Paper makes
+  an undeclared node op-only; `PermissionsTest` fails on a node that is used but not declared, or declared but not used.
 - `ArchitectureTest` (part of `unitTest`) checks the package, `Services`, logging and SQL rules below. `lombok.config` rejects the
   banned Lombok annotations.
 - `unitTest` and `integrationTest` write JaCoCo reports to `build/reports/jacoco/<task>/html`; `jacocoMergedReport` runs both and
@@ -79,6 +81,7 @@ comments, no repeated logic.
 | Need | Use |
 |---|---|
 | Choose a value per group type | `type.pick(chestlinkValue, autocraftValue)`, `type.displayName()` |
+| A message or permission every group type has | `GroupMessage.X.of(type)`, `Permissions.of(type, GroupPermission.X)` |
 | Type-specific behaviour for a group (open, icon, summary, display, link hooks) | `handlers.of(group)` or `handlers.of(type)`, never null. A new hook is a `protected abstract` method on `GroupTypeHandler<G>`, typed on `G`, behind a `final` bridge |
 | Send a message | `services.send(audience, Message.X, ...)` |
 | Refuse an action: feature off, permission, blacklisted world, can't use or manage a group | `Checks`: `checks.refused(player, ...)` sends the first refusal, `Checks.first(...)` returns it unsent |
