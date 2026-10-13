@@ -225,11 +225,7 @@ public final class V2Importer {
             for (long id : adopted) {
                 StorageGroup group = groups.byId(id);
                 nodes.removeGroup(id);
-                pending.removeGroup(id);
-                if (group != null) {
-                    groups.remove(group);
-                    groupStore.markDirty(group);
-                }
+                if (group != null) groups.remove(group);
             }
             addedBlocks.forEach(cleanup::forget);
             addedTrust.forEach(party -> party.members().forEach(member -> trust.untrust(party.owner(), member)));

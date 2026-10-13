@@ -124,7 +124,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         server.getScheduler().performTicks(1);
         ChestLinkGroup group = group(alice, "ores");
         List<Inventory> changed = new ArrayList<>();
-        ChestLinkService chestLinks = new ChestLinkService(plugin.services(), plugin.services().get(DisplayService.class), changed::add);
+        ChestLinkService chestLinks = new ChestLinkService(plugin.services(), changed::add);
 
         chestLinks.changed(group);
         ((Container) chest.getState(false)).getInventory().addItem(ItemStack.of(Material.DIAMOND));

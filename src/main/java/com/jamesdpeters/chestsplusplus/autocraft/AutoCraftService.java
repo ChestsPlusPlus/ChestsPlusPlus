@@ -207,7 +207,7 @@ public final class AutoCraftService extends GroupTypeHandler<AutoCraftGroup> {
             return false;
         }
         group.setRecipe(matrix, key, null);
-        services.groupStore().markDirty(group);
+        services.groups().changed(group);
         return true;
     }
 
@@ -245,8 +245,7 @@ public final class AutoCraftService extends GroupTypeHandler<AutoCraftGroup> {
         CraftingBackend.ResolvedRecipe resolved = world == null ? null : backend.resolve(matrix, world);
         applyRecipe(group, matrix, resolved);
         craftSoon(group);
-        services.groupStore().markDirty(group);
-        displays.requestUpdate(group);
+        services.groups().changed(group);
         if (editor != null && resolved != null) editor.playSound(PaperApi.location(editor), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.6f, 1.4f);
         renderEditors(group);
         return resolved == null ? null : resolved.result();
@@ -258,7 +257,7 @@ public final class AutoCraftService extends GroupTypeHandler<AutoCraftGroup> {
         List<@Nullable Predicate<ItemStack>> choices = recipeChoices.get(group.id());
         if (choices != null) slotRules.put(group.id(), SlotRules.of(group.matrix(), group.matches(), choices));
         craftSoon(group);
-        services.groupStore().markDirty(group);
+        services.groups().changed(group);
         renderEditors(group);
     }
 
@@ -507,10 +506,7 @@ public final class AutoCraftService extends GroupTypeHandler<AutoCraftGroup> {
     /** Also wakes crafters waiting on {@code inventory}: an output can feed another crafter, and an emptied input can be another's full output. */
     private void markChanged(Inventory inventory) {
         inventoryChanged(inventory);
-        if (Holders.of(inventory) instanceof ChestLinkHolder holder) {
-            services.groupStore().markDirty(holder.group());
-            displays.requestUpdate(holder.group());
-        }
+        if (Holders.of(inventory) instanceof ChestLinkHolder holder) services.groups().changed(holder.group());
     }
 
     private @Nullable World firstWorld() {

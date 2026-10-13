@@ -10,7 +10,6 @@ import com.jamesdpeters.chestsplusplus.core.Items;
 import com.jamesdpeters.chestsplusplus.core.PaperApi;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.core.Viewers;
-import com.jamesdpeters.chestsplusplus.display.DisplayService;
 import com.jamesdpeters.chestsplusplus.link.GroupTypeHandler;
 import com.jamesdpeters.chestsplusplus.message.Message;
 import com.jamesdpeters.chestsplusplus.message.Messages;
@@ -50,17 +49,15 @@ import org.jspecify.annotations.Nullable;
 public final class ChestLinkService extends GroupTypeHandler<ChestLinkGroup> {
 
     private final Services services;
-    private final DisplayService displays;
     private final InventoryChanges changes;
     /** Lids currently held open per group, so the last viewer closing can close them. */
     private final Map<Long, Set<BlockPos>> openLids = new HashMap<>();
     /** Node each viewer opened from (lid animation for non-"animate all" setups). */
     private final Map<UUID, BlockPos> openedFrom = new HashMap<>();
 
-    public ChestLinkService(Services services, DisplayService displays, InventoryChanges changes) {
+    public ChestLinkService(Services services, InventoryChanges changes) {
         super(GroupType.CHESTLINK, ChestLinkGroup.class);
         this.services = services;
-        this.displays = displays;
         this.changes = changes;
     }
 
@@ -214,8 +211,7 @@ public final class ChestLinkService extends GroupTypeHandler<ChestLinkGroup> {
     /** InventoryCloseEvent for a ChestLink inventory: persist, sort, refresh displays, close lids when last out. */
     public void viewerClosed(ChestLinkGroup group, HumanEntity viewer) {
         openedFrom.remove(viewer.getUniqueId());
-        services.groupStore().markDirty(group);
-        displays.requestUpdate(group);
+        services.groups().changed(group);
         boolean lastViewer = group.inventory().getViewers().stream().allMatch(v -> v.equals(viewer));
         if (!lastViewer) return;
         sort(group);
@@ -242,9 +238,9 @@ public final class ChestLinkService extends GroupTypeHandler<ChestLinkGroup> {
         inventory.setContents(Sorter.sort(PaperApi.contents(inventory), group.sortMode(), inventory.getSize()));
     }
 
+    /** Its contents changed: saves and redisplays it, and wakes the crafters waiting on it. */
     public void changed(ChestLinkGroup group) {
-        services.groupStore().markDirty(group);
-        displays.requestUpdate(group);
+        services.groups().changed(group);
         changes.changed(group.inventory());
     }
 

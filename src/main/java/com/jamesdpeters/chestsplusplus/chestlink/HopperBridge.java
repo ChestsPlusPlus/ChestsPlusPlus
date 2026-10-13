@@ -6,6 +6,7 @@ import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.core.scheduler.MainThread;
 import com.jamesdpeters.chestsplusplus.link.SyntheticMoveEvent;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
+import com.jamesdpeters.chestsplusplus.persistence.GroupStore;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,7 @@ public final class HopperBridge implements Listener {
 
     private final MainThread mainThread;
     private final Services services;
+    private final GroupStore groupStore;
     private final ChestLinkService chestLinks;
     /** Linked blocks a crafter pushed into this tick, absorbed together on the next. */
     private final Set<BlockPos> pendingAbsorbs = new HashSet<>();
@@ -51,7 +53,7 @@ public final class HopperBridge implements Listener {
             return;
         }
         event.setInventory(group.inventory());
-        services.groupStore().touch(group);
+        groupStore.touch(group);
     }
 
     private boolean enabled() {
