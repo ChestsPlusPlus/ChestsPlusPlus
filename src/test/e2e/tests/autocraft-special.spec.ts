@@ -1,7 +1,7 @@
-import { sleep, test } from '@plugwright/runner';
+import { test } from '@plugwright/runner';
 import { appendFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import type { Server } from './support.js';
+import { gameTime, type Server, waitUntilTick } from './support.js';
 
 // Experiment: special (complex) recipes and per-slot match modes in a real AutoCrafter. Records observations instead of
 // asserting, so every case runs. Results go to build/autocraft-special-results.txt.
@@ -9,7 +9,7 @@ import type { Server } from './support.js';
 const OWNER = 'E2EOwner';
 const RESULTS = fileURLToPath(new URL('../../../../../build/autocraft-special-results.txt', import.meta.url));
 const ROWS = [4, 8, 14];
-const CRAFT_WAIT_MS = 3500;
+const CRAFT_WAIT_TICKS = 70;
 
 interface Case {
   name: string;
@@ -170,7 +170,7 @@ const CASES: Case[] = [
   },
 ];
 
-/** A case set up and waiting to craft: what was recorded so far, and when to read the results. */
+/** A case set up and waiting to craft: what was recorded so far, and the tick to read the results on. */
 interface Pending {
   lines: string[];
   x: number;
@@ -200,11 +200,11 @@ async function place(server: Server, index: number, c: Case): Promise<Pending> {
     `recipe: ${recipe.trim()}`,
     `input chest before: ${before.trim()}`,
   ];
-  return { lines, x, z, readAt: Date.now() + CRAFT_WAIT_MS };
+  return { lines, x, z, readAt: (await gameTime(server)) + CRAFT_WAIT_TICKS };
 }
 
 async function record(server: Server, { lines, x, z, readAt }: Pending) {
-  await sleep(Math.max(0, readAt - Date.now()));
+  await waitUntilTick(server, readAt);
   lines.push(
     `input chest after: ${(await server.execute(`cpptest items ${x} -50 ${z}`)).trim()}`,
     `output hopper after: ${(await server.execute(`cpptest items ${x} -52 ${z}`)).trim()}`,
