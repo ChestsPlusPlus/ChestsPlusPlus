@@ -506,7 +506,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         sign(alice, chest, "[ChestLink]", "shared");
         ChestLinkGroup group = group(alice, "shared");
         group.inventory().addItem(ItemStack.of(Material.DIAMOND));
-        group.setPublic(true);
+        plugin.services().groups().setPublic(group, true);
         rightClick(bob, chest);
 
         bob.addAttachment(plugin).setPermission("chestsplusplus.chestlink.open", false);
@@ -527,7 +527,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         sign(bob, bobs, "[ChestLink]", "Alice:alices");
         assertThat(plugin.services().nodes().get(BlockPos.of(bobs))).isNull();
 
-        group(alice, "alices").setPublic(true);
+        plugin.services().groups().setPublic(group(alice, "alices"), true);
         sign(bob, bobs, "[ChestLink]", "Alice:alices");
         assertThat(plugin.services().nodes().get(BlockPos.of(bobs))).isNotNull();
     }

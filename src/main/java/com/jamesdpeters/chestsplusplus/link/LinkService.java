@@ -260,8 +260,7 @@ public final class LinkService {
     }
 
     public void setPublic(StorageGroup group, boolean isPublic) {
-        group.setPublic(isPublic);
-        services.groups().changed(group);
+        services.groups().setPublic(group, isPublic);
         if (!isPublic) closeRevokedViews(group);
     }
 

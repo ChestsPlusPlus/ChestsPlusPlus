@@ -7,7 +7,7 @@ import java.util.UUID;
 import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 
-/** A named group of linked blocks owned by a player. Mutated only on the main thread. */
+/** A named group of linked blocks owned by a player. Mutated only on the main thread, through {@link GroupRegistry} so its listeners hear of it. */
 public abstract sealed class StorageGroup permits ChestLinkGroup, AutoCraftGroup {
 
     @Getter private final long id;
@@ -33,11 +33,11 @@ public abstract sealed class StorageGroup permits ChestLinkGroup, AutoCraftGroup
         this.name = name;
     }
 
-    public void setPublic(boolean isPublic) {
+    void setPublic(boolean isPublic) {
         this.isPublic = isPublic;
     }
 
-    public void setV2Source(@Nullable String v2Source) {
+    void setV2Source(@Nullable String v2Source) {
         this.v2Source = v2Source;
     }
 

@@ -79,6 +79,21 @@ public final class GroupRegistry {
         changed(group);
     }
 
+    public void setPublic(StorageGroup group, boolean isPublic) {
+        group.setPublic(isPublic);
+        changed(group);
+    }
+
+    public void setSortMode(ChestLinkGroup group, SortMode sortMode) {
+        group.setSortMode(sortMode);
+        changed(group);
+    }
+
+    public void setV2Source(StorageGroup group, @Nullable String v2Source) {
+        group.setV2Source(v2Source);
+        changed(group);
+    }
+
     public boolean addMember(StorageGroup group, UUID member) {
         if (!group.addMember(member)) return false;
         if (added(group)) byMember.computeIfAbsent(member, k -> new HashSet<>()).add(group);

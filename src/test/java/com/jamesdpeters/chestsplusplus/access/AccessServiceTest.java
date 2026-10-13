@@ -33,9 +33,9 @@ class AccessServiceTest {
 
     @Test
     void publicMemberAndTrustGrantUseButNotManage() {
-        group.setPublic(true);
+        registry.setPublic(group, true);
         assertThat(access.canAccess(OTHER, false, group)).isTrue();
-        group.setPublic(false);
+        registry.setPublic(group, false);
 
         registry.add(group);
         registry.addMember(group, OTHER);

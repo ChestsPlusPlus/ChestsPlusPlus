@@ -22,7 +22,7 @@ public final class ChestLinkGroup extends StorageGroup {
         return GroupType.CHESTLINK;
     }
 
-    public void setSortMode(SortMode sortMode) {
+    void setSortMode(SortMode sortMode) {
         this.sortMode = sortMode;
     }
 

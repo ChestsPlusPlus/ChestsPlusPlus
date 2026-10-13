@@ -227,9 +227,9 @@ public final class ChestLinkService extends GroupTypeHandler<ChestLinkGroup> {
     }
 
     public void setSortMode(ChestLinkGroup group, SortMode mode) {
-        group.setSortMode(mode);
+        services.groups().setSortMode(group, mode);
         sort(group);
-        changed(group);
+        changes.changed(group.inventory());
     }
 
     public void sort(ChestLinkGroup group) {

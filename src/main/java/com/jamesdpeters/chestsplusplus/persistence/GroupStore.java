@@ -151,7 +151,7 @@ public final class GroupStore implements TrackedStore<Long, GroupSnapshot> {
     private StorageGroup register(GroupSnapshot snapshot) {
         GroupRow row = snapshot.group();
         StorageGroup group = group(row);
-        // Before adding it, so the registry tells no listeners.
+        // Built in full before it is added, so the registry tells no listeners.
         snapshot.members().forEach(member -> groups.addMember(group, member.member()));
         groups.add(group);
         snapshot.nodes().forEach(node -> nodes.put(node(node)));
@@ -228,11 +228,11 @@ public final class GroupStore implements TrackedStore<Long, GroupSnapshot> {
     }
 
     /** Builds the group without registering it; the AutoCraft result is re-resolved against the live recipes by the attach callback. */
-    private static StorageGroup group(GroupRow row) {
+    private StorageGroup group(GroupRow row) {
         StorageGroup group = switch (row.type()) {
             case CHESTLINK -> {
                 ChestLinkGroup chest = new ChestLinkGroup(row.id(), row.owner(), row.name(), row.createdAt());
-                chest.setSortMode(row.sortMode() == null ? SortMode.OFF : row.sortMode());
+                groups.setSortMode(chest, row.sortMode() == null ? SortMode.OFF : row.sortMode());
                 yield chest;
             }
             case AUTOCRAFT -> {
@@ -242,8 +242,8 @@ public final class GroupStore implements TrackedStore<Long, GroupSnapshot> {
                 yield craft;
             }
         };
-        group.setPublic(row.isPublic());
-        group.setV2Source(row.v2Source());
+        groups.setPublic(group, row.isPublic());
+        groups.setV2Source(group, row.v2Source());
         return group;
     }
 

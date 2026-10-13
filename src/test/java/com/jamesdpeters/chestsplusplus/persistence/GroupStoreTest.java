@@ -105,9 +105,9 @@ class GroupStoreTest extends PluginTestBase {
         ChestLinkGroup chest = first.chest("Ores");
         chest.inventory().setItem(0, ItemStack.of(Material.DIAMOND, 7));
         chest.inventory().setItem(53, ItemStack.of(Material.OAK_LOG, 64));
-        chest.setSortMode(SortMode.AMOUNT_DESC);
-        chest.setPublic(true);
-        chest.setV2Source("chestlink:owner:Ores");
+        first.groups.setSortMode(chest, SortMode.AMOUNT_DESC);
+        first.groups.setPublic(chest, true);
+        first.groups.setV2Source(chest, "chestlink:owner:Ores");
         first.groups.addMember(chest, FRIEND);
         first.nodes.put(new Node(new BlockPos(WORLD, 1, 2, 3), BlockFace.EAST, chest.id()));
         AutoCraftGroup craft = new AutoCraftGroup(first.groups.nextId(), OWNER, "torches", 2000);
@@ -174,7 +174,8 @@ class GroupStoreTest extends PluginTestBase {
         Instance first = new Instance();
         ChestLinkGroup chest = first.chest("Ores");
         List<Consumer<ChestLinkGroup>> mutations = List.of(group -> first.groups.rename(group, "Metals"),
-                group -> first.groups.addMember(group, FRIEND), group -> first.groups.removeMember(group, FRIEND));
+                group -> first.groups.addMember(group, FRIEND), group -> first.groups.removeMember(group, FRIEND),
+                group -> first.groups.setPublic(group, true), group -> first.groups.setSortMode(group, SortMode.NAME));
         for (Consumer<ChestLinkGroup> mutation : mutations) {
             first.flushAndWait();
             first.events.clear();
