@@ -16,7 +16,7 @@ comments, no repeated logic.
   mode, main code only). Paper calls NullAway misreads go through `PaperApi`.
 - Declare every new permission node, with its description and default, in `build.gradle.kts`'s `permissions { }` block. Paper makes
   an undeclared node op-only; `PermissionsTest` fails on a node that is used but not declared, or declared but not used.
-- `ArchitectureTest` (part of `unitTest`) checks the package, `Services`, logging and SQL rules below. `lombok.config` rejects the
+- `ArchitectureTest` (part of `unitTest`) checks the package, `Components`, logging and SQL rules below. `lombok.config` rejects the
   banned Lombok annotations.
 - `unitTest` and `integrationTest` write JaCoCo reports to `build/reports/jacoco/<task>/html`; `jacocoMergedReport` runs both and
   combines them.
@@ -60,8 +60,9 @@ comments, no repeated logic.
 
 ## Dependencies
 
-- Pass collaborators in through the constructor; don't call `services.get(...)` mid-method. The command classes are the only
-  exception: they're built at bootstrap, before any services exist, so they look services up when a command runs.
+- Pass collaborators in through the constructor. `ChestsPlusPlus.onEnable` builds them in steps that each return a record
+  (`Features`, `Storage`, `Migration`), which it bundles into `Components`. Only the root package and the command classes see those
+  records: commands are built at bootstrap, before enable, so they read `components.features()` when a command runs.
 - Every user-facing action goes through `GroupActions`, so a dialog button can never do more than the equivalent command.
 - Keep packages acyclic: `chestlink` and `autocraft` depend on `link`, never the other way round.
 
@@ -99,7 +100,8 @@ comments, no repeated logic.
 | Close an inventory's viewers, or find the players with a kind of inventory open | `Viewers.close(inventory)` (optionally only those a predicate picks), `Viewers.withHolder(HolderType.class)` |
 | Save a model change | `services.groups().changed(group)`, which saves and redisplays it. Registry mutators (`rename`, `setPublic`, `addMember`, ...) announce themselves; `trust` and the migration state tell their stores through `listen`. The next flush saves the whole group |
 | SQL | a `RecordTable` in the store that owns the table; anything it can't do is a plain JDBI call in that store. Schema: edit `V1.sql` until v3 ships (then clear your dev database), afterwards a new `db/migration/V<n>.sql` with `Database.SCHEMA_VERSION` bumped |
-| Persist a new kind of thing | a row record, its `CREATE TABLE`, a `RowStore` for one row per key or a `TrackedStore` for aggregates, `persistence.register(store)` and `model.listen(store::markDirty)` in `ChestsPlusPlus`, and the model fires its `Listeners` wherever the data changes |
+| A new service | build it where its record is built (`Features.create`, `Migration.start`) and add it to that record only if something reads it after enable; pass it on by constructor |
+| Persist a new kind of thing | a row record, its `CREATE TABLE`, a `RowStore` for one row per key or a `TrackedStore` for aggregates, `persistence.register(store)` and `model.listen(store::markDirty)` in `ChestsPlusPlus.openDatabase` (`Migration.Models.registerStores` for v2 state), and the model fires its `Listeners` wherever the data changes |
 | Command tree pieces | `Commands.literal`, `argument`, `permission`, `playerArgument` |
 
 ## Runtime libraries

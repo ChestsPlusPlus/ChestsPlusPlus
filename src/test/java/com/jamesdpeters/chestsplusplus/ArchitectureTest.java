@@ -2,12 +2,10 @@ package com.jamesdpeters.chestsplusplus;
 
 import static com.tngtech.archunit.base.DescribedPredicate.describe;
 import static com.tngtech.archunit.base.DescribedPredicate.not;
-import static com.tngtech.archunit.core.domain.JavaClass.Predicates.belongToAnyOf;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noFields;
 import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 
-import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import com.jamesdpeters.chestsplusplus.persistence.GroupStore;
 import com.jamesdpeters.chestsplusplus.testing.Tags;
@@ -38,14 +36,13 @@ class ArchitectureTest {
             .because("link builds on display, and each group type's handler gives displays their content through DisplayService.Content");
 
     /** The root package is left out: ChestsPlusPlus wires every package together. */
-    @ArchIgnore(reason = "core cycles with access, model, message and persistence: Services holds them all, and they use core's helpers")
+    @ArchIgnore(reason = "core cycles with access, model and message: Services holds them all, and they use core's helpers")
     @ArchTest static final ArchRule packagesAreAcyclic = slices().matching("com.jamesdpeters.chestsplusplus.(**)").should().beFreeOfCycles();
 
-    @ArchTest static final ArchRule onlyCommandsLookUpServices = noClasses().that()
-            .resideOutsideOfPackage("com.jamesdpeters.chestsplusplus.command..")
-            .and(not(belongToAnyOf(ChestsPlusPlus.class)))
-            .should().callMethod(Services.class, "get", Class.class)
-            .because("collaborators come in through the constructor; commands are built before any services exist");
+    @ArchTest static final ArchRule onlyTheRootAndCommandsSeeComponents = noClasses().that()
+            .resideOutsideOfPackages("com.jamesdpeters.chestsplusplus", "com.jamesdpeters.chestsplusplus.command..")
+            .should().dependOnClassesThat().belongToAnyOf(Components.class, Features.class, Storage.class, Migration.class)
+            .because("collaborators come in through the constructor; commands are built at bootstrap, before enable");
 
     @ArchTest static final ArchRule modelKnowsNoListener = noClasses().that().resideInAPackage("com.jamesdpeters.chestsplusplus.model..")
             .should().dependOnClassesThat().resideInAnyPackage("com.jamesdpeters.chestsplusplus.persistence..",
@@ -53,9 +50,8 @@ class ArchitectureTest {
             .because("stores, displays and the migration hear of model changes through the listeners ChestsPlusPlus adds");
 
     @ArchTest static final ArchRule groupChangesGoThroughTheRegistry = noClasses().that()
-            .resideOutsideOfPackage("com.jamesdpeters.chestsplusplus.persistence..")
-            .and(not(belongToAnyOf(ChestsPlusPlus.class)))
-            .should().callMethod(Services.class, "groupStore")
+            .resideOutsideOfPackages("com.jamesdpeters.chestsplusplus", "com.jamesdpeters.chestsplusplus.persistence..")
+            .should().callMethod(Storage.class, "groupStore")
             .orShould().callMethod(GroupStore.class, "markDirty", StorageGroup.class)
             .because("groups.changed(group) saves and redisplays a group; GroupStore listens to the registry");
 
