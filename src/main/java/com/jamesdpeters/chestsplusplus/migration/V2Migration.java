@@ -6,6 +6,7 @@ import com.jamesdpeters.chestsplusplus.core.PaperApi;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.message.Message;
 import com.jamesdpeters.chestsplusplus.message.Messages;
+import com.jamesdpeters.chestsplusplus.persistence.Persistence;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -42,6 +43,7 @@ public final class V2Migration implements Listener {
 
     private final JavaPlugin plugin;
     private final Services services;
+    private final Persistence persistence;
     private final V2Importer importer;
     private final V2Cleanup cleanup;
     private final V2WorldCleanup worldCleanup;
@@ -94,7 +96,7 @@ public final class V2Migration implements Listener {
                 return;
             }
             afterImport(report);
-            services.persistence().flush().whenComplete((ok, error) -> {
+            persistence.flush().whenComplete((ok, error) -> {
                 if (error != null) {
                     services.send(sender, Message.MIGRATE_FAILED,
                             Messages.text("error", "Database write failed; changes are queued for retry. Do not reimport"));
