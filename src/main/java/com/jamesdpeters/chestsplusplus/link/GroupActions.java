@@ -7,6 +7,7 @@ import com.jamesdpeters.chestsplusplus.access.AccessibleGroups;
 import com.jamesdpeters.chestsplusplus.core.PaperApi;
 import com.jamesdpeters.chestsplusplus.core.PlayerNames;
 import com.jamesdpeters.chestsplusplus.core.Services;
+import com.jamesdpeters.chestsplusplus.message.GroupMessage;
 import com.jamesdpeters.chestsplusplus.message.Message;
 import com.jamesdpeters.chestsplusplus.message.Messages;
 import com.jamesdpeters.chestsplusplus.message.Refusal;
@@ -73,8 +74,7 @@ public final class GroupActions {
             return false;
         }
         links.removeGroup(group, PaperApi.location(player));
-        services.send(player, type.pick(Message.CHESTLINK_REMOVED, Message.AUTOCRAFT_REMOVED),
-                Messages.group(group));
+        services.send(player, GroupMessage.REMOVED.of(type), Messages.group(group));
         return true;
     }
 
@@ -86,7 +86,7 @@ public final class GroupActions {
     public boolean setPublic(Player player, StorageGroup group, boolean isPublic) {
         if (checks.refused(player, checks.enabled(group.type()), checks.manage(player, group))) return false;
         links.setPublic(group, isPublic);
-        services.send(player, group.type().pick(Message.CHESTLINK_PUBLIC, Message.AUTOCRAFT_PUBLIC),
+        services.send(player, GroupMessage.PUBLIC.of(group.type()),
                 Messages.group(group),
                 Messages.component("state", services.messages().get(isPublic ? Message.STATE_PUBLIC : Message.STATE_PRIVATE)));
         return true;
@@ -175,15 +175,15 @@ public final class GroupActions {
         if (checks.refused(player, checks.enabled(type))) return;
         AccessibleGroups accessible = services.access().accessibleGroups(player.getUniqueId(), AccessService.hasBypass(player), type);
         if (accessible.groups().isEmpty()) {
-            services.send(player, type.pick(Message.CHESTLINK_LIST_EMPTY, Message.AUTOCRAFT_LIST_EMPTY));
+            services.send(player, GroupMessage.LIST_EMPTY.of(type));
             return;
         }
-        services.send(player, type.pick(Message.CHESTLINK_LIST_HEADER, Message.AUTOCRAFT_LIST_HEADER));
+        services.send(player, GroupMessage.LIST_HEADER.of(type));
         GroupTypeHandler<?> handler = handlers.of(type);
         for (StorageGroup group : accessible.groups()) {
             String ref = StringArgumentType.escapeIfRequired(accessible.reference(group));
             String command = type.pick("/chestlink open ", "/autocraft open ") + ref;
-            services.send(player, type.pick(Message.CHESTLINK_LIST_ENTRY, Message.AUTOCRAFT_LIST_ENTRY),
+            services.send(player, GroupMessage.LIST_ENTRY.of(type),
                     Messages.group(group), Messages.text("ref", ref), TagResolver.resolver("open", Tag.styling(ClickEvent.runCommand(command))),
                     Messages.text("owner", accessible.ownerName(group)),
                     Messages.text("nodes", services.nodes().count(group.id())),

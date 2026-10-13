@@ -7,6 +7,7 @@ import com.jamesdpeters.chestsplusplus.core.BlockPos;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.core.Viewers;
 import com.jamesdpeters.chestsplusplus.display.DisplayService;
+import com.jamesdpeters.chestsplusplus.message.GroupMessage;
 import com.jamesdpeters.chestsplusplus.message.Message;
 import com.jamesdpeters.chestsplusplus.message.Messages;
 import com.jamesdpeters.chestsplusplus.message.Refusal;
@@ -129,9 +130,7 @@ public final class LinkService {
         };
         if (group == null) return null;
 
-        Message linked = target instanceof Resolved.Missing
-                ? type.pick(Message.CHESTLINK_CREATED, Message.AUTOCRAFT_CREATED)
-                : type.pick(Message.CHESTLINK_LINKED, Message.AUTOCRAFT_LINKED);
+        Message linked = (target instanceof Resolved.Missing ? GroupMessage.CREATED : GroupMessage.LINKED).of(type);
         join(player, group, block, facing, linked);
         return group;
     }
@@ -258,8 +257,7 @@ public final class LinkService {
         handlers.of(group).onRenamed(group);
         services.groupStore().markDirty(group);
         displays.requestUpdate(group);
-        services.send(audience, group.type().pick(Message.CHESTLINK_RENAMED, Message.AUTOCRAFT_RENAMED),
-                Messages.text("old", old), Messages.text("new", newName));
+        services.send(audience, GroupMessage.RENAMED.of(group.type()), Messages.text("old", old), Messages.text("new", newName));
         return true;
     }
 
