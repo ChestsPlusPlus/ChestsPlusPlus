@@ -69,11 +69,11 @@ final class MigrateCommands {
     }
 
     private Command<CommandSourceStack> cleanup(ToIntFunction<CommandContext<CommandSourceStack>> radius) {
-        return bodies.player((services, player, context) -> services.get(V2Migration.class).cleanupNear(player, radius.applyAsInt(context)));
+        return bodies.player((components, player, context) -> components.migration().v2().cleanupNear(player, radius.applyAsInt(context)));
     }
 
     private Command<CommandSourceStack> run(BiConsumer<V2Migration, CommandContext<CommandSourceStack>> body) {
-        return bodies.enabled((services, context) -> body.accept(services.get(V2Migration.class), context));
+        return bodies.enabled((components, context) -> body.accept(components.migration().v2(), context));
     }
 
     private static CommandSender sender(CommandContext<CommandSourceStack> context) {

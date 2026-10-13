@@ -1,8 +1,8 @@
 package com.jamesdpeters.chestsplusplus.command;
 
+import com.jamesdpeters.chestsplusplus.Components;
 import com.jamesdpeters.chestsplusplus.access.AccessService;
 import com.jamesdpeters.chestsplusplus.access.AccessibleGroups;
-import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import com.mojang.brigadier.StringReader;
@@ -54,9 +54,9 @@ public final class GroupArgument implements CustomArgumentType<String, String> {
         return bodies.suggest(context, builder, this::suggest);
     }
 
-    private void suggest(Services services, Player player, SuggestionsBuilder builder) {
+    private void suggest(Components components, Player player, SuggestionsBuilder builder) {
         String typed = builder.getRemaining().replace("\"", "").toLowerCase(Locale.ROOT);
-        AccessibleGroups accessible = services.access().accessibleGroups(player.getUniqueId(), AccessService.hasBypass(player), type);
+        AccessibleGroups accessible = components.services().access().accessibleGroups(player.getUniqueId(), AccessService.hasBypass(player), type);
         for (StorageGroup group : accessible.groups()) {
             String reference = accessible.reference(group);
             if (reference.toLowerCase(Locale.ROOT).startsWith(typed)) builder.suggest(StringArgumentType.escapeIfRequired(reference));
