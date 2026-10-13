@@ -151,8 +151,9 @@ public final class GroupStore implements TrackedStore<Long, GroupSnapshot> {
     private StorageGroup register(GroupSnapshot snapshot) {
         GroupRow row = snapshot.group();
         StorageGroup group = group(row);
-        groups.add(group);
+        // Before adding it, so the registry tells no listeners.
         snapshot.members().forEach(member -> groups.addMember(group, member.member()));
+        groups.add(group);
         snapshot.nodes().forEach(node -> nodes.put(node(node)));
         attach.accept(new LoadedGroup(group, row.items()));
         return group;

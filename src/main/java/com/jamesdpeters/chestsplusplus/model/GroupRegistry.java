@@ -1,5 +1,6 @@
 package com.jamesdpeters.chestsplusplus.model;
 
+import com.jamesdpeters.chestsplusplus.core.Listeners;
 import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import java.util.Collection;
@@ -11,10 +12,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.LongConsumer;
 import org.jspecify.annotations.Nullable;
 
-/** All groups, indexed by id, by type + owner + lower-cased name, by owner and by member. Main thread only. */
+/**
+ * All groups, indexed by id, by type + owner + lower-cased name, by owner and by member. Main thread only. Its mutators tell the
+ * listeners (which save and redisplay groups); anything else that changes a group calls {@link #changed}. Listeners only hear about
+ * added groups: {@link #add} is silent, and so is anything done to a group before it, which keeps loading from dirtying every group.
+ */
 public final class GroupRegistry {
 
     private record NameKey(GroupType type, UUID owner, String name) {}
@@ -23,11 +27,18 @@ public final class GroupRegistry {
     private final Map<NameKey, StorageGroup> byName = new HashMap<>();
     private final Map<UUID, Set<StorageGroup>> byOwner = new HashMap<>();
     private final Map<UUID, Set<StorageGroup>> byMember = new HashMap<>();
+    private final Listeners<StorageGroup> changeListeners = new Listeners<>();
+    private final Listeners<StorageGroup> removeListeners = new Listeners<>();
     private long nextId = 1;
-    private LongConsumer onRemove = id -> {};
 
-    public void onRemove(LongConsumer listener) {
-        onRemove = listener;
+    public void listen(GroupListener listener) {
+        changeListeners.add(listener::changed);
+        removeListeners.add(listener::removed);
+    }
+
+    /** Tells the listeners about a change the registry can't see, such as contents, a recipe or nodes. */
+    public void changed(StorageGroup group) {
+        if (added(group)) changeListeners.fire(group);
     }
 
     public long nextId() {
@@ -39,6 +50,7 @@ public final class GroupRegistry {
         nextId = Math.max(nextId, id + 1);
     }
 
+    /** Silent: a new group is announced by its first change, and a loaded one isn't announced at all. */
     public void add(StorageGroup group) {
         NameKey key = key(group.type(), group.owner(), group.name());
         if (byId.containsKey(group.id())) throw new IllegalStateException("Duplicate group id " + group.id());
@@ -55,7 +67,7 @@ public final class GroupRegistry {
         byName.remove(key(group.type(), group.owner(), group.name()));
         removeFrom(byOwner, group.owner(), group);
         group.members().forEach(member -> removeFrom(byMember, member, group));
-        onRemove.accept(group.id());
+        removeListeners.fire(group);
     }
 
     public void rename(StorageGroup group, String newName) {
@@ -64,17 +76,20 @@ public final class GroupRegistry {
         byName.remove(key(group.type(), group.owner(), group.name()));
         group.setName(newName);
         byName.put(key(group.type(), group.owner(), newName), group);
+        changed(group);
     }
 
     public boolean addMember(StorageGroup group, UUID member) {
         if (!group.addMember(member)) return false;
-        byMember.computeIfAbsent(member, k -> new HashSet<>()).add(group);
+        if (added(group)) byMember.computeIfAbsent(member, k -> new HashSet<>()).add(group);
+        changed(group);
         return true;
     }
 
     public boolean removeMember(StorageGroup group, UUID member) {
         if (!group.removeMember(member)) return false;
         removeFrom(byMember, member, group);
+        changed(group);
         return true;
     }
 
@@ -105,6 +120,10 @@ public final class GroupRegistry {
 
     public int size() {
         return byId.size();
+    }
+
+    private boolean added(StorageGroup group) {
+        return byId.get(group.id()) == group;
     }
 
     private static NameKey key(GroupType type, UUID owner, String name) {

@@ -46,6 +46,7 @@ import com.jamesdpeters.chestsplusplus.migration.V2WorldCleanup;
 import com.jamesdpeters.chestsplusplus.migration.WorldUids;
 import com.jamesdpeters.chestsplusplus.model.AutoCraftGroup;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
+import com.jamesdpeters.chestsplusplus.model.GroupListener;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.persistence.Database;
 import com.jamesdpeters.chestsplusplus.persistence.GroupStore;
@@ -125,7 +126,8 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         services.add(V2Cleanup.class, new V2Cleanup());
         services.add(MigrationState.class, new MigrationState());
         V2PendingLocations pending = services.add(V2PendingLocations.class, new V2PendingLocations());
-        services.groups().onRemove(pending::removeGroup);
+        services.groups().listen(displays::requestUpdate);
+        services.groups().listen(GroupListener.removals(group -> pending.removeGroup(group.id())));
     }
 
     private void openDatabase(Services services) throws IOException {
@@ -135,6 +137,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         Persistence persistence = new Persistence(database, services.mainThread()::nextTick);
         services.shutdown().add("persistence", persistence::close);
         GroupStore groupStore = persistence.register(new GroupStore(persistence, services.groups(), services.nodes(), attachLoaded(services)));
+        services.groups().listen(groupStore::markDirty);
         TrustStore trustStore = persistence.register(new TrustStore(persistence, services.trust()));
         services.trust().onChange(trustStore::markDirty);
         registerMigrationStores(services, persistence);

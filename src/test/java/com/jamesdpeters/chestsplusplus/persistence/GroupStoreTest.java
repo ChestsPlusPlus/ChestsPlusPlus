@@ -13,14 +13,18 @@ import com.jamesdpeters.chestsplusplus.model.Node;
 import com.jamesdpeters.chestsplusplus.model.NodeIndex;
 import com.jamesdpeters.chestsplusplus.model.SlotMatch;
 import com.jamesdpeters.chestsplusplus.model.SortMode;
+import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import com.jamesdpeters.chestsplusplus.persistence.GroupStore.GroupSnapshot;
 import com.jamesdpeters.chestsplusplus.testing.PluginTestBase;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -50,10 +54,13 @@ class GroupStoreTest extends PluginTestBase {
             if (loaded.group() instanceof ChestLinkGroup chest) ChestLinkHolder.attach(chest, Component.text("t"), loaded.items());
         });
         final TrustStore trustStore = new TrustStore(persistence, trust);
+        final List<StorageGroup> events = new ArrayList<>();
 
         Instance() {
             persistence.register(groupStore);
             persistence.register(trustStore);
+            groups.listen(groupStore::markDirty);
+            groups.listen(events::add);
             trust.onChange(trustStore::markDirty);
             persistence.load();
         }
@@ -62,7 +69,7 @@ class GroupStoreTest extends PluginTestBase {
             ChestLinkGroup chest = new ChestLinkGroup(groups.nextId(), OWNER, name, 1000);
             groups.add(chest);
             ChestLinkHolder.attach(chest, Component.text("t"), null);
-            groupStore.markDirty(chest);
+            groups.changed(chest);
             return chest;
         }
 
@@ -147,6 +154,39 @@ class GroupStoreTest extends PluginTestBase {
     }
 
     @Test
+    void loadingFiresNoEventsAndLeavesNothingDirty() throws Exception {
+        Instance first = new Instance();
+        ChestLinkGroup chest = first.chest("Ores");
+        first.groups.addMember(chest, FRIEND);
+        first.nodes.put(new Node(new BlockPos(WORLD, 1, 2, 3), BlockFace.EAST, chest.id()));
+        first.trust.trust(OWNER, FRIEND);
+        first.persistence.close();
+
+        Instance second = new Instance();
+
+        assertThat(second.groups.find(GroupType.CHESTLINK, OWNER, "ores")).isNotNull();
+        assertThat(second.events).isEmpty();
+        assertThat(second.persistence.pending()).isZero();
+    }
+
+    @Test
+    void registryMutationsAnnounceThemselvesOnceAndMarkTheGroupDirty() throws Exception {
+        Instance first = new Instance();
+        ChestLinkGroup chest = first.chest("Ores");
+        List<Consumer<ChestLinkGroup>> mutations = List.of(group -> first.groups.rename(group, "Metals"),
+                group -> first.groups.addMember(group, FRIEND), group -> first.groups.removeMember(group, FRIEND));
+        for (Consumer<ChestLinkGroup> mutation : mutations) {
+            first.flushAndWait();
+            first.events.clear();
+
+            mutation.accept(chest);
+
+            assertThat(first.events).containsExactly(chest);
+            assertThat(first.groupStore.isDirty(chest)).isTrue();
+        }
+    }
+
+    @Test
     void deletingAGroupRemovesItsMembersAndNodes() throws Exception {
         Instance first = new Instance();
         ChestLinkGroup doomed = first.chest("doomed");
@@ -158,7 +198,6 @@ class GroupStoreTest extends PluginTestBase {
 
         first.nodes.removeGroup(doomed.id());
         first.groups.remove(doomed);
-        first.groupStore.markDirty(doomed);
         first.persistence.close();
 
         assertThat(count("groups")).isEqualTo(1);
@@ -173,7 +212,6 @@ class GroupStoreTest extends PluginTestBase {
         ChestLinkGroup last = first.chest("last");
         first.flushAndWait();
         first.groups.remove(last);
-        first.groupStore.markDirty(last);
         first.persistence.close();
 
         Instance second = new Instance();
