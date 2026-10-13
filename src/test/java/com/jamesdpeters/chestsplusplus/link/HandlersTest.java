@@ -8,10 +8,12 @@ import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.testing.Tags;
 import java.util.UUID;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -83,6 +85,16 @@ class HandlersTest {
         @Override
         protected String summaryOf(ChestLinkGroup group) {
             return "";
+        }
+
+        @Override
+        protected @Nullable ItemStack itemOf(ChestLinkGroup group) {
+            return null;
+        }
+
+        @Override
+        protected Component labelOf(ChestLinkGroup group) {
+            return Component.empty();
         }
     }
 }

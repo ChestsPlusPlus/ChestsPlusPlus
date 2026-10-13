@@ -1,19 +1,22 @@
 package com.jamesdpeters.chestsplusplus.link;
 
+import com.jamesdpeters.chestsplusplus.display.DisplayService;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import java.util.UUID;
 import lombok.Getter;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Type-specific hooks used by the shared {@link LinkService} (ChestLink, AutoCraft). The public methods take any group of this type,
  * narrow it to {@code G} once, and call the typed hook; they are final so every handler narrows the same way.
  */
-public abstract class GroupTypeHandler<G extends StorageGroup> {
+public abstract class GroupTypeHandler<G extends StorageGroup> implements DisplayService.Content {
 
     @Getter private final GroupType type;
     private final Class<G> groupClass;
@@ -67,6 +70,16 @@ public abstract class GroupTypeHandler<G extends StorageGroup> {
         return summaryOf(narrow(group));
     }
 
+    @Override
+    public final @Nullable ItemStack item(StorageGroup group) {
+        return itemOf(narrow(group));
+    }
+
+    @Override
+    public final Component label(StorageGroup group) {
+        return labelOf(narrow(group));
+    }
+
     protected abstract int linked(G group, Block block);
 
     protected abstract void removed(G group, Location dropAt);
@@ -80,6 +93,10 @@ public abstract class GroupTypeHandler<G extends StorageGroup> {
     protected abstract ItemStack iconOf(G group);
 
     protected abstract String summaryOf(G group);
+
+    protected abstract @Nullable ItemStack itemOf(G group);
+
+    protected abstract Component labelOf(G group);
 
     private G narrow(StorageGroup group) {
         return groupClass.cast(group);

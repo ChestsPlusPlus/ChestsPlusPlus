@@ -51,7 +51,7 @@ import org.jspecify.annotations.Nullable;
  * {@link CraftScheduler} says are due, so idle crafters cost close to nothing while a change next to one makes it craft straight away.
  */
 @Slf4j(topic = ChestsPlusPlus.NAME)
-public final class AutoCraftService extends GroupTypeHandler<AutoCraftGroup> implements DisplayService.Content {
+public final class AutoCraftService extends GroupTypeHandler<AutoCraftGroup> {
 
     static final BlockFace[] INPUT_FACES = {BlockFace.UP, BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST};
     /** The inputs plus the output below: a change at any of them can let a failing crafter succeed. */
@@ -140,12 +140,12 @@ public final class AutoCraftService extends GroupTypeHandler<AutoCraftGroup> imp
     }
 
     @Override
-    public @Nullable ItemStack item(StorageGroup group) {
-        return group instanceof AutoCraftGroup craft ? craft.result() : null;
+    protected @Nullable ItemStack itemOf(AutoCraftGroup group) {
+        return group.result();
     }
 
     @Override
-    public Component label(StorageGroup group) {
+    protected Component labelOf(AutoCraftGroup group) {
         return services.messages().get(Message.AUTOCRAFT_DISPLAY_LABEL, Messages.group(group));
     }
 

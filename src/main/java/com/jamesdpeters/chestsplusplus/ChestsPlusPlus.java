@@ -100,20 +100,18 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
     }
 
     private void registerFeatures(Services services) {
+        Handlers handlers = services.add(Handlers.class, new Handlers());
         DisplayService displays = services.add(DisplayService.class,
-                new DisplayService(this, services.groups(), services.nodes(), services::settings));
+                new DisplayService(this, services.groups(), services.nodes(), services::settings, handlers::of));
         services.shutdown().add("displays", displays::despawnAll);
         displays.surfaces(block -> block.getState(false) instanceof Chest ? Surface.CHEST : Surface.FULL_BLOCK);
-        Handlers handlers = services.add(Handlers.class, new Handlers());
         LinkService links = services.add(LinkService.class, new LinkService(services, displays, handlers));
         services.add(LinkItem.class, new LinkItem(this));
 
         AutoCraftService autoCraft = services.add(AutoCraftService.class, new AutoCraftService(services, displays, CraftingBackend.bukkit()));
         ChestLinkService chestLinks = services.add(ChestLinkService.class, new ChestLinkService(services, displays, autoCraft::inventoryChanged));
         handlers.register(chestLinks);
-        displays.register(GroupType.CHESTLINK, chestLinks);
         handlers.register(autoCraft);
-        displays.register(GroupType.AUTOCRAFT, autoCraft);
         handlers.requireAll();
 
         GroupActions actions = services.add(GroupActions.class, new GroupActions(services, links, handlers, chestLinks::setSortMode));

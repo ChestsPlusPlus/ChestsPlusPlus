@@ -46,7 +46,7 @@ import org.bukkit.inventory.ItemStack;
 import org.jspecify.annotations.Nullable;
 
 /** ChestLink-specific behaviour: the shared inventory, opening, lids, sorting, merging and dropping contents. */
-public final class ChestLinkService extends GroupTypeHandler<ChestLinkGroup> implements DisplayService.Content {
+public final class ChestLinkService extends GroupTypeHandler<ChestLinkGroup> {
 
     private final Services services;
     private final DisplayService displays;
@@ -271,12 +271,12 @@ public final class ChestLinkService extends GroupTypeHandler<ChestLinkGroup> imp
     }
 
     @Override
-    public @Nullable ItemStack item(StorageGroup group) {
-        return group instanceof ChestLinkGroup chest && chest.hasInventory() ? mostCommon(chest) : null;
+    protected @Nullable ItemStack itemOf(ChestLinkGroup group) {
+        return group.hasInventory() ? mostCommon(group) : null;
     }
 
     @Override
-    public Component label(StorageGroup group) {
+    protected Component labelOf(ChestLinkGroup group) {
         return services.messages().get(Message.CHESTLINK_DISPLAY_LABEL, Messages.group(group));
     }
 
