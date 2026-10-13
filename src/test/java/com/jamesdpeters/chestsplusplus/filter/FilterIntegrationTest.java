@@ -188,7 +188,7 @@ class FilterIntegrationTest extends PluginTestBase {
         Inventory source = chestOfDirtAndStone();
         Inventory into = inventoryOf(hopper);
         List<Inventory> changed = new ArrayList<>();
-        FilterListener listener = new FilterListener(services(), filters, links(),
+        FilterListener listener = new FilterListener(services(), filters, features().protection(),
                 features().chestLinks(), changed::add);
 
         listener.onMove(new InventoryMoveItemEvent(source, ItemStack.of(Material.DIRT), into, false));

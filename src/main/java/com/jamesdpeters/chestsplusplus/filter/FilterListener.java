@@ -8,7 +8,7 @@ import com.jamesdpeters.chestsplusplus.core.InventoryChanges;
 import com.jamesdpeters.chestsplusplus.core.Items;
 import com.jamesdpeters.chestsplusplus.core.PaperApi;
 import com.jamesdpeters.chestsplusplus.core.Services;
-import com.jamesdpeters.chestsplusplus.link.LinkService;
+import com.jamesdpeters.chestsplusplus.link.ProtectionCheck;
 import com.jamesdpeters.chestsplusplus.link.SyntheticMoveEvent;
 import com.jamesdpeters.chestsplusplus.message.Message;
 import java.util.Map;
@@ -46,7 +46,7 @@ public final class FilterListener implements Listener {
 
     private final Services services;
     private final FilterService filters;
-    private final LinkService links;
+    private final ProtectionCheck protection;
     private final ChestLinkService chestLinks;
     private final InventoryChanges changes;
 
@@ -113,7 +113,7 @@ public final class FilterListener implements Listener {
     /** At MONITOR, like {@link LinkService#claimNodeClick}: the DENY cancels the event, so every protection plugin must have passed it first. */
     @EventHandler(priority = EventPriority.MONITOR)
     void onInteract(PlayerInteractEvent event) {
-        if (event.getAction() != Action.RIGHT_CLICK_BLOCK || links.isFiringSyntheticInteract()) return;
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK || protection.isFiringSyntheticInteract()) return;
         Block block = event.getClickedBlock();
         Player player = event.getPlayer();
         if (block == null || block.getType() != Material.HOPPER || !player.isSneaking()) return;
@@ -141,7 +141,7 @@ public final class FilterListener implements Listener {
         if (!enabled()) return Message.ERROR_FEATURE_DISABLED;
         if (!player.hasPermission(Permissions.FILTER)) return Message.ERROR_NO_PERMISSION;
         if (services.settings().isBlacklisted(hopper.getWorld().getName())) return Message.ERROR_WORLD_BLACKLISTED;
-        if (!protectionChecked && !links.passesProtection(player, hopper, BlockFace.UP)) return Message.ERROR_PROTECTED;
+        if (!protectionChecked && !protection.passes(player, hopper, BlockFace.UP)) return Message.ERROR_PROTECTED;
         return null;
     }
 

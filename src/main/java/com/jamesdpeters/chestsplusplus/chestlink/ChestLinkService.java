@@ -22,12 +22,10 @@ import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
@@ -38,27 +36,26 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Chest;
 import org.bukkit.block.Container;
-import org.bukkit.block.Lidded;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.jspecify.annotations.Nullable;
 
-/** ChestLink-specific behaviour: the shared inventory, opening, lids, sorting, merging and dropping contents. */
+/** ChestLink-specific behaviour: the shared inventory, opening, sorting, merging and dropping contents. */
 public final class ChestLinkService extends GroupTypeHandler<ChestLinkGroup> {
 
     private final Services services;
     private final InventoryChanges changes;
-    /** Lids currently held open per group, so the last viewer closing can close them. */
-    private final Map<Long, Set<BlockPos>> openLids = new HashMap<>();
-    /** Node each viewer opened from (lid animation for non-"animate all" setups). */
+    private final LidAnimator lids;
+    /** The node each viewer opened from: it decides the permission they keep viewing with, and which lid opens. */
     private final Map<UUID, BlockPos> openedFrom = new HashMap<>();
 
-    public ChestLinkService(Services services, InventoryChanges changes) {
+    public ChestLinkService(Services services, InventoryChanges changes, LidAnimator lids) {
         super(GroupType.CHESTLINK, ChestLinkGroup.class);
         this.services = services;
         this.changes = changes;
+        this.lids = lids;
     }
 
     public static boolean isChestLinkBlock(Block block) {
@@ -189,23 +186,7 @@ public final class ChestLinkService extends GroupTypeHandler<ChestLinkGroup> {
 
     /** InventoryOpenEvent for a ChestLink inventory: open lids if this is the first viewer. */
     public void viewerOpened(ChestLinkGroup group, HumanEntity viewer) {
-        Set<BlockPos> lids = openLids.computeIfAbsent(group.id(), k -> new HashSet<>());
-        List<BlockPos> targets = new ArrayList<>();
-        if (services.settings().chestlink().animateAllNodes()) {
-            services.nodes().nodesOf(group.id()).forEach(node -> targets.add(node.pos()));
-        } else {
-            BlockPos from = openedFrom.get(viewer.getUniqueId());
-            if (from != null) targets.add(from);
-        }
-        for (BlockPos pos : targets) {
-            if (lids.contains(pos) || !pos.isLoaded()) continue;
-            Block block = pos.block();
-            if (block != null && block.getState(false) instanceof Lidded lidded) {
-                lidded.open();
-                lids.add(pos);
-                playLidSound(block, Sound.BLOCK_BARREL_OPEN, Sound.BLOCK_CHEST_OPEN);
-            }
-        }
+        lids.open(group, openedFrom.get(viewer.getUniqueId()));
     }
 
     /** InventoryCloseEvent for a ChestLink inventory: persist, sort, refresh displays, close lids when last out. */
@@ -215,15 +196,7 @@ public final class ChestLinkService extends GroupTypeHandler<ChestLinkGroup> {
         boolean lastViewer = group.inventory().getViewers().stream().allMatch(v -> v.equals(viewer));
         if (!lastViewer) return;
         sort(group);
-        Set<BlockPos> lids = openLids.remove(group.id());
-        if (lids == null) return;
-        for (BlockPos pos : lids) {
-            Block block = pos.isLoaded() ? pos.block() : null;
-            if (block != null && block.getState(false) instanceof Lidded lidded) {
-                lidded.close();
-                playLidSound(block, Sound.BLOCK_BARREL_CLOSE, Sound.BLOCK_CHEST_CLOSE);
-            }
-        }
+        lids.close(group);
     }
 
     public void setSortMode(ChestLinkGroup group, SortMode mode) {
@@ -275,11 +248,6 @@ public final class ChestLinkService extends GroupTypeHandler<ChestLinkGroup> {
     @Override
     protected Component labelOf(ChestLinkGroup group) {
         return services.messages().get(Message.CHESTLINK_DISPLAY_LABEL, Messages.group(group));
-    }
-
-    private static void playLidSound(Block block, Sound barrel, Sound chest) {
-        Sound sound = block.getType() == Material.BARREL ? barrel : chest;
-        block.getWorld().playSound(block.getLocation().clone().add(0.5, 0.5, 0.5), sound, 0.5f, 1f);
     }
 
     public void forgetViewer(UUID viewer) {

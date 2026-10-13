@@ -37,7 +37,6 @@ import org.bukkit.event.Event;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
-import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -62,16 +61,12 @@ public final class LinkService {
     private final DisplayService displays;
     private final Handlers handlers;
     private final Checks checks;
-    private boolean firingSyntheticInteract;
+    private final GroupLimits limits;
+    private final ProtectionCheck protection;
 
     /** Closes what players have open of every group whose feature is now off, so {@code /cpp reload} takes effect at once. */
     public void closeDisabledViews() {
         Arrays.stream(GroupType.values()).filter(type -> !checks.isFeatureEnabled(type)).map(handlers::of).forEach(GroupTypeHandler::closeAllViews);
-    }
-
-    /** Is the synthetic protection-check interact event being fired right now? Listeners must ignore it. */
-    public boolean isFiringSyntheticInteract() {
-        return firingSyntheticInteract;
     }
 
     /**
@@ -154,7 +149,7 @@ public final class LinkService {
             StorageGroup linkedTo = services.groups().byId(existing.groupId());
             return new Refusal(Message.ERROR_ALREADY_LINKED, Messages.text("group", linkedTo == null ? "?" : linkedTo.name()));
         }
-        if (!protectionChecked && !passesProtection(player, block, facing)) return new Refusal(Message.ERROR_PROTECTED);
+        if (!protectionChecked && !protection.passes(player, block, facing)) return new Refusal(Message.ERROR_PROTECTED);
         return null;
     }
 
@@ -167,11 +162,7 @@ public final class LinkService {
 
     private @Nullable StorageGroup createGroup(Player player, GroupTypeHandler<?> handler, Resolved.Missing missing) {
         GroupType type = handler.type();
-        int limit = limit(player, type);
-        if (limit >= 0 && services.groups().ownedBy(player.getUniqueId(), type).size() >= limit) {
-            services.send(player, Message.ERROR_LIMIT_REACHED, Messages.text("limit", limit), Messages.text("type", type.displayName()));
-            return null;
-        }
+        if (checks.refused(player, limits.reached(player, type))) return null;
         StorageGroup group = handler.create(services.groups().nextId(), missing.owner(), missing.name());
         services.groups().add(group);
         return group;
@@ -285,36 +276,13 @@ public final class LinkService {
     }
 
     /**
-     * The player's group limit for a type: the highest {@code chestsplusplus.limit.<type>.<n>} they hold, else the
-     * configured default; -1 means unlimited.
-     */
-    public int limit(Player player, GroupType type) {
-        if (AccessService.hasBypass(player)) return -1;
-        String prefix = Permissions.limitPrefix(type);
-        int best = Integer.MIN_VALUE;
-        for (PermissionAttachmentInfo info : player.getEffectivePermissions()) {
-            if (!info.getValue() || !info.getPermission().startsWith(prefix)) continue;
-            String suffix = info.getPermission().substring(prefix.length());
-            if (suffix.equals("unlimited") || suffix.equals("*")) return -1;
-            try {
-                best = Math.max(best, Integer.parseInt(suffix));
-            } catch (NumberFormatException ignored) {
-                // not a numeric limit node
-            }
-        }
-        if (best != Integer.MIN_VALUE) return best;
-        var limits = services.settings().limits();
-        return type.pick(limits.chestlinkDefault(), limits.autocraftDefault());
-    }
-
-    /**
      * The shared part of right-clicking a linked block of {@code type}: takes the click over from vanilla and checks the player may open the
      * group. Returns the clicked node when the caller should open it. Sneaking with an item still places blocks, as in vanilla.
      * Call it at MONITOR: the DENY it sets cancels the event, so protection plugins handling it with {@code ignoreCancelled}, even ones
      * registered after us at HIGHEST, must all have passed it before the click is claimed and the group opens.
      */
     public @Nullable Node claimNodeClick(PlayerInteractEvent event, GroupType type) {
-        if (event.getAction() != Action.RIGHT_CLICK_BLOCK || firingSyntheticInteract) return null;
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK || protection.isFiringSyntheticInteract()) return null;
         Block block = event.getClickedBlock();
         Node node = block == null ? null : services.nodes().at(block);
         StorageGroup group = node == null ? null : services.groups().byId(node.groupId());
@@ -333,21 +301,5 @@ public final class LinkService {
         GroupType type = group.type();
         return Checks.first(checks.enabled(type), checks.allowedWorld(block.getWorld()),
                 checks.permission(player, Permissions.of(type, GroupPermission.OPEN)), checks.use(player, group));
-    }
-
-    /**
-     * Protection check for links that don't come from a real placement: fires a synthetic right-click and
-     * requires that no plugin denied using the block.
-     */
-    public boolean passesProtection(Player player, Block block, BlockFace face) {
-        PlayerInteractEvent event = new PlayerInteractEvent(player, Action.RIGHT_CLICK_BLOCK, player.getInventory().getItemInMainHand(), block, face,
-                EquipmentSlot.HAND);
-        firingSyntheticInteract = true;
-        try {
-            Bukkit.getPluginManager().callEvent(event);
-        } finally {
-            firingSyntheticInteract = false;
-        }
-        return event.useInteractedBlock() != Event.Result.DENY;
     }
 }

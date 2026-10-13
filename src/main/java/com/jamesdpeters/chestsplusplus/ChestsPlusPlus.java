@@ -121,13 +121,13 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
                 this,
                 new NodeListener(services, links, checks, handlers, features.displays(), features.linkItem()),
                 new SignLinkListener(services.mainThread(), services::settings, links),
-                new NameTagLinkListener(services, links, handlers, checks),
+                new NameTagLinkListener(services, links, features.protection(), handlers, checks),
                 new ChestLinkListener(services, links, chestLinks),
                 new HopperBridge(services.mainThread(), services, components.storage().groupStore(), chestLinks),
                 new GolemBridge(services, chestLinks),
                 features.menus(),
                 new AutoCraftListener(services, links, features.autoCraft()),
-                new FilterListener(services, features.filters(), links, chestLinks, features.autoCraft()::inventoryChanged)));
+                new FilterListener(services, features.filters(), features.protection(), chestLinks, features.autoCraft()::inventoryChanged)));
         listeners.addAll(components.migration().listeners());
         listeners.forEach(listener -> getServer().getPluginManager().registerEvents(listener, this));
         services.shutdown().add("open inventories", this::closePluginInventories);
