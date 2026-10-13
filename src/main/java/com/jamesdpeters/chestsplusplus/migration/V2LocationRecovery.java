@@ -9,7 +9,6 @@ import com.jamesdpeters.chestsplusplus.model.GroupRegistry;
 import com.jamesdpeters.chestsplusplus.model.Node;
 import com.jamesdpeters.chestsplusplus.model.NodeIndex;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
-import com.jamesdpeters.chestsplusplus.persistence.GroupStore;
 import com.jamesdpeters.chestsplusplus.persistence.Persistence;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +32,6 @@ public final class V2LocationRecovery implements Listener {
     private final V2PendingLocations pending;
     private final GroupRegistry groups;
     private final NodeIndex nodes;
-    private final GroupStore groupStore;
     private final Persistence persistence;
     private final Handlers handlers;
     private final DisplayService displays;
@@ -90,7 +88,7 @@ public final class V2LocationRecovery implements Listener {
         Node node = new Node(pos, BlockFace.NORTH, group.id());
         persistence.together(() -> {
             nodes.put(node);
-            groupStore.markDirty(group);
+            groups.changed(group);
             cleanup.add(pos);
             pending.remove(row);
         });

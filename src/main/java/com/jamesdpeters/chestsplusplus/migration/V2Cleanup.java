@@ -1,6 +1,7 @@
 package com.jamesdpeters.chestsplusplus.migration;
 
 import com.jamesdpeters.chestsplusplus.core.BlockPos;
+import com.jamesdpeters.chestsplusplus.core.Listeners;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -29,18 +30,18 @@ public final class V2Cleanup {
 
     private final Set<BlockPos> imported = new HashSet<>();
     private final Map<ChunkRef, Set<BlockPos>> pending = new HashMap<>();
-    private Consumer<BlockPos> onChange = pos -> {};
+    private final Listeners<BlockPos> listeners = new Listeners<>();
     private int size;
 
-    /** Called with each position whose state changed (persistence marks it dirty). */
-    public void onChange(Consumer<BlockPos> listener) {
-        this.onChange = listener;
+    /** Told each position whose state changed (persistence marks it dirty). */
+    public void listen(Consumer<BlockPos> listener) {
+        listeners.add(listener);
     }
 
     /** Records a newly imported block, waiting for cleanup. */
     public void add(BlockPos pos) {
         boolean added = imported.add(pos);
-        if (addPending(pos) || added) onChange.accept(pos);
+        if (addPending(pos) || added) listeners.fire(pos);
     }
 
     /** The block's cleanup is done (or no longer needed); it stays recorded as imported. */
@@ -50,12 +51,12 @@ public final class V2Cleanup {
         if (set == null || !set.remove(pos)) return;
         if (set.isEmpty()) pending.remove(chunk);
         size--;
-        onChange.accept(pos);
+        listeners.fire(pos);
     }
 
     public void forget(BlockPos pos) {
         remove(pos);
-        if (imported.remove(pos)) onChange.accept(pos);
+        if (imported.remove(pos)) listeners.fire(pos);
     }
 
     public boolean wasImported(BlockPos pos) {

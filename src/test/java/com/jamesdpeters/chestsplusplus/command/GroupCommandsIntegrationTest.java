@@ -91,7 +91,7 @@ class GroupCommandsIntegrationTest extends PluginTestBase {
         ChestLinkGroup group = create(alice, "ores", 0);
 
         assertThat(run(bob, "cl rename Alice:ores mine")).anyMatch(l -> l.contains("don't have access"));
-        group.setPublic(true);
+        plugin.services().groups().setPublic(group, true);
         assertThat(run(bob, "cl rename Alice:ores mine")).anyMatch(l -> l.contains("Only the owner"));
 
         run(alice, "cl rename ores metals");
@@ -107,7 +107,7 @@ class GroupCommandsIntegrationTest extends PluginTestBase {
     @Test
     void quotedNamesCanHaveSpaces() {
         ChestLinkGroup group = create(alice, "ores", 0);
-        group.setPublic(true);
+        plugin.services().groups().setPublic(group, true);
 
         run(alice, "cl rename ores \"Iron Ore\"");
         assertThat(group.name()).isEqualTo("Iron Ore");
@@ -126,7 +126,7 @@ class GroupCommandsIntegrationTest extends PluginTestBase {
                     group = new AutoCraftGroup(plugin.services().groups().nextId(), owner.getUniqueId(), "Iron Ore", 0);
                     plugin.services().groups().add(group);
                 }
-                group.setPublic(true);
+                plugin.services().groups().setPublic(group, true);
             }
             server.dispatchCommand(alice, type == GroupType.CHESTLINK ? "cl list" : "ac list");
             List<String> commands = new ArrayList<>();

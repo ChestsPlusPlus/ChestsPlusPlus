@@ -33,9 +33,9 @@ class AccessServiceTest {
 
     @Test
     void publicMemberAndTrustGrantUseButNotManage() {
-        group.setPublic(true);
+        registry.setPublic(group, true);
         assertThat(access.canAccess(OTHER, false, group)).isTrue();
-        group.setPublic(false);
+        registry.setPublic(group, false);
 
         registry.add(group);
         registry.addMember(group, OTHER);
@@ -51,7 +51,7 @@ class AccessServiceTest {
     @Test
     void trustIndexesBothDirectionsAndNotifies() {
         List<UUID> changed = new ArrayList<>();
-        trust.onChange(changed::add);
+        trust.listen(changed::add);
 
         assertThat(trust.trust(OWNER, OTHER)).isTrue();
         assertThat(trust.trust(OWNER, OTHER)).isFalse();

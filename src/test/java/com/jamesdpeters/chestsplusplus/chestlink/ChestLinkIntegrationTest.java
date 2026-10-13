@@ -124,7 +124,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         server.getScheduler().performTicks(1);
         ChestLinkGroup group = group(alice, "ores");
         List<Inventory> changed = new ArrayList<>();
-        ChestLinkService chestLinks = new ChestLinkService(plugin.services(), plugin.services().get(DisplayService.class), changed::add);
+        ChestLinkService chestLinks = new ChestLinkService(plugin.services(), changed::add);
 
         chestLinks.changed(group);
         ((Container) chest.getState(false)).getInventory().addItem(ItemStack.of(Material.DIAMOND));
@@ -506,7 +506,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         sign(alice, chest, "[ChestLink]", "shared");
         ChestLinkGroup group = group(alice, "shared");
         group.inventory().addItem(ItemStack.of(Material.DIAMOND));
-        group.setPublic(true);
+        plugin.services().groups().setPublic(group, true);
         rightClick(bob, chest);
 
         bob.addAttachment(plugin).setPermission("chestsplusplus.chestlink.open", false);
@@ -527,7 +527,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         sign(bob, bobs, "[ChestLink]", "Alice:alices");
         assertThat(plugin.services().nodes().get(BlockPos.of(bobs))).isNull();
 
-        group(alice, "alices").setPublic(true);
+        plugin.services().groups().setPublic(group(alice, "alices"), true);
         sign(bob, bobs, "[ChestLink]", "Alice:alices");
         assertThat(plugin.services().nodes().get(BlockPos.of(bobs))).isNotNull();
     }
@@ -797,6 +797,22 @@ class ChestLinkIntegrationTest extends PluginTestBase {
     }
 
     @Test
+    void restartingLoadsGroupsWithoutDirtyingThem() {
+        sign(alice, chestAt(0, 0), "[ChestLink]", "g");
+        LinkService links = plugin.services().get(LinkService.class);
+        links.setPublic(group(alice, "g"), true);
+        links.addMember(group(alice, "g"), bob.getUniqueId());
+
+        server.getPluginManager().disablePlugin(plugin);
+        server.getPluginManager().enablePlugin(plugin);
+
+        ChestLinkGroup loaded = group(alice, "g");
+        assertThat(loaded.isPublic()).isTrue();
+        assertThat(loaded.members()).containsExactly(bob.getUniqueId());
+        assertThat(plugin.services().groupStore().isDirty(loaded)).isFalse();
+    }
+
+    @Test
     void staleNodesInUnloadedChunksAreUnlinkedWhenTheirChunkLoads() {
         sign(alice, chestAt(0, 0), "[ChestLink]", "g");
         LinkService links = plugin.services().get(LinkService.class);
@@ -837,7 +853,9 @@ class ChestLinkIntegrationTest extends PluginTestBase {
 
         ChestLinkGroup group = group(alice, "g");
         group.inventory().addItem(ItemStack.of(Material.COBBLESTONE, 64), ItemStack.of(Material.DIRT, 3));
-        displays.requestUpdate(group);
+        plugin.services().persistence().flush();
+        plugin.services().groups().changed(group);
+        assertThat(plugin.services().groupStore().isDirty(group)).isTrue();
         server.getScheduler().performTicks(10);
         // Empty (flat) -> cobblestone (block) moves the display, so it is respawned: fetch it again.
         var updated = world.getEntitiesByClass(org.bukkit.entity.ItemDisplay.class);

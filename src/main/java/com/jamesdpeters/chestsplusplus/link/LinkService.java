@@ -183,9 +183,8 @@ public final class LinkService {
         if (block.getBlockData() instanceof Chest) DoubleChests.split(block);
         Node node = new Node(BlockPos.of(block), front(block, facing), group.id());
         services.nodes().put(node);
-        services.groupStore().markDirty(group);
+        services.groups().changed(group);
         displays.nodeAdded(node);
-        displays.requestUpdate(group);
         return node;
     }
 
@@ -214,7 +213,7 @@ public final class LinkService {
         if (!keepGroup && services.nodes().count(group.id()) == 0) {
             removeGroup(group, dropAt);
         } else {
-            services.groupStore().markDirty(group);
+            services.groups().changed(group);
         }
         return group;
     }
@@ -240,7 +239,6 @@ public final class LinkService {
         handlers.of(group).onRemoved(group, dropAt);
         for (Node node : services.nodes().removeGroup(group.id())) displays.nodeRemoved(node);
         services.groups().remove(group);
-        services.groupStore().markDirty(group);
     }
 
     /** Renames a group, messaging {@code audience} on failure. */
@@ -257,27 +255,21 @@ public final class LinkService {
         String old = group.name();
         services.groups().rename(group, newName);
         handlers.of(group).onRenamed(group);
-        services.groupStore().markDirty(group);
-        displays.requestUpdate(group);
         services.send(audience, GroupMessage.RENAMED.of(group.type()), Messages.text("old", old), Messages.text("new", newName));
         return true;
     }
 
     public void setPublic(StorageGroup group, boolean isPublic) {
-        group.setPublic(isPublic);
-        services.groupStore().markDirty(group);
+        services.groups().setPublic(group, isPublic);
         if (!isPublic) closeRevokedViews(group);
     }
 
     public boolean addMember(StorageGroup group, UUID member) {
-        if (member.equals(group.owner()) || !services.groups().addMember(group, member)) return false;
-        services.groupStore().markDirty(group);
-        return true;
+        return !member.equals(group.owner()) && services.groups().addMember(group, member);
     }
 
     public boolean removeMember(StorageGroup group, UUID member) {
         if (!services.groups().removeMember(group, member)) return false;
-        services.groupStore().markDirty(group);
         closeRevokedViews(group);
         return true;
     }

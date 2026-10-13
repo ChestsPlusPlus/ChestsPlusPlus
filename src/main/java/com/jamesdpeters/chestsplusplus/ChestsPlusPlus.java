@@ -46,6 +46,7 @@ import com.jamesdpeters.chestsplusplus.migration.V2WorldCleanup;
 import com.jamesdpeters.chestsplusplus.migration.WorldUids;
 import com.jamesdpeters.chestsplusplus.model.AutoCraftGroup;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
+import com.jamesdpeters.chestsplusplus.model.GroupListener;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.persistence.Database;
 import com.jamesdpeters.chestsplusplus.persistence.GroupStore;
@@ -111,7 +112,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         services.add(LinkItem.class, new LinkItem(this));
 
         AutoCraftService autoCraft = services.add(AutoCraftService.class, new AutoCraftService(services, displays, checks, CraftingBackend.bukkit()));
-        ChestLinkService chestLinks = services.add(ChestLinkService.class, new ChestLinkService(services, displays, autoCraft::inventoryChanged));
+        ChestLinkService chestLinks = services.add(ChestLinkService.class, new ChestLinkService(services, autoCraft::inventoryChanged));
         handlers.register(chestLinks);
         handlers.register(autoCraft);
         handlers.requireAll();
@@ -125,7 +126,8 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         services.add(V2Cleanup.class, new V2Cleanup());
         services.add(MigrationState.class, new MigrationState());
         V2PendingLocations pending = services.add(V2PendingLocations.class, new V2PendingLocations());
-        services.groups().onRemove(pending::removeGroup);
+        services.groups().listen(displays::requestUpdate);
+        services.groups().listen(GroupListener.removals(group -> pending.removeGroup(group.id())));
     }
 
     private void openDatabase(Services services) throws IOException {
@@ -135,8 +137,9 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         Persistence persistence = new Persistence(database, services.mainThread()::nextTick);
         services.shutdown().add("persistence", persistence::close);
         GroupStore groupStore = persistence.register(new GroupStore(persistence, services.groups(), services.nodes(), attachLoaded(services)));
+        services.groups().listen(groupStore::markDirty);
         TrustStore trustStore = persistence.register(new TrustStore(persistence, services.trust()));
-        services.trust().onChange(trustStore::markDirty);
+        services.trust().listen(trustStore::markDirty);
         registerMigrationStores(services, persistence);
         services.persistence(persistence, groupStore, trustStore);
         persistence.load();
@@ -150,9 +153,9 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         MigrationStateStore stateStore = persistence.register(new MigrationStateStore(persistence, state));
         V2PendingLocationStore pendingStore = persistence.register(
                 new V2PendingLocationStore(persistence, services.groups(), services.get(V2PendingLocations.class)));
-        services.get(V2PendingLocations.class).onChange(pendingStore::markDirty);
-        cleanup.onChange(cleanupStore::markDirty);
-        state.onChange(stateStore::markDirty);
+        services.get(V2PendingLocations.class).listen(pendingStore::markDirty);
+        cleanup.listen(cleanupStore::markDirty);
+        state.listen(stateStore::markDirty);
     }
 
     /** Builds the v2 migration and runs the one-time import if a v2 install left its data behind. */
@@ -161,7 +164,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         MigrationState state = services.get(MigrationState.class);
         DisplayService displays = services.get(DisplayService.class);
         V2WorldCleanup worldCleanup = services.add(V2WorldCleanup.class, new V2WorldCleanup(cleanup, services.nodes(), services.groups(),
-                services.groupStore(), displays, new NamespacedKey(this, "chestsplusplus")));
+                displays, new NamespacedKey(this, "chestsplusplus")));
         V2FilterMigration filters = services.add(V2FilterMigration.class,
                 new V2FilterMigration(state, services.get(FilterService.class), new NamespacedKey(this, "v2_filters_scanned")));
         V2FilterConversion conversion = services.add(V2FilterConversion.class,
@@ -171,7 +174,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
                 services::settings, displays::nodeAdded);
         V2LocationRecovery recovery = services.add(V2LocationRecovery.class,
                 new V2LocationRecovery(getServer(), services.get(V2PendingLocations.class),
-                        services.groups(), services.nodes(), services.groupStore(), services.persistence(), services.get(Handlers.class), displays,
+                        services.groups(), services.nodes(), services.persistence(), services.get(Handlers.class), displays,
                         cleanup, worldCleanup));
         services.add(V2Migration.class,
                 new V2Migration(this, services, importer, cleanup, worldCleanup, state, filters, conversion, recovery,
@@ -200,7 +203,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
                 new SignLinkListener(services.mainThread(), services, links),
                 new NameTagLinkListener(services, links, handlers, checks),
                 new ChestLinkListener(services, links, services.get(ChestLinkService.class)),
-                new HopperBridge(services.mainThread(), services, services.get(ChestLinkService.class)),
+                new HopperBridge(services.mainThread(), services, services.groupStore(), services.get(ChestLinkService.class)),
                 new GolemBridge(services, services.get(ChestLinkService.class)),
                 services.get(MenuListener.class),
                 new AutoCraftListener(services, links, services.get(AutoCraftService.class)),

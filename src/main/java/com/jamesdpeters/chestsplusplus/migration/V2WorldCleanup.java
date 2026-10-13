@@ -8,7 +8,6 @@ import com.jamesdpeters.chestsplusplus.model.GroupRegistry;
 import com.jamesdpeters.chestsplusplus.model.Node;
 import com.jamesdpeters.chestsplusplus.model.NodeIndex;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
-import com.jamesdpeters.chestsplusplus.persistence.GroupStore;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -44,7 +43,6 @@ public final class V2WorldCleanup implements Listener {
     private final V2Cleanup cleanup;
     private final NodeIndex nodes;
     private final GroupRegistry groups;
-    private final GroupStore groupStore;
     private final DisplayService displays;
     /** v2 tagged its armour stands with this key; the plugin name, and so the namespace, is unchanged. */
     private final NamespacedKey v2StandKey;
@@ -109,7 +107,7 @@ public final class V2WorldCleanup implements Listener {
         nodes.put(turned);
         displays.nodeAdded(turned);
         StorageGroup group = groups.byId(node.groupId());
-        if (group != null) groupStore.markDirty(group);
+        if (group != null) groups.changed(group);
     }
 
     /** Removes the v2 link sign hanging on {@code block}, returning the face it was on (v2 put it on the block's front). */

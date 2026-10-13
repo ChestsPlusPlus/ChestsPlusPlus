@@ -11,6 +11,7 @@ import com.jamesdpeters.chestsplusplus.config.Settings;
 import com.jamesdpeters.chestsplusplus.core.BlockPos;
 import com.jamesdpeters.chestsplusplus.model.AutoCraftGroup;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
+import com.jamesdpeters.chestsplusplus.model.GroupListener;
 import com.jamesdpeters.chestsplusplus.model.GroupRegistry;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.Node;
@@ -82,11 +83,12 @@ class V2ImporterTest extends PluginTestBase {
         persistence.register(cleanupStore);
         persistence.register(stateStore);
         persistence.register(pendingStore);
-        trust.onChange(trustStore::markDirty);
-        cleanup.onChange(cleanupStore::markDirty);
-        state.onChange(stateStore::markDirty);
-        pending.onChange(pendingStore::markDirty);
-        groups.onRemove(pending::removeGroup);
+        trust.listen(trustStore::markDirty);
+        cleanup.listen(cleanupStore::markDirty);
+        state.listen(stateStore::markDirty);
+        pending.listen(pendingStore::markDirty);
+        groups.listen(groupStore::markDirty);
+        groups.listen(GroupListener.removals(group -> pending.removeGroup(group.id())));
         persistence.load();
         importer = new V2Importer(groups, nodes, trust, groupStore, persistence, cleanup, new WorldUids(server, () -> dir.toFile()), state, pending,
                 () -> settings, spawned::add);

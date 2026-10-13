@@ -1,12 +1,13 @@
 package com.jamesdpeters.chestsplusplus.migration;
 
 import com.jamesdpeters.chestsplusplus.core.BlockPos;
+import com.jamesdpeters.chestsplusplus.core.Listeners;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.LongConsumer;
+import java.util.function.Consumer;
 
 /**
  * Unresolved locations belong to the original imported group, even after it is renamed. Also indexed by chunk, so a chunk load
@@ -20,14 +21,15 @@ public final class V2PendingLocations {
 
     private final Map<Long, Set<LocationRow>> locations = new HashMap<>();
     private final Map<ChunkRef, Set<LocationRow>> byChunk = new HashMap<>();
-    private LongConsumer onChange = id -> {};
+    private final Listeners<Long> listeners = new Listeners<>();
 
-    public void onChange(LongConsumer listener) {
-        onChange = listener;
+    /** Told the id of each group whose locations changed (persistence marks it dirty). */
+    public void listen(Consumer<Long> listener) {
+        listeners.add(listener);
     }
 
     public void add(LocationRow row) {
-        if (index(row)) onChange.accept(row.groupId());
+        if (index(row)) listeners.fire(row.groupId());
     }
 
     public void remove(LocationRow row) {
@@ -35,14 +37,14 @@ public final class V2PendingLocations {
         if (rows == null || !rows.remove(row)) return;
         if (rows.isEmpty()) locations.remove(row.groupId());
         unindexChunk(row);
-        onChange.accept(row.groupId());
+        listeners.fire(row.groupId());
     }
 
     public void removeGroup(long id) {
         Set<LocationRow> rows = locations.remove(id);
         if (rows == null) return;
         rows.forEach(this::unindexChunk);
-        onChange.accept(id);
+        listeners.fire(id);
     }
 
     public List<LocationRow> forGroup(long id) {

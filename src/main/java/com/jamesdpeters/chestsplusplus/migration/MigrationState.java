@@ -1,5 +1,6 @@
 package com.jamesdpeters.chestsplusplus.migration;
 
+import com.jamesdpeters.chestsplusplus.core.Listeners;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -20,11 +21,11 @@ public final class MigrationState {
     static final String IMPORT = "v2_import";
 
     private final Map<String, String> values = new HashMap<>();
-    private Consumer<String> onChange = key -> {};
+    private final Listeners<String> listeners = new Listeners<>();
 
-    /** Called with each key that changed (persistence marks it dirty). */
-    public void onChange(Consumer<String> listener) {
-        this.onChange = listener;
+    /** Told each key that changed (persistence marks it dirty). */
+    public void listen(Consumer<String> listener) {
+        listeners.add(listener);
     }
 
     public Filters filters() {
@@ -58,7 +59,7 @@ public final class MigrationState {
 
     private void set(String key, String value) {
         if (value.equals(values.put(key, value))) return;
-        onChange.accept(key);
+        listeners.fire(key);
     }
 
     /** Replaces all state (used on load). Does not fire change notifications. */
