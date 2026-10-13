@@ -44,8 +44,9 @@ comments, no repeated logic.
 
 - If a method needs comments to separate its parts, split it into named methods. `ChestsPlusPlus.onEnable` is the model: one call
   per lifecycle step.
-- For a run of guard clauses, have a helper return the refusal and send it once, instead of repeating send-and-return. Examples:
-  `LinkService.linkRefusal`, `NodeListener.relinkRefusal`, `LinkService.openRefusal`.
+- Guard checks return a `@Nullable Refusal` (its message and placeholders) and never send. Send the first one once:
+  `if (checks.refused(player, checks.enabled(type), checks.manage(player, group))) return;`, as in `GroupActions`. Checks that
+  are expensive or fire events go in a helper that returns early, as in `LinkService.linkRefusal`.
 - Use modern Java: pattern-matching `switch` over sealed types, `_` for unused pattern variables, records for data, streams for small
   collection queries, early returns.
 - Use imports, not fully qualified names. The one exception is Paper's `io.papermc.paper.command.brigadier.Commands`, which clashes
@@ -80,6 +81,7 @@ comments, no repeated logic.
 | Choose a value per group type | `type.pick(chestlinkValue, autocraftValue)`, `type.displayName()` |
 | Type-specific behaviour for a group (open, icon, summary, display, link hooks) | `handlers.of(group)` or `handlers.of(type)`, never null. A new hook is a `protected abstract` method on `GroupTypeHandler<G>`, typed on `G`, behind a `final` bridge |
 | Send a message | `services.send(audience, Message.X, ...)` |
+| Refuse an action: feature off, permission, blacklisted world, can't use or manage a group | `Checks`: `checks.refused(player, ...)` sends the first refusal, `Checks.first(...)` returns it unsent |
 | Common placeholders | `Messages.group(group)`, `Messages.player(name)`, `Messages.text(key, int)` |
 | Node or group at a block (no allocation) | `services.nodes().at(block)`, `services.groupAt(block)` |
 | Player names | `PlayerNames.of(uuid)`, `PlayerNames.join(uuids)` |
