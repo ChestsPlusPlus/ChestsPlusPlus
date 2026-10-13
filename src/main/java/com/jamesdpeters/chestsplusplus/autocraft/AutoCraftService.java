@@ -9,6 +9,7 @@ import com.jamesdpeters.chestsplusplus.core.PaperApi;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.core.Viewers;
 import com.jamesdpeters.chestsplusplus.display.DisplayService;
+import com.jamesdpeters.chestsplusplus.link.Checks;
 import com.jamesdpeters.chestsplusplus.link.GroupTypeHandler;
 import com.jamesdpeters.chestsplusplus.link.SyntheticMoveEvent;
 import com.jamesdpeters.chestsplusplus.message.Message;
@@ -59,6 +60,7 @@ public final class AutoCraftService extends GroupTypeHandler<AutoCraftGroup> {
 
     private final Services services;
     private final DisplayService displays;
+    private final Checks checks;
     private final CraftingBackend backend;
     /** Each group's recipe choices per slot, cached until its recipe changes. */
     private final Map<Long, List<@Nullable Predicate<ItemStack>>> recipeChoices = new HashMap<>();
@@ -70,10 +72,11 @@ public final class AutoCraftService extends GroupTypeHandler<AutoCraftGroup> {
     private final CraftScheduler scheduler = new CraftScheduler();
     private long tick;
 
-    public AutoCraftService(Services services, DisplayService displays, CraftingBackend backend) {
+    public AutoCraftService(Services services, DisplayService displays, Checks checks, CraftingBackend backend) {
         super(GroupType.AUTOCRAFT, AutoCraftGroup.class);
         this.services = services;
         this.displays = displays;
+        this.checks = checks;
         this.backend = backend;
     }
 
@@ -160,7 +163,7 @@ public final class AutoCraftService extends GroupTypeHandler<AutoCraftGroup> {
      */
     void edit(Player player, RecipeEditorHolder editor, int slot, @Nullable ItemStack cursor, ClickType click) {
         AutoCraftGroup group = editor.group();
-        if (!mayEdit(player, group)) return;
+        if (checks.refused(player, checks.manage(player, group))) return;
         if (click.isRightClick() && !Items.present(cursor)) {
             int index = RecipeEditorHolder.matrixIndex(slot);
             if (index >= 0 && group.matrix()[index] != null) setMatch(group, index, group.matches()[index].next(hasRecipeChoice(group, index)));
@@ -171,14 +174,7 @@ public final class AutoCraftService extends GroupTypeHandler<AutoCraftGroup> {
 
     /** Dragging an item across the editor places a ghost in each matrix slot it covered, resolved once. */
     void drag(Player player, RecipeEditorHolder editor, List<Integer> slots, ItemStack cursor) {
-        if (mayEdit(player, editor.group())) applyEdit(player, editor, editor.place(slots, cursor));
-    }
-
-    /** True if the player may change this group's recipe; otherwise tells them why not. */
-    private boolean mayEdit(Player player, AutoCraftGroup group) {
-        if (services.access().canManage(player.getUniqueId(), player, group)) return true;
-        services.send(player, Message.ERROR_NOT_OWNER, Messages.group(group));
-        return false;
+        if (!checks.refused(player, checks.manage(player, editor.group()))) applyEdit(player, editor, editor.place(slots, cursor));
     }
 
     private void applyEdit(Player player, RecipeEditorHolder editor, @Nullable ItemStack @Nullable [] matrix) {

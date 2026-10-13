@@ -9,6 +9,7 @@ import com.jamesdpeters.chestsplusplus.core.PlayerNames;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.message.Message;
 import com.jamesdpeters.chestsplusplus.message.Messages;
+import com.jamesdpeters.chestsplusplus.message.Refusal;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.SortMode;
@@ -37,6 +38,7 @@ public final class GroupActions {
     private final Services services;
     private final LinkService links;
     private final Handlers handlers;
+    private final Checks checks;
     /** {@code ChestLinkService::setSortMode}, passed in because link can't depend on chestlink. */
     private final BiConsumer<ChestLinkGroup, SortMode> setSortMode;
 
@@ -49,14 +51,16 @@ public final class GroupActions {
                 yield null;
             }
             case LinkService.Resolved.Refused refused -> {
-                links.send(player, refused);
+                services.send(player, refused.refusal());
                 yield null;
             }
         };
     }
 
     public boolean openRemote(Player player, StorageGroup group) {
-        if (!isEnabled(player, group.type()) || !require(player, Permissions.remote(group.type())) || blacklisted(player) || !canUse(player, group)) {
+        GroupType type = group.type();
+        if (checks.refused(player, checks.enabled(type), checks.permission(player, Permissions.remote(type)), checks.allowedWorld(player.getWorld()),
+                checks.use(player, group))) {
             return false;
         }
         handlers.of(group).openRemote(player, group);
@@ -64,20 +68,23 @@ public final class GroupActions {
     }
 
     public boolean remove(Player player, StorageGroup group) {
-        if (!isEnabled(player, group.type()) || !require(player, Permissions.remove(group.type())) || !canManage(player, group)) return false;
+        GroupType type = group.type();
+        if (checks.refused(player, checks.enabled(type), checks.permission(player, Permissions.remove(type)), checks.manage(player, group))) {
+            return false;
+        }
         links.removeGroup(group, PaperApi.location(player));
-        services.send(player, group.type().pick(Message.CHESTLINK_REMOVED, Message.AUTOCRAFT_REMOVED),
+        services.send(player, type.pick(Message.CHESTLINK_REMOVED, Message.AUTOCRAFT_REMOVED),
                 Messages.group(group));
         return true;
     }
 
     public boolean rename(Player player, StorageGroup group, String newName) {
-        if (!isEnabled(player, group.type()) || !canManage(player, group)) return false;
+        if (checks.refused(player, checks.enabled(group.type()), checks.manage(player, group))) return false;
         return links.rename(player, group, newName);
     }
 
     public boolean setPublic(Player player, StorageGroup group, boolean isPublic) {
-        if (!isEnabled(player, group.type()) || !canManage(player, group)) return false;
+        if (checks.refused(player, checks.enabled(group.type()), checks.manage(player, group))) return false;
         links.setPublic(group, isPublic);
         services.send(player, group.type().pick(Message.CHESTLINK_PUBLIC, Message.AUTOCRAFT_PUBLIC),
                 Messages.group(group),
@@ -86,7 +93,10 @@ public final class GroupActions {
     }
 
     public boolean sort(Player player, ChestLinkGroup group, SortMode mode) {
-        if (!isEnabled(player, group.type()) || !require(player, Permissions.CHESTLINK_SORT) || !canManage(player, group)) return false;
+        if (checks.refused(player, checks.enabled(group.type()), checks.permission(player, Permissions.CHESTLINK_SORT),
+                checks.manage(player, group))) {
+            return false;
+        }
         setSortMode.accept(group, mode);
         services.send(player, Message.CHESTLINK_SORT_MODE, Messages.group(group),
                 Messages.text("mode", mode.key()));
@@ -120,7 +130,7 @@ public final class GroupActions {
     }
 
     public void listMembers(Player player, StorageGroup group) {
-        if (!isEnabled(player, group.type()) || !canUse(player, group)) return;
+        if (checks.refused(player, checks.enabled(group.type()), checks.use(player, group))) return;
         if (group.members().isEmpty()) {
             services.send(player, Message.MEMBERS_NONE, Messages.group(group));
             return;
@@ -130,7 +140,7 @@ public final class GroupActions {
     }
 
     public void trust(Player player, String name, Runnable after) {
-        if (!require(player, Permissions.TRUST)) return;
+        if (checks.refused(player, checks.permission(player, Permissions.TRUST))) return;
         lookup(player, name, trusted -> {
             if (trusted.equals(player.getUniqueId())) {
                 services.send(player, Message.ERROR_SELF);
@@ -143,7 +153,7 @@ public final class GroupActions {
     }
 
     public void untrust(Player player, String name, Runnable after) {
-        if (!require(player, Permissions.TRUST)) return;
+        if (checks.refused(player, checks.permission(player, Permissions.TRUST))) return;
         lookup(player, name, trusted -> {
             links.untrust(player.getUniqueId(), trusted);
             services.send(player, Message.TRUST_REMOVED, Messages.player(name));
@@ -152,7 +162,7 @@ public final class GroupActions {
     }
 
     public void listTrust(Player player) {
-        if (!require(player, Permissions.TRUST)) return;
+        if (checks.refused(player, checks.permission(player, Permissions.TRUST))) return;
         List<UUID> trusted = List.copyOf(services.trust().trustedBy(player.getUniqueId()));
         if (trusted.isEmpty()) {
             services.send(player, Message.TRUST_NONE);
@@ -162,7 +172,7 @@ public final class GroupActions {
     }
 
     public void list(Player player, GroupType type) {
-        if (!isEnabled(player, type)) return;
+        if (checks.refused(player, checks.enabled(type))) return;
         AccessibleGroups accessible = services.access().accessibleGroups(player.getUniqueId(), AccessService.hasBypass(player), type);
         if (accessible.groups().isEmpty()) {
             services.send(player, type.pick(Message.CHESTLINK_LIST_EMPTY, Message.AUTOCRAFT_LIST_EMPTY));
@@ -181,37 +191,6 @@ public final class GroupActions {
         }
     }
 
-    /** Disabled features keep their groups, but players can't use or change them until the feature is turned back on. */
-    public boolean isEnabled(Player player, GroupType type) {
-        if (links.isFeatureEnabled(type)) return true;
-        services.send(player, Message.ERROR_FEATURE_DISABLED);
-        return false;
-    }
-
-    public boolean canUse(Player player, StorageGroup group) {
-        if (services.access().canAccess(player.getUniqueId(), player, group)) return true;
-        services.send(player, Message.ERROR_NO_ACCESS, Messages.group(group));
-        return false;
-    }
-
-    public boolean canManage(Player player, StorageGroup group) {
-        if (services.access().canManage(player.getUniqueId(), player, group)) return true;
-        services.send(player, Message.ERROR_NOT_OWNER, Messages.group(group));
-        return false;
-    }
-
-    private boolean require(Player player, String permission) {
-        if (player.hasPermission(permission)) return true;
-        services.send(player, Message.ERROR_NO_PERMISSION);
-        return false;
-    }
-
-    private boolean blacklisted(Player player) {
-        if (!services.settings().isBlacklisted(player.getWorld().getName())) return false;
-        services.send(player, Message.ERROR_WORLD_BLACKLISTED);
-        return true;
-    }
-
     private void lookupMember(Player player, StorageGroup group, String name, Consumer<UUID> onFound) {
         if (!canEditMembers(player, group)) return;
         lookup(player, name, member -> {
@@ -221,11 +200,13 @@ public final class GroupActions {
 
     /** Also run after an async lookup returns, when the group may have been deleted or the player's rights changed. */
     private boolean canEditMembers(Player player, StorageGroup group) {
-        if (services.groups().byId(group.id()) != group) {
-            services.send(player, Message.ERROR_UNKNOWN_GROUP, Messages.group(group));
-            return false;
-        }
-        return isEnabled(player, group.type()) && require(player, Permissions.members(group.type())) && canManage(player, group);
+        GroupType type = group.type();
+        return !checks.refused(player, exists(group), checks.enabled(type), checks.permission(player, Permissions.members(type)),
+                checks.manage(player, group));
+    }
+
+    private @Nullable Refusal exists(StorageGroup group) {
+        return services.groups().byId(group.id()) == group ? null : new Refusal(Message.ERROR_UNKNOWN_GROUP, Messages.group(group));
     }
 
     /**
