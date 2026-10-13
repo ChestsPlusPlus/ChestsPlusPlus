@@ -1,14 +1,11 @@
 import { sleep, test } from '@plugwright/runner';
+import { expectContains, expectEventually, type Server } from './support.js';
 
 // Real recipe matching (Bukkit.getCraftingRecipe / craftItemResult) and the central crafting ticker.
 
 const OWNER = 'E2EOwner';
 
-function expectContains(text: string, needle: string) {
-  if (!text.includes(needle)) throw new Error(`expected ${JSON.stringify(needle)} in ${JSON.stringify(text)}`);
-}
-
-async function crafter(server: { execute(cmd: string): Promise<string> }, x: number, name: string, below: string) {
+async function crafter(server: Server, x: number, name: string, below: string) {
   for (const command of [
     'forceload add 0 0',
     `setblock ${x} -50 2 minecraft:chest{Items:[{Slot:0b,id:"minecraft:coal",count:2},{Slot:1b,id:"minecraft:stick",count:2}]}`,
@@ -28,8 +25,7 @@ test('a torch AutoCrafter crafts from the chest above into the hopper below', as
   await server.execute('cpptest reset');
   await crafter(server, 8, 'torches', 'minecraft:hopper[facing=down]');
   await server.execute('setblock 8 -53 2 minecraft:chest');
-  await sleep(2600);
-  expectContains(await server.execute('data get block 8 -53 2 Items'), 'minecraft:torch');
+  await expectEventually(() => server.execute('data get block 8 -53 2 Items'), 'minecraft:torch', 2600);
 });
 
 test('a container below only receives crafts while the table is powered', async ({ server }) => {
@@ -41,16 +37,14 @@ test('a container below only receives crafts while the table is powered', async 
   // Power the table. The failed attempts above put the crafter into backoff (1 s, then 2 s, ...); commands don't
   // count as input changes, so wait out the next attempt.
   await server.execute('setblock 13 -51 2 minecraft:redstone_block');
-  await sleep(3500);
-  expectContains(await server.execute('data get block 12 -52 2 Items'), 'minecraft:torch');
+  await expectEventually(() => server.execute('data get block 12 -52 2 Items'), 'minecraft:torch', 3500);
 });
 
 test('setting the recipe crafts on the next tick', async ({ server }) => {
   await server.execute('cpptest reset');
   await server.execute('setblock 0 -52 2 minecraft:air');
   await crafter(server, 0, 'instant', 'minecraft:hopper[facing=down]');
-  await sleep(400);
-  expectContains(await server.execute('data get block 0 -52 2 Items'), 'minecraft:torch');
+  await expectEventually(() => server.execute('data get block 0 -52 2 Items'), 'minecraft:torch', 400);
 });
 
 test('a waiting crafter crafts as soon as a hopper delivers its ingredients', async ({ server }) => {
@@ -75,8 +69,7 @@ test('a waiting crafter crafts as soon as a hopper delivers its ingredients', as
 
   // A hopper feeds the chest (two transfers, 8 ticks apart); each transfer wakes the crafter.
   await server.execute('setblock 4 -49 0 minecraft:hopper[facing=down]{Items:[{Slot:0b,id:"minecraft:coal",count:1},{Slot:1b,id:"minecraft:stick",count:1}]}');
-  await sleep(1500);
-  expectContains(await server.execute('data get block 4 -52 0 Items'), 'minecraft:torch');
+  await expectEventually(() => server.execute('data get block 4 -52 0 Items'), 'minecraft:torch', 1500);
 });
 
 test('a crafter blocked by a full output crafts as soon as the output hopper drains', async ({ server }) => {
@@ -100,7 +93,6 @@ test('a crafter blocked by a full output crafts as soon as the output hopper dra
 
   // The hopper starts pushing dirt out; its first transfer frees a slot and wakes the crafter.
   await server.execute('setblock 8 -53 0 minecraft:chest');
-  await sleep(1000);
-  const output = (await server.execute('data get block 8 -52 0 Items')) + (await server.execute('data get block 8 -53 0 Items'));
-  expectContains(output, 'minecraft:torch');
+  const output = async () => (await server.execute('data get block 8 -52 0 Items')) + (await server.execute('data get block 8 -53 0 Items'));
+  await expectEventually(output, 'minecraft:torch', 1000);
 });

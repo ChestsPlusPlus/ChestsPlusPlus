@@ -33,7 +33,11 @@ jobs:
         with:
           distribution: temurin
           java-version: 25
+      # setup-gradle only saves its cache on the default branch (master, still v2) unless told otherwise. Pushes save it and
+      # PRs read it, whichever branch the push trigger names.
       - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
       - name: Build
         run: ./gradlew build --stacktrace
       - name: Upload test and coverage reports
@@ -69,7 +73,13 @@ jobs:
         with:
           distribution: temurin
           java-version: 25
+      # As in build. The Paper and Node downloads are left to the next step's cache, so they aren't stored twice.
       - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+          gradle-home-cache-excludes: |
+            caches/chestsplusplus-e2e
+            caches/plugwright
       - name: Cache Paper, plugins and Node
         uses: actions/cache@v6
         with:

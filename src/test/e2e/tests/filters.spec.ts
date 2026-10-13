@@ -1,11 +1,8 @@
-import { sleep, test } from '@plugwright/runner';
+import { test } from '@plugwright/runner';
+import { expectContains, expectEventually } from './support.js';
 
 // A filtered hopper on a real 26.3 server. The first source slot is rejected, so this also checks the
 // stall avoidance (the hopper must still move the allowed item).
-
-function expectContains(text: string, needle: string) {
-  if (!text.includes(needle)) throw new Error(`expected ${JSON.stringify(needle)} in ${JSON.stringify(text)}`);
-}
 
 test('an allow filter only lets the allowed item through, even behind a rejected slot', async ({ server }) => {
   for (const command of [
@@ -17,10 +14,8 @@ test('an allow filter only lets the allowed item through, even behind a rejected
     await server.execute(command);
   }
   expectContains(await server.execute('cpptest filter 4 -51 12 allow minecraft:stone'), 'indexed=true');
-  await sleep(2500);
-
-  const sink = await server.execute('data get block 4 -52 12 Items');
-  expectContains(sink, 'minecraft:stone');
+  // Dirt is in the first slot, so if the filter let it through it would arrive before the stone.
+  const sink = await expectEventually(() => server.execute('data get block 4 -52 12 Items'), 'minecraft:stone', 2500);
   if (sink.includes('minecraft:dirt')) throw new Error(`dirt passed the filter: ${sink}`);
   expectContains(await server.execute('data get block 4 -50 12 Items'), 'minecraft:dirt');
 });

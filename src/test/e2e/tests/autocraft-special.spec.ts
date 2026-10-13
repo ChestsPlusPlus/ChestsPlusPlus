@@ -1,6 +1,7 @@
 import { sleep, test } from '@plugwright/runner';
 import { appendFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import type { Server } from './support.js';
 
 // Experiment: special (complex) recipes and per-slot match modes in a real AutoCrafter. Records observations instead of
 // asserting, so every case runs. Results go to build/autocraft-special-results.txt.
@@ -8,8 +9,7 @@ import { fileURLToPath } from 'node:url';
 const OWNER = 'E2EOwner';
 const RESULTS = fileURLToPath(new URL('../../../../../build/autocraft-special-results.txt', import.meta.url));
 const ROWS = [4, 8, 14];
-
-type Server = { execute(cmd: string): Promise<string> };
+const CRAFT_WAIT_MS = 3500;
 
 interface Case {
   name: string;
@@ -170,18 +170,18 @@ const CASES: Case[] = [
   },
 ];
 
-function record(lines: string[]) {
-  const text = lines.join('\n') + '\n\n';
-  console.log(text);
-  appendFileSync(RESULTS, text);
+/** A case set up and waiting to craft: what was recorded so far, and when to read the results. */
+interface Pending {
+  lines: string[];
+  x: number;
+  z: number;
+  readAt: number;
 }
 
-async function run(server: Server, index: number, c: Case) {
-  await server.execute('cpptest reset');
+async function place(server: Server, index: number, c: Case): Promise<Pending> {
   const x = (index % 8) * 2;
   const z = ROWS[Math.floor(index / 8)];
   const items = c.inputs.map((item, slot) => `{Slot:${slot}b,${item}}`).join(',');
-  await server.execute('forceload add 0 0');
   await server.execute(`setblock ${x} -50 ${z} minecraft:air`);
   await server.execute(`setblock ${x} -52 ${z} minecraft:air`);
   const setup = [
@@ -193,20 +193,32 @@ async function run(server: Server, index: number, c: Case) {
   const before = await server.execute(`cpptest items ${x} -50 ${z}`);
   const link = await server.execute(`cpptest link autocraft ${OWNER} ${name} ${x} -51 ${z}`);
   const recipe = await server.execute(`cpptest recipe-items ${OWNER} ${name} ${c.ghost}`);
-  await sleep(3500);
-  record([
+  const lines = [
     `### ${c.name}`,
     ...setup.filter(line => !line.startsWith('Changed the block')).map(line => `setup: ${line}`),
     `link: ${link.trim()}`,
     `recipe: ${recipe.trim()}`,
     `input chest before: ${before.trim()}`,
-    `input chest after: ${(await server.execute(`cpptest items ${x} -50 ${z}`)).trim()}`,
-    `output hopper after: ${(await server.execute(`cpptest items ${x} -52 ${z}`)).trim()}`,
-  ]);
+  ];
+  return { lines, x, z, readAt: Date.now() + CRAFT_WAIT_MS };
 }
 
-CASES.forEach((c, index) => {
-  test(`special recipe: ${c.name}`, async ({ server }) => {
-    await run(server, index, c);
-  });
+async function record(server: Server, { lines, x, z, readAt }: Pending) {
+  await sleep(Math.max(0, readAt - Date.now()));
+  lines.push(
+    `input chest after: ${(await server.execute(`cpptest items ${x} -50 ${z}`)).trim()}`,
+    `output hopper after: ${(await server.execute(`cpptest items ${x} -52 ${z}`)).trim()}`,
+  );
+  const text = lines.join('\n') + '\n\n';
+  console.log(text);
+  appendFileSync(RESULTS, text);
+}
+
+// Every case has its own crafter, so they all wait out the crafting time together, each read when its own wait is up.
+test('special recipes: record what each case crafts', async ({ server }) => {
+  await server.execute('cpptest reset');
+  await server.execute('forceload add 0 0');
+  const pending = [];
+  for (const [index, c] of CASES.entries()) pending.push(await place(server, index, c));
+  for (const p of pending) await record(server, p);
 });

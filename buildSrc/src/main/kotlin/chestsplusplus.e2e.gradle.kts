@@ -62,6 +62,8 @@ val startE2eServer = tasks.register<StartE2eServer>("startE2eServer") {
     startupTimeoutSeconds = 300L
     acceptEula = eulaAccepted
     rconPassword = providers.environmentVariable("E2E_RCON_PASSWORD")
+    // Compile the specs first, so a TypeScript error fails the run before the server spends its startup time.
+    mustRunAfter("plugwrightCompileTests")
 }
 
 val stopE2eServer = tasks.register<StopE2eServer>("stopE2eServer") {
