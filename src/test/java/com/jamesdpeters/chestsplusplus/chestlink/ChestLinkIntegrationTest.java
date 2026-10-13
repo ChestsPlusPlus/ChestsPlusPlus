@@ -51,6 +51,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -60,7 +61,9 @@ import org.mockbukkit.mockbukkit.entity.PlayerMock;
 class ChestLinkIntegrationTest extends PluginTestBase {
 
     private World world;
+
     private PlayerMock alice;
+
     private PlayerMock bob;
 
     @BeforeEach
@@ -90,186 +93,6 @@ class ChestLinkIntegrationTest extends PluginTestBase {
                 .callEvent(new PlayerInteractEvent(player, Action.RIGHT_CLICK_BLOCK, null, block, BlockFace.NORTH, EquipmentSlot.HAND));
     }
 
-    @Test
-    void signCreatesGroupLinksBlockAndIsRemoved() {
-        Block chest = chestAt(0, 0);
-        ((Container) chest.getState(false)).getInventory().addItem(ItemStack.of(Material.DIAMOND, 5));
-
-        sign(alice, chest, "[ChestLink]", "ores");
-        server.getScheduler().performTicks(1);
-
-        ChestLinkGroup group = group(alice, "ores");
-        assertThat(group).isNotNull();
-        assertThat(chest.getRelative(BlockFace.NORTH).getType()).isEqualTo(Material.AIR);
-        Node node = services().nodes().get(BlockPos.of(chest));
-        assertThat(node).isNotNull();
-        assertThat(node.facing()).isEqualTo(BlockFace.NORTH);
-        // Existing contents move into the group; the physical chest is emptied.
-        assertThat(group.inventory().contains(Material.DIAMOND, 5)).isTrue();
-        assertThat(((Container) chest.getState(false)).getInventory().isEmpty()).isTrue();
-        assertThat(storage().groupStore().isDirty(group)).isTrue();
-        assertThat(nextPlain(alice)).contains("Created ChestLink ores");
-        assertThat(alice.getInventory().contains(Material.OAK_SIGN, 1)).isTrue();
-    }
-
-    @Test
-    void contentChangesAreReportedSoWaitingCraftersWake() {
-        Block chest = chestAt(0, 0);
-        sign(alice, chest, "[ChestLink]", "ores");
-        server.getScheduler().performTicks(1);
-        ChestLinkGroup group = group(alice, "ores");
-        List<Inventory> changed = new ArrayList<>();
-        ChestLinkService chestLinks = new ChestLinkService(services(), changed::add, new LidAnimator(services().nodes(), services()::settings));
-
-        chestLinks.changed(group);
-        ((Container) chest.getState(false)).getInventory().addItem(ItemStack.of(Material.DIAMOND));
-        chestLinks.absorbPhysicalContents(group, chest);
-
-        assertThat(changed).containsExactly(group.inventory(), group.inventory());
-    }
-
-    @Test
-    void linkingClosesViewsOfThePhysicalInventory() {
-        Block chest = chestAt(0, 0);
-        Inventory physical = ((Container) chest.getState(false)).getInventory();
-        bob.openInventory(physical);
-
-        sign(alice, chest, "[ChestLink]", "ores");
-        server.getScheduler().performTicks(1);
-
-        assertThat(group(alice, "ores")).isNotNull();
-        assertThat(bob.getOpenInventory().getTopInventory()).isNotSameAs(physical);
-        assertThat(physical.getViewers()).isEmpty();
-    }
-
-    @Test
-    void signOfAnyWoodIsGivenBack() {
-        WallSigns.write(alice, chestAt(0, 0), "[ChestLink]", "ores", Material.SPRUCE_WALL_SIGN, Material.SPRUCE_SIGN);
-        server.getScheduler().performTicks(1);
-
-        assertThat(alice.getInventory().contains(Material.SPRUCE_SIGN, 1)).isTrue();
-    }
-
-    @Test
-    void signIsNotGivenBackInCreative() {
-        alice.setGameMode(GameMode.CREATIVE);
-        Block chest = chestAt(0, 0);
-
-        sign(alice, chest, "[ChestLink]", "ores");
-        server.getScheduler().performTicks(1);
-
-        assertThat(services().nodes().get(BlockPos.of(chest))).isNotNull();
-        assertThat(alice.getInventory().contains(Material.OAK_SIGN)).isFalse();
-    }
-
-    @Test
-    void signIsUsedUpWhenConsumptionIsEnabled() {
-        plugin.getConfig().set("linking.consume-signs", true);
-        plugin.saveConfig();
-        reloadPlugin();
-        Block chest = chestAt(0, 0);
-
-        sign(alice, chest, "[ChestLink]", "ores");
-        server.getScheduler().performTicks(1);
-
-        assertThat(services().nodes().at(chest)).isNotNull();
-        assertThat(chest.getRelative(BlockFace.NORTH).getType()).isEqualTo(Material.AIR);
-        assertThat(alice.getInventory().contains(Material.OAK_SIGN)).isFalse();
-    }
-
-    @Test
-    void signRefundDropsOverflowAtPlayersFeet() {
-        // MockBukkit's addItem also fills armour and offhand slots.
-        for (int slot = 0; slot < alice.getInventory().getSize(); slot++) {
-            alice.getInventory().setItem(slot, ItemStack.of(Material.COBBLESTONE, 64));
-        }
-        Block chest = chestAt(0, 0);
-
-        sign(alice, chest, "[ChestLink]", "ores");
-        server.getScheduler().performTicks(1);
-
-        assertThat(chest.getRelative(BlockFace.NORTH).getType()).isEqualTo(Material.AIR);
-        assertThat(alice.getInventory().contains(Material.OAK_SIGN)).isFalse();
-        assertThat(alice.getWorld().getEntitiesByClass(Item.class)).singleElement().satisfies(item -> {
-            assertThat(item.getItemStack()).isEqualTo(ItemStack.of(Material.OAK_SIGN));
-            assertThat(item.getLocation()).isEqualTo(alice.getLocation());
-        });
-    }
-
-    @Test
-    void signAlreadyRemovedIsNotRefunded() {
-        Block chest = chestAt(0, 0);
-        sign(alice, chest, "[ChestLink]", "ores");
-        chest.getRelative(BlockFace.NORTH).setType(Material.AIR);
-
-        server.getScheduler().performTicks(1);
-
-        assertThat(alice.getInventory().contains(Material.OAK_SIGN)).isFalse();
-        assertThat(alice.getWorld().getEntitiesByClass(Item.class)).isEmpty();
-    }
-
-    @Test
-    void signIsNotRefundedAfterPlayerDisconnects() {
-        Block chest = chestAt(0, 0);
-        sign(alice, chest, "[ChestLink]", "ores");
-        alice.disconnect();
-
-        server.getScheduler().performTicks(1);
-
-        assertThat(chest.getRelative(BlockFace.NORTH).getType()).isEqualTo(Material.AIR);
-        assertThat(alice.getInventory().contains(Material.OAK_SIGN)).isFalse();
-        assertThat(alice.getWorld().getEntitiesByClass(Item.class)).isEmpty();
-    }
-
-    @Test
-    void autocraftSignLinksTableAndIsRefunded() {
-        Block table = world.getBlockAt(0, 64, 0);
-        table.setType(Material.CRAFTING_TABLE);
-
-        sign(alice, table, "[AutoCraft]", "torches");
-        server.getScheduler().performTicks(1);
-
-        assertThat(services().groups().find(GroupType.AUTOCRAFT, alice.getUniqueId(), "torches")).isNotNull();
-        assertThat(services().nodes().at(table)).isNotNull();
-        assertThat(table.getRelative(BlockFace.NORTH).getType()).isEqualTo(Material.AIR);
-        assertThat(alice.getInventory().contains(Material.OAK_SIGN, 1)).isTrue();
-    }
-
-    @Test
-    void signOnProtectedChestIsRefused() {
-        Block chest = chestAt(0, 0);
-        ((Container) chest.getState(false)).getInventory().addItem(ItemStack.of(Material.DIAMOND, 5));
-        denyInteract(EventPriority.NORMAL, chest);
-
-        SignChangeEvent event = sign(alice, chest, "[ChestLink]", "loot");
-        server.getScheduler().performTicks(1);
-
-        assertThat(event.isCancelled()).isFalse();
-        assertThat(alice.getInventory().contains(Material.OAK_SIGN)).isFalse();
-        assertThat(group(alice, "loot")).isNull();
-        assertThat(services().nodes().get(BlockPos.of(chest))).isNull();
-        assertThat(((Container) chest.getState(false)).getInventory().contains(Material.DIAMOND, 5)).isTrue();
-        assertThat(nextPlain(alice)).contains("You can't use that block here");
-    }
-
-    @ParameterizedTest
-    @EnumSource(value = EventPriority.class, names = {"HIGH", "HIGHEST"})
-    void signEditRefusedByAProtectionPluginDoesNotLink(EventPriority priority) {
-        Block chest = chestAt(0, 0);
-        ((Container) chest.getState(false)).getInventory().addItem(ItemStack.of(Material.DIAMOND, 5));
-        server.getPluginManager().registerEvent(SignChangeEvent.class, new Listener() {}, priority,
-                (listener, event) -> ((SignChangeEvent) event).setCancelled(true), MockBukkit.createMockPlugin(), true);
-
-        sign(alice, chest, "[ChestLink]", "loot");
-        server.getScheduler().performTicks(1);
-
-        assertThat(group(alice, "loot")).isNull();
-        assertThat(services().nodes().get(BlockPos.of(chest))).isNull();
-        assertThat(((Container) chest.getState(false)).getInventory().contains(Material.DIAMOND, 5)).isTrue();
-        assertThat(chest.getRelative(BlockFace.NORTH).getType()).isEqualTo(Material.OAK_WALL_SIGN);
-        assertThat(alice.getInventory().contains(Material.OAK_SIGN)).isFalse();
-    }
-
     /**
      * Mimics a protection plugin registered after ours: sign placement is allowed, but using {@code locked} is denied at {@code priority},
      * skipping events already denied, as Towny does at HIGH.
@@ -295,139 +118,6 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         return tag;
     }
 
-    @Test
-    void namedTagLinksBlockAndIsUsedUp() {
-        Block barrel = world.getBlockAt(0, 64, 0);
-        barrel.setType(Material.BARREL);
-        Directional data = (Directional) barrel.getBlockData();
-        data.setFacing(BlockFace.EAST);
-        barrel.setBlockData(data);
-        ItemStack tag = namedTag("ores", 2);
-
-        PlayerInteractEvent event = nameTag(alice, barrel, tag);
-
-        ChestLinkGroup group = group(alice, "ores");
-        assertThat(group).isNotNull();
-        Node node = services().nodes().get(BlockPos.of(barrel));
-        assertThat(node).isNotNull();
-        // Clicked on the south side, but the link goes on the barrel's front.
-        assertThat(node.facing()).isEqualTo(BlockFace.EAST);
-        assertThat(event.useInteractedBlock()).isEqualTo(org.bukkit.event.Event.Result.DENY);
-        assertThat(tag.getAmount()).isEqualTo(1);
-        assertThat(nextPlain(alice)).contains("Created ChestLink ores");
-    }
-
-    @Test
-    void namedTagOnChestDeniedAtHighIsRefused() {
-        Block chest = chestAt(0, 0);
-        ((Container) chest.getState(false)).getInventory().addItem(ItemStack.of(Material.DIAMOND, 5));
-        denyInteract(EventPriority.HIGH, chest);
-        ItemStack tag = namedTag("loot", 1);
-
-        nameTag(alice, chest, tag);
-
-        assertThat(group(alice, "loot")).isNull();
-        assertThat(services().nodes().get(BlockPos.of(chest))).isNull();
-        assertThat(((Container) chest.getState(false)).getInventory().contains(Material.DIAMOND, 5)).isTrue();
-        assertThat(tag.getAmount()).isEqualTo(1);
-    }
-
-    @Test
-    void namedTagRunsTheProtectionCheckForPluginsAfterUs() {
-        Block chest = chestAt(0, 0);
-        ((Container) chest.getState(false)).getInventory().addItem(ItemStack.of(Material.DIAMOND, 5));
-        denyInteract(EventPriority.HIGHEST, chest);
-        ItemStack tag = namedTag("loot", 1);
-
-        nameTag(alice, chest, tag);
-
-        assertThat(group(alice, "loot")).isNull();
-        assertThat(((Container) chest.getState(false)).getInventory().contains(Material.DIAMOND, 5)).isTrue();
-        assertThat(tag.getAmount()).isEqualTo(1);
-        assertThat(nextPlain(alice)).contains("You can't use that block here");
-    }
-
-    @ParameterizedTest
-    @EnumSource(value = EventPriority.class, names = {"HIGH", "HIGHEST"})
-    void linkedChestDeniedByALaterProtectionPluginDoesNotOpen(EventPriority priority) {
-        Block chest = chestAt(0, 0);
-        sign(alice, chest, "[ChestLink]", "locked");
-        denyInteract(priority, chest);
-
-        rightClick(alice, chest);
-
-        assertThat(alice.getOpenInventory().getTopInventory()).isNotSameAs(group(alice, "locked").inventory());
-    }
-
-    @Test
-    void namedTagIsKeptWhenConsumptionIsDisabled() {
-        plugin.getConfig().set("linking.consume-name-tags", false);
-        plugin.saveConfig();
-        reloadPlugin();
-        Block chest = chestAt(0, 0);
-        ItemStack tag = namedTag("ores", 1);
-
-        nameTag(alice, chest, tag);
-
-        assertThat(services().nodes().get(BlockPos.of(chest))).isNotNull();
-        assertThat(tag.getAmount()).isEqualTo(1);
-    }
-
-    @Test
-    void unnamedOrBlankTagDoesNothing() {
-        Block chest = chestAt(0, 0);
-
-        nameTag(alice, chest, ItemStack.of(Material.NAME_TAG));
-        nameTag(alice, chest, namedTag("   ", 1));
-
-        assertThat(services().nodes().get(BlockPos.of(chest))).isNull();
-        assertThat(services().groups().ownedBy(alice.getUniqueId(), GroupType.CHESTLINK)).isEmpty();
-    }
-
-    @Test
-    void namedTagOnLinkedChestOpensIt() {
-        Block chest = chestAt(0, 0);
-        sign(alice, chest, "[ChestLink]", "first");
-        ItemStack tag = namedTag("second", 1);
-
-        nameTag(alice, chest, tag);
-
-        assertThat(group(alice, "second")).isNull();
-        assertThat(tag.getAmount()).isEqualTo(1);
-        assertThat(alice.getOpenInventory().getTopInventory()).isSameAs(group(alice, "first").inventory());
-    }
-
-    @Test
-    void secondChestSharesInventoryAndOpensIt() {
-        sign(alice, chestAt(0, 0), "[ChestLink]", "shared");
-        Block second = chestAt(5, 0);
-        sign(alice, second, "[chestlink]", "SHARED");
-        ChestLinkGroup group = group(alice, "shared");
-        group.inventory().addItem(ItemStack.of(Material.EMERALD, 3));
-
-        rightClick(alice, second);
-
-        assertThat(services().nodes().count(group.id())).isEqualTo(2);
-        assertThat(alice.getOpenInventory().getTopInventory()).isSameAs(group.inventory());
-    }
-
-    @Test
-    void shiftClickIntoAnOpenChestLinkMarksItDirtyBeforeClose() throws InterruptedException {
-        Block chest = chestAt(0, 0);
-        sign(alice, chest, "[ChestLink]", "open");
-        ChestLinkGroup group = group(alice, "open");
-        storage().persistence().flush();
-        tickUntil(() -> !storage().groupStore().isDirty(group));
-        rightClick(alice, chest);
-        InventoryView view = alice.getOpenInventory();
-
-        server.getPluginManager().callEvent(new InventoryClickEvent(view, InventoryType.SlotType.CONTAINER, view.getTopInventory().getSize(),
-                ClickType.SHIFT_LEFT, InventoryAction.MOVE_TO_OTHER_INVENTORY));
-
-        assertThat(alice.getOpenInventory().getTopInventory()).isSameAs(group.inventory());
-        assertThat(storage().groupStore().isDirty(group)).isTrue();
-    }
-
     private void tickUntil(BooleanSupplier done) throws InterruptedException {
         long deadline = System.nanoTime() + Duration.ofSeconds(10).toNanos();
         while (!done.getAsBoolean() && System.nanoTime() < deadline) {
@@ -435,268 +125,6 @@ class ChestLinkIntegrationTest extends PluginTestBase {
             Thread.sleep(5);
         }
         assertThat(done.getAsBoolean()).as("condition reached within 10s").isTrue();
-    }
-
-    @Test
-    void accessRequiresOwnerTrustMembershipOrPublic() {
-        Block chest = chestAt(0, 0);
-        sign(alice, chest, "[ChestLink]", "private");
-        ChestLinkGroup group = group(alice, "private");
-
-        rightClick(bob, chest);
-        assertThat(bob.getOpenInventory().getTopInventory()).isNotSameAs(group.inventory());
-
-        services().trust().trust(alice.getUniqueId(), bob.getUniqueId());
-        rightClick(bob, chest);
-        assertThat(bob.getOpenInventory().getTopInventory()).isSameAs(group.inventory());
-    }
-
-    @Test
-    void removingAMemberClosesTheirOpenView() {
-        Block chest = chestAt(0, 0);
-        sign(alice, chest, "[ChestLink]", "shared");
-        ChestLinkGroup group = group(alice, "shared");
-        LinkService links = links();
-        links.addMember(group, bob.getUniqueId());
-        rightClick(bob, chest);
-        assertThat(bob.getOpenInventory().getTopInventory()).isSameAs(group.inventory());
-
-        links.removeMember(group, bob.getUniqueId());
-
-        assertThat(bob.getOpenInventory().getTopInventory()).isNotSameAs(group.inventory());
-    }
-
-    @Test
-    void makingAGroupPrivateClosesOutsidersViews() {
-        Block chest = chestAt(0, 0);
-        sign(alice, chest, "[ChestLink]", "shared");
-        ChestLinkGroup group = group(alice, "shared");
-        LinkService links = links();
-        links.setPublic(group, true);
-        rightClick(bob, chest);
-        rightClick(alice, chest);
-
-        links.setPublic(group, false);
-
-        assertThat(bob.getOpenInventory().getTopInventory()).isNotSameAs(group.inventory());
-        assertThat(alice.getOpenInventory().getTopInventory()).isSameAs(group.inventory());
-    }
-
-    @Test
-    void untrustingClosesTheirOpenView() {
-        Block chest = chestAt(0, 0);
-        sign(alice, chest, "[ChestLink]", "shared");
-        ChestLinkGroup group = group(alice, "shared");
-        services().trust().trust(alice.getUniqueId(), bob.getUniqueId());
-        rightClick(bob, chest);
-
-        links().untrust(alice.getUniqueId(), bob.getUniqueId());
-
-        assertThat(bob.getOpenInventory().getTopInventory()).isNotSameAs(group.inventory());
-    }
-
-    @Test
-    void losingAPermissionRefusesTheNextEditAndClosesTheView() {
-        Block chest = chestAt(0, 0);
-        sign(alice, chest, "[ChestLink]", "shared");
-        ChestLinkGroup group = group(alice, "shared");
-        group.inventory().addItem(ItemStack.of(Material.DIAMOND));
-        services().groups().setPublic(group, true);
-        rightClick(bob, chest);
-
-        bob.addAttachment(plugin).setPermission("chestsplusplus.chestlink.open", false);
-        InventoryClickEvent click = new InventoryClickEvent(bob.getOpenInventory(), InventoryType.SlotType.CONTAINER, 0, ClickType.LEFT,
-                InventoryAction.PICKUP_ALL);
-        server.getPluginManager().callEvent(click);
-        server.getScheduler().performOneTick();
-
-        assertThat(click.isCancelled()).isTrue();
-        assertThat(bob.getOpenInventory().getTopInventory()).isNotSameAs(group.inventory());
-    }
-
-    @Test
-    void linkingToAnotherPlayersGroupNeedsAccess() {
-        sign(alice, chestAt(0, 0), "[ChestLink]", "alices");
-        Block bobs = chestAt(3, 0);
-
-        sign(bob, bobs, "[ChestLink]", "Alice:alices");
-        assertThat(services().nodes().get(BlockPos.of(bobs))).isNull();
-
-        services().groups().setPublic(group(alice, "alices"), true);
-        sign(bob, bobs, "[ChestLink]", "Alice:alices");
-        assertThat(services().nodes().get(BlockPos.of(bobs))).isNotNull();
-    }
-
-    @Test
-    void limitsBlacklistAndInvalidNamesAreEnforced() {
-        plugin.getConfig().set("limits.chestlink-default", 1);
-        plugin.getConfig().set("chestlink.display.label", false);
-        plugin.getConfig().set("worlds.blacklist", List.of("nether"));
-        plugin.saveConfig();
-        reloadPlugin();
-
-        sign(alice, chestAt(0, 0), "[ChestLink]", "first");
-        sign(alice, chestAt(2, 0), "[ChestLink]", "second");
-        assertThat(group(alice, "second")).isNull();
-
-        // Linking more blocks to an existing group doesn't count against the limit.
-        sign(alice, chestAt(4, 0), "[ChestLink]", "first");
-        assertThat(services().nodes().count(group(alice, "first").id())).isEqualTo(2);
-
-        World nether = server.addSimpleWorld("nether");
-        Block netherChest = nether.getBlockAt(0, 64, 0);
-        netherChest.setType(Material.CHEST);
-        sign(bob, netherChest, "[ChestLink]", "nope");
-        assertThat(group(bob, "nope")).isNull();
-
-        sign(bob, chestAt(6, 0), "[ChestLink]", "bad name!");
-        assertThat(services().groups().size()).isEqualTo(1);
-    }
-
-    @Test
-    void breakingLastNodeDropsItemsAndDeletesGroup() {
-        Block a = chestAt(0, 0);
-        Block b = chestAt(3, 0);
-        sign(alice, a, "[ChestLink]", "g");
-        sign(alice, b, "[ChestLink]", "g");
-        ChestLinkGroup group = group(alice, "g");
-        group.inventory().addItem(ItemStack.of(Material.IRON_INGOT, 10), ItemStack.of(Material.IRON_INGOT, 10));
-
-        server.getPluginManager().callEvent(new BlockBreakEvent(a, alice));
-        assertThat(group(alice, "g")).isNotNull();
-
-        server.getPluginManager().callEvent(new BlockBreakEvent(b, alice));
-        assertThat(group(alice, "g")).isNull();
-        int dropped = world.getEntitiesByClass(Item.class).stream().mapToInt(item -> item.getItemStack().getAmount()).sum();
-        assertThat(dropped).isEqualTo(20);
-    }
-
-    @Test
-    void silkTouchDropsLinkItemThatRelinks() {
-        Block chest = chestAt(0, 0);
-        sign(alice, chest, "[ChestLink]", "portable");
-        ChestLinkGroup group = group(alice, "portable");
-        group.inventory().addItem(ItemStack.of(Material.GOLD_INGOT, 4));
-        ItemStack linkItem = silkTouchBreak(chest);
-        assertThat(group(alice, "portable")).isSameAs(group);
-        LinkItem.Link link = features().linkItem().read(linkItem);
-        assertThat(link).isEqualTo(new LinkItem.Link(group.id(), GroupType.CHESTLINK));
-
-        BlockPlaceEvent placeEvent = placeLinkItem(alice, linkItem);
-        assertThat(services().nodes().at(placeEvent.getBlockPlaced()).groupId()).isEqualTo(group.id());
-        assertThat(group.inventory().contains(Material.GOLD_INGOT, 4)).isTrue();
-    }
-
-    @Test
-    void linkItemOfADeletedGroupPlacesAsANormalBlockAndNeverJoinsAnotherGroup() {
-        Block chest = chestAt(0, 0);
-        sign(alice, chest, "[ChestLink]", "portable");
-        ChestLinkGroup deleted = group(alice, "portable");
-        ItemStack linkItem = silkTouchBreak(chest);
-        links().removeGroup(deleted, chest.getLocation());
-        Block bobsChest = chestAt(5, 5);
-        sign(bob, bobsChest, "[ChestLink]", "mine");
-        ChestLinkGroup bobs = group(bob, "mine");
-        assertThat(bobs.id()).isNotEqualTo(deleted.id());
-        assertThat(nextPlain(bob)).contains("Created ChestLink mine");
-
-        BlockPlaceEvent event = placeLinkItem(bob, linkItem);
-
-        assertThat(event.isCancelled()).isFalse();
-        assertThat(services().nodes().at(event.getBlockPlaced())).isNull();
-        assertThat(services().nodes().count(bobs.id())).isEqualTo(1);
-        assertThat(nextPlain(bob)).contains("no longer exists");
-    }
-
-    @Test
-    void linkItemPlacementRequiresCreatePermissionForPublicGroup() {
-        ItemStack linkItem = publicLinkItem();
-        bob.addAttachment(plugin).setPermission("chestsplusplus.chestlink.create", false);
-
-        BlockPlaceEvent event = placeLinkItem(bob, linkItem);
-
-        assertThat(event.isCancelled()).isTrue();
-        assertThat(services().nodes().at(event.getBlockPlaced())).isNull();
-    }
-
-    @Test
-    void staleLinkItemPlacementCancelledByProtectionSendsNoPlacementMessage() {
-        ItemStack linkItem = publicLinkItem();
-        links().removeGroup(group(alice, "portable"), alice.getLocation());
-        cancelPlacementsAtHighest();
-
-        BlockPlaceEvent event = placeLinkItem(bob, linkItem);
-
-        assertThat(event.isCancelled()).isTrue();
-        assertThat(services().nodes().at(event.getBlockPlaced())).isNull();
-        assertThat(nextPlain(bob)).isNull();
-    }
-
-    @Test
-    void staleLinkItemPlacementThatCannotBuildSendsNoPlacementMessage() {
-        ItemStack linkItem = publicLinkItem();
-        links().removeGroup(group(alice, "portable"), alice.getLocation());
-
-        BlockPlaceEvent event = placeLinkItem(bob, linkItem, false);
-
-        assertThat(services().nodes().at(event.getBlockPlaced())).isNull();
-        assertThat(nextPlain(bob)).isNull();
-    }
-
-    @Test
-    void linkItemPlacementAllowsDefaultCreatePermissionForPublicGroup() {
-        ItemStack linkItem = publicLinkItem();
-
-        BlockPlaceEvent event = placeLinkItem(bob, linkItem);
-
-        assertThat(event.isCancelled()).isFalse();
-        assertThat(services().nodes().at(event.getBlockPlaced()).groupId()).isEqualTo(group(alice, "portable").id());
-        assertThat(nextPlain(bob)).contains("Linked to ChestLink portable");
-    }
-
-    @Test
-    void linkItemPlacementCancelledByAProtectionPluginLinksNothing() {
-        ItemStack linkItem = publicLinkItem();
-        ChestLinkGroup group = group(alice, "portable");
-        cancelPlacementsAtHighest();
-
-        BlockPlaceEvent event = placeLinkItem(bob, linkItem);
-
-        assertThat(event.isCancelled()).isTrue();
-        assertThat(services().nodes().at(event.getBlockPlaced())).isNull();
-        assertThat(services().nodes().count(group.id())).isZero();
-        assertThat(features().displays().count()).isZero();
-        assertThat(nextPlain(bob)).isNull();
-    }
-
-    @Test
-    void linkItemPlacementThatCannotBuildLinksNothing() {
-        ItemStack linkItem = publicLinkItem();
-
-        BlockPlaceEvent event = placeLinkItem(bob, linkItem, false);
-
-        assertThat(services().nodes().at(event.getBlockPlaced())).isNull();
-        assertThat(features().displays().count()).isZero();
-        assertThat(nextPlain(bob)).isNull();
-    }
-
-    @Test
-    void chestPlacedNextToALinkedChestIsSplit() {
-        Block placed = placeDoubleChestNextToLinkedChest();
-
-        server.getPluginManager().callEvent(placeEvent(placed, ItemStack.of(Material.CHEST), alice, true));
-
-        assertThat(chestTypesAround(placed)).containsExactly(Chest.Type.SINGLE, Chest.Type.SINGLE);
-    }
-
-    @Test
-    void chestPlacementCancelledByAProtectionPluginIsNotSplit() {
-        Block placed = placeDoubleChestNextToLinkedChest();
-        cancelPlacementsAtHighest();
-
-        server.getPluginManager().callEvent(placeEvent(placed, ItemStack.of(Material.CHEST), alice, true));
-
-        assertThat(chestTypesAround(placed)).containsExactly(Chest.Type.LEFT, Chest.Type.RIGHT);
     }
 
     /** A chest at x=0 merged by vanilla with a linked chest at x=1, as it is when the place event fires. */
@@ -761,141 +189,6 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         return new BlockPlaceEvent(placed, placed.getState(), placed.getRelative(BlockFace.DOWN), item, player, canBuild, EquipmentSlot.HAND);
     }
 
-    @Test
-    void explosionsSpareLinkedBlocks() {
-        Block linked = chestAt(0, 0);
-        Block plain = chestAt(1, 0);
-        sign(alice, linked, "[ChestLink]", "g");
-        List<Block> blocks = new ArrayList<>(List.of(linked, plain));
-
-        server.getPluginManager().callEvent(new BlockExplodeEvent(plain, plain.getState(), blocks, 4f, ExplosionResult.DESTROY));
-
-        assertThat(blocks).containsExactly(plain);
-    }
-
-    @Test
-    void enableUnlinksStaleNodesInLoadedChunksBeforeSpawningDisplays() {
-        Block replaced = chestAt(0, 0);
-        Block intact = chestAt(4, 0);
-        sign(alice, replaced, "[ChestLink]", "g");
-        sign(alice, intact, "[ChestLink]", "g");
-
-        server.getPluginManager().disablePlugin(plugin);
-        replaced.setType(Material.FURNACE);
-        server.getPluginManager().enablePlugin(plugin);
-
-        assertThat(services().nodes().get(BlockPos.of(replaced))).isNull();
-        assertThat(services().nodes().get(BlockPos.of(intact))).isNotNull();
-        assertThat(features().displays().count()).isEqualTo(1);
-        assertThat(world.getEntitiesByClass(ItemDisplay.class)).hasSize(1);
-        assertThat(group(alice, "g")).isNotNull();
-    }
-
-    @Test
-    void restartingLoadsGroupsWithoutDirtyingThem() {
-        sign(alice, chestAt(0, 0), "[ChestLink]", "g");
-        LinkService links = links();
-        links.setPublic(group(alice, "g"), true);
-        links.addMember(group(alice, "g"), bob.getUniqueId());
-
-        server.getPluginManager().disablePlugin(plugin);
-        server.getPluginManager().enablePlugin(plugin);
-
-        ChestLinkGroup loaded = group(alice, "g");
-        assertThat(loaded.isPublic()).isTrue();
-        assertThat(loaded.members()).containsExactly(bob.getUniqueId());
-        assertThat(storage().groupStore().isDirty(loaded)).isFalse();
-    }
-
-    @Test
-    void staleNodesInUnloadedChunksAreUnlinkedWhenTheirChunkLoads() {
-        sign(alice, chestAt(0, 0), "[ChestLink]", "g");
-        LinkService links = links();
-        BlockPos far = new BlockPos(world.getUID(), 160, 64, 0);
-        services().nodes().put(new Node(far, BlockFace.NORTH, group(alice, "g").id()));
-
-        links.unlinkChangedBlocksInLoadedChunks();
-        assertThat(services().nodes().get(far)).isNotNull();
-
-        server.getPluginManager().callEvent(new ChunkLoadEvent(world.getChunkAt(far.chunkX(), far.chunkZ()), false));
-        assertThat(services().nodes().get(far)).isNull();
-        assertThat(services().nodes().size()).isEqualTo(1);
-    }
-
-    @Test
-    void hopperSearchSubstitutesGroupInventory() {
-        Block chest = chestAt(0, 0);
-        sign(alice, chest, "[ChestLink]", "g");
-        Block hopper = world.getBlockAt(0, 65, 0);
-        hopper.setType(Material.HOPPER);
-
-        HopperInventorySearchEvent event = new HopperInventorySearchEvent(((Container) chest.getState(false)).getInventory(),
-                HopperInventorySearchEvent.ContainerType.DESTINATION, hopper, chest);
-        server.getPluginManager().callEvent(event);
-
-        assertThat(event.getInventory()).isSameAs(group(alice, "g").inventory());
-    }
-
-    @Test
-    void displaysSpawnForLoadedNodesAndFollowContents() {
-        sign(alice, chestAt(0, 0), "[ChestLink]", "g");
-        DisplayService displays = features().displays();
-
-        assertThat(displays.count()).isEqualTo(1);
-        var itemDisplay = world.getEntitiesByClass(org.bukkit.entity.ItemDisplay.class).iterator().next();
-        assertThat(itemDisplay.isPersistent()).isFalse();
-        assertThat(displays.isOurs(itemDisplay)).isTrue();
-
-        ChestLinkGroup group = group(alice, "g");
-        group.inventory().addItem(ItemStack.of(Material.COBBLESTONE, 64), ItemStack.of(Material.DIRT, 3));
-        storage().persistence().flush();
-        services().groups().changed(group);
-        assertThat(storage().groupStore().isDirty(group)).isTrue();
-        server.getScheduler().performTicks(10);
-        // Empty (flat) -> cobblestone (block) moves the display, so it is respawned: fetch it again.
-        var updated = world.getEntitiesByClass(org.bukkit.entity.ItemDisplay.class);
-        assertThat(updated).hasSize(1);
-        assertThat(updated.iterator().next().getItemStack().getType()).isEqualTo(Material.COBBLESTONE);
-    }
-
-    @Test
-    void chestDisplaysSitInFrontOfTheLatch() {
-        assertThat(com.jamesdpeters.chestsplusplus.display.DisplayLayout.shapeOf(ItemStack.of(Material.COBBLESTONE)))
-                .isEqualTo(com.jamesdpeters.chestsplusplus.display.DisplayLayout.Shape.BLOCK);
-        assertThat(com.jamesdpeters.chestsplusplus.display.DisplayLayout.shapeOf(ItemStack.of(Material.DIAMOND)))
-                .isEqualTo(com.jamesdpeters.chestsplusplus.display.DisplayLayout.Shape.FLAT);
-        assertThat(com.jamesdpeters.chestsplusplus.display.DisplayLayout.shapeOf(ItemStack.of(Material.TORCH)))
-                .isEqualTo(com.jamesdpeters.chestsplusplus.display.DisplayLayout.Shape.FLAT);
-        // Solid block, but its item is a flat 2D icon.
-        assertThat(com.jamesdpeters.chestsplusplus.display.DisplayLayout.shapeOf(ItemStack.of(Material.HOPPER)))
-                .isEqualTo(com.jamesdpeters.chestsplusplus.display.DisplayLayout.Shape.FLAT);
-        assertThat(com.jamesdpeters.chestsplusplus.display.DisplayLayout.shapeOf(ItemStack.of(Material.OAK_LOG)))
-                .isEqualTo(com.jamesdpeters.chestsplusplus.display.DisplayLayout.Shape.BLOCK);
-        assertThat(com.jamesdpeters.chestsplusplus.display.DisplayLayout.shapeOf(ItemStack.of(Material.STONE_SLAB)))
-                .isEqualTo(com.jamesdpeters.chestsplusplus.display.DisplayLayout.Shape.BLOCK);
-
-        sign(alice, chestAt(0, 0), "[ChestLink]", "g"); // display on the north face (z = 0 side)
-        ChestLinkGroup group = group(alice, "g");
-        DisplayService displays = features().displays();
-
-        group.inventory().addItem(ItemStack.of(Material.DIAMOND, 10));
-        displays.requestUpdate(group);
-        server.getScheduler().performTicks(10);
-        double flatZ = displayZ();
-
-        group.inventory().clear();
-        group.inventory().addItem(ItemStack.of(Material.COBBLESTONE, 10));
-        displays.requestUpdate(group);
-        server.getScheduler().performTicks(10);
-        double blockZ = displayZ();
-
-        // North face: the chest body front is at z = 1/16. Blocks are centred on it (half inset); flat items sit
-        // further
-        // out, around the latch (depth tuned in DisplayLayout).
-        assertThat(blockZ).isCloseTo(1.0 / 16, org.assertj.core.api.Assertions.within(1e-6));
-        assertThat(flatZ).isLessThan(blockZ);
-    }
-
     private double displayZ() {
         var displays = world.getEntitiesByClass(org.bukkit.entity.ItemDisplay.class);
         assertThat(displays).hasSize(1);
@@ -907,6 +200,748 @@ class ChestLinkIntegrationTest extends PluginTestBase {
             plugin.reload();
         } catch (java.io.IOException e) {
             throw new AssertionError(e);
+        }
+    }
+
+    @Nested
+    class Signs {
+
+        @Test
+        void signCreatesGroupLinksBlockAndIsRemoved() {
+            Block chest = chestAt(0, 0);
+            ((Container) chest.getState(false)).getInventory().addItem(ItemStack.of(Material.DIAMOND, 5));
+
+            sign(alice, chest, "[ChestLink]", "ores");
+            server.getScheduler().performTicks(1);
+
+            ChestLinkGroup group = group(alice, "ores");
+            assertThat(group).isNotNull();
+            assertThat(chest.getRelative(BlockFace.NORTH).getType()).isEqualTo(Material.AIR);
+            Node node = services().nodes().get(BlockPos.of(chest));
+            assertThat(node).isNotNull();
+            assertThat(node.facing()).isEqualTo(BlockFace.NORTH);
+            // Existing contents move into the group; the physical chest is emptied.
+            assertThat(group.inventory().contains(Material.DIAMOND, 5)).isTrue();
+            assertThat(((Container) chest.getState(false)).getInventory().isEmpty()).isTrue();
+            assertThat(storage().groupStore().isDirty(group)).isTrue();
+            assertThat(nextPlain(alice)).contains("Created ChestLink ores");
+            assertThat(alice.getInventory().contains(Material.OAK_SIGN, 1)).isTrue();
+        }
+
+        @Test
+        void signOfAnyWoodIsGivenBack() {
+            WallSigns.write(alice, chestAt(0, 0), "[ChestLink]", "ores", Material.SPRUCE_WALL_SIGN, Material.SPRUCE_SIGN);
+            server.getScheduler().performTicks(1);
+
+            assertThat(alice.getInventory().contains(Material.SPRUCE_SIGN, 1)).isTrue();
+        }
+
+        @Test
+        void signIsNotGivenBackInCreative() {
+            alice.setGameMode(GameMode.CREATIVE);
+            Block chest = chestAt(0, 0);
+
+            sign(alice, chest, "[ChestLink]", "ores");
+            server.getScheduler().performTicks(1);
+
+            assertThat(services().nodes().get(BlockPos.of(chest))).isNotNull();
+            assertThat(alice.getInventory().contains(Material.OAK_SIGN)).isFalse();
+        }
+
+        @Test
+        void signIsUsedUpWhenConsumptionIsEnabled() {
+            plugin.getConfig().set("linking.consume-signs", true);
+            plugin.saveConfig();
+            reloadPlugin();
+            Block chest = chestAt(0, 0);
+
+            sign(alice, chest, "[ChestLink]", "ores");
+            server.getScheduler().performTicks(1);
+
+            assertThat(services().nodes().at(chest)).isNotNull();
+            assertThat(chest.getRelative(BlockFace.NORTH).getType()).isEqualTo(Material.AIR);
+            assertThat(alice.getInventory().contains(Material.OAK_SIGN)).isFalse();
+        }
+
+        @Test
+        void signRefundDropsOverflowAtPlayersFeet() {
+            // MockBukkit's addItem also fills armour and offhand slots.
+            for (int slot = 0; slot < alice.getInventory().getSize(); slot++) {
+                alice.getInventory().setItem(slot, ItemStack.of(Material.COBBLESTONE, 64));
+            }
+            Block chest = chestAt(0, 0);
+
+            sign(alice, chest, "[ChestLink]", "ores");
+            server.getScheduler().performTicks(1);
+
+            assertThat(chest.getRelative(BlockFace.NORTH).getType()).isEqualTo(Material.AIR);
+            assertThat(alice.getInventory().contains(Material.OAK_SIGN)).isFalse();
+            assertThat(alice.getWorld().getEntitiesByClass(Item.class)).singleElement().satisfies(item -> {
+                assertThat(item.getItemStack()).isEqualTo(ItemStack.of(Material.OAK_SIGN));
+                assertThat(item.getLocation()).isEqualTo(alice.getLocation());
+            });
+        }
+
+        @Test
+        void signAlreadyRemovedIsNotRefunded() {
+            Block chest = chestAt(0, 0);
+            sign(alice, chest, "[ChestLink]", "ores");
+            chest.getRelative(BlockFace.NORTH).setType(Material.AIR);
+
+            server.getScheduler().performTicks(1);
+
+            assertThat(alice.getInventory().contains(Material.OAK_SIGN)).isFalse();
+            assertThat(alice.getWorld().getEntitiesByClass(Item.class)).isEmpty();
+        }
+
+        @Test
+        void signIsNotRefundedAfterPlayerDisconnects() {
+            Block chest = chestAt(0, 0);
+            sign(alice, chest, "[ChestLink]", "ores");
+            alice.disconnect();
+
+            server.getScheduler().performTicks(1);
+
+            assertThat(chest.getRelative(BlockFace.NORTH).getType()).isEqualTo(Material.AIR);
+            assertThat(alice.getInventory().contains(Material.OAK_SIGN)).isFalse();
+            assertThat(alice.getWorld().getEntitiesByClass(Item.class)).isEmpty();
+        }
+
+        @Test
+        void autocraftSignLinksTableAndIsRefunded() {
+            Block table = world.getBlockAt(0, 64, 0);
+            table.setType(Material.CRAFTING_TABLE);
+
+            sign(alice, table, "[AutoCraft]", "torches");
+            server.getScheduler().performTicks(1);
+
+            assertThat(services().groups().find(GroupType.AUTOCRAFT, alice.getUniqueId(), "torches")).isNotNull();
+            assertThat(services().nodes().at(table)).isNotNull();
+            assertThat(table.getRelative(BlockFace.NORTH).getType()).isEqualTo(Material.AIR);
+            assertThat(alice.getInventory().contains(Material.OAK_SIGN, 1)).isTrue();
+        }
+
+        @Test
+        void signOnProtectedChestIsRefused() {
+            Block chest = chestAt(0, 0);
+            ((Container) chest.getState(false)).getInventory().addItem(ItemStack.of(Material.DIAMOND, 5));
+            denyInteract(EventPriority.NORMAL, chest);
+
+            SignChangeEvent event = sign(alice, chest, "[ChestLink]", "loot");
+            server.getScheduler().performTicks(1);
+
+            assertThat(event.isCancelled()).isFalse();
+            assertThat(alice.getInventory().contains(Material.OAK_SIGN)).isFalse();
+            assertThat(group(alice, "loot")).isNull();
+            assertThat(services().nodes().get(BlockPos.of(chest))).isNull();
+            assertThat(((Container) chest.getState(false)).getInventory().contains(Material.DIAMOND, 5)).isTrue();
+            assertThat(nextPlain(alice)).contains("You can't use that block here");
+        }
+
+        @ParameterizedTest
+        @EnumSource(value = EventPriority.class, names = {"HIGH", "HIGHEST"})
+        void signEditRefusedByAProtectionPluginDoesNotLink(EventPriority priority) {
+            Block chest = chestAt(0, 0);
+            ((Container) chest.getState(false)).getInventory().addItem(ItemStack.of(Material.DIAMOND, 5));
+            server.getPluginManager().registerEvent(SignChangeEvent.class, new Listener() {}, priority,
+                    (listener, event) -> ((SignChangeEvent) event).setCancelled(true), MockBukkit.createMockPlugin(), true);
+
+            sign(alice, chest, "[ChestLink]", "loot");
+            server.getScheduler().performTicks(1);
+
+            assertThat(group(alice, "loot")).isNull();
+            assertThat(services().nodes().get(BlockPos.of(chest))).isNull();
+            assertThat(((Container) chest.getState(false)).getInventory().contains(Material.DIAMOND, 5)).isTrue();
+            assertThat(chest.getRelative(BlockFace.NORTH).getType()).isEqualTo(Material.OAK_WALL_SIGN);
+            assertThat(alice.getInventory().contains(Material.OAK_SIGN)).isFalse();
+        }
+    }
+
+    @Nested
+    class NameTags {
+
+        @Test
+        void namedTagLinksBlockAndIsUsedUp() {
+            Block barrel = world.getBlockAt(0, 64, 0);
+            barrel.setType(Material.BARREL);
+            Directional data = (Directional) barrel.getBlockData();
+            data.setFacing(BlockFace.EAST);
+            barrel.setBlockData(data);
+            ItemStack tag = namedTag("ores", 2);
+
+            PlayerInteractEvent event = nameTag(alice, barrel, tag);
+
+            ChestLinkGroup group = group(alice, "ores");
+            assertThat(group).isNotNull();
+            Node node = services().nodes().get(BlockPos.of(barrel));
+            assertThat(node).isNotNull();
+            // Clicked on the south side, but the link goes on the barrel's front.
+            assertThat(node.facing()).isEqualTo(BlockFace.EAST);
+            assertThat(event.useInteractedBlock()).isEqualTo(org.bukkit.event.Event.Result.DENY);
+            assertThat(tag.getAmount()).isEqualTo(1);
+            assertThat(nextPlain(alice)).contains("Created ChestLink ores");
+        }
+
+        @Test
+        void namedTagOnChestDeniedAtHighIsRefused() {
+            Block chest = chestAt(0, 0);
+            ((Container) chest.getState(false)).getInventory().addItem(ItemStack.of(Material.DIAMOND, 5));
+            denyInteract(EventPriority.HIGH, chest);
+            ItemStack tag = namedTag("loot", 1);
+
+            nameTag(alice, chest, tag);
+
+            assertThat(group(alice, "loot")).isNull();
+            assertThat(services().nodes().get(BlockPos.of(chest))).isNull();
+            assertThat(((Container) chest.getState(false)).getInventory().contains(Material.DIAMOND, 5)).isTrue();
+            assertThat(tag.getAmount()).isEqualTo(1);
+        }
+
+        @Test
+        void namedTagRunsTheProtectionCheckForPluginsAfterUs() {
+            Block chest = chestAt(0, 0);
+            ((Container) chest.getState(false)).getInventory().addItem(ItemStack.of(Material.DIAMOND, 5));
+            denyInteract(EventPriority.HIGHEST, chest);
+            ItemStack tag = namedTag("loot", 1);
+
+            nameTag(alice, chest, tag);
+
+            assertThat(group(alice, "loot")).isNull();
+            assertThat(((Container) chest.getState(false)).getInventory().contains(Material.DIAMOND, 5)).isTrue();
+            assertThat(tag.getAmount()).isEqualTo(1);
+            assertThat(nextPlain(alice)).contains("You can't use that block here");
+        }
+
+        @ParameterizedTest
+        @EnumSource(value = EventPriority.class, names = {"HIGH", "HIGHEST"})
+        void linkedChestDeniedByALaterProtectionPluginDoesNotOpen(EventPriority priority) {
+            Block chest = chestAt(0, 0);
+            sign(alice, chest, "[ChestLink]", "locked");
+            denyInteract(priority, chest);
+
+            rightClick(alice, chest);
+
+            assertThat(alice.getOpenInventory().getTopInventory()).isNotSameAs(group(alice, "locked").inventory());
+        }
+
+        @Test
+        void namedTagIsKeptWhenConsumptionIsDisabled() {
+            plugin.getConfig().set("linking.consume-name-tags", false);
+            plugin.saveConfig();
+            reloadPlugin();
+            Block chest = chestAt(0, 0);
+            ItemStack tag = namedTag("ores", 1);
+
+            nameTag(alice, chest, tag);
+
+            assertThat(services().nodes().get(BlockPos.of(chest))).isNotNull();
+            assertThat(tag.getAmount()).isEqualTo(1);
+        }
+
+        @Test
+        void unnamedOrBlankTagDoesNothing() {
+            Block chest = chestAt(0, 0);
+
+            nameTag(alice, chest, ItemStack.of(Material.NAME_TAG));
+            nameTag(alice, chest, namedTag("   ", 1));
+
+            assertThat(services().nodes().get(BlockPos.of(chest))).isNull();
+            assertThat(services().groups().ownedBy(alice.getUniqueId(), GroupType.CHESTLINK)).isEmpty();
+        }
+
+        @Test
+        void namedTagOnLinkedChestOpensIt() {
+            Block chest = chestAt(0, 0);
+            sign(alice, chest, "[ChestLink]", "first");
+            ItemStack tag = namedTag("second", 1);
+
+            nameTag(alice, chest, tag);
+
+            assertThat(group(alice, "second")).isNull();
+            assertThat(tag.getAmount()).isEqualTo(1);
+            assertThat(alice.getOpenInventory().getTopInventory()).isSameAs(group(alice, "first").inventory());
+        }
+    }
+
+    @Nested
+    class SharingAndOpening {
+
+        @Test
+        void contentChangesAreReportedSoWaitingCraftersWake() {
+            Block chest = chestAt(0, 0);
+            sign(alice, chest, "[ChestLink]", "ores");
+            server.getScheduler().performTicks(1);
+            ChestLinkGroup group = group(alice, "ores");
+            List<Inventory> changed = new ArrayList<>();
+            ChestLinkService chestLinks = new ChestLinkService(services(), changed::add, new LidAnimator(services().nodes(), services()::settings));
+
+            chestLinks.changed(group);
+            ((Container) chest.getState(false)).getInventory().addItem(ItemStack.of(Material.DIAMOND));
+            chestLinks.absorbPhysicalContents(group, chest);
+
+            assertThat(changed).containsExactly(group.inventory(), group.inventory());
+        }
+
+        @Test
+        void linkingClosesViewsOfThePhysicalInventory() {
+            Block chest = chestAt(0, 0);
+            Inventory physical = ((Container) chest.getState(false)).getInventory();
+            bob.openInventory(physical);
+
+            sign(alice, chest, "[ChestLink]", "ores");
+            server.getScheduler().performTicks(1);
+
+            assertThat(group(alice, "ores")).isNotNull();
+            assertThat(bob.getOpenInventory().getTopInventory()).isNotSameAs(physical);
+            assertThat(physical.getViewers()).isEmpty();
+        }
+
+        @Test
+        void secondChestSharesInventoryAndOpensIt() {
+            sign(alice, chestAt(0, 0), "[ChestLink]", "shared");
+            Block second = chestAt(5, 0);
+            sign(alice, second, "[chestlink]", "SHARED");
+            ChestLinkGroup group = group(alice, "shared");
+            group.inventory().addItem(ItemStack.of(Material.EMERALD, 3));
+
+            rightClick(alice, second);
+
+            assertThat(services().nodes().count(group.id())).isEqualTo(2);
+            assertThat(alice.getOpenInventory().getTopInventory()).isSameAs(group.inventory());
+        }
+
+        @Test
+        void shiftClickIntoAnOpenChestLinkMarksItDirtyBeforeClose() throws InterruptedException {
+            Block chest = chestAt(0, 0);
+            sign(alice, chest, "[ChestLink]", "open");
+            ChestLinkGroup group = group(alice, "open");
+            storage().persistence().flush();
+            tickUntil(() -> !storage().groupStore().isDirty(group));
+            rightClick(alice, chest);
+            InventoryView view = alice.getOpenInventory();
+
+            server.getPluginManager().callEvent(new InventoryClickEvent(view, InventoryType.SlotType.CONTAINER, view.getTopInventory().getSize(),
+                    ClickType.SHIFT_LEFT, InventoryAction.MOVE_TO_OTHER_INVENTORY));
+
+            assertThat(alice.getOpenInventory().getTopInventory()).isSameAs(group.inventory());
+            assertThat(storage().groupStore().isDirty(group)).isTrue();
+        }
+    }
+
+    @Nested
+    class Access {
+
+        @Test
+        void accessRequiresOwnerTrustMembershipOrPublic() {
+            Block chest = chestAt(0, 0);
+            sign(alice, chest, "[ChestLink]", "private");
+            ChestLinkGroup group = group(alice, "private");
+
+            rightClick(bob, chest);
+            assertThat(bob.getOpenInventory().getTopInventory()).isNotSameAs(group.inventory());
+
+            services().trust().trust(alice.getUniqueId(), bob.getUniqueId());
+            rightClick(bob, chest);
+            assertThat(bob.getOpenInventory().getTopInventory()).isSameAs(group.inventory());
+        }
+
+        @Test
+        void removingAMemberClosesTheirOpenView() {
+            Block chest = chestAt(0, 0);
+            sign(alice, chest, "[ChestLink]", "shared");
+            ChestLinkGroup group = group(alice, "shared");
+            LinkService links = links();
+            links.addMember(group, bob.getUniqueId());
+            rightClick(bob, chest);
+            assertThat(bob.getOpenInventory().getTopInventory()).isSameAs(group.inventory());
+
+            links.removeMember(group, bob.getUniqueId());
+
+            assertThat(bob.getOpenInventory().getTopInventory()).isNotSameAs(group.inventory());
+        }
+
+        @Test
+        void makingAGroupPrivateClosesOutsidersViews() {
+            Block chest = chestAt(0, 0);
+            sign(alice, chest, "[ChestLink]", "shared");
+            ChestLinkGroup group = group(alice, "shared");
+            LinkService links = links();
+            links.setPublic(group, true);
+            rightClick(bob, chest);
+            rightClick(alice, chest);
+
+            links.setPublic(group, false);
+
+            assertThat(bob.getOpenInventory().getTopInventory()).isNotSameAs(group.inventory());
+            assertThat(alice.getOpenInventory().getTopInventory()).isSameAs(group.inventory());
+        }
+
+        @Test
+        void untrustingClosesTheirOpenView() {
+            Block chest = chestAt(0, 0);
+            sign(alice, chest, "[ChestLink]", "shared");
+            ChestLinkGroup group = group(alice, "shared");
+            services().trust().trust(alice.getUniqueId(), bob.getUniqueId());
+            rightClick(bob, chest);
+
+            links().untrust(alice.getUniqueId(), bob.getUniqueId());
+
+            assertThat(bob.getOpenInventory().getTopInventory()).isNotSameAs(group.inventory());
+        }
+
+        @Test
+        void losingAPermissionRefusesTheNextEditAndClosesTheView() {
+            Block chest = chestAt(0, 0);
+            sign(alice, chest, "[ChestLink]", "shared");
+            ChestLinkGroup group = group(alice, "shared");
+            group.inventory().addItem(ItemStack.of(Material.DIAMOND));
+            services().groups().setPublic(group, true);
+            rightClick(bob, chest);
+
+            bob.addAttachment(plugin).setPermission("chestsplusplus.chestlink.open", false);
+            InventoryClickEvent click = new InventoryClickEvent(bob.getOpenInventory(), InventoryType.SlotType.CONTAINER, 0, ClickType.LEFT,
+                    InventoryAction.PICKUP_ALL);
+            server.getPluginManager().callEvent(click);
+            server.getScheduler().performOneTick();
+
+            assertThat(click.isCancelled()).isTrue();
+            assertThat(bob.getOpenInventory().getTopInventory()).isNotSameAs(group.inventory());
+        }
+
+        @Test
+        void linkingToAnotherPlayersGroupNeedsAccess() {
+            sign(alice, chestAt(0, 0), "[ChestLink]", "alices");
+            Block bobs = chestAt(3, 0);
+
+            sign(bob, bobs, "[ChestLink]", "Alice:alices");
+            assertThat(services().nodes().get(BlockPos.of(bobs))).isNull();
+
+            services().groups().setPublic(group(alice, "alices"), true);
+            sign(bob, bobs, "[ChestLink]", "Alice:alices");
+            assertThat(services().nodes().get(BlockPos.of(bobs))).isNotNull();
+        }
+
+        @Test
+        void limitsBlacklistAndInvalidNamesAreEnforced() {
+            plugin.getConfig().set("limits.chestlink-default", 1);
+            plugin.getConfig().set("chestlink.display.label", false);
+            plugin.getConfig().set("worlds.blacklist", List.of("nether"));
+            plugin.saveConfig();
+            reloadPlugin();
+
+            sign(alice, chestAt(0, 0), "[ChestLink]", "first");
+            sign(alice, chestAt(2, 0), "[ChestLink]", "second");
+            assertThat(group(alice, "second")).isNull();
+
+            // Linking more blocks to an existing group doesn't count against the limit.
+            sign(alice, chestAt(4, 0), "[ChestLink]", "first");
+            assertThat(services().nodes().count(group(alice, "first").id())).isEqualTo(2);
+
+            World nether = server.addSimpleWorld("nether");
+            Block netherChest = nether.getBlockAt(0, 64, 0);
+            netherChest.setType(Material.CHEST);
+            sign(bob, netherChest, "[ChestLink]", "nope");
+            assertThat(group(bob, "nope")).isNull();
+
+            sign(bob, chestAt(6, 0), "[ChestLink]", "bad name!");
+            assertThat(services().groups().size()).isEqualTo(1);
+        }
+    }
+
+    @Nested
+    class LinkItems {
+
+        @Test
+        void silkTouchDropsLinkItemThatRelinks() {
+            Block chest = chestAt(0, 0);
+            sign(alice, chest, "[ChestLink]", "portable");
+            ChestLinkGroup group = group(alice, "portable");
+            group.inventory().addItem(ItemStack.of(Material.GOLD_INGOT, 4));
+            ItemStack linkItem = silkTouchBreak(chest);
+            assertThat(group(alice, "portable")).isSameAs(group);
+            LinkItem.Link link = features().linkItem().read(linkItem);
+            assertThat(link).isEqualTo(new LinkItem.Link(group.id(), GroupType.CHESTLINK));
+
+            BlockPlaceEvent placeEvent = placeLinkItem(alice, linkItem);
+            assertThat(services().nodes().at(placeEvent.getBlockPlaced()).groupId()).isEqualTo(group.id());
+            assertThat(group.inventory().contains(Material.GOLD_INGOT, 4)).isTrue();
+        }
+
+        @Test
+        void linkItemOfADeletedGroupPlacesAsANormalBlockAndNeverJoinsAnotherGroup() {
+            Block chest = chestAt(0, 0);
+            sign(alice, chest, "[ChestLink]", "portable");
+            ChestLinkGroup deleted = group(alice, "portable");
+            ItemStack linkItem = silkTouchBreak(chest);
+            links().removeGroup(deleted, chest.getLocation());
+            Block bobsChest = chestAt(5, 5);
+            sign(bob, bobsChest, "[ChestLink]", "mine");
+            ChestLinkGroup bobs = group(bob, "mine");
+            assertThat(bobs.id()).isNotEqualTo(deleted.id());
+            assertThat(nextPlain(bob)).contains("Created ChestLink mine");
+
+            BlockPlaceEvent event = placeLinkItem(bob, linkItem);
+
+            assertThat(event.isCancelled()).isFalse();
+            assertThat(services().nodes().at(event.getBlockPlaced())).isNull();
+            assertThat(services().nodes().count(bobs.id())).isEqualTo(1);
+            assertThat(nextPlain(bob)).contains("no longer exists");
+        }
+
+        @Test
+        void linkItemPlacementRequiresCreatePermissionForPublicGroup() {
+            ItemStack linkItem = publicLinkItem();
+            bob.addAttachment(plugin).setPermission("chestsplusplus.chestlink.create", false);
+
+            BlockPlaceEvent event = placeLinkItem(bob, linkItem);
+
+            assertThat(event.isCancelled()).isTrue();
+            assertThat(services().nodes().at(event.getBlockPlaced())).isNull();
+        }
+
+        @Test
+        void staleLinkItemPlacementCancelledByProtectionSendsNoPlacementMessage() {
+            ItemStack linkItem = publicLinkItem();
+            links().removeGroup(group(alice, "portable"), alice.getLocation());
+            cancelPlacementsAtHighest();
+
+            BlockPlaceEvent event = placeLinkItem(bob, linkItem);
+
+            assertThat(event.isCancelled()).isTrue();
+            assertThat(services().nodes().at(event.getBlockPlaced())).isNull();
+            assertThat(nextPlain(bob)).isNull();
+        }
+
+        @Test
+        void staleLinkItemPlacementThatCannotBuildSendsNoPlacementMessage() {
+            ItemStack linkItem = publicLinkItem();
+            links().removeGroup(group(alice, "portable"), alice.getLocation());
+
+            BlockPlaceEvent event = placeLinkItem(bob, linkItem, false);
+
+            assertThat(services().nodes().at(event.getBlockPlaced())).isNull();
+            assertThat(nextPlain(bob)).isNull();
+        }
+
+        @Test
+        void linkItemPlacementAllowsDefaultCreatePermissionForPublicGroup() {
+            ItemStack linkItem = publicLinkItem();
+
+            BlockPlaceEvent event = placeLinkItem(bob, linkItem);
+
+            assertThat(event.isCancelled()).isFalse();
+            assertThat(services().nodes().at(event.getBlockPlaced()).groupId()).isEqualTo(group(alice, "portable").id());
+            assertThat(nextPlain(bob)).contains("Linked to ChestLink portable");
+        }
+
+        @Test
+        void linkItemPlacementCancelledByAProtectionPluginLinksNothing() {
+            ItemStack linkItem = publicLinkItem();
+            ChestLinkGroup group = group(alice, "portable");
+            cancelPlacementsAtHighest();
+
+            BlockPlaceEvent event = placeLinkItem(bob, linkItem);
+
+            assertThat(event.isCancelled()).isTrue();
+            assertThat(services().nodes().at(event.getBlockPlaced())).isNull();
+            assertThat(services().nodes().count(group.id())).isZero();
+            assertThat(features().displays().count()).isZero();
+            assertThat(nextPlain(bob)).isNull();
+        }
+
+        @Test
+        void linkItemPlacementThatCannotBuildLinksNothing() {
+            ItemStack linkItem = publicLinkItem();
+
+            BlockPlaceEvent event = placeLinkItem(bob, linkItem, false);
+
+            assertThat(services().nodes().at(event.getBlockPlaced())).isNull();
+            assertThat(features().displays().count()).isZero();
+            assertThat(nextPlain(bob)).isNull();
+        }
+    }
+
+    @Nested
+    class PlacementAndWorld {
+
+        @Test
+        void breakingLastNodeDropsItemsAndDeletesGroup() {
+            Block a = chestAt(0, 0);
+            Block b = chestAt(3, 0);
+            sign(alice, a, "[ChestLink]", "g");
+            sign(alice, b, "[ChestLink]", "g");
+            ChestLinkGroup group = group(alice, "g");
+            group.inventory().addItem(ItemStack.of(Material.IRON_INGOT, 10), ItemStack.of(Material.IRON_INGOT, 10));
+
+            server.getPluginManager().callEvent(new BlockBreakEvent(a, alice));
+            assertThat(group(alice, "g")).isNotNull();
+
+            server.getPluginManager().callEvent(new BlockBreakEvent(b, alice));
+            assertThat(group(alice, "g")).isNull();
+            int dropped = world.getEntitiesByClass(Item.class).stream().mapToInt(item -> item.getItemStack().getAmount()).sum();
+            assertThat(dropped).isEqualTo(20);
+        }
+
+        @Test
+        void chestPlacedNextToALinkedChestIsSplit() {
+            Block placed = placeDoubleChestNextToLinkedChest();
+
+            server.getPluginManager().callEvent(placeEvent(placed, ItemStack.of(Material.CHEST), alice, true));
+
+            assertThat(chestTypesAround(placed)).containsExactly(Chest.Type.SINGLE, Chest.Type.SINGLE);
+        }
+
+        @Test
+        void chestPlacementCancelledByAProtectionPluginIsNotSplit() {
+            Block placed = placeDoubleChestNextToLinkedChest();
+            cancelPlacementsAtHighest();
+
+            server.getPluginManager().callEvent(placeEvent(placed, ItemStack.of(Material.CHEST), alice, true));
+
+            assertThat(chestTypesAround(placed)).containsExactly(Chest.Type.LEFT, Chest.Type.RIGHT);
+        }
+
+        @Test
+        void explosionsSpareLinkedBlocks() {
+            Block linked = chestAt(0, 0);
+            Block plain = chestAt(1, 0);
+            sign(alice, linked, "[ChestLink]", "g");
+            List<Block> blocks = new ArrayList<>(List.of(linked, plain));
+
+            server.getPluginManager().callEvent(new BlockExplodeEvent(plain, plain.getState(), blocks, 4f, ExplosionResult.DESTROY));
+
+            assertThat(blocks).containsExactly(plain);
+        }
+    }
+
+    @Nested
+    class Startup {
+
+        @Test
+        void enableUnlinksStaleNodesInLoadedChunksBeforeSpawningDisplays() {
+            Block replaced = chestAt(0, 0);
+            Block intact = chestAt(4, 0);
+            sign(alice, replaced, "[ChestLink]", "g");
+            sign(alice, intact, "[ChestLink]", "g");
+
+            server.getPluginManager().disablePlugin(plugin);
+            replaced.setType(Material.FURNACE);
+            server.getPluginManager().enablePlugin(plugin);
+
+            assertThat(services().nodes().get(BlockPos.of(replaced))).isNull();
+            assertThat(services().nodes().get(BlockPos.of(intact))).isNotNull();
+            assertThat(features().displays().count()).isEqualTo(1);
+            assertThat(world.getEntitiesByClass(ItemDisplay.class)).hasSize(1);
+            assertThat(group(alice, "g")).isNotNull();
+        }
+
+        @Test
+        void restartingLoadsGroupsWithoutDirtyingThem() {
+            sign(alice, chestAt(0, 0), "[ChestLink]", "g");
+            LinkService links = links();
+            links.setPublic(group(alice, "g"), true);
+            links.addMember(group(alice, "g"), bob.getUniqueId());
+
+            server.getPluginManager().disablePlugin(plugin);
+            server.getPluginManager().enablePlugin(plugin);
+
+            ChestLinkGroup loaded = group(alice, "g");
+            assertThat(loaded.isPublic()).isTrue();
+            assertThat(loaded.members()).containsExactly(bob.getUniqueId());
+            assertThat(storage().groupStore().isDirty(loaded)).isFalse();
+        }
+
+        @Test
+        void staleNodesInUnloadedChunksAreUnlinkedWhenTheirChunkLoads() {
+            sign(alice, chestAt(0, 0), "[ChestLink]", "g");
+            LinkService links = links();
+            BlockPos far = new BlockPos(world.getUID(), 160, 64, 0);
+            services().nodes().put(new Node(far, BlockFace.NORTH, group(alice, "g").id()));
+
+            links.unlinkChangedBlocksInLoadedChunks();
+            assertThat(services().nodes().get(far)).isNotNull();
+
+            server.getPluginManager().callEvent(new ChunkLoadEvent(world.getChunkAt(far.chunkX(), far.chunkZ()), false));
+            assertThat(services().nodes().get(far)).isNull();
+            assertThat(services().nodes().size()).isEqualTo(1);
+        }
+    }
+
+    @Nested
+    class HoppersAndDisplays {
+
+        @Test
+        void hopperSearchSubstitutesGroupInventory() {
+            Block chest = chestAt(0, 0);
+            sign(alice, chest, "[ChestLink]", "g");
+            Block hopper = world.getBlockAt(0, 65, 0);
+            hopper.setType(Material.HOPPER);
+
+            HopperInventorySearchEvent event = new HopperInventorySearchEvent(((Container) chest.getState(false)).getInventory(),
+                    HopperInventorySearchEvent.ContainerType.DESTINATION, hopper, chest);
+            server.getPluginManager().callEvent(event);
+
+            assertThat(event.getInventory()).isSameAs(group(alice, "g").inventory());
+        }
+
+        @Test
+        void displaysSpawnForLoadedNodesAndFollowContents() {
+            sign(alice, chestAt(0, 0), "[ChestLink]", "g");
+            DisplayService displays = features().displays();
+
+            assertThat(displays.count()).isEqualTo(1);
+            var itemDisplay = world.getEntitiesByClass(org.bukkit.entity.ItemDisplay.class).iterator().next();
+            assertThat(itemDisplay.isPersistent()).isFalse();
+            assertThat(displays.isOurs(itemDisplay)).isTrue();
+
+            ChestLinkGroup group = group(alice, "g");
+            group.inventory().addItem(ItemStack.of(Material.COBBLESTONE, 64), ItemStack.of(Material.DIRT, 3));
+            storage().persistence().flush();
+            services().groups().changed(group);
+            assertThat(storage().groupStore().isDirty(group)).isTrue();
+            server.getScheduler().performTicks(10);
+            // Empty (flat) -> cobblestone (block) moves the display, so it is respawned: fetch it again.
+            var updated = world.getEntitiesByClass(org.bukkit.entity.ItemDisplay.class);
+            assertThat(updated).hasSize(1);
+            assertThat(updated.iterator().next().getItemStack().getType()).isEqualTo(Material.COBBLESTONE);
+        }
+
+        @Test
+        void chestDisplaysSitInFrontOfTheLatch() {
+            assertThat(com.jamesdpeters.chestsplusplus.display.DisplayLayout.shapeOf(ItemStack.of(Material.COBBLESTONE)))
+                    .isEqualTo(com.jamesdpeters.chestsplusplus.display.DisplayLayout.Shape.BLOCK);
+            assertThat(com.jamesdpeters.chestsplusplus.display.DisplayLayout.shapeOf(ItemStack.of(Material.DIAMOND)))
+                    .isEqualTo(com.jamesdpeters.chestsplusplus.display.DisplayLayout.Shape.FLAT);
+            assertThat(com.jamesdpeters.chestsplusplus.display.DisplayLayout.shapeOf(ItemStack.of(Material.TORCH)))
+                    .isEqualTo(com.jamesdpeters.chestsplusplus.display.DisplayLayout.Shape.FLAT);
+            // Solid block, but its item is a flat 2D icon.
+            assertThat(com.jamesdpeters.chestsplusplus.display.DisplayLayout.shapeOf(ItemStack.of(Material.HOPPER)))
+                    .isEqualTo(com.jamesdpeters.chestsplusplus.display.DisplayLayout.Shape.FLAT);
+            assertThat(com.jamesdpeters.chestsplusplus.display.DisplayLayout.shapeOf(ItemStack.of(Material.OAK_LOG)))
+                    .isEqualTo(com.jamesdpeters.chestsplusplus.display.DisplayLayout.Shape.BLOCK);
+            assertThat(com.jamesdpeters.chestsplusplus.display.DisplayLayout.shapeOf(ItemStack.of(Material.STONE_SLAB)))
+                    .isEqualTo(com.jamesdpeters.chestsplusplus.display.DisplayLayout.Shape.BLOCK);
+
+            sign(alice, chestAt(0, 0), "[ChestLink]", "g"); // display on the north face (z = 0 side)
+            ChestLinkGroup group = group(alice, "g");
+            DisplayService displays = features().displays();
+
+            group.inventory().addItem(ItemStack.of(Material.DIAMOND, 10));
+            displays.requestUpdate(group);
+            server.getScheduler().performTicks(10);
+            double flatZ = displayZ();
+
+            group.inventory().clear();
+            group.inventory().addItem(ItemStack.of(Material.COBBLESTONE, 10));
+            displays.requestUpdate(group);
+            server.getScheduler().performTicks(10);
+            double blockZ = displayZ();
+
+            // North face: the chest body front is at z = 1/16. Blocks are centred on it (half inset); flat items sit
+            // further
+            // out, around the latch (depth tuned in DisplayLayout).
+            assertThat(blockZ).isCloseTo(1.0 / 16, org.assertj.core.api.Assertions.within(1e-6));
+            assertThat(flatZ).isLessThan(blockZ);
         }
     }
 }
