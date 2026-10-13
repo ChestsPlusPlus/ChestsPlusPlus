@@ -27,6 +27,7 @@ import java.util.Objects;
 import java.util.TreeMap;
 import java.util.UUID;
 import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -54,6 +55,9 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
                 event -> event.registrar().register(Commands.literal("cpptest").requires(ChestsPlusPlusTestHarness::isConsole)
                         .then(Commands.literal("ping").executes(c -> reply(c, "cpptest pong")))
+                        .then(Commands.literal("chunk")
+                                .then(Commands.argument("x", IntegerArgumentType.integer())
+                                        .then(Commands.argument("z", IntegerArgumentType.integer()).executes(this::chunk))))
                         .then(Commands.literal("plugin").executes(this::pluginState)).then(withGroupArgs(Commands.literal("group"), this::group))
                         .then(Commands.literal("displays").executes(this::displays)).then(Commands.literal("reset").executes(this::reset))
                         .then(Commands.literal("recipe")
@@ -111,6 +115,15 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
         var name = Commands.argument("name", StringArgumentType.word());
         if (command != null) name.executes(command);
         return root.then(Commands.argument("type", StringArgumentType.word()).then(Commands.argument("owner", StringArgumentType.word()).then(name)));
+    }
+
+    private int chunk(CommandContext<CommandSourceStack> context) {
+        World world = Bukkit.getWorlds().getFirst();
+        int x = IntegerArgumentType.getInteger(context, "x");
+        int z = IntegerArgumentType.getInteger(context, "z");
+        if (!world.isChunkLoaded(x, z)) return reply(context, "cpptest chunk " + x + "," + z + " level=UNLOADED");
+        Chunk chunk = world.getChunkAt(x, z);
+        return reply(context, "cpptest chunk " + x + "," + z + " level=" + chunk.getLoadLevel() + " forced=" + chunk.isForceLoaded());
     }
 
     private Services services() {

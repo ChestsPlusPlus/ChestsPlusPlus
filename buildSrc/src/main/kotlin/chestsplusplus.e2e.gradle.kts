@@ -98,6 +98,7 @@ plugwright {
             includeInMatrix.set(true)
             plugins {
                 local("still-bots")
+                local("fixture-chunks")
                 local("tick-rate") { options["rate"] = e2eTickRate }
             }
             // Offline-mode server without an auth plugin: every lease gets a fresh, never-reused name.
