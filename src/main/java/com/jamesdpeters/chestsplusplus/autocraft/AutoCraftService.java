@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
@@ -52,8 +51,7 @@ import org.jspecify.annotations.Nullable;
  * {@link CraftScheduler} says are due, so idle crafters cost close to nothing while a change next to one makes it craft straight away.
  */
 @Slf4j(topic = ChestsPlusPlus.NAME)
-@RequiredArgsConstructor
-public final class AutoCraftService implements GroupTypeHandler, DisplayService.Content {
+public final class AutoCraftService extends GroupTypeHandler<AutoCraftGroup> {
 
     static final BlockFace[] INPUT_FACES = {BlockFace.UP, BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST};
     /** The inputs plus the output below: a change at any of them can let a failing crafter succeed. */
@@ -72,9 +70,11 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
     private final CraftScheduler scheduler = new CraftScheduler();
     private long tick;
 
-    @Override
-    public GroupType type() {
-        return GroupType.AUTOCRAFT;
+    public AutoCraftService(Services services, DisplayService displays, CraftingBackend backend) {
+        super(GroupType.AUTOCRAFT, AutoCraftGroup.class);
+        this.services = services;
+        this.displays = displays;
+        this.backend = backend;
     }
 
     @Override
@@ -88,13 +88,13 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
     }
 
     @Override
-    public int onLinked(StorageGroup group, Block block) {
+    protected int linked(AutoCraftGroup group, Block block) {
         scheduler.soon(BlockPos.of(block));
         return 0;
     }
 
     @Override
-    public void onRemoved(StorageGroup group, Location dropAt) {
+    protected void removed(AutoCraftGroup group, Location dropAt) {
         forgetRules(group);
         unresolved.remove(group.id());
         for (Node node : services.nodes().nodesOf(group.id())) scheduler.forget(node.pos());
@@ -102,7 +102,7 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
     }
 
     @Override
-    public void onRenamed(StorageGroup group) {
+    protected void renamed(AutoCraftGroup group) {
         openEditors(group).forEach(Player::closeInventory);
     }
 
@@ -112,25 +112,25 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
     }
 
     @Override
-    public void closeRevokedViews(StorageGroup group) {
+    protected void revokedViews(AutoCraftGroup group) {
         openEditors(group).stream().filter(player -> !services.access().canAccess(player.getUniqueId(), player, group))
                 .forEach(Player::closeInventory);
     }
 
     @Override
-    public void openRemote(Player player, StorageGroup group) {
-        if (group instanceof AutoCraftGroup craft) openEditor(player, craft);
+    protected void openRemotely(Player player, AutoCraftGroup group) {
+        openEditor(player, group);
     }
 
     @Override
-    public ItemStack icon(StorageGroup group) {
-        ItemStack result = group instanceof AutoCraftGroup craft ? craft.result() : null;
+    protected ItemStack iconOf(AutoCraftGroup group) {
+        ItemStack result = group.result();
         return result == null ? ItemStack.of(Material.CRAFTING_TABLE) : result.asOne();
     }
 
     @Override
-    public String summary(StorageGroup group) {
-        ItemStack result = group instanceof AutoCraftGroup craft ? craft.result() : null;
+    protected String summaryOf(AutoCraftGroup group) {
+        ItemStack result = group.result();
         if (result == null) return "no recipe";
         return result.getAmount() + "x " + itemName(result);
     }
@@ -140,12 +140,12 @@ public final class AutoCraftService implements GroupTypeHandler, DisplayService.
     }
 
     @Override
-    public @Nullable ItemStack item(StorageGroup group) {
-        return group instanceof AutoCraftGroup craft ? craft.result() : null;
+    protected @Nullable ItemStack itemOf(AutoCraftGroup group) {
+        return group.result();
     }
 
     @Override
-    public Component label(StorageGroup group) {
+    protected Component labelOf(AutoCraftGroup group) {
         return services.messages().get(Message.AUTOCRAFT_DISPLAY_LABEL, Messages.group(group));
     }
 

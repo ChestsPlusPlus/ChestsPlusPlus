@@ -13,10 +13,8 @@ import com.jamesdpeters.chestsplusplus.model.GroupNames;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.Node;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
-import java.util.EnumMap;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -59,25 +57,17 @@ public final class LinkService {
 
     private final Services services;
     private final DisplayService displays;
-    private final Map<GroupType, GroupTypeHandler> handlers = new EnumMap<>(GroupType.class);
+    private final Handlers handlers;
     private boolean firingSyntheticInteract;
-
-    public void register(GroupTypeHandler handler) {
-        handlers.put(handler.type(), handler);
-    }
-
-    public @Nullable GroupTypeHandler handler(GroupType type) {
-        return handlers.get(type);
-    }
 
     public boolean isFeatureEnabled(GroupType type) {
         var features = services.settings().features();
-        return handlers.containsKey(type) && type.pick(features.chestlinks(), features.autocraft());
+        return type.pick(features.chestlinks(), features.autocraft());
     }
 
     /** Closes what players have open of every group whose feature is now off, so {@code /cpp reload} takes effect at once. */
     public void closeDisabledViews() {
-        handlers.values().stream().filter(handler -> !isFeatureEnabled(handler.type())).forEach(GroupTypeHandler::closeAllViews);
+        Arrays.stream(GroupType.values()).filter(type -> !isFeatureEnabled(type)).map(handlers::of).forEach(GroupTypeHandler::closeAllViews);
     }
 
     /** Is the synthetic protection-check interact event being fired right now? Listeners must ignore it. */
@@ -126,7 +116,7 @@ public final class LinkService {
             send(player, refusal);
             return null;
         }
-        GroupTypeHandler handler = Objects.requireNonNull(handlers.get(type));
+        GroupTypeHandler<?> handler = handlers.of(type);
         Resolved target = resolve(player.getUniqueId(), AccessService.hasBypass(player), type, input);
         StorageGroup group = switch (target) {
             case Resolved.Found found -> found.group();
@@ -148,7 +138,7 @@ public final class LinkService {
     /** Adds {@code block} to {@code group}, runs the type's link hook and tells the player. */
     void join(Player player, StorageGroup group, Block block, BlockFace facing, Message message) {
         addNode(group, block, facing);
-        int overflow = Objects.requireNonNull(handlers.get(group.type())).onLinked(group, block);
+        int overflow = handlers.of(group).onLinked(group, block);
         services.send(player, message, Messages.group(group));
         if (overflow > 0) services.send(player, Message.CHESTLINK_OVERFLOW, Messages.text("count", overflow));
     }
@@ -157,8 +147,8 @@ public final class LinkService {
     private Resolved.@Nullable Refused linkRefusal(Player player, GroupType type, Block block, BlockFace facing, boolean protectionChecked) {
         Message refusal = linkingRefusal(player, type, block.getWorld());
         if (refusal != null) return new Resolved.Refused(refusal);
-        GroupTypeHandler handler = Objects.requireNonNull(handlers.get(type));
-        if (!handler.isValidBlock(block)) return new Resolved.Refused(Message.ERROR_INVALID_BLOCK, Messages.text("type", type.displayName()));
+        if (!handlers.of(type).isValidBlock(block))
+            return new Resolved.Refused(Message.ERROR_INVALID_BLOCK, Messages.text("type", type.displayName()));
         Node existing = services.nodes().at(block);
         if (existing != null) {
             StorageGroup linkedTo = services.groups().byId(existing.groupId());
@@ -177,7 +167,7 @@ public final class LinkService {
         return null;
     }
 
-    private @Nullable StorageGroup createGroup(Player player, GroupTypeHandler handler, Resolved.Missing missing) {
+    private @Nullable StorageGroup createGroup(Player player, GroupTypeHandler<?> handler, Resolved.Missing missing) {
         GroupType type = handler.type();
         int limit = limit(player, type);
         if (limit >= 0 && services.groups().ownedBy(player.getUniqueId(), type).size() >= limit) {
@@ -239,9 +229,8 @@ public final class LinkService {
     public void unlinkChangedBlocks(List<Node> nodes) {
         for (Node node : nodes) {
             StorageGroup group = services.groups().byId(node.groupId());
-            GroupTypeHandler handler = group == null ? null : handlers.get(group.type());
             Block block = node.pos().block();
-            if (group == null || handler == null || block == null || handler.isValidBlock(block)) continue;
+            if (group == null || block == null || handlers.of(group).isValidBlock(block)) continue;
             log.warn("Unlinking {} from {}: block is now {}", node.pos(), group.name(), block.getType());
             unlink(node.pos(), block.getLocation(), true);
         }
@@ -254,8 +243,7 @@ public final class LinkService {
 
     /** Deletes a group: its contents are dropped at {@code dropAt}, its nodes unlinked, and its rows deleted. */
     public void removeGroup(StorageGroup group, Location dropAt) {
-        GroupTypeHandler handler = handlers.get(group.type());
-        if (handler != null) handler.onRemoved(group, dropAt);
+        handlers.of(group).onRemoved(group, dropAt);
         for (Node node : services.nodes().removeGroup(group.id())) displays.nodeRemoved(node);
         services.groups().remove(group);
         services.groupStore().markDirty(group);
@@ -274,8 +262,7 @@ public final class LinkService {
         }
         String old = group.name();
         services.groups().rename(group, newName);
-        GroupTypeHandler handler = handlers.get(group.type());
-        if (handler != null) handler.onRenamed(group);
+        handlers.of(group).onRenamed(group);
         services.groupStore().markDirty(group);
         displays.requestUpdate(group);
         services.send(audience, group.type().pick(Message.CHESTLINK_RENAMED, Message.AUTOCRAFT_RENAMED),
@@ -309,8 +296,7 @@ public final class LinkService {
     }
 
     private void closeRevokedViews(StorageGroup group) {
-        GroupTypeHandler handler = handlers.get(group.type());
-        if (handler != null) handler.closeRevokedViews(group);
+        handlers.of(group).closeRevokedViews(group);
     }
 
     /**

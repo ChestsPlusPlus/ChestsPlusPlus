@@ -21,6 +21,7 @@ import com.jamesdpeters.chestsplusplus.filter.ItemGrouping;
 import com.jamesdpeters.chestsplusplus.integration.MetricsService;
 import com.jamesdpeters.chestsplusplus.integration.UpdateChecker;
 import com.jamesdpeters.chestsplusplus.link.GroupActions;
+import com.jamesdpeters.chestsplusplus.link.Handlers;
 import com.jamesdpeters.chestsplusplus.link.LinkItem;
 import com.jamesdpeters.chestsplusplus.link.LinkService;
 import com.jamesdpeters.chestsplusplus.link.NameTagLinkListener;
@@ -99,23 +100,23 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
     }
 
     private void registerFeatures(Services services) {
+        Handlers handlers = services.add(Handlers.class, new Handlers());
         DisplayService displays = services.add(DisplayService.class,
-                new DisplayService(this, services.groups(), services.nodes(), services::settings));
+                new DisplayService(this, services.groups(), services.nodes(), services::settings, handlers::of));
         services.shutdown().add("displays", displays::despawnAll);
         displays.surfaces(block -> block.getState(false) instanceof Chest ? Surface.CHEST : Surface.FULL_BLOCK);
-        LinkService links = services.add(LinkService.class, new LinkService(services, displays));
+        LinkService links = services.add(LinkService.class, new LinkService(services, displays, handlers));
         services.add(LinkItem.class, new LinkItem(this));
 
         AutoCraftService autoCraft = services.add(AutoCraftService.class, new AutoCraftService(services, displays, CraftingBackend.bukkit()));
         ChestLinkService chestLinks = services.add(ChestLinkService.class, new ChestLinkService(services, displays, autoCraft::inventoryChanged));
-        links.register(chestLinks);
-        displays.register(GroupType.CHESTLINK, chestLinks);
-        links.register(autoCraft);
-        displays.register(GroupType.AUTOCRAFT, autoCraft);
+        handlers.register(chestLinks);
+        handlers.register(autoCraft);
+        handlers.requireAll();
 
-        GroupActions actions = services.add(GroupActions.class, new GroupActions(services, links, chestLinks::setSortMode));
+        GroupActions actions = services.add(GroupActions.class, new GroupActions(services, links, handlers, chestLinks::setSortMode));
         MenuListener menus = services.add(MenuListener.class, new MenuListener(services.mainThread()));
-        services.add(UiService.class, new UiService(services, links, actions, menus));
+        services.add(UiService.class, new UiService(services, handlers, actions, menus));
         FilterService filters = services.add(FilterService.class,
                 new FilterService(this, new FilterCodec(this), ItemGrouping.fromServerTags(), services::settings));
         services.shutdown().add("filter displays", filters::despawnAll);
@@ -168,7 +169,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
                 services::settings, displays::nodeAdded);
         V2LocationRecovery recovery = services.add(V2LocationRecovery.class,
                 new V2LocationRecovery(getServer(), services.get(V2PendingLocations.class),
-                        services.groups(), services.nodes(), services.groupStore(), services.persistence(), services.get(LinkService.class), displays,
+                        services.groups(), services.nodes(), services.groupStore(), services.persistence(), services.get(Handlers.class), displays,
                         cleanup, worldCleanup));
         services.add(V2Migration.class,
                 new V2Migration(this, services, importer, cleanup, worldCleanup, state, filters, conversion, recovery,
@@ -189,11 +190,12 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
 
     private void registerListeners(Services services) {
         LinkService links = services.get(LinkService.class);
+        Handlers handlers = services.get(Handlers.class);
         List<Listener> listeners = List.of(
                 this,
-                new NodeListener(services, links, services.get(DisplayService.class), services.get(LinkItem.class)),
+                new NodeListener(services, links, handlers, services.get(DisplayService.class), services.get(LinkItem.class)),
                 new SignLinkListener(services.mainThread(), services, links),
-                new NameTagLinkListener(services, links),
+                new NameTagLinkListener(services, links, handlers),
                 new ChestLinkListener(services, links, services.get(ChestLinkService.class)),
                 new HopperBridge(services.mainThread(), services, services.get(ChestLinkService.class)),
                 new GolemBridge(services, services.get(ChestLinkService.class)),

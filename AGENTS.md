@@ -78,6 +78,7 @@ comments, no repeated logic.
 | Need | Use |
 |---|---|
 | Choose a value per group type | `type.pick(chestlinkValue, autocraftValue)`, `type.displayName()` |
+| Type-specific behaviour for a group (open, icon, summary, display, link hooks) | `handlers.of(group)` or `handlers.of(type)`, never null. A new hook is a `protected abstract` method on `GroupTypeHandler<G>`, typed on `G`, behind a `final` bridge |
 | Send a message | `services.send(audience, Message.X, ...)` |
 | Common placeholders | `Messages.group(group)`, `Messages.player(name)`, `Messages.text(key, int)` |
 | Node or group at a block (no allocation) | `services.nodes().at(block)`, `services.groupAt(block)` |

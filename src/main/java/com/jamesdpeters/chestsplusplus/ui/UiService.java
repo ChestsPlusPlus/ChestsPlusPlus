@@ -6,8 +6,7 @@ import com.jamesdpeters.chestsplusplus.access.AccessibleGroups;
 import com.jamesdpeters.chestsplusplus.core.PlayerNames;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.link.GroupActions;
-import com.jamesdpeters.chestsplusplus.link.GroupTypeHandler;
-import com.jamesdpeters.chestsplusplus.link.LinkService;
+import com.jamesdpeters.chestsplusplus.link.Handlers;
 import com.jamesdpeters.chestsplusplus.message.Message;
 import com.jamesdpeters.chestsplusplus.message.Messages;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
@@ -43,7 +42,6 @@ import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import net.kyori.adventure.text.object.ObjectContents;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryType;
@@ -79,7 +77,7 @@ public final class UiService {
     private static final String PLAYER_INPUT = "player";
 
     private final Services services;
-    private final LinkService links;
+    private final Handlers handlers;
     private final GroupActions actions;
     private final MenuListener menus;
     /** Set when a dialog is shown, so a click that shows nothing new can close the dialog it came from. Main thread only. */
@@ -400,8 +398,7 @@ public final class UiService {
     }
 
     private ItemStack icon(StorageGroup group) {
-        GroupTypeHandler handler = links.handler(group.type());
-        return handler == null ? ItemStack.of(Material.CHEST) : handler.icon(group);
+        return handlers.of(group).icon(group);
     }
 
     /** The group's icon named after the group, with {@code lore} as its tooltip. */
@@ -413,8 +410,7 @@ public final class UiService {
     }
 
     private String summary(StorageGroup group) {
-        GroupTypeHandler handler = links.handler(group.type());
-        return handler == null ? "" : handler.summary(group);
+        return handlers.of(group).summary(group);
     }
 
     private static String memberNames(StorageGroup group) {

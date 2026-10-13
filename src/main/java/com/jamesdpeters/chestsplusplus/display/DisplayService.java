@@ -60,7 +60,7 @@ public final class DisplayService {
     private final GroupRegistry groups;
     private final NodeIndex nodes;
     private final Supplier<Settings> settings;
-    private final Map<GroupType, Content> contents = new HashMap<>();
+    private final Function<GroupType, Content> contents;
     private final Map<BlockPos, NodeDisplay> displays = new HashMap<>();
     private final Set<Long> pendingGroups = new LinkedHashSet<>();
     private final Set<ChunkRef> pendingChunks = new LinkedHashSet<>();
@@ -71,16 +71,13 @@ public final class DisplayService {
 
     private record ChunkRef(UUID world, long key) {}
 
-    public DisplayService(Plugin plugin, GroupRegistry groups, NodeIndex nodes, Supplier<Settings> settings) {
+    public DisplayService(Plugin plugin, GroupRegistry groups, NodeIndex nodes, Supplier<Settings> settings, Function<GroupType, Content> contents) {
         this.plugin = plugin;
         this.groups = groups;
         this.nodes = nodes;
         this.settings = settings;
+        this.contents = contents;
         this.marker = new NamespacedKey(plugin, "display");
-    }
-
-    public void register(GroupType type, Content content) {
-        contents.put(type, content);
     }
 
     public void surfaces(Function<Block, DisplayLayout.Surface> surfaces) {
@@ -156,8 +153,8 @@ public final class DisplayService {
 
     private void update(StorageGroup group) {
         Settings.Display config = config(group.type());
-        Content content = contents.get(group.type());
-        if (content == null || !config.enabled()) return;
+        if (!config.enabled()) return;
+        Content content = contents.apply(group.type());
         @Nullable ItemStack item = normalise(content.item(group));
         Component label = config.label() ? content.label(group) : Component.empty();
         for (Node node : nodes.nodesOf(group.id())) updateNode(node, item, label);
@@ -183,13 +180,13 @@ public final class DisplayService {
 
     private void spawn(Node node) {
         StorageGroup group = groups.byId(node.groupId());
-        Content content = group == null ? null : contents.get(group.type());
-        if (group == null || content == null) return;
+        if (group == null) return;
         Settings.Display config = config(group.type());
         if (!config.enabled()) return;
         Block block = node.pos().block();
         if (block == null) return;
         despawn(node.pos());
+        Content content = contents.apply(group.type());
         DisplayLayout.Surface surface = surfaces.apply(block);
         @Nullable ItemStack shown = normalise(content.item(group));
         ItemDisplay item = spawnItem(block, DisplayLayout.nodeItem(surface, node.facing(), DisplayLayout.shapeOf(shown)), shown, config);

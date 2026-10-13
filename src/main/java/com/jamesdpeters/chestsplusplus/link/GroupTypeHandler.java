@@ -1,45 +1,104 @@
 package com.jamesdpeters.chestsplusplus.link;
 
+import com.jamesdpeters.chestsplusplus.display.DisplayService;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import java.util.UUID;
+import lombok.Getter;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.jspecify.annotations.Nullable;
 
-/** Type-specific hooks used by the shared {@link LinkService} (ChestLink, AutoCraft). */
-public interface GroupTypeHandler {
+/**
+ * Type-specific hooks used by the shared {@link LinkService} (ChestLink, AutoCraft). The public methods take any group of this type,
+ * narrow it to {@code G} once, and call the typed hook; they are final so every handler narrows the same way.
+ */
+public abstract class GroupTypeHandler<G extends StorageGroup> implements DisplayService.Content {
 
-    GroupType type();
+    @Getter private final GroupType type;
+    private final Class<G> groupClass;
+
+    protected GroupTypeHandler(GroupType type, Class<G> groupClass) {
+        this.type = type;
+        this.groupClass = groupClass;
+    }
 
     /** Can a block of this kind be linked to this group type? */
-    boolean isValidBlock(Block block);
+    public abstract boolean isValidBlock(Block block);
 
     /** Creates (but does not register) a new group. */
-    StorageGroup create(long id, UUID owner, String name);
-
-    /** A block was just linked to {@code group} (e.g. absorb its contents). Returns overflowed stack count. */
-    int onLinked(StorageGroup group, Block block);
-
-    /** The group is being deleted; drop or discard whatever it holds at {@code dropAt}. */
-    void onRemoved(StorageGroup group, Location dropAt);
-
-    /** The group was renamed or its access changed. */
-    void onRenamed(StorageGroup group);
+    public abstract G create(long id, UUID owner, String name);
 
     /** Closes every view players have open of this type's groups (inventories, editors). */
-    void closeAllViews();
+    public abstract void closeAllViews();
+
+    /** A block was just linked to {@code group} (e.g. absorb its contents). Returns overflowed stack count. */
+    public final int onLinked(StorageGroup group, Block block) {
+        return linked(narrow(group), block);
+    }
+
+    /** The group is being deleted; drop or discard whatever it holds at {@code dropAt}. */
+    public final void onRemoved(StorageGroup group, Location dropAt) {
+        removed(narrow(group), dropAt);
+    }
+
+    /** The group was renamed or its access changed. */
+    public final void onRenamed(StorageGroup group) {
+        renamed(narrow(group));
+    }
 
     /** {@code group}'s membership, trust or visibility changed: closes the views of players who may no longer use it. */
-    void closeRevokedViews(StorageGroup group);
+    public final void closeRevokedViews(StorageGroup group) {
+        revokedViews(narrow(group));
+    }
 
     /** Opens the group for a player away from its blocks (command, menu, dialog); checks are done by the caller. */
-    void openRemote(Player player, StorageGroup group);
+    public final void openRemote(Player player, StorageGroup group) {
+        openRemotely(player, narrow(group));
+    }
 
     /** Icon for menus and dialogs. */
-    ItemStack icon(StorageGroup group);
+    public final ItemStack icon(StorageGroup group) {
+        return iconOf(narrow(group));
+    }
 
     /** Short contents summary for menus and listings, e.g. "1,234 items" or "Torch". */
-    String summary(StorageGroup group);
+    public final String summary(StorageGroup group) {
+        return summaryOf(narrow(group));
+    }
+
+    @Override
+    public final @Nullable ItemStack item(StorageGroup group) {
+        return itemOf(narrow(group));
+    }
+
+    @Override
+    public final Component label(StorageGroup group) {
+        return labelOf(narrow(group));
+    }
+
+    protected abstract int linked(G group, Block block);
+
+    protected abstract void removed(G group, Location dropAt);
+
+    protected abstract void renamed(G group);
+
+    protected abstract void revokedViews(G group);
+
+    protected abstract void openRemotely(Player player, G group);
+
+    protected abstract ItemStack iconOf(G group);
+
+    protected abstract String summaryOf(G group);
+
+    protected abstract @Nullable ItemStack itemOf(G group);
+
+    protected abstract Component labelOf(G group);
+
+    private G narrow(StorageGroup group) {
+        return groupClass.cast(group);
+    }
 }

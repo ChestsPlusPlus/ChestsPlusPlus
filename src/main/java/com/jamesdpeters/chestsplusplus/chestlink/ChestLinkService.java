@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -47,8 +46,7 @@ import org.bukkit.inventory.ItemStack;
 import org.jspecify.annotations.Nullable;
 
 /** ChestLink-specific behaviour: the shared inventory, opening, lids, sorting, merging and dropping contents. */
-@RequiredArgsConstructor
-public final class ChestLinkService implements DisplayService.Content, GroupTypeHandler {
+public final class ChestLinkService extends GroupTypeHandler<ChestLinkGroup> {
 
     private final Services services;
     private final DisplayService displays;
@@ -58,14 +56,16 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
     /** Node each viewer opened from (lid animation for non-"animate all" setups). */
     private final Map<UUID, BlockPos> openedFrom = new HashMap<>();
 
+    public ChestLinkService(Services services, DisplayService displays, InventoryChanges changes) {
+        super(GroupType.CHESTLINK, ChestLinkGroup.class);
+        this.services = services;
+        this.displays = displays;
+        this.changes = changes;
+    }
+
     public static boolean isChestLinkBlock(Block block) {
         BlockState state = block.getState(false);
         return state instanceof Chest || state instanceof Barrel;
-    }
-
-    @Override
-    public GroupType type() {
-        return GroupType.CHESTLINK;
     }
 
     @Override
@@ -74,18 +74,18 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
     }
 
     @Override
-    public int onLinked(StorageGroup group, Block block) {
-        return group instanceof ChestLinkGroup chest ? absorbPhysicalContents(chest, block) : 0;
+    protected int linked(ChestLinkGroup group, Block block) {
+        return absorbPhysicalContents(group, block);
     }
 
     @Override
-    public void onRemoved(StorageGroup group, Location dropAt) {
-        if (group instanceof ChestLinkGroup chest) dropContents(chest, dropAt);
+    protected void removed(ChestLinkGroup group, Location dropAt) {
+        dropContents(group, dropAt);
     }
 
     @Override
-    public void onRenamed(StorageGroup group) {
-        if (group instanceof ChestLinkGroup chest) retitle(chest);
+    protected void renamed(ChestLinkGroup group) {
+        retitle(group);
     }
 
     @Override
@@ -96,27 +96,25 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
     }
 
     @Override
-    public void closeRevokedViews(StorageGroup group) {
-        if (!(group instanceof ChestLinkGroup chest) || !chest.hasInventory()) return;
-        Viewers.close(chest.inventory(), viewer -> !mayKeepViewing(viewer, chest)).forEach(viewer -> refuse(viewer, chest));
+    protected void revokedViews(ChestLinkGroup group) {
+        if (!group.hasInventory()) return;
+        Viewers.close(group.inventory(), viewer -> !mayKeepViewing(viewer, group)).forEach(viewer -> refuse(viewer, group));
     }
 
     @Override
-    public void openRemote(Player player, StorageGroup group) {
-        if (group instanceof ChestLinkGroup chest) open(player, chest, null);
+    protected void openRemotely(Player player, ChestLinkGroup group) {
+        open(player, group, null);
     }
 
     @Override
-    public ItemStack icon(StorageGroup group) {
-        ItemStack common = group instanceof ChestLinkGroup chest && chest.hasInventory() ? mostCommon(chest) : null;
+    protected ItemStack iconOf(ChestLinkGroup group) {
+        ItemStack common = group.hasInventory() ? mostCommon(group) : null;
         return common == null ? ItemStack.of(Material.CHEST) : common;
     }
 
     @Override
-    public String summary(StorageGroup group) {
-        return group instanceof ChestLinkGroup chest && chest.hasInventory()
-                ? String.format(Locale.ROOT, "%,d items", itemCount(chest))
-                : "0 items";
+    protected String summaryOf(ChestLinkGroup group) {
+        return group.hasInventory() ? String.format(Locale.ROOT, "%,d items", itemCount(group)) : "0 items";
     }
 
     @Override
@@ -273,12 +271,12 @@ public final class ChestLinkService implements DisplayService.Content, GroupType
     }
 
     @Override
-    public @Nullable ItemStack item(StorageGroup group) {
-        return group instanceof ChestLinkGroup chest && chest.hasInventory() ? mostCommon(chest) : null;
+    protected @Nullable ItemStack itemOf(ChestLinkGroup group) {
+        return group.hasInventory() ? mostCommon(group) : null;
     }
 
     @Override
-    public Component label(StorageGroup group) {
+    protected Component labelOf(ChestLinkGroup group) {
         return services.messages().get(Message.CHESTLINK_DISPLAY_LABEL, Messages.group(group));
     }
 

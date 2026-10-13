@@ -30,6 +30,11 @@ class ArchitectureTest {
             .dependOnClassesThat().resideInAnyPackage("com.jamesdpeters.chestsplusplus.chestlink..", "com.jamesdpeters.chestsplusplus.autocraft..")
             .because("chestlink and autocraft build on link, never the other way round");
 
+    @ArchTest static final ArchRule displayKnowsNoGroupType = noClasses().that().resideInAPackage("com.jamesdpeters.chestsplusplus.display..")
+            .should().dependOnClassesThat().resideInAnyPackage("com.jamesdpeters.chestsplusplus.link..",
+                    "com.jamesdpeters.chestsplusplus.chestlink..", "com.jamesdpeters.chestsplusplus.autocraft..")
+            .because("link builds on display, and each group type's handler gives displays their content through DisplayService.Content");
+
     /** The root package is left out: ChestsPlusPlus wires every package together. */
     @ArchIgnore(reason = "core cycles with access, model, message and persistence: Services holds them all, and they use core's helpers")
     @ArchTest static final ArchRule packagesAreAcyclic = slices().matching("com.jamesdpeters.chestsplusplus.(**)").should().beFreeOfCycles();

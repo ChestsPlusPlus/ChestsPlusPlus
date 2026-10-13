@@ -42,6 +42,7 @@ public final class NodeListener implements Listener {
 
     private final Services services;
     private final LinkService links;
+    private final Handlers handlers;
     private final DisplayService displays;
     private final LinkItem linkItems;
 
@@ -122,8 +123,7 @@ public final class NodeListener implements Listener {
     private boolean relink(BlockPlaceEvent event, StorageGroup group) {
         Player player = event.getPlayer();
         Block block = event.getBlockPlaced();
-        GroupTypeHandler handler = links.handler(group.type());
-        if (handler == null || !handler.isValidBlock(block)) return false;
+        if (!handlers.of(group).isValidBlock(block)) return false;
         links.join(player, group, block, Holders.facing(player).getOppositeFace(),
                 group.type().pick(Message.CHESTLINK_LINKED, Message.AUTOCRAFT_LINKED));
         return true;
