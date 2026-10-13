@@ -116,7 +116,7 @@ public final class LinkService {
             send(player, refusal);
             return null;
         }
-        GroupTypeHandler handler = handlers.of(type);
+        GroupTypeHandler<?> handler = handlers.of(type);
         Resolved target = resolve(player.getUniqueId(), AccessService.hasBypass(player), type, input);
         StorageGroup group = switch (target) {
             case Resolved.Found found -> found.group();
@@ -167,7 +167,7 @@ public final class LinkService {
         return null;
     }
 
-    private @Nullable StorageGroup createGroup(Player player, GroupTypeHandler handler, Resolved.Missing missing) {
+    private @Nullable StorageGroup createGroup(Player player, GroupTypeHandler<?> handler, Resolved.Missing missing) {
         GroupType type = handler.type();
         int limit = limit(player, type);
         if (limit >= 0 && services.groups().ownedBy(player.getUniqueId(), type).size() >= limit) {

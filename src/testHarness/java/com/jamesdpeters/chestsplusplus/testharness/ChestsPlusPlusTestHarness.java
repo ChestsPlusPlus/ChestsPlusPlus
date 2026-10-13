@@ -169,7 +169,7 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
         String name = StringArgumentType.getString(context, "name");
         Block block = block(context);
         LinkService links = services.get(LinkService.class);
-        GroupTypeHandler handler = services.get(Handlers.class).of(type);
+        GroupTypeHandler<?> handler = services.get(Handlers.class).of(type);
         if (!handler.isValidBlock(block)) {
             return reply(context, "cpptest link failed: " + block.getType() + " is not valid for " + type);
         }

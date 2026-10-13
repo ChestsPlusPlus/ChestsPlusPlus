@@ -169,7 +169,7 @@ public final class GroupActions {
             return;
         }
         services.send(player, type.pick(Message.CHESTLINK_LIST_HEADER, Message.AUTOCRAFT_LIST_HEADER));
-        GroupTypeHandler handler = handlers.of(type);
+        GroupTypeHandler<?> handler = handlers.of(type);
         for (StorageGroup group : accessible.groups()) {
             String ref = StringArgumentType.escapeIfRequired(accessible.reference(group));
             String command = type.pick("/chestlink open ", "/autocraft open ") + ref;

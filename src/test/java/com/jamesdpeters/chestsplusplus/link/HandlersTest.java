@@ -6,7 +6,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.jamesdpeters.chestsplusplus.model.AutoCraftGroup;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
-import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import com.jamesdpeters.chestsplusplus.testing.Tags;
 import java.util.UUID;
 import org.bukkit.Location;
@@ -40,7 +39,11 @@ class HandlersTest {
         assertThat(handlers.of(new AutoCraftGroup(1, UUID.randomUUID(), "crafter", 0))).isSameAs(autoCraft);
     }
 
-    private record StubHandler(GroupType type) implements GroupTypeHandler {
+    private static final class StubHandler extends GroupTypeHandler<ChestLinkGroup> {
+
+        StubHandler(GroupType type) {
+            super(type, ChestLinkGroup.class);
+        }
 
         @Override
         public boolean isValidBlock(Block block) {
@@ -48,37 +51,37 @@ class HandlersTest {
         }
 
         @Override
-        public StorageGroup create(long id, UUID owner, String name) {
+        public ChestLinkGroup create(long id, UUID owner, String name) {
             return new ChestLinkGroup(id, owner, name, 0);
         }
-
-        @Override
-        public int onLinked(StorageGroup group, Block block) {
-            return 0;
-        }
-
-        @Override
-        public void onRemoved(StorageGroup group, Location dropAt) {}
-
-        @Override
-        public void onRenamed(StorageGroup group) {}
 
         @Override
         public void closeAllViews() {}
 
         @Override
-        public void closeRevokedViews(StorageGroup group) {}
+        protected int linked(ChestLinkGroup group, Block block) {
+            return 0;
+        }
 
         @Override
-        public void openRemote(Player player, StorageGroup group) {}
+        protected void removed(ChestLinkGroup group, Location dropAt) {}
 
         @Override
-        public ItemStack icon(StorageGroup group) {
+        protected void renamed(ChestLinkGroup group) {}
+
+        @Override
+        protected void revokedViews(ChestLinkGroup group) {}
+
+        @Override
+        protected void openRemotely(Player player, ChestLinkGroup group) {}
+
+        @Override
+        protected ItemStack iconOf(ChestLinkGroup group) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public String summary(StorageGroup group) {
+        protected String summaryOf(ChestLinkGroup group) {
             return "";
         }
     }

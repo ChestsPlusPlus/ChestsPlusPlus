@@ -8,9 +8,9 @@ import java.util.Map;
 /** The {@link GroupTypeHandler} of each group type. Startup registers one per type and then calls {@link #requireAll()}, so lookups never miss. */
 public final class Handlers {
 
-    private final Map<GroupType, GroupTypeHandler> handlers = new EnumMap<>(GroupType.class);
+    private final Map<GroupType, GroupTypeHandler<?>> handlers = new EnumMap<>(GroupType.class);
 
-    public void register(GroupTypeHandler handler) {
+    public void register(GroupTypeHandler<?> handler) {
         handlers.put(handler.type(), handler);
     }
 
@@ -19,13 +19,13 @@ public final class Handlers {
         for (GroupType type : GroupType.values()) of(type);
     }
 
-    public GroupTypeHandler of(GroupType type) {
-        GroupTypeHandler handler = handlers.get(type);
+    public GroupTypeHandler<?> of(GroupType type) {
+        GroupTypeHandler<?> handler = handlers.get(type);
         if (handler == null) throw new IllegalStateException(type + " has no handler");
         return handler;
     }
 
-    public GroupTypeHandler of(StorageGroup group) {
+    public GroupTypeHandler<?> of(StorageGroup group) {
         return of(group.type());
     }
 }
