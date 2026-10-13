@@ -7,7 +7,6 @@ import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.SortMode;
 import com.jamesdpeters.chestsplusplus.testing.PluginTestBase;
-import com.jamesdpeters.chestsplusplus.testing.TileEntityWorld;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -37,11 +36,7 @@ class FeatureTogglesIntegrationTest extends PluginTestBase {
 
     @BeforeEach
     void setUp() {
-        TileEntityWorld tileWorld = new TileEntityWorld();
-        tileWorld.setName("world");
-        server.addWorld(tileWorld);
-        world = tileWorld;
-        world.loadChunk(0, 0);
+        world = tileWorld("world");
         alice = server.addPlayer("Alice");
         chest = world.getBlockAt(0, 64, 0);
         chest.setType(Material.CHEST);

@@ -10,7 +10,6 @@ import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.Node;
 import com.jamesdpeters.chestsplusplus.testing.PluginTestBase;
-import com.jamesdpeters.chestsplusplus.testing.TileEntityWorld;
 import com.jamesdpeters.chestsplusplus.testing.WallSigns;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import java.time.Duration;
@@ -66,13 +65,9 @@ class ChestLinkIntegrationTest extends PluginTestBase {
 
     @BeforeEach
     void setUp() {
-        TileEntityWorld tileWorld = new TileEntityWorld();
-        tileWorld.setName("world");
-        server.addWorld(tileWorld);
-        world = tileWorld;
+        world = tileWorld("world");
         alice = server.addPlayer("Alice");
         bob = server.addPlayer("Bob");
-        world.loadChunk(0, 0);
     }
 
     private Block chestAt(int x, int z) {
