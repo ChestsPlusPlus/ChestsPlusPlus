@@ -110,7 +110,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
         LinkService links = services.add(LinkService.class, new LinkService(services, displays, handlers, checks));
         services.add(LinkItem.class, new LinkItem(this));
 
-        AutoCraftService autoCraft = services.add(AutoCraftService.class, new AutoCraftService(services, displays, CraftingBackend.bukkit()));
+        AutoCraftService autoCraft = services.add(AutoCraftService.class, new AutoCraftService(services, displays, checks, CraftingBackend.bukkit()));
         ChestLinkService chestLinks = services.add(ChestLinkService.class, new ChestLinkService(services, displays, autoCraft::inventoryChanged));
         handlers.register(chestLinks);
         handlers.register(autoCraft);
@@ -118,7 +118,7 @@ public class ChestsPlusPlus extends JavaPlugin implements Listener {
 
         GroupActions actions = services.add(GroupActions.class, new GroupActions(services, links, handlers, checks, chestLinks::setSortMode));
         MenuListener menus = services.add(MenuListener.class, new MenuListener(services.mainThread()));
-        services.add(UiService.class, new UiService(services, handlers, actions, menus));
+        services.add(UiService.class, new UiService(services, handlers, checks, actions, menus));
         FilterService filters = services.add(FilterService.class,
                 new FilterService(this, new FilterCodec(this), ItemGrouping.fromServerTags(), services::settings));
         services.shutdown().add("filter displays", filters::despawnAll);

@@ -5,6 +5,7 @@ import com.jamesdpeters.chestsplusplus.access.AccessService;
 import com.jamesdpeters.chestsplusplus.access.AccessibleGroups;
 import com.jamesdpeters.chestsplusplus.core.PlayerNames;
 import com.jamesdpeters.chestsplusplus.core.Services;
+import com.jamesdpeters.chestsplusplus.link.Checks;
 import com.jamesdpeters.chestsplusplus.link.GroupActions;
 import com.jamesdpeters.chestsplusplus.link.Handlers;
 import com.jamesdpeters.chestsplusplus.message.Message;
@@ -78,6 +79,7 @@ public final class UiService {
 
     private final Services services;
     private final Handlers handlers;
+    private final Checks checks;
     private final GroupActions actions;
     private final MenuListener menus;
     /** Set when a dialog is shown, so a click that shows nothing new can close the dialog it came from. Main thread only. */
@@ -95,11 +97,7 @@ public final class UiService {
     }
 
     public void openHub(Player player, GroupType type, String search, int page) {
-        if (!player.hasPermission(Permissions.menu(type))) {
-            services.send(player, Message.ERROR_NO_PERMISSION);
-            return;
-        }
-        if (!actions.isEnabled(player, type)) return;
+        if (checks.refused(player, checks.permission(player, Permissions.menu(type)), checks.enabled(type))) return;
         AccessibleGroups accessible = hubGroups(player, type, search);
         List<StorageGroup> groups = accessible.groups();
         int pages = Math.max(1, (groups.size() + GROUPS_PER_PAGE - 1) / GROUPS_PER_PAGE);
@@ -192,7 +190,7 @@ public final class UiService {
     }
 
     public void openGroup(Player player, StorageGroup group) {
-        if (!actions.isEnabled(player, group.type()) || !actions.canUse(player, group)) return;
+        if (checks.refused(player, checks.enabled(group.type()), checks.use(player, group))) return;
         boolean manage = services.access().canManage(player.getUniqueId(), player, group);
         String description = PlayerNames.of(group.owner()) + " · " + summary(group) + " · " + services.nodes().count(group.id()) + " block(s)";
         DialogBase base = baseBuilder(text(Message.MENU_GROUP_TITLE, Messages.group(group)))
@@ -257,7 +255,7 @@ public final class UiService {
     }
 
     public void openMembers(Player player, StorageGroup group) {
-        if (!actions.canManage(player, group)) return;
+        if (checks.refused(player, checks.manage(player, group))) return;
         long id = group.id();
         List<ActionButton> buttons = new ArrayList<>();
         buttons.add(button(text(Message.MENU_MEMBERS_ADD), (view, p) -> withGroup(p, id, g -> {
@@ -274,10 +272,7 @@ public final class UiService {
     }
 
     public void openTrust(Player player, GroupType backTo) {
-        if (!player.hasPermission(Permissions.TRUST)) {
-            services.send(player, Message.ERROR_NO_PERMISSION);
-            return;
-        }
+        if (checks.refused(player, checks.permission(player, Permissions.TRUST))) return;
         List<ActionButton> buttons = new ArrayList<>();
         buttons.add(button(text(Message.MENU_TRUST_ADD), (view, p) -> {
             String name = playerInput(view);

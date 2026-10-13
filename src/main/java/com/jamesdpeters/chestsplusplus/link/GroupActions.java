@@ -191,18 +191,6 @@ public final class GroupActions {
         }
     }
 
-    public boolean isEnabled(Player player, GroupType type) {
-        return !checks.refused(player, checks.enabled(type));
-    }
-
-    public boolean canUse(Player player, StorageGroup group) {
-        return !checks.refused(player, checks.use(player, group));
-    }
-
-    public boolean canManage(Player player, StorageGroup group) {
-        return !checks.refused(player, checks.manage(player, group));
-    }
-
     private void lookupMember(Player player, StorageGroup group, String name, Consumer<UUID> onFound) {
         if (!canEditMembers(player, group)) return;
         lookup(player, name, member -> {

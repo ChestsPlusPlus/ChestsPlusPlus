@@ -9,6 +9,7 @@ import com.jamesdpeters.chestsplusplus.filter.FilterService;
 import com.jamesdpeters.chestsplusplus.filter.HopperFilter;
 import com.jamesdpeters.chestsplusplus.filter.HopperFilter.Match;
 import com.jamesdpeters.chestsplusplus.filter.HopperFilter.Mode;
+import com.jamesdpeters.chestsplusplus.link.Checks;
 import com.jamesdpeters.chestsplusplus.link.GroupActions;
 import com.jamesdpeters.chestsplusplus.link.Handlers;
 import com.jamesdpeters.chestsplusplus.link.LinkItem;
@@ -137,7 +138,7 @@ class AutoCraftIntegrationTest extends PluginTestBase {
     }
 
     private AutoCraftService autoCraft(CraftingBackend backend) {
-        return new AutoCraftService(plugin.services(), plugin.services().get(DisplayService.class), backend);
+        return new AutoCraftService(plugin.services(), plugin.services().get(DisplayService.class), plugin.services().get(Checks.class), backend);
     }
 
     private static ItemStack namedCoal() {
