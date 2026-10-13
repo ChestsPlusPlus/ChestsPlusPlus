@@ -1,10 +1,11 @@
 package com.jamesdpeters.chestsplusplus.link;
 
+import com.jamesdpeters.chestsplusplus.config.Settings;
 import com.jamesdpeters.chestsplusplus.core.PaperApi;
-import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.core.scheduler.MainThread;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import java.util.Locale;
+import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
@@ -34,7 +35,7 @@ public final class SignLinkListener implements Listener {
     private static final PlainTextComponentSerializer PLAIN = PlainTextComponentSerializer.plainText();
 
     private final MainThread mainThread;
-    private final Services services;
+    private final Supplier<Settings> settings;
     private final LinkService links;
 
     static @Nullable GroupType typeOf(String header) {
@@ -57,7 +58,7 @@ public final class SignLinkListener implements Listener {
 
         Player player = event.getPlayer();
         if (links.link(player, type, input, target, facing, false) == null) return;
-        boolean refund = !services.settings().linking().consumeSigns() && player.getGameMode() != GameMode.CREATIVE;
+        boolean refund = !settings.get().linking().consumeSigns() && player.getGameMode() != GameMode.CREATIVE;
         // Remove the sign once the edit has been processed; the display replaces it.
         mainThread.nextTick(() -> removeSign(sign, refund ? player : null));
     }
