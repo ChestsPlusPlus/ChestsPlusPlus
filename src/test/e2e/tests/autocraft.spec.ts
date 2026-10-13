@@ -47,8 +47,8 @@ test('setting the recipe crafts on the next tick', async ({ server }) => {
   await expectEventually(() => server.execute('data get block 0 -52 2 Items'), 'minecraft:torch', 400);
 });
 
-test('a waiting crafter crafts as soon as a hopper delivers its ingredients', async ({ server }) => {
-  await server.execute('cpptest reset');
+/** A crafter with an empty input chest. Returns how to wake it: a hopper feeding the chest (two transfers, 8 ticks apart). */
+async function waitingForInput(server: Server) {
   for (const command of [
     'forceload add 0 0',
     'setblock 4 -49 0 minecraft:air',
@@ -62,18 +62,15 @@ test('a waiting crafter crafts as soon as a hopper delivers its ingredients', as
   }
   expectContains(await server.execute(`cpptest link autocraft ${OWNER} waiting 4 -51 0`), 'cpptest link ok');
   expectContains(await server.execute(`cpptest recipe ${OWNER} waiting -,minecraft:coal,-,-,minecraft:stick,-,-,-,-`), 'result=TORCHx4');
+  return async () => {
+    expectContains(await server.execute('data get block 4 -52 0 Items'), '[]');
+    await server.execute('setblock 4 -49 0 minecraft:hopper[facing=down]{Items:[{Slot:0b,id:"minecraft:coal",count:1},{Slot:1b,id:"minecraft:stick",count:1}]}');
+    await expectEventually(() => server.execute('data get block 4 -52 0 Items'), 'minecraft:torch', 1500);
+  };
+}
 
-  // Empty input: the crafter fails and backs off (1 s, 2 s, 4 s...), so after 3 s its next scheduled try is seconds away.
-  await sleep(3000);
-  expectContains(await server.execute('data get block 4 -52 0 Items'), '[]');
-
-  // A hopper feeds the chest (two transfers, 8 ticks apart); each transfer wakes the crafter.
-  await server.execute('setblock 4 -49 0 minecraft:hopper[facing=down]{Items:[{Slot:0b,id:"minecraft:coal",count:1},{Slot:1b,id:"minecraft:stick",count:1}]}');
-  await expectEventually(() => server.execute('data get block 4 -52 0 Items'), 'minecraft:torch', 1500);
-});
-
-test('a crafter blocked by a full output crafts as soon as the output hopper drains', async ({ server }) => {
-  await server.execute('cpptest reset');
+/** A crafter whose output hopper is full. Returns how to wake it: a chest below, so the hopper's first transfer frees a slot. */
+async function blockedByOutput(server: Server) {
   const dirt = [0, 1, 2, 3, 4].map(slot => `{Slot:${slot}b,id:"minecraft:dirt",count:1}`).join(',');
   for (const command of [
     'forceload add 0 0',
@@ -89,10 +86,18 @@ test('a crafter blocked by a full output crafts as soon as the output hopper dra
   }
   expectContains(await server.execute(`cpptest link autocraft ${OWNER} blocked 8 -51 0`), 'cpptest link ok');
   expectContains(await server.execute(`cpptest recipe ${OWNER} blocked -,minecraft:coal,-,-,minecraft:stick,-,-,-,-`), 'result=TORCHx4');
-  await sleep(3000);
+  return async () => {
+    await server.execute('setblock 8 -53 0 minecraft:chest');
+    const output = async () => (await server.execute('data get block 8 -52 0 Items')) + (await server.execute('data get block 8 -53 0 Items'));
+    await expectEventually(output, 'minecraft:torch', 1000);
+  };
+}
 
-  // The hopper starts pushing dirt out; its first transfer frees a slot and wakes the crafter.
-  await server.execute('setblock 8 -53 0 minecraft:chest');
-  const output = async () => (await server.execute('data get block 8 -52 0 Items')) + (await server.execute('data get block 8 -53 0 Items'));
-  await expectEventually(output, 'minecraft:torch', 1000);
+// Both crafters fail and back off (1 s, 2 s, 4 s...), so after 3 s their next scheduled try is seconds away and only the wake-up
+// can explain a craft. They sit out the backoff together, then each is woken and given its own deadline.
+test('a backed-off crafter crafts as soon as its ingredients arrive or its output drains', async ({ server }) => {
+  await server.execute('cpptest reset');
+  const wakeUps = [await waitingForInput(server), await blockedByOutput(server)];
+  await sleep(3000);
+  await Promise.all(wakeUps.map(wake => wake()));
 });
