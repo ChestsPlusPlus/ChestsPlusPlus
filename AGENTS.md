@@ -97,9 +97,9 @@ comments, no repeated logic.
 | Clickable chest menus | `Menu` / `PaginatedMenu` |
 | A new custom inventory | its holder implements `CppInventoryHolder`, so disabling the plugin closes it |
 | Close an inventory's viewers, or find the players with a kind of inventory open | `Viewers.close(inventory)` (optionally only those a predicate picks), `Viewers.withHolder(HolderType.class)` |
-| Save a model change | `services.groupStore().markDirty(group)` (or `trustStore().markDirty(owner)`); the next flush saves the whole group |
+| Save a model change | `services.groups().changed(group)`, which saves and redisplays it. Registry mutators (`rename`, `setPublic`, `addMember`, ...) announce themselves; `trust` and the migration state tell their stores through `listen`. The next flush saves the whole group |
 | SQL | a `RecordTable` in the store that owns the table; anything it can't do is a plain JDBI call in that store. Schema: edit `V1.sql` until v3 ships (then clear your dev database), afterwards a new `db/migration/V<n>.sql` with `Database.SCHEMA_VERSION` bumped |
-| Persist a new kind of thing | a row record, its `CREATE TABLE`, a `RowStore` for one row per key or a `TrackedStore` for aggregates, `persistence.register(store)` in `ChestsPlusPlus`, and `markDirty` wherever the data changes |
+| Persist a new kind of thing | a row record, its `CREATE TABLE`, a `RowStore` for one row per key or a `TrackedStore` for aggregates, `persistence.register(store)` and `model.listen(store::markDirty)` in `ChestsPlusPlus`, and the model fires its `Listeners` wherever the data changes |
 | Command tree pieces | `Commands.literal`, `argument`, `permission`, `playerArgument` |
 
 ## Runtime libraries
@@ -112,6 +112,8 @@ comments, no repeated logic.
 - The model (groups, nodes, trust) is main-thread only. Only `Persistence`'s I/O thread touches the database, apart from loading at
   startup. A store's `snapshot` runs on the main thread and must copy what it needs: clone `ItemStack`s, since `getContents()` returns
   live mirrors and items are serialised on the I/O thread.
+- Model listeners run synchronously on the main thread. Loading must not fire them, or startup rewrites the database: a store's
+  `load` replaces state silently, and `GroupRegistry.add` is silent, as is anything done to a group before it is added.
 - Hot paths run every tick per hopper, so keep them to a few hash lookups with no allocation. These are
   `HopperBridge.onSearch` and `FilterListener.onMove`, plus `GolemBridge.onValidate` and `onValidated` (several times per tick per
   searching golem) and `GolemBridge.onGameEvent` (every game event, footsteps included).
