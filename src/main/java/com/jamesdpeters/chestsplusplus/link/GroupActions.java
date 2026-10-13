@@ -1,6 +1,7 @@
 package com.jamesdpeters.chestsplusplus.link;
 
 import com.destroystokyo.paper.profile.PlayerProfile;
+import com.jamesdpeters.chestsplusplus.GroupPermission;
 import com.jamesdpeters.chestsplusplus.Permissions;
 import com.jamesdpeters.chestsplusplus.access.AccessService;
 import com.jamesdpeters.chestsplusplus.access.AccessibleGroups;
@@ -60,8 +61,8 @@ public final class GroupActions {
 
     public boolean openRemote(Player player, StorageGroup group) {
         GroupType type = group.type();
-        if (checks.refused(player, checks.enabled(type), checks.permission(player, Permissions.remote(type)), checks.allowedWorld(player.getWorld()),
-                checks.use(player, group))) {
+        if (checks.refused(player, checks.enabled(type), checks.permission(player, Permissions.of(type, GroupPermission.REMOTE)),
+                checks.allowedWorld(player.getWorld()), checks.use(player, group))) {
             return false;
         }
         handlers.of(group).openRemote(player, group);
@@ -70,7 +71,8 @@ public final class GroupActions {
 
     public boolean remove(Player player, StorageGroup group) {
         GroupType type = group.type();
-        if (checks.refused(player, checks.enabled(type), checks.permission(player, Permissions.remove(type)), checks.manage(player, group))) {
+        if (checks.refused(player, checks.enabled(type), checks.permission(player, Permissions.of(type, GroupPermission.REMOVE)),
+                checks.manage(player, group))) {
             return false;
         }
         links.removeGroup(group, PaperApi.location(player));
@@ -201,7 +203,7 @@ public final class GroupActions {
     /** Also run after an async lookup returns, when the group may have been deleted or the player's rights changed. */
     private boolean canEditMembers(Player player, StorageGroup group) {
         GroupType type = group.type();
-        return !checks.refused(player, exists(group), checks.enabled(type), checks.permission(player, Permissions.members(type)),
+        return !checks.refused(player, exists(group), checks.enabled(type), checks.permission(player, Permissions.of(type, GroupPermission.MEMBERS)),
                 checks.manage(player, group));
     }
 

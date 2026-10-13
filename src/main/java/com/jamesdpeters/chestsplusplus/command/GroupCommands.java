@@ -5,6 +5,7 @@ import static com.jamesdpeters.chestsplusplus.command.Commands.literal;
 import static com.jamesdpeters.chestsplusplus.command.Commands.permission;
 import static com.jamesdpeters.chestsplusplus.command.Commands.playerArgument;
 
+import com.jamesdpeters.chestsplusplus.GroupPermission;
 import com.jamesdpeters.chestsplusplus.Permissions;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.link.GroupActions;
@@ -45,12 +46,13 @@ final class GroupCommands {
     LiteralCommandNode<CommandSourceStack> build(String name) {
         LiteralArgumentBuilder<CommandSourceStack> root = literal(name)
                 .executes(bodies.player((services, p, context) -> services.get(UiService.class).openHub(p, type, "", 0)))
-                .then(literal("add").requires(permission(Permissions.create(type))).then(group().executes(bodies.player(this::add))))
-                .then(literal("remove").requires(permission(Permissions.remove(type)))
+                .then(literal("add").requires(permission(Permissions.of(type, GroupPermission.CREATE)))
+                        .then(group().executes(bodies.player(this::add))))
+                .then(literal("remove").requires(permission(Permissions.of(type, GroupPermission.REMOVE)))
                         .then(group().executes(withGroup((actions, p, g, context) -> actions.remove(p, g)))))
-                .then(literal("open").requires(permission(Permissions.remote(type)))
+                .then(literal("open").requires(permission(Permissions.of(type, GroupPermission.REMOTE)))
                         .then(group().executes(withGroup((actions, p, g, context) -> actions.openRemote(p, g)))))
-                .then(literal("menu").requires(permission(Permissions.menu(type)))
+                .then(literal("menu").requires(permission(Permissions.of(type, GroupPermission.MENU)))
                         .executes(bodies.player((services, p, context) -> services.get(UiService.class).openHub(p, type, "", 0))))
                 .then(literal("list").executes(bodies.player((services, p, context) -> services.get(GroupActions.class).list(p, type))))
                 .then(literal("rename").then(group().then(argument("new", StringArgumentType.string()).executes(withGroup(this::rename)))))
@@ -62,7 +64,7 @@ final class GroupCommands {
 
     private LiteralArgumentBuilder<CommandSourceStack> members() {
         return literal("members")
-                .requires(permission(Permissions.members(type)))
+                .requires(permission(Permissions.of(type, GroupPermission.MEMBERS)))
                 .then(literal("add").then(group().then(playerArgument().executes(withGroup(this::addMember)))))
                 .then(literal("remove").then(group().then(playerArgument().executes(withGroup(this::removeMember)))))
                 .then(literal("list").then(group().executes(withGroup((actions, p, g, context) -> actions.listMembers(p, g)))));

@@ -1,6 +1,7 @@
 package com.jamesdpeters.chestsplusplus.link;
 
 import com.jamesdpeters.chestsplusplus.ChestsPlusPlus;
+import com.jamesdpeters.chestsplusplus.GroupPermission;
 import com.jamesdpeters.chestsplusplus.Permissions;
 import com.jamesdpeters.chestsplusplus.access.AccessService;
 import com.jamesdpeters.chestsplusplus.core.BlockPos;
@@ -160,7 +161,8 @@ public final class LinkService {
     /** The checks every way of linking shares: feature enabled, create permission, world not blacklisted. */
     @Nullable
     Refusal linkingRefusal(Player player, GroupType type, World world) {
-        return Checks.first(checks.enabled(type), checks.permission(player, Permissions.create(type)), checks.allowedWorld(world));
+        return Checks.first(checks.enabled(type), checks.permission(player, Permissions.of(type, GroupPermission.CREATE)),
+                checks.allowedWorld(world));
     }
 
     private @Nullable StorageGroup createGroup(Player player, GroupTypeHandler<?> handler, Resolved.Missing missing) {
@@ -337,8 +339,8 @@ public final class LinkService {
 
     private @Nullable Refusal openRefusal(Player player, StorageGroup group, Block block) {
         GroupType type = group.type();
-        return Checks.first(checks.enabled(type), checks.allowedWorld(block.getWorld()), checks.permission(player, Permissions.open(type)),
-                checks.use(player, group));
+        return Checks.first(checks.enabled(type), checks.allowedWorld(block.getWorld()),
+                checks.permission(player, Permissions.of(type, GroupPermission.OPEN)), checks.use(player, group));
     }
 
     /**
