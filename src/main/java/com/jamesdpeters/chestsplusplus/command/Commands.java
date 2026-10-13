@@ -1,6 +1,7 @@
 package com.jamesdpeters.chestsplusplus.command;
 
 import com.jamesdpeters.chestsplusplus.ChestsPlusPlus;
+import com.jamesdpeters.chestsplusplus.Components;
 import com.jamesdpeters.chestsplusplus.Permissions;
 import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.link.GroupActions;
@@ -48,7 +49,7 @@ public final class Commands {
         this.plugin = plugin;
         this.bodies = new CommandBodies(() -> {
             ChestsPlusPlus instance = plugin.get();
-            return instance == null ? null : instance.services();
+            return instance == null ? null : instance.components();
         });
         this.version = version;
     }
@@ -84,28 +85,28 @@ public final class Commands {
                         .requires(permission(Permissions.TRUST))
                         .then(literal("add").then(playerArgument().executes(trustBody(true))))
                         .then(literal("remove").then(playerArgument().executes(trustBody(false))))
-                        .then(literal("list").executes(bodies.player((services, p, context) -> services.get(GroupActions.class).listTrust(p)))))
+                        .then(literal("list").executes(bodies.player((components, p, context) -> components.features().actions().listTrust(p)))))
                 .then(new MigrateCommands(bodies).build())
                 .build();
     }
 
     private Command<CommandSourceStack> trustBody(boolean add) {
-        return bodies.player((services, p, context) -> {
+        return bodies.player((components, p, context) -> {
             String name = StringArgumentType.getString(context, "player");
-            GroupActions actions = services.get(GroupActions.class);
+            GroupActions actions = components.features().actions();
             if (add) actions.trust(p, name, () -> {});
             else actions.untrust(p, name, () -> {});
         });
     }
 
-    private void version(Services services, CommandContext<CommandSourceStack> context) {
-        services.send(context.getSource().getSender(), Message.COMMAND_VERSION, Messages.text("version", version));
+    private void version(Components components, CommandContext<CommandSourceStack> context) {
+        components.services().send(context.getSource().getSender(), Message.COMMAND_VERSION, Messages.text("version", version));
     }
 
     /** Not a {@link CommandBodies#enabled} body, since a failed reload returns 0. */
     private int reload(CommandContext<CommandSourceStack> context) {
         ChestsPlusPlus instance = plugin.get();
-        Services current = bodies.services(context);
+        Components current = bodies.components(context);
         if (instance == null || current == null) return 0;
         try {
             instance.reload();
@@ -113,13 +114,14 @@ public final class Commands {
             context.getSource().getSender().sendMessage(Component.text("Reload failed: " + e.getMessage(), NamedTextColor.RED));
             return 0;
         }
-        current.send(context.getSource().getSender(), Message.COMMAND_RELOADED);
+        current.services().send(context.getSource().getSender(), Message.COMMAND_RELOADED);
         return Command.SINGLE_SUCCESS;
     }
 
     /** Generated help: every command path the sender can use. */
-    private void help(Services services, CommandContext<CommandSourceStack> context) {
+    private void help(Components components, CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
+        Services services = components.services();
         services.send(source.getSender(), Message.COMMAND_HELP_HEADER);
         for (String usage : usages(source)) services.send(source.getSender(), Message.COMMAND_HELP_ENTRY, Messages.text("usage", usage));
     }

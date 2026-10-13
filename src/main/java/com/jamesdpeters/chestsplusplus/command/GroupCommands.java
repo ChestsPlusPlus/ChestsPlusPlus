@@ -5,11 +5,10 @@ import static com.jamesdpeters.chestsplusplus.command.Commands.literal;
 import static com.jamesdpeters.chestsplusplus.command.Commands.permission;
 import static com.jamesdpeters.chestsplusplus.command.Commands.playerArgument;
 
+import com.jamesdpeters.chestsplusplus.Components;
 import com.jamesdpeters.chestsplusplus.GroupPermission;
 import com.jamesdpeters.chestsplusplus.Permissions;
-import com.jamesdpeters.chestsplusplus.core.Services;
 import com.jamesdpeters.chestsplusplus.link.GroupActions;
-import com.jamesdpeters.chestsplusplus.link.LinkService;
 import com.jamesdpeters.chestsplusplus.link.NodeListener;
 import com.jamesdpeters.chestsplusplus.message.Message;
 import com.jamesdpeters.chestsplusplus.message.Messages;
@@ -17,7 +16,6 @@ import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.model.SortMode;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
-import com.jamesdpeters.chestsplusplus.ui.UiService;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -45,7 +43,7 @@ final class GroupCommands {
 
     LiteralCommandNode<CommandSourceStack> build(String name) {
         LiteralArgumentBuilder<CommandSourceStack> root = literal(name)
-                .executes(bodies.player((services, p, context) -> services.get(UiService.class).openHub(p, type, "", 0)))
+                .executes(bodies.player((components, p, context) -> components.features().ui().openHub(p, type, "", 0)))
                 .then(literal("add").requires(permission(Permissions.of(type, GroupPermission.CREATE)))
                         .then(group().executes(bodies.player(this::add))))
                 .then(literal("remove").requires(permission(Permissions.of(type, GroupPermission.REMOVE)))
@@ -53,8 +51,8 @@ final class GroupCommands {
                 .then(literal("open").requires(permission(Permissions.of(type, GroupPermission.REMOTE)))
                         .then(group().executes(withGroup((actions, p, g, context) -> actions.openRemote(p, g)))))
                 .then(literal("menu").requires(permission(Permissions.of(type, GroupPermission.MENU)))
-                        .executes(bodies.player((services, p, context) -> services.get(UiService.class).openHub(p, type, "", 0))))
-                .then(literal("list").executes(bodies.player((services, p, context) -> services.get(GroupActions.class).list(p, type))))
+                        .executes(bodies.player((components, p, context) -> components.features().ui().openHub(p, type, "", 0))))
+                .then(literal("list").executes(bodies.player((components, p, context) -> components.features().actions().list(p, type))))
                 .then(literal("rename").then(group().then(argument("new", StringArgumentType.string()).executes(withGroup(this::rename)))))
                 .then(literal("public").then(group().then(argument("public", BoolArgumentType.bool()).executes(withGroup(this::setPublic)))))
                 .then(members());
@@ -78,14 +76,14 @@ final class GroupCommands {
         return literal("sort").requires(permission(Permissions.CHESTLINK_SORT)).then(group().then(mode.executes(bodies.player(this::sort))));
     }
 
-    private void add(Services services, Player player, CommandContext<CommandSourceStack> context) {
+    private void add(Components components, Player player, CommandContext<CommandSourceStack> context) {
         Block target = player.getTargetBlockExact(TARGET_RANGE);
         if (target == null) {
-            services.send(player, Message.ERROR_INVALID_BLOCK, Messages.text("type", type.displayName()));
+            components.services().send(player, Message.ERROR_INVALID_BLOCK, Messages.text("type", type.displayName()));
             return;
         }
         String group = StringArgumentType.getString(context, "group");
-        services.get(LinkService.class).link(player, type, group, target, NodeListener.facingFor(player.getTargetBlockFace(TARGET_RANGE), player),
+        components.features().links().link(player, type, group, target, NodeListener.facingFor(player.getTargetBlockFace(TARGET_RANGE), player),
                 false);
     }
 
@@ -106,11 +104,11 @@ final class GroupCommands {
     }
 
     /** Not a {@link #withGroup} body, since an unknown mode is refused with a message that needs the services. */
-    private void sort(Services services, Player player, CommandContext<CommandSourceStack> context) {
-        GroupActions actions = services.get(GroupActions.class);
+    private void sort(Components components, Player player, CommandContext<CommandSourceStack> context) {
+        GroupActions actions = components.features().actions();
         if (!(actions.find(player, type, StringArgumentType.getString(context, "group")) instanceof ChestLinkGroup group)) return;
         SortMode mode = SortMode.parse(StringArgumentType.getString(context, "mode"));
-        if (mode == null) services.send(player, Message.ERROR_UNKNOWN_SORT_MODE, Messages.text("modes", SORT_MODES));
+        if (mode == null) components.services().send(player, Message.ERROR_UNKNOWN_SORT_MODE, Messages.text("modes", SORT_MODES));
         else actions.sort(player, group, mode);
     }
 
@@ -125,8 +123,8 @@ final class GroupCommands {
 
     /** A player command body that first resolves the {@code group} argument (with access checks). */
     private Command<CommandSourceStack> withGroup(GroupBody body) {
-        return bodies.player((services, p, context) -> {
-            GroupActions actions = services.get(GroupActions.class);
+        return bodies.player((components, p, context) -> {
+            GroupActions actions = components.features().actions();
             StorageGroup group = actions.find(p, type, StringArgumentType.getString(context, "group"));
             if (group != null) body.run(actions, p, group, context);
         });

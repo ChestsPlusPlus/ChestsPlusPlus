@@ -87,7 +87,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
     }
 
     private ChestLinkGroup group(PlayerMock owner, String name) {
-        return (ChestLinkGroup) plugin.services().groups().find(GroupType.CHESTLINK, owner.getUniqueId(), name);
+        return (ChestLinkGroup) services().groups().find(GroupType.CHESTLINK, owner.getUniqueId(), name);
     }
 
     private void rightClick(PlayerMock player, Block block) {
@@ -106,13 +106,13 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         ChestLinkGroup group = group(alice, "ores");
         assertThat(group).isNotNull();
         assertThat(chest.getRelative(BlockFace.NORTH).getType()).isEqualTo(Material.AIR);
-        Node node = plugin.services().nodes().get(BlockPos.of(chest));
+        Node node = services().nodes().get(BlockPos.of(chest));
         assertThat(node).isNotNull();
         assertThat(node.facing()).isEqualTo(BlockFace.NORTH);
         // Existing contents move into the group; the physical chest is emptied.
         assertThat(group.inventory().contains(Material.DIAMOND, 5)).isTrue();
         assertThat(((Container) chest.getState(false)).getInventory().isEmpty()).isTrue();
-        assertThat(plugin.services().groupStore().isDirty(group)).isTrue();
+        assertThat(storage().groupStore().isDirty(group)).isTrue();
         assertThat(nextPlain(alice)).contains("Created ChestLink ores");
         assertThat(alice.getInventory().contains(Material.OAK_SIGN, 1)).isTrue();
     }
@@ -124,7 +124,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         server.getScheduler().performTicks(1);
         ChestLinkGroup group = group(alice, "ores");
         List<Inventory> changed = new ArrayList<>();
-        ChestLinkService chestLinks = new ChestLinkService(plugin.services(), changed::add);
+        ChestLinkService chestLinks = new ChestLinkService(services(), changed::add);
 
         chestLinks.changed(group);
         ((Container) chest.getState(false)).getInventory().addItem(ItemStack.of(Material.DIAMOND));
@@ -163,7 +163,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         sign(alice, chest, "[ChestLink]", "ores");
         server.getScheduler().performTicks(1);
 
-        assertThat(plugin.services().nodes().get(BlockPos.of(chest))).isNotNull();
+        assertThat(services().nodes().get(BlockPos.of(chest))).isNotNull();
         assertThat(alice.getInventory().contains(Material.OAK_SIGN)).isFalse();
     }
 
@@ -177,7 +177,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         sign(alice, chest, "[ChestLink]", "ores");
         server.getScheduler().performTicks(1);
 
-        assertThat(plugin.services().nodes().at(chest)).isNotNull();
+        assertThat(services().nodes().at(chest)).isNotNull();
         assertThat(chest.getRelative(BlockFace.NORTH).getType()).isEqualTo(Material.AIR);
         assertThat(alice.getInventory().contains(Material.OAK_SIGN)).isFalse();
     }
@@ -234,8 +234,8 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         sign(alice, table, "[AutoCraft]", "torches");
         server.getScheduler().performTicks(1);
 
-        assertThat(plugin.services().groups().find(GroupType.AUTOCRAFT, alice.getUniqueId(), "torches")).isNotNull();
-        assertThat(plugin.services().nodes().at(table)).isNotNull();
+        assertThat(services().groups().find(GroupType.AUTOCRAFT, alice.getUniqueId(), "torches")).isNotNull();
+        assertThat(services().nodes().at(table)).isNotNull();
         assertThat(table.getRelative(BlockFace.NORTH).getType()).isEqualTo(Material.AIR);
         assertThat(alice.getInventory().contains(Material.OAK_SIGN, 1)).isTrue();
     }
@@ -252,7 +252,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         assertThat(event.isCancelled()).isFalse();
         assertThat(alice.getInventory().contains(Material.OAK_SIGN)).isFalse();
         assertThat(group(alice, "loot")).isNull();
-        assertThat(plugin.services().nodes().get(BlockPos.of(chest))).isNull();
+        assertThat(services().nodes().get(BlockPos.of(chest))).isNull();
         assertThat(((Container) chest.getState(false)).getInventory().contains(Material.DIAMOND, 5)).isTrue();
         assertThat(nextPlain(alice)).contains("You can't use that block here");
     }
@@ -269,7 +269,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         server.getScheduler().performTicks(1);
 
         assertThat(group(alice, "loot")).isNull();
-        assertThat(plugin.services().nodes().get(BlockPos.of(chest))).isNull();
+        assertThat(services().nodes().get(BlockPos.of(chest))).isNull();
         assertThat(((Container) chest.getState(false)).getInventory().contains(Material.DIAMOND, 5)).isTrue();
         assertThat(chest.getRelative(BlockFace.NORTH).getType()).isEqualTo(Material.OAK_WALL_SIGN);
         assertThat(alice.getInventory().contains(Material.OAK_SIGN)).isFalse();
@@ -313,7 +313,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
 
         ChestLinkGroup group = group(alice, "ores");
         assertThat(group).isNotNull();
-        Node node = plugin.services().nodes().get(BlockPos.of(barrel));
+        Node node = services().nodes().get(BlockPos.of(barrel));
         assertThat(node).isNotNull();
         // Clicked on the south side, but the link goes on the barrel's front.
         assertThat(node.facing()).isEqualTo(BlockFace.EAST);
@@ -332,7 +332,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         nameTag(alice, chest, tag);
 
         assertThat(group(alice, "loot")).isNull();
-        assertThat(plugin.services().nodes().get(BlockPos.of(chest))).isNull();
+        assertThat(services().nodes().get(BlockPos.of(chest))).isNull();
         assertThat(((Container) chest.getState(false)).getInventory().contains(Material.DIAMOND, 5)).isTrue();
         assertThat(tag.getAmount()).isEqualTo(1);
     }
@@ -374,7 +374,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
 
         nameTag(alice, chest, tag);
 
-        assertThat(plugin.services().nodes().get(BlockPos.of(chest))).isNotNull();
+        assertThat(services().nodes().get(BlockPos.of(chest))).isNotNull();
         assertThat(tag.getAmount()).isEqualTo(1);
     }
 
@@ -385,8 +385,8 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         nameTag(alice, chest, ItemStack.of(Material.NAME_TAG));
         nameTag(alice, chest, namedTag("   ", 1));
 
-        assertThat(plugin.services().nodes().get(BlockPos.of(chest))).isNull();
-        assertThat(plugin.services().groups().ownedBy(alice.getUniqueId(), GroupType.CHESTLINK)).isEmpty();
+        assertThat(services().nodes().get(BlockPos.of(chest))).isNull();
+        assertThat(services().groups().ownedBy(alice.getUniqueId(), GroupType.CHESTLINK)).isEmpty();
     }
 
     @Test
@@ -412,7 +412,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
 
         rightClick(alice, second);
 
-        assertThat(plugin.services().nodes().count(group.id())).isEqualTo(2);
+        assertThat(services().nodes().count(group.id())).isEqualTo(2);
         assertThat(alice.getOpenInventory().getTopInventory()).isSameAs(group.inventory());
     }
 
@@ -421,8 +421,8 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         Block chest = chestAt(0, 0);
         sign(alice, chest, "[ChestLink]", "open");
         ChestLinkGroup group = group(alice, "open");
-        plugin.services().persistence().flush();
-        tickUntil(() -> !plugin.services().groupStore().isDirty(group));
+        storage().persistence().flush();
+        tickUntil(() -> !storage().groupStore().isDirty(group));
         rightClick(alice, chest);
         InventoryView view = alice.getOpenInventory();
 
@@ -430,7 +430,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
                 ClickType.SHIFT_LEFT, InventoryAction.MOVE_TO_OTHER_INVENTORY));
 
         assertThat(alice.getOpenInventory().getTopInventory()).isSameAs(group.inventory());
-        assertThat(plugin.services().groupStore().isDirty(group)).isTrue();
+        assertThat(storage().groupStore().isDirty(group)).isTrue();
     }
 
     private void tickUntil(BooleanSupplier done) throws InterruptedException {
@@ -451,7 +451,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         rightClick(bob, chest);
         assertThat(bob.getOpenInventory().getTopInventory()).isNotSameAs(group.inventory());
 
-        plugin.services().trust().trust(alice.getUniqueId(), bob.getUniqueId());
+        services().trust().trust(alice.getUniqueId(), bob.getUniqueId());
         rightClick(bob, chest);
         assertThat(bob.getOpenInventory().getTopInventory()).isSameAs(group.inventory());
     }
@@ -461,7 +461,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         Block chest = chestAt(0, 0);
         sign(alice, chest, "[ChestLink]", "shared");
         ChestLinkGroup group = group(alice, "shared");
-        LinkService links = plugin.services().get(LinkService.class);
+        LinkService links = links();
         links.addMember(group, bob.getUniqueId());
         rightClick(bob, chest);
         assertThat(bob.getOpenInventory().getTopInventory()).isSameAs(group.inventory());
@@ -476,7 +476,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         Block chest = chestAt(0, 0);
         sign(alice, chest, "[ChestLink]", "shared");
         ChestLinkGroup group = group(alice, "shared");
-        LinkService links = plugin.services().get(LinkService.class);
+        LinkService links = links();
         links.setPublic(group, true);
         rightClick(bob, chest);
         rightClick(alice, chest);
@@ -492,10 +492,10 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         Block chest = chestAt(0, 0);
         sign(alice, chest, "[ChestLink]", "shared");
         ChestLinkGroup group = group(alice, "shared");
-        plugin.services().trust().trust(alice.getUniqueId(), bob.getUniqueId());
+        services().trust().trust(alice.getUniqueId(), bob.getUniqueId());
         rightClick(bob, chest);
 
-        plugin.services().get(LinkService.class).untrust(alice.getUniqueId(), bob.getUniqueId());
+        links().untrust(alice.getUniqueId(), bob.getUniqueId());
 
         assertThat(bob.getOpenInventory().getTopInventory()).isNotSameAs(group.inventory());
     }
@@ -506,7 +506,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         sign(alice, chest, "[ChestLink]", "shared");
         ChestLinkGroup group = group(alice, "shared");
         group.inventory().addItem(ItemStack.of(Material.DIAMOND));
-        plugin.services().groups().setPublic(group, true);
+        services().groups().setPublic(group, true);
         rightClick(bob, chest);
 
         bob.addAttachment(plugin).setPermission("chestsplusplus.chestlink.open", false);
@@ -525,11 +525,11 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         Block bobs = chestAt(3, 0);
 
         sign(bob, bobs, "[ChestLink]", "Alice:alices");
-        assertThat(plugin.services().nodes().get(BlockPos.of(bobs))).isNull();
+        assertThat(services().nodes().get(BlockPos.of(bobs))).isNull();
 
-        plugin.services().groups().setPublic(group(alice, "alices"), true);
+        services().groups().setPublic(group(alice, "alices"), true);
         sign(bob, bobs, "[ChestLink]", "Alice:alices");
-        assertThat(plugin.services().nodes().get(BlockPos.of(bobs))).isNotNull();
+        assertThat(services().nodes().get(BlockPos.of(bobs))).isNotNull();
     }
 
     @Test
@@ -546,7 +546,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
 
         // Linking more blocks to an existing group doesn't count against the limit.
         sign(alice, chestAt(4, 0), "[ChestLink]", "first");
-        assertThat(plugin.services().nodes().count(group(alice, "first").id())).isEqualTo(2);
+        assertThat(services().nodes().count(group(alice, "first").id())).isEqualTo(2);
 
         World nether = server.addSimpleWorld("nether");
         Block netherChest = nether.getBlockAt(0, 64, 0);
@@ -555,7 +555,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         assertThat(group(bob, "nope")).isNull();
 
         sign(bob, chestAt(6, 0), "[ChestLink]", "bad name!");
-        assertThat(plugin.services().groups().size()).isEqualTo(1);
+        assertThat(services().groups().size()).isEqualTo(1);
     }
 
     @Test
@@ -584,11 +584,11 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         group.inventory().addItem(ItemStack.of(Material.GOLD_INGOT, 4));
         ItemStack linkItem = silkTouchBreak(chest);
         assertThat(group(alice, "portable")).isSameAs(group);
-        LinkItem.Link link = plugin.services().get(LinkItem.class).read(linkItem);
+        LinkItem.Link link = features().linkItem().read(linkItem);
         assertThat(link).isEqualTo(new LinkItem.Link(group.id(), GroupType.CHESTLINK));
 
         BlockPlaceEvent placeEvent = placeLinkItem(alice, linkItem);
-        assertThat(plugin.services().nodes().at(placeEvent.getBlockPlaced()).groupId()).isEqualTo(group.id());
+        assertThat(services().nodes().at(placeEvent.getBlockPlaced()).groupId()).isEqualTo(group.id());
         assertThat(group.inventory().contains(Material.GOLD_INGOT, 4)).isTrue();
     }
 
@@ -598,7 +598,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         sign(alice, chest, "[ChestLink]", "portable");
         ChestLinkGroup deleted = group(alice, "portable");
         ItemStack linkItem = silkTouchBreak(chest);
-        plugin.services().get(LinkService.class).removeGroup(deleted, chest.getLocation());
+        links().removeGroup(deleted, chest.getLocation());
         Block bobsChest = chestAt(5, 5);
         sign(bob, bobsChest, "[ChestLink]", "mine");
         ChestLinkGroup bobs = group(bob, "mine");
@@ -608,8 +608,8 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         BlockPlaceEvent event = placeLinkItem(bob, linkItem);
 
         assertThat(event.isCancelled()).isFalse();
-        assertThat(plugin.services().nodes().at(event.getBlockPlaced())).isNull();
-        assertThat(plugin.services().nodes().count(bobs.id())).isEqualTo(1);
+        assertThat(services().nodes().at(event.getBlockPlaced())).isNull();
+        assertThat(services().nodes().count(bobs.id())).isEqualTo(1);
         assertThat(nextPlain(bob)).contains("no longer exists");
     }
 
@@ -621,30 +621,30 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         BlockPlaceEvent event = placeLinkItem(bob, linkItem);
 
         assertThat(event.isCancelled()).isTrue();
-        assertThat(plugin.services().nodes().at(event.getBlockPlaced())).isNull();
+        assertThat(services().nodes().at(event.getBlockPlaced())).isNull();
     }
 
     @Test
     void staleLinkItemPlacementCancelledByProtectionSendsNoPlacementMessage() {
         ItemStack linkItem = publicLinkItem();
-        plugin.services().get(LinkService.class).removeGroup(group(alice, "portable"), alice.getLocation());
+        links().removeGroup(group(alice, "portable"), alice.getLocation());
         cancelPlacementsAtHighest();
 
         BlockPlaceEvent event = placeLinkItem(bob, linkItem);
 
         assertThat(event.isCancelled()).isTrue();
-        assertThat(plugin.services().nodes().at(event.getBlockPlaced())).isNull();
+        assertThat(services().nodes().at(event.getBlockPlaced())).isNull();
         assertThat(nextPlain(bob)).isNull();
     }
 
     @Test
     void staleLinkItemPlacementThatCannotBuildSendsNoPlacementMessage() {
         ItemStack linkItem = publicLinkItem();
-        plugin.services().get(LinkService.class).removeGroup(group(alice, "portable"), alice.getLocation());
+        links().removeGroup(group(alice, "portable"), alice.getLocation());
 
         BlockPlaceEvent event = placeLinkItem(bob, linkItem, false);
 
-        assertThat(plugin.services().nodes().at(event.getBlockPlaced())).isNull();
+        assertThat(services().nodes().at(event.getBlockPlaced())).isNull();
         assertThat(nextPlain(bob)).isNull();
     }
 
@@ -655,7 +655,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         BlockPlaceEvent event = placeLinkItem(bob, linkItem);
 
         assertThat(event.isCancelled()).isFalse();
-        assertThat(plugin.services().nodes().at(event.getBlockPlaced()).groupId()).isEqualTo(group(alice, "portable").id());
+        assertThat(services().nodes().at(event.getBlockPlaced()).groupId()).isEqualTo(group(alice, "portable").id());
         assertThat(nextPlain(bob)).contains("Linked to ChestLink portable");
     }
 
@@ -668,9 +668,9 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         BlockPlaceEvent event = placeLinkItem(bob, linkItem);
 
         assertThat(event.isCancelled()).isTrue();
-        assertThat(plugin.services().nodes().at(event.getBlockPlaced())).isNull();
-        assertThat(plugin.services().nodes().count(group.id())).isZero();
-        assertThat(plugin.services().get(DisplayService.class).count()).isZero();
+        assertThat(services().nodes().at(event.getBlockPlaced())).isNull();
+        assertThat(services().nodes().count(group.id())).isZero();
+        assertThat(features().displays().count()).isZero();
         assertThat(nextPlain(bob)).isNull();
     }
 
@@ -680,8 +680,8 @@ class ChestLinkIntegrationTest extends PluginTestBase {
 
         BlockPlaceEvent event = placeLinkItem(bob, linkItem, false);
 
-        assertThat(plugin.services().nodes().at(event.getBlockPlaced())).isNull();
-        assertThat(plugin.services().get(DisplayService.class).count()).isZero();
+        assertThat(services().nodes().at(event.getBlockPlaced())).isNull();
+        assertThat(features().displays().count()).isZero();
         assertThat(nextPlain(bob)).isNull();
     }
 
@@ -738,7 +738,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
     private ItemStack publicLinkItem() {
         Block chest = chestAt(0, 0);
         sign(alice, chest, "[ChestLink]", "portable");
-        plugin.services().get(LinkService.class).setPublic(group(alice, "portable"), true);
+        links().setPublic(group(alice, "portable"), true);
         return silkTouchBreak(chest);
     }
 
@@ -789,9 +789,9 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         replaced.setType(Material.FURNACE);
         server.getPluginManager().enablePlugin(plugin);
 
-        assertThat(plugin.services().nodes().get(BlockPos.of(replaced))).isNull();
-        assertThat(plugin.services().nodes().get(BlockPos.of(intact))).isNotNull();
-        assertThat(plugin.services().get(DisplayService.class).count()).isEqualTo(1);
+        assertThat(services().nodes().get(BlockPos.of(replaced))).isNull();
+        assertThat(services().nodes().get(BlockPos.of(intact))).isNotNull();
+        assertThat(features().displays().count()).isEqualTo(1);
         assertThat(world.getEntitiesByClass(ItemDisplay.class)).hasSize(1);
         assertThat(group(alice, "g")).isNotNull();
     }
@@ -799,7 +799,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
     @Test
     void restartingLoadsGroupsWithoutDirtyingThem() {
         sign(alice, chestAt(0, 0), "[ChestLink]", "g");
-        LinkService links = plugin.services().get(LinkService.class);
+        LinkService links = links();
         links.setPublic(group(alice, "g"), true);
         links.addMember(group(alice, "g"), bob.getUniqueId());
 
@@ -809,22 +809,22 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         ChestLinkGroup loaded = group(alice, "g");
         assertThat(loaded.isPublic()).isTrue();
         assertThat(loaded.members()).containsExactly(bob.getUniqueId());
-        assertThat(plugin.services().groupStore().isDirty(loaded)).isFalse();
+        assertThat(storage().groupStore().isDirty(loaded)).isFalse();
     }
 
     @Test
     void staleNodesInUnloadedChunksAreUnlinkedWhenTheirChunkLoads() {
         sign(alice, chestAt(0, 0), "[ChestLink]", "g");
-        LinkService links = plugin.services().get(LinkService.class);
+        LinkService links = links();
         BlockPos far = new BlockPos(world.getUID(), 160, 64, 0);
-        plugin.services().nodes().put(new Node(far, BlockFace.NORTH, group(alice, "g").id()));
+        services().nodes().put(new Node(far, BlockFace.NORTH, group(alice, "g").id()));
 
         links.unlinkChangedBlocksInLoadedChunks();
-        assertThat(plugin.services().nodes().get(far)).isNotNull();
+        assertThat(services().nodes().get(far)).isNotNull();
 
         server.getPluginManager().callEvent(new ChunkLoadEvent(world.getChunkAt(far.chunkX(), far.chunkZ()), false));
-        assertThat(plugin.services().nodes().get(far)).isNull();
-        assertThat(plugin.services().nodes().size()).isEqualTo(1);
+        assertThat(services().nodes().get(far)).isNull();
+        assertThat(services().nodes().size()).isEqualTo(1);
     }
 
     @Test
@@ -844,7 +844,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
     @Test
     void displaysSpawnForLoadedNodesAndFollowContents() {
         sign(alice, chestAt(0, 0), "[ChestLink]", "g");
-        DisplayService displays = plugin.services().get(DisplayService.class);
+        DisplayService displays = features().displays();
 
         assertThat(displays.count()).isEqualTo(1);
         var itemDisplay = world.getEntitiesByClass(org.bukkit.entity.ItemDisplay.class).iterator().next();
@@ -853,9 +853,9 @@ class ChestLinkIntegrationTest extends PluginTestBase {
 
         ChestLinkGroup group = group(alice, "g");
         group.inventory().addItem(ItemStack.of(Material.COBBLESTONE, 64), ItemStack.of(Material.DIRT, 3));
-        plugin.services().persistence().flush();
-        plugin.services().groups().changed(group);
-        assertThat(plugin.services().groupStore().isDirty(group)).isTrue();
+        storage().persistence().flush();
+        services().groups().changed(group);
+        assertThat(storage().groupStore().isDirty(group)).isTrue();
         server.getScheduler().performTicks(10);
         // Empty (flat) -> cobblestone (block) moves the display, so it is respawned: fetch it again.
         var updated = world.getEntitiesByClass(org.bukkit.entity.ItemDisplay.class);
@@ -881,7 +881,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
 
         sign(alice, chestAt(0, 0), "[ChestLink]", "g"); // display on the north face (z = 0 side)
         ChestLinkGroup group = group(alice, "g");
-        DisplayService displays = plugin.services().get(DisplayService.class);
+        DisplayService displays = features().displays();
 
         group.inventory().addItem(ItemStack.of(Material.DIAMOND, 10));
         displays.requestUpdate(group);

@@ -2,8 +2,6 @@ package com.jamesdpeters.chestsplusplus.migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.jamesdpeters.chestsplusplus.core.Services;
-import com.jamesdpeters.chestsplusplus.filter.FilterService;
 import com.jamesdpeters.chestsplusplus.testing.PluginTestBase;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -34,7 +32,6 @@ import org.mockbukkit.mockbukkit.entity.PlayerMock;
 class V2FilterConversionTest extends PluginTestBase {
 
     @TempDir Path dir;
-    private Services services;
     private World world;
     private Chunk chunk;
     private Chunk backing;
@@ -50,8 +47,7 @@ class V2FilterConversionTest extends PluginTestBase {
 
     @BeforeEach
     void setUp() throws Exception {
-        services = plugin.services();
-        state = services.get(MigrationState.class);
+        state = migration().models().state();
         World actual = server.addSimpleWorld("world");
         actual.loadChunk(0, 0);
         sender = server.addPlayer();
@@ -90,8 +86,8 @@ class V2FilterConversionTest extends PluginTestBase {
         ByteBuffer header = ByteBuffer.allocate(8192);
         header.putInt(0, 2 << 8 | 1);
         Files.write(dir.resolve("entities/r.0.0.mca"), header.array());
-        conversion = new V2FilterConversion(plugin, services, state, services.get(V2FilterMigration.class), services.get(V2Cleanup.class),
-                services.get(V2WorldCleanup.class), services.get(V2PendingLocations.class));
+        conversion = new V2FilterConversion(plugin, services(), state, migration().filters(), migration().models().cleanup(),
+                migration().worldCleanup(), migration().models().pending());
     }
 
     private Entity[] entities() {
@@ -134,11 +130,11 @@ class V2FilterConversionTest extends PluginTestBase {
         start(false);
         finish();
         assertThat(state.filters()).isEqualTo(MigrationState.Filters.ON_LOAD);
-        assertThat(services.get(FilterService.class).read(hopper)).hasSize(1);
+        assertThat(features().filters().read(hopper)).hasSize(1);
         start(true);
         finish();
         assertThat(state.filters()).isEqualTo(MigrationState.Filters.DONE);
-        assertThat(services.get(FilterService.class).read(hopper)).hasSize(1);
+        assertThat(features().filters().read(hopper)).hasSize(1);
         assertThat(hopper.getWorld().getEntitiesByClass(Item.class)).hasSize(2);
     }
 
@@ -151,11 +147,11 @@ class V2FilterConversionTest extends PluginTestBase {
         assertThat(backing.getPersistentDataContainer().has(new NamespacedKey(plugin, "v2_filters_scanned"))).isFalse();
         assertThat(state.filters()).isEqualTo(MigrationState.Filters.ON_LOAD);
         entitiesLoaded = true;
-        services.get(V2FilterMigration.class).onEntitiesLoad(new EntitiesLoadEvent(chunk, List.of(frame)));
+        migration().filters().onEntitiesLoad(new EntitiesLoadEvent(chunk, List.of(frame)));
         start(true);
         finish();
         assertThat(frame.isDead()).isTrue();
-        assertThat(services.get(FilterService.class).read(hopper)).hasSize(1);
+        assertThat(features().filters().read(hopper)).hasSize(1);
         assertThat(hopper.getWorld().getEntitiesByClass(Item.class)).hasSize(2);
         assertThat(state.filters()).isEqualTo(MigrationState.Filters.DONE);
     }
@@ -204,7 +200,7 @@ class V2FilterConversionTest extends PluginTestBase {
     @Test
     void unresolvedWorldsPreventGlobalCompletion() throws Exception {
         entitiesLoaded = true;
-        services.get(V2PendingLocations.class).add(new V2PendingLocations.LocationRow(1, "missing", 0, 64, 0));
+        migration().models().pending().add(new V2PendingLocations.LocationRow(1, "missing", 0, 64, 0));
         start(true);
         finish();
         assertThat(state.filters()).isEqualTo(MigrationState.Filters.ON_LOAD);
@@ -220,7 +216,7 @@ class V2FilterConversionTest extends PluginTestBase {
 
     @Test
     void worldsMissingAtScanStartPreventCompletionEvenIfPendingRowsDisappear() throws Exception {
-        V2PendingLocations pending = services.get(V2PendingLocations.class);
+        V2PendingLocations pending = migration().models().pending();
         var row = new V2PendingLocations.LocationRow(1, "missing", 0, 64, 0);
         pending.add(row);
         start(true);

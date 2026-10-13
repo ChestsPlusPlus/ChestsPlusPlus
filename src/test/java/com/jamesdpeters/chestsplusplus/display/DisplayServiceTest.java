@@ -55,7 +55,7 @@ class DisplayServiceTest extends PluginTestBase {
         Node node = new Node(BlockPos.of(block), BlockFace.NORTH, group.id());
         nodes.put(node);
         CountingContent content = new CountingContent();
-        DisplayService displays = new DisplayService(plugin, groups, nodes, plugin.services()::settings, _ -> content);
+        DisplayService displays = new DisplayService(plugin, groups, nodes, services()::settings, _ -> content);
         displays.nodeAdded(node);
         content.items = 0;
         content.labels = 0;

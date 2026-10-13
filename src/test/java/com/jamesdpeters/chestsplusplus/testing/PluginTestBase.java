@@ -1,6 +1,13 @@
 package com.jamesdpeters.chestsplusplus.testing;
 
 import com.jamesdpeters.chestsplusplus.ChestsPlusPlus;
+import com.jamesdpeters.chestsplusplus.Components;
+import com.jamesdpeters.chestsplusplus.Features;
+import com.jamesdpeters.chestsplusplus.Migration;
+import com.jamesdpeters.chestsplusplus.Storage;
+import com.jamesdpeters.chestsplusplus.core.Services;
+import com.jamesdpeters.chestsplusplus.link.LinkService;
+import java.util.Objects;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -44,6 +51,31 @@ public abstract class PluginTestBase {
         } catch (java.io.IOException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    /** What the running plugin's enable built. */
+    protected Components components() {
+        return Objects.requireNonNull(plugin.components(), "ChestsPlusPlus is not enabled");
+    }
+
+    protected Services services() {
+        return components().services();
+    }
+
+    protected Features features() {
+        return components().features();
+    }
+
+    protected Storage storage() {
+        return components().storage();
+    }
+
+    protected Migration migration() {
+        return components().migration();
+    }
+
+    protected LinkService links() {
+        return features().links();
     }
 
     protected ServerMock createServer() {

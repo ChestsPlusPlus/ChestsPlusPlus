@@ -12,11 +12,6 @@ import com.jamesdpeters.chestsplusplus.model.GroupRegistry;
 import com.jamesdpeters.chestsplusplus.model.Node;
 import com.jamesdpeters.chestsplusplus.model.NodeIndex;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
-import com.jamesdpeters.chestsplusplus.persistence.GroupStore;
-import com.jamesdpeters.chestsplusplus.persistence.Persistence;
-import com.jamesdpeters.chestsplusplus.persistence.TrustStore;
-import java.util.HashMap;
-import java.util.Map;
 import lombok.Getter;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
@@ -24,7 +19,7 @@ import org.bukkit.block.Block;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jspecify.annotations.Nullable;
 
-/** Service container, created on enable and discarded on disable. Settings and messages are swapped on reload. */
+/** The shared kernel every feature builds on, created on enable and discarded on disable. Settings and messages are swapped on reload. */
 public final class Services {
 
     @Getter private final JavaPlugin plugin;
@@ -37,10 +32,6 @@ public final class Services {
     @Getter private final Shutdown shutdown = new Shutdown();
     @Getter private volatile Settings settings;
     @Getter private volatile Messages messages;
-    private @Nullable Persistence persistence;
-    private @Nullable GroupStore groupStore;
-    private @Nullable TrustStore trustStore;
-    private final Map<Class<?>, Object> components = new HashMap<>();
 
     public Services(JavaPlugin plugin, Settings settings, Messages messages) {
         this.plugin = plugin;
@@ -67,39 +58,5 @@ public final class Services {
     public @Nullable StorageGroup groupAt(Block block) {
         Node node = nodes.at(block);
         return node == null ? null : groups.byId(node.groupId());
-    }
-
-    public Persistence persistence() {
-        return started(persistence);
-    }
-
-    public GroupStore groupStore() {
-        return started(groupStore);
-    }
-
-    public TrustStore trustStore() {
-        return started(trustStore);
-    }
-
-    public void persistence(Persistence persistence, GroupStore groupStore, TrustStore trustStore) {
-        this.persistence = persistence;
-        this.groupStore = groupStore;
-        this.trustStore = trustStore;
-    }
-
-    private static <T> T started(@Nullable T persistencePart) {
-        if (persistencePart == null) throw new IllegalStateException("Persistence not started");
-        return persistencePart;
-    }
-
-    public <T> T add(Class<T> type, T component) {
-        components.put(type, component);
-        return component;
-    }
-
-    public <T> T get(Class<T> type) {
-        Object component = components.get(type);
-        if (component == null) throw new IllegalStateException(type.getSimpleName() + " is not registered");
-        return type.cast(component);
     }
 }

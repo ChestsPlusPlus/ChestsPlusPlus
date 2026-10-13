@@ -24,7 +24,7 @@ class ChecksIntegrationTest extends PluginTestBase {
 
     @BeforeEach
     void setUp() {
-        checks = plugin.services().get(Checks.class);
+        checks = features().checks();
         alice = server.addPlayer("Alice");
         bob = server.addPlayer("Bob");
         group = new ChestLinkGroup(1, alice.getUniqueId(), "loot", 0);
@@ -32,7 +32,7 @@ class ChecksIntegrationTest extends PluginTestBase {
 
     /** The refusal as the player would read it, so the test sees the placeholders it carries. */
     private String plain(Refusal refusal) {
-        return plugin.services().messages().plain(refusal.message(), refusal.placeholders());
+        return services().messages().plain(refusal.message(), refusal.placeholders());
     }
 
     private static @Nullable Message message(@Nullable Refusal refusal) {

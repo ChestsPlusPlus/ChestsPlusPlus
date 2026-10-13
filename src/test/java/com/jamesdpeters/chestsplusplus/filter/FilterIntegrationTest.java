@@ -3,10 +3,8 @@ package com.jamesdpeters.chestsplusplus.filter;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.jamesdpeters.chestsplusplus.Permissions;
-import com.jamesdpeters.chestsplusplus.chestlink.ChestLinkService;
 import com.jamesdpeters.chestsplusplus.filter.HopperFilter.Match;
 import com.jamesdpeters.chestsplusplus.filter.HopperFilter.Mode;
-import com.jamesdpeters.chestsplusplus.link.LinkService;
 import com.jamesdpeters.chestsplusplus.link.SyntheticMoveEvent;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
@@ -59,7 +57,7 @@ class FilterIntegrationTest extends PluginTestBase {
         server.addWorld(tileWorld);
         world = tileWorld;
         world.loadChunk(0, 0);
-        filters = plugin.services().get(FilterService.class);
+        filters = features().filters();
     }
 
     private static HopperFilter filter(Material material, Mode mode, Match match) {
@@ -190,8 +188,8 @@ class FilterIntegrationTest extends PluginTestBase {
         Inventory source = chestOfDirtAndStone();
         Inventory into = inventoryOf(hopper);
         List<Inventory> changed = new ArrayList<>();
-        FilterListener listener = new FilterListener(plugin.services(), filters, plugin.services().get(LinkService.class),
-                plugin.services().get(ChestLinkService.class), changed::add);
+        FilterListener listener = new FilterListener(services(), filters, links(),
+                features().chestLinks(), changed::add);
 
         listener.onMove(new InventoryMoveItemEvent(source, ItemStack.of(Material.DIRT), into, false));
 
@@ -300,7 +298,7 @@ class FilterIntegrationTest extends PluginTestBase {
         chest.setType(Material.CHEST);
         PlayerMock alice = server.addPlayer("Alice");
         WallSigns.write(alice, chest, "[ChestLink]", "mats");
-        Inventory group = ((ChestLinkGroup) plugin.services().groups().find(GroupType.CHESTLINK, alice.getUniqueId(), "mats")).inventory();
+        Inventory group = ((ChestLinkGroup) services().groups().find(GroupType.CHESTLINK, alice.getUniqueId(), "mats")).inventory();
         group.setItem(0, ItemStack.of(Material.DIRT, 5));
         group.setItem(1, ItemStack.of(Material.STONE, 5));
 
@@ -315,7 +313,7 @@ class FilterIntegrationTest extends PluginTestBase {
     @Test
     void editorAddsCyclesMovesRemovesAndClears() {
         Block hopper = hopperAt(0);
-        FilterEditorHolder editor = new FilterEditorHolder(hopper, List.of(), plugin.services().messages(), filters, (p, b) -> null);
+        FilterEditorHolder editor = new FilterEditorHolder(hopper, List.of(), services().messages(), filters, (p, b) -> null);
         var LEFT = FilterEditorHolder.Click.LEFT;
 
         // Empty rows show coloured placeholders explaining what to do.
@@ -361,7 +359,7 @@ class FilterIntegrationTest extends PluginTestBase {
         Block hopper = hopperAt(0);
         PlayerMock player = server.addPlayer();
         FilterEditorHolder editor = new FilterEditorHolder(hopper, List.of(filter(Material.DIAMOND, Mode.ALLOW, Match.EXACT)),
-                plugin.services().messages(), filters, (p, b) -> null);
+                services().messages(), filters, (p, b) -> null);
         player.openInventory(editor.getInventory());
 
         server.getPluginManager().disablePlugin(plugin);

@@ -27,7 +27,7 @@ class AccessibleGroupsIntegrationTest extends PluginTestBase {
         add(amy.getUniqueId(), "A");
         add(me.getUniqueId(), "y");
 
-        assertThat(plugin.services().access().accessibleGroups(me.getUniqueId(), true, GroupType.CHESTLINK).groups()).map(StorageGroup::name)
+        assertThat(services().access().accessibleGroups(me.getUniqueId(), true, GroupType.CHESTLINK).groups()).map(StorageGroup::name)
                 .containsExactly("y", "z", "A", "b", "a");
     }
 
@@ -39,13 +39,13 @@ class AccessibleGroupsIntegrationTest extends PluginTestBase {
         add(amy.getUniqueId(), "c");
         add(me.getUniqueId(), "a");
 
-        AccessibleGroups accessible = plugin.services().access().accessibleGroups(me.getUniqueId(), true, GroupType.CHESTLINK);
+        AccessibleGroups accessible = services().access().accessibleGroups(me.getUniqueId(), true, GroupType.CHESTLINK);
 
         assertThat(accessible.ownerNames()).containsOnly(entry(me.getUniqueId(), "Me"), entry(amy.getUniqueId(), "Amy"));
         assertThat(accessible.groups()).map(accessible::reference).containsExactly("a", "Amy:b", "Amy:c");
     }
 
     private void add(UUID owner, String name) {
-        plugin.services().groups().add(new ChestLinkGroup(nextId++, owner, name, 0));
+        services().groups().add(new ChestLinkGroup(nextId++, owner, name, 0));
     }
 }
