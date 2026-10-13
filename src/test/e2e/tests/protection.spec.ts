@@ -1,5 +1,5 @@
 import { sleep, test } from '@plugwright/runner';
-import { expectContains, type Server } from './support.js';
+import { expectContains, type Server, waitTicks } from './support.js';
 
 // Container-lock plugins (Bolt, LWC, BlockLocker) stop hoppers by cancelling InventoryMoveItemEvent for a locked block. `cpptest lock`
 // stands in for one. A linked block must behave exactly like the vanilla container it is: whatever a hopper or AutoCrafter can't do to
@@ -106,7 +106,7 @@ test('hoppers and AutoCrafters get nothing through a locked chest, linked or not
   await run(server, ...SETUP);
   const checks: [string, () => Promise<void>][] = [];
   for (const [name, setUp] of LOCK_CASES) checks.push([name, await setUp(server)]);
-  await sleep(2000);
+  await waitTicks(server, 40);
   for (const [name, check] of checks) {
     await check().catch((error: Error) => {
       throw new Error(`${name}: ${error.message}`);
@@ -134,8 +134,9 @@ async function golemSite(server: Server, x: number, group?: string) {
 
 async function waitForGolemDelivery(server: Server) {
   let delivered = '';
-  for (let i = 0; i < 40 && !delivered.includes('cobblestone'); i++) {
-    await sleep(500);
+  // Real time, not ticks: the golems only move once their freshly force-loaded chunks finish loading, which takes the same time at any rate.
+  for (let i = 0; i < 200 && !delivered.includes('cobblestone'); i++) {
+    await sleep(100);
     delivered = await server.execute('cpptest items 303 -60 0');
   }
   expectContains(delivered, 'cobblestone');

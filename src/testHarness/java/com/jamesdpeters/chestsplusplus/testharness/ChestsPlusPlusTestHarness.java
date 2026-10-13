@@ -44,10 +44,12 @@ import org.jspecify.annotations.Nullable;
 public final class ChestsPlusPlusTestHarness extends JavaPlugin {
 
     private final FakeLock lock = new FakeLock();
+    private final ItemWatch watch = new ItemWatch();
 
     @Override
     public void onEnable() {
         getServer().getPluginManager().registerEvents(lock, this);
+        getServer().getScheduler().runTaskTimer(this, watch, 1, 1);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
                 event -> event.registrar().register(Commands.literal("cpptest").requires(ChestsPlusPlusTestHarness::isConsole)
                         .then(Commands.literal("ping").executes(c -> reply(c, "cpptest pong")))
@@ -82,6 +84,17 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
                                 .then(Commands.argument("x", IntegerArgumentType.integer())
                                         .then(Commands.argument("y", IntegerArgumentType.integer())
                                                 .then(Commands.argument("z", IntegerArgumentType.integer()).executes(this::lockChecks)))))
+                        .then(Commands.literal("watch")
+                                .then(Commands.argument("x", IntegerArgumentType.integer())
+                                        .then(Commands.argument("y", IntegerArgumentType.integer())
+                                                .then(Commands.argument("z", IntegerArgumentType.integer())
+                                                        .then(Commands.argument("material", StringArgumentType.greedyString())
+                                                                .executes(this::watch))))))
+                        .then(Commands.literal("seen")
+                                .then(Commands.argument("x", IntegerArgumentType.integer())
+                                        .then(Commands.argument("y", IntegerArgumentType.integer())
+                                                .then(Commands.argument("z", IntegerArgumentType.integer()).executes(this::seen)))))
+                        .then(Commands.literal("timed").then(Commands.argument("command", StringArgumentType.greedyString()).executes(this::timed)))
                         .then(Commands.literal("link")
                                 .then(Commands.argument("type", StringArgumentType.word()).then(Commands.argument("owner", StringArgumentType.word())
                                         .then(Commands.argument("name", StringArgumentType.word())
@@ -153,9 +166,7 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
         GroupType type = type(context);
         UUID owner = owner(context);
         String name = StringArgumentType.getString(context, "name");
-        World world = Bukkit.getWorlds().getFirst();
-        Block block = world.getBlockAt(IntegerArgumentType.getInteger(context, "x"), IntegerArgumentType.getInteger(context, "y"),
-                IntegerArgumentType.getInteger(context, "z"));
+        Block block = block(context);
         LinkService links = services.get(LinkService.class);
         GroupTypeHandler handler = links.handler(type);
         if (handler == null || !handler.isValidBlock(block)) {
@@ -229,8 +240,7 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
 
     /** {@code cpptest items <x> <y> <z>} → every non-empty slot of the container as {@code slot:id[components]xcount}. */
     private int items(CommandContext<CommandSourceStack> context) {
-        Block block = Bukkit.getWorlds().getFirst().getBlockAt(IntegerArgumentType.getInteger(context, "x"),
-                IntegerArgumentType.getInteger(context, "y"), IntegerArgumentType.getInteger(context, "z"));
+        Block block = block(context);
         if (!(block.getState(false) instanceof org.bukkit.block.Container container)) return reply(context, "cpptest items not a container");
         List<String> slots = new ArrayList<>();
         org.bukkit.inventory.ItemStack[] contents = container.getInventory().getContents();
@@ -245,8 +255,7 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
     /** Fixture: {@code cpptest filter <x> <y> <z> <allow|deny> <material>} sets one TYPE filter on a hopper. */
     private int filter(CommandContext<CommandSourceStack> context) {
         Services services = services();
-        Block block = Bukkit.getWorlds().getFirst().getBlockAt(IntegerArgumentType.getInteger(context, "x"),
-                IntegerArgumentType.getInteger(context, "y"), IntegerArgumentType.getInteger(context, "z"));
+        Block block = block(context);
         org.bukkit.Material material = org.bukkit.Material.matchMaterial(StringArgumentType.getString(context, "material"));
         if (material == null) return reply(context, "cpptest filter failed: unknown material");
         var mode = com.jamesdpeters.chestsplusplus.filter.HopperFilter.Mode
@@ -259,20 +268,48 @@ public final class ChestsPlusPlusTestHarness extends JavaPlugin {
 
     /** Fixture: {@code cpptest lock <x> <y> <z>} locks a container against hopper moves, like a lock plugin would. */
     private int lock(CommandContext<CommandSourceStack> context) {
-        lock.lock(Bukkit.getWorlds().getFirst().getBlockAt(IntegerArgumentType.getInteger(context, "x"), IntegerArgumentType.getInteger(context, "y"),
-                IntegerArgumentType.getInteger(context, "z")));
+        lock.lock(block(context));
         return reply(context, "cpptest lock ok");
     }
 
     private int lockChecks(CommandContext<CommandSourceStack> context) {
-        Block block = Bukkit.getWorlds().getFirst().getBlockAt(IntegerArgumentType.getInteger(context, "x"),
-                IntegerArgumentType.getInteger(context, "y"), IntegerArgumentType.getInteger(context, "z"));
+        Block block = block(context);
         return reply(context, "cpptest lock-checks golem-refusals=" + lock.golemRefusals(block));
     }
 
-    /** Fixture: removes every group (contents are discarded, not dropped) and every lock. */
+    /** {@code cpptest watch <x> <y> <z> <material>} starts recording the tick {@code material} first shows up in that container. */
+    private int watch(CommandContext<CommandSourceStack> context) {
+        org.bukkit.Material material = org.bukkit.Material.matchMaterial(StringArgumentType.getString(context, "material"));
+        if (material == null) return reply(context, "cpptest watch failed: unknown material");
+        watch.watch(block(context), material);
+        return reply(context, "cpptest watch ok");
+    }
+
+    /** {@code cpptest seen <x> <y> <z>} → {@code cpptest seen tick=<game tick>}, or {@code cpptest seen pending}. */
+    private int seen(CommandContext<CommandSourceStack> context) {
+        Long tick = watch.seen(block(context));
+        return reply(context, "cpptest seen " + (tick == null ? "pending" : "tick=" + tick));
+    }
+
+    /**
+     * {@code cpptest timed <command>} runs the command and adds {@code cpptest timed tick=<game tick>}: at high tick rates, a separate
+     * query over RCON would land ticks later.
+     */
+    private int timed(CommandContext<CommandSourceStack> context) {
+        long tick = Bukkit.getWorlds().getFirst().getGameTime();
+        boolean ran = Bukkit.dispatchCommand(context.getSource().getSender(), StringArgumentType.getString(context, "command"));
+        return reply(context, "cpptest timed tick=" + tick + " ran=" + ran);
+    }
+
+    private static Block block(CommandContext<CommandSourceStack> context) {
+        return Bukkit.getWorlds().getFirst().getBlockAt(IntegerArgumentType.getInteger(context, "x"), IntegerArgumentType.getInteger(context, "y"),
+                IntegerArgumentType.getInteger(context, "z"));
+    }
+
+    /** Fixture: removes every group (contents are discarded, not dropped), every lock and every watch. */
     private int reset(CommandContext<CommandSourceStack> context) {
         lock.clear();
+        watch.clear();
         Services services = services();
         LinkService links = services.get(LinkService.class);
         List<StorageGroup> all = new ArrayList<>(services.groups().all());

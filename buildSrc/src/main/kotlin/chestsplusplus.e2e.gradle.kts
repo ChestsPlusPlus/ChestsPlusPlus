@@ -19,6 +19,8 @@ plugins {
 val e2eRunDir = layout.projectDirectory.dir("run/e2e")
 val e2eServerPort = 25565
 val e2eRconPort = 25575
+// Ticks a second the suite runs at (src/test/e2e/plugins/tick-rate.ts). The specs count ticks, so this only changes how long it takes.
+val e2eTickRate = providers.gradleProperty("chestsplusplus.e2eTickRate").getOrElse("1000")
 
 val testHarness: SourceSet = sourceSets.create("testHarness")
 
@@ -94,7 +96,10 @@ plugwright {
             port.set(e2eServerPort)
             minecraftVersion.set("26.1") // bot protocol; ViaBackwards translates to the 26.3 server
             includeInMatrix.set(true)
-            plugins { local("still-bots") }
+            plugins {
+                local("still-bots")
+                local("tick-rate") { options["rate"] = e2eTickRate }
+            }
             // Offline-mode server without an auth plugin: every lease gets a fresh, never-reused name.
             accounts {
                 autoRegister {

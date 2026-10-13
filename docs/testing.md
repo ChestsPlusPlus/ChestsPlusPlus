@@ -14,9 +14,13 @@ Performance against v2 is measured separately; see [benchmarking.md](benchmarkin
 Known automation limits:
 - **MockBukkit** doesn't implement `TextDisplay#setBillboard`, redstone power, recipe matching or `PluginBootstrap`.
   `FailOnUnimplemented` turns any such gap into a test failure, so nothing is silently skipped.
-- **E2E bots** (Mineflayer 26.1 via ViaBackwards) are kicked after about 3 s or on any movement. E2E sets
-  the world up over RCON with the never-shipped `/cpptest` harness and keeps bot interactions short. Dialogs can't be
+- **E2E bots** (Mineflayer 26.1 via ViaBackwards) can't move: the server rejects their movement packets, so the `still-bots`
+  plugin stops them sending any. E2E sets the world up over RCON with the never-shipped `/cpptest` harness. Dialogs can't be
   driven by bots at all.
+- **E2E runs at 1000 ticks a second** (`-Pchestsplusplus.e2eTickRate`; the server reaches what the machine allows and logs it).
+  Specs count game ticks, never milliseconds (`waitTicks`, `expectWithinTicks`), and timing checks use ticks the harness records on
+  the server (`cpptest watch`/`seen`, `cpptest timed`). Set a fixture up before whatever sets it in motion: hoppers move items
+  between two RCON commands.
 - **Copper golem fixtures** enclose each site and force-load the whole arena: a golem crossing into an adjacent chunk can stop
   ticking even though that chunk is loaded. Locks are installed before spawning, and refusal counters verify that each protected
   golem actually searched. Failed assertions capture diagnostics before removing the golems, groups and site tickets.

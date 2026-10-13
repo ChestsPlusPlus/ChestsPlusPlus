@@ -1,6 +1,6 @@
 import { expect, test } from '@plugwright/runner';
 
-// Commands through a real (Via-bridged) client. Kept short: bots are kicked after ~3 s.
+// Commands through a real (Via-bridged) client.
 
 test('/cl list and /cl open work for a group the bot owns', async ({ player, server }) => {
   await server.execute('cpptest reset');
