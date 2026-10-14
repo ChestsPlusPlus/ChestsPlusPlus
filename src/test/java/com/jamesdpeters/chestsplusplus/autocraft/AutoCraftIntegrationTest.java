@@ -54,6 +54,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.ShapedRecipe;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
@@ -117,7 +118,9 @@ class AutoCraftIntegrationTest extends PluginTestBase {
     private static final NamespacedKey TORCH = NamespacedKey.minecraft("torch");
 
     private World world;
+
     private PlayerMock alice;
+
     private AutoCraft autoCraft;
 
     @BeforeEach
@@ -189,320 +192,10 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         return ((Container) block.getState(false)).getInventory();
     }
 
-    @Test
-    void namedTagOnCraftingTableCreatesAutoCraft() {
-        Block table = world.getBlockAt(0, 64, 0);
-        table.setType(Material.CRAFTING_TABLE);
-        ItemStack tag = ItemStack.of(Material.NAME_TAG);
-        tag.setData(DataComponentTypes.CUSTOM_NAME, Component.text("torches"));
-        alice.getInventory().setItemInMainHand(tag);
-
-        server.getPluginManager()
-                .callEvent(new PlayerInteractEvent(alice, Action.RIGHT_CLICK_BLOCK, tag, table, BlockFace.NORTH, EquipmentSlot.HAND));
-
-        assertThat(services().groups().find(GroupType.AUTOCRAFT, alice.getUniqueId(), "torches")).isNotNull();
-        assertThat(services().nodes().get(BlockPos.of(table))).isNotNull();
-        assertThat(tag.isEmpty()).isTrue();
-    }
-
-    @Test
-    void plannerRespectsStackCountsAndCapacity() {
-        Inventory input = container(world.getBlockAt(5, 64, 5), Material.CHEST);
-        input.setItem(0, ItemStack.of(Material.COAL, 1));
-        Predicate<ItemStack> coal = item -> item.getType() == Material.COAL;
-        List<@Nullable Predicate<ItemStack>> twoCoal = new ArrayList<>(java.util.Collections.nCopies(9, null));
-        twoCoal.set(0, coal);
-        twoCoal.set(1, coal);
-
-        assertThat(CraftPlanner.plan(twoCoal, List.of(input))).isNull();
-        input.setItem(5, ItemStack.of(Material.COAL, 1));
-        assertThat(CraftPlanner.plan(twoCoal, List.of(input))).isNotNull();
-
-        Inventory output = container(world.getBlockAt(6, 64, 5), Material.HOPPER);
-        for (int i = 0; i < 5; i++) output.setItem(i, ItemStack.of(Material.TORCH, 62));
-        assertThat(CraftPlanner.fits(output, List.of(ItemStack.of(Material.TORCH, 4)))).isTrue();
-        assertThat(CraftPlanner.fits(output, List.of(ItemStack.of(Material.TORCH, 11)))).isFalse();
-    }
-
-    @Test
-    void aSlotThatAcceptsMoreGivesWayToAPickierOne() {
-        Inventory input = container(world.getBlockAt(5, 64, 5), Material.CHEST);
-        input.setItem(0, ItemStack.of(Material.OAK_PLANKS, 2));
-        input.setItem(1, ItemStack.of(Material.BIRCH_PLANKS, 1));
-        Predicate<ItemStack> anyPlanks = item -> item.getType() == Material.OAK_PLANKS || item.getType() == Material.BIRCH_PLANKS;
-        Predicate<ItemStack> oak = item -> item.getType() == Material.OAK_PLANKS;
-        List<@Nullable Predicate<ItemStack>> slots = new ArrayList<>(java.util.Collections.nCopies(9, null));
-        slots.set(0, anyPlanks);
-        slots.set(1, oak);
-        slots.set(2, oak);
-
-        CraftPlanner.Plan plan = CraftPlanner.plan(slots, List.of(input));
-
-        assertThat(plan).isNotNull();
-        assertThat(plan.matrix()[0].getType()).isEqualTo(Material.BIRCH_PLANKS);
-        assertThat(plan.matrix()[1].getType()).isEqualTo(Material.OAK_PLANKS);
-        assertThat(plan.matrix()[2].getType()).isEqualTo(Material.OAK_PLANKS);
-        slots.set(3, oak);
-        assertThat(CraftPlanner.plan(slots, List.of(input))).isNull();
-    }
-
-    @Test
-    void craftsFromAboveIntoHopperBelow() {
-        AutoCraftGroup[] group = new AutoCraftGroup[1];
-        Block table = crafter(group);
-        Inventory input = container(table.getRelative(BlockFace.UP), Material.CHEST);
-        input.addItem(ItemStack.of(Material.COAL, 2), ItemStack.of(Material.STICK, 2));
-        Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
-
-        Node node = services().nodes().get(BlockPos.of(table));
-        assertThat(autoCraft.crafter().craftAt(group[0], node)).isTrue();
-        assertThat(autoCraft.crafter().craftAt(group[0], node)).isTrue();
-        assertThat(autoCraft.crafter().craftAt(group[0], node)).isFalse();
-
-        assertThat(output.contains(Material.TORCH, 8)).isTrue();
-        assertThat(input.contains(Material.COAL)).isFalse();
-        assertThat(group[0].result()).isEqualTo(ItemStack.of(Material.TORCH, 4));
-    }
-
-    @Test
-    void lockedHopperStopsCrafting() {
-        AutoCraftGroup[] group = new AutoCraftGroup[1];
-        Block table = crafter(group);
-        container(table.getRelative(BlockFace.UP), Material.CHEST).addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
-        Block below = table.getRelative(BlockFace.DOWN);
-        container(below, Material.HOPPER);
-        Hopper data = (Hopper) below.getBlockData();
-        data.setEnabled(false);
-        below.setBlockData(data);
-        Node node = services().nodes().get(BlockPos.of(table));
-
-        assertThat(autoCraft.crafter().craftAt(group[0], node)).isFalse();
-        // The "container below crafts only while powered" rule needs redstone, which MockBukkit doesn't implement;
-        // it is covered by the AutoCraft E2E test.
-    }
-
-    @Test
-    void usesAccessibleChestLinkInputs() {
-        AutoCraftGroup[] group = new AutoCraftGroup[1];
-        Block table = crafter(group);
-        Block side = table.getRelative(BlockFace.EAST);
-        side.setType(Material.CHEST);
-        links().link(alice, GroupType.CHESTLINK, "mats", side, BlockFace.EAST, true);
-        ChestLinkGroup mats = (ChestLinkGroup) services().groups().find(GroupType.CHESTLINK, alice.getUniqueId(), "mats");
-        mats.inventory().addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
-        Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
-
-        assertThat(autoCraft.crafter().craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isTrue();
-        assertThat(output.contains(Material.TORCH, 4)).isTrue();
-        assertThat(mats.inventory().isEmpty()).isTrue();
-        assertThat(storage().groupStore().isDirty(mats)).isTrue();
-    }
-
-    @Test
-    void ignoresChestLinkInputsWhileChestLinksAreDisabled() {
-        AutoCraftGroup[] group = new AutoCraftGroup[1];
-        Block table = crafter(group);
-        Block side = table.getRelative(BlockFace.EAST);
-        side.setType(Material.CHEST);
-        links().link(alice, GroupType.CHESTLINK, "mats", side, BlockFace.EAST, true);
-        ChestLinkGroup mats = (ChestLinkGroup) services().groups().find(GroupType.CHESTLINK, alice.getUniqueId(), "mats");
-        mats.inventory().addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
-        Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
-
-        reconfigure("features.chestlinks", false);
-
-        assertThat(autoCraft.crafter().craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isFalse();
-        assertThat(output.isEmpty()).isTrue();
-        assertThat(mats.inventory().contains(Material.COAL)).isTrue();
-    }
-
-    @Test
-    void theRecipeEditorRefusesAndClosesWhileAutoCraftIsDisabled() {
-        AutoCraftGroup[] group = new AutoCraftGroup[1];
-        Block table = crafter(group);
-        alice.openInventory(editor(group[0]).getInventory());
-
-        reconfigure("features.autocraft", false);
-        assertThat(editorOpen()).isFalse();
-
-        PlayerInteractEvent click = new PlayerInteractEvent(alice, Action.RIGHT_CLICK_BLOCK, null, table, BlockFace.NORTH, EquipmentSlot.HAND);
-        server.getPluginManager().callEvent(click);
-        assertThat(click.useInteractedBlock()).isEqualTo(Event.Result.DENY);
-        assertThat(features().actions().openRemote(alice, group[0])).isFalse();
-        assertThat(editorOpen()).isFalse();
-
-        reconfigure("features.autocraft", true);
-        assertThat(features().actions().openRemote(alice, group[0])).isTrue();
-        assertThat(editorOpen()).isTrue();
-        assertThat(group[0].result()).isEqualTo(ItemStack.of(Material.TORCH, 4));
-    }
-
-    @Test
-    void aCrafterDeniedByAProtectionPluginAtHighestDoesNotOpenTheEditor() {
-        Block table = crafter(new AutoCraftGroup[1]);
-        server.getPluginManager().registerEvent(PlayerInteractEvent.class, new Listener() {}, EventPriority.HIGHEST,
-                (listener, event) -> ((PlayerInteractEvent) event).setUseInteractedBlock(Event.Result.DENY), MockBukkit.createMockPlugin(), true);
-
-        server.getPluginManager()
-                .callEvent(new PlayerInteractEvent(alice, Action.RIGHT_CLICK_BLOCK, null, table, BlockFace.NORTH, EquipmentSlot.HAND));
-
-        assertThat(editorOpen()).isFalse();
-    }
-
     private boolean editorOpen() {
         // MockBukkit has no top inventory once one is closed.
         @Nullable Inventory top = alice.getOpenInventory().getTopInventory();
         return top != null && Holders.of(top) instanceof RecipeEditorHolder;
-    }
-
-    @Test
-    void settingTheRecipeCraftsOnTheNextTickThenOncePerInterval() {
-        AutoCraftGroup[] group = new AutoCraftGroup[1];
-        Block table = crafter(group);
-        container(table.getRelative(BlockFace.UP), Material.CHEST).addItem(ItemStack.of(Material.COAL, 2), ItemStack.of(Material.STICK, 2));
-        Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
-
-        ticks(1);
-        assertThat(output.contains(Material.TORCH, 4)).isTrue();
-        ticks(19);
-        assertThat(output.contains(Material.TORCH, 8)).isFalse();
-        ticks(1);
-        assertThat(output.contains(Material.TORCH, 8)).isTrue();
-    }
-
-    @Test
-    void placingALinkItemCraftsOnTheNextTick() {
-        features().handlers().register(autoCraft.handler());
-        AutoCraftGroup[] group = new AutoCraftGroup[1];
-        Block original = crafter(group);
-        ItemStack pickaxe = ItemStack.of(Material.DIAMOND_PICKAXE);
-        pickaxe.addEnchantment(Enchantment.SILK_TOUCH, 1);
-        alice.getInventory().setItemInMainHand(pickaxe);
-        BlockBreakEvent breakEvent = new BlockBreakEvent(original, alice);
-        server.getPluginManager().callEvent(breakEvent);
-        assertThat(breakEvent.isDropItems()).isFalse();
-        ItemStack linkItem = world.getEntitiesByClass(Item.class).iterator().next().getItemStack();
-        assertThat(features().linkItem().read(linkItem)).isEqualTo(new LinkItem.Link(group[0].id(), GroupType.AUTOCRAFT));
-        ticks(1);
-
-        Block placed = world.getBlockAt(9, 64, 9);
-        placed.setType(Material.CRAFTING_TABLE);
-        container(placed.getRelative(BlockFace.UP), Material.CHEST).addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
-        Inventory output = container(placed.getRelative(BlockFace.DOWN), Material.HOPPER);
-        BlockPlaceEvent event = new BlockPlaceEvent(placed, placed.getState(), placed.getRelative(BlockFace.DOWN), linkItem, alice, true,
-                EquipmentSlot.HAND);
-        server.getPluginManager().callEvent(event);
-        assertThat(event.isCancelled()).isFalse();
-        assertThat(services().nodes().at(placed).groupId()).isEqualTo(group[0].id());
-        assertThat(output.isEmpty()).isTrue();
-
-        ticks(1);
-        assertThat(output.contains(Material.TORCH, 4)).isTrue();
-    }
-
-    @Test
-    void aFailingCrafterBacksOffUntilItsInputChanges() {
-        AutoCraftGroup[] group = new AutoCraftGroup[1];
-        Block table = crafter(group);
-        Inventory input = container(table.getRelative(BlockFace.UP), Material.CHEST);
-        Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
-
-        ticks(1);
-        assertThat(autoCraft.crafter().isBackingOff(BlockPos.of(table))).isTrue();
-        input.addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
-        ticks(5);
-        assertThat(output.isEmpty()).isTrue();
-
-        autoCraft.crafter().inventoryChanged(input);
-        ticks(1);
-        assertThat(output.contains(Material.TORCH, 4)).isTrue();
-        assertThat(autoCraft.crafter().isBackingOff(BlockPos.of(table))).isFalse();
-    }
-
-    @Test
-    void clickingItemsIntoAnOpenInputChestWakesAWaitingCrafter() {
-        AutoCraftGroup[] group = new AutoCraftGroup[1];
-        Block table = crafter(group);
-        Inventory input = container(table.getRelative(BlockFace.UP), Material.CHEST);
-        Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
-        ticks(1);
-
-        InventoryView view = alice.openInventory(input);
-        input.addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
-        AutoCraftListener listener = new AutoCraftListener(services(), links(), autoCraft.editor(), autoCraft.recipes(), autoCraft.crafter());
-        listener.onClick(new InventoryClickEvent(view, InventoryType.SlotType.CONTAINER, 0, ClickType.LEFT, InventoryAction.PLACE_ALL));
-        ticks(1);
-        assertThat(output.contains(Material.TORCH, 4)).isTrue();
-    }
-
-    @Test
-    void placingTheOutputHopperWakesAWaitingCrafter() {
-        AutoCraftGroup[] group = new AutoCraftGroup[1];
-        Block table = crafter(group);
-        container(table.getRelative(BlockFace.UP), Material.CHEST).addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
-        ticks(1);
-
-        Block below = table.getRelative(BlockFace.DOWN);
-        Inventory output = container(below, Material.HOPPER);
-        autoCraft.crafter().blockChanged(below);
-        ticks(1);
-        assertThat(output.contains(Material.TORCH, 4)).isTrue();
-    }
-
-    @Test
-    void itemsReachingAChestLinkInputWakeAWaitingCrafter() {
-        AutoCraftGroup[] group = new AutoCraftGroup[1];
-        Block table = crafter(group);
-        Block side = table.getRelative(BlockFace.EAST);
-        side.setType(Material.CHEST);
-        links().link(alice, GroupType.CHESTLINK, "mats", side, BlockFace.EAST, true);
-        ChestLinkGroup mats = (ChestLinkGroup) services().groups().find(GroupType.CHESTLINK, alice.getUniqueId(), "mats");
-        Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
-        ticks(1);
-
-        mats.inventory().addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
-        autoCraft.crafter().inventoryChanged(mats.inventory());
-        ticks(1);
-        assertThat(output.contains(Material.TORCH, 4)).isTrue();
-    }
-
-    @Test
-    void aCraftThatEmptiesAnotherCraftersFullOutputWakesIt() {
-        AutoCraftGroup[] group = new AutoCraftGroup[1];
-        Block first = linkedCrafter(group);
-        Block shared = first.getRelative(BlockFace.UP);
-        Block second = shared.getRelative(BlockFace.UP);
-        second.setType(Material.CRAFTING_TABLE);
-        links().link(alice, GroupType.AUTOCRAFT, "torches", second, BlockFace.NORTH, true);
-        autoCraft.recipes().setMatrix(group[0], torchMatrix(), null);
-        Inventory between = container(shared, Material.HOPPER);
-        between.setContents(new ItemStack[]{ItemStack.of(Material.COAL), ItemStack.of(Material.STICK), ItemStack.of(Material.DIRT, 64),
-                ItemStack.of(Material.DIRT, 64), ItemStack.of(Material.DIRT, 64)});
-        container(second.getRelative(BlockFace.UP), Material.CHEST).addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
-        Block below = first.getRelative(BlockFace.DOWN);
-        ticks(1);
-        assertThat(autoCraft.crafter().isBackingOff(BlockPos.of(second))).isTrue();
-
-        Inventory output = container(below, Material.HOPPER);
-        autoCraft.crafter().blockChanged(below);
-        ticks(1);
-        assertThat(output.contains(Material.TORCH, 4)).isTrue();
-        ticks(1);
-        assertThat(between.contains(Material.TORCH, 4)).isTrue();
-    }
-
-    @Test
-    void theSweepFindsCraftersNothingScheduled() {
-        AutoCraftGroup[] group = new AutoCraftGroup[1];
-        Block table = crafter(group);
-        container(table.getRelative(BlockFace.UP), Material.CHEST).addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
-        Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
-        autoCraft = autoCraft(false);
-
-        ticks(19);
-        assertThat(output.isEmpty()).isTrue();
-        ticks(1);
-        assertThat(output.contains(Material.TORCH, 4)).isTrue();
     }
 
     /** The torch recipe, but the first craft throws. */
@@ -521,113 +214,6 @@ class AutoCraftIntegrationTest extends PluginTestBase {
             thrown = true;
             throw new IllegalStateException("boom");
         }
-    }
-
-    @Test
-    void aCraftThatThrowsBacksOffWithoutStallingTheRestOfItsBatch() {
-        autoCraft = autoCraft(new ThrowOnceBackend());
-        AutoCraftGroup[] group = new AutoCraftGroup[1];
-        Block first = crafter(group);
-        Block second = world.getBlockAt(4, 64, 0);
-        second.setType(Material.CRAFTING_TABLE);
-        links().link(alice, GroupType.AUTOCRAFT, "torches", second, BlockFace.NORTH, true);
-        List<Inventory> outputs = new ArrayList<>();
-        for (Block table : List.of(first, second)) {
-            container(table.getRelative(BlockFace.UP), Material.CHEST).addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
-            outputs.add(container(table.getRelative(BlockFace.DOWN), Material.HOPPER));
-        }
-        autoCraft.recipes().setMatrix(group[0], torchMatrix(), null);
-
-        ticks(1);
-        assertThat(outputs).filteredOn(output -> output.contains(Material.TORCH, 4)).hasSize(1);
-        assertThat(List.of(first, second)).filteredOn(table -> autoCraft.crafter().isBackingOff(BlockPos.of(table))).hasSize(1);
-
-        ticks(CraftScheduler.MAX_BACKOFF_TICKS);
-        assertThat(outputs).allMatch(output -> output.contains(Material.TORCH, 4));
-    }
-
-    @Test
-    void aRecipeThatCannotBeResolvedAtLoadKeepsItsKey() {
-        autoCraft = autoCraft(new LateBackend());
-        AutoCraftGroup[] group = new AutoCraftGroup[1];
-        loadedCrafter(group, autoCraft);
-
-        assertThat(group[0].hasRecipe()).isFalse();
-        assertThat(group[0].recipeKey()).isEqualTo(TORCH);
-        assertThat(group[0].matrix()[4]).isEqualTo(ItemStack.of(Material.STICK));
-    }
-
-    @Test
-    void aRecipeRegisteredAfterLoadResolvesWhenTheServerFinishesLoading() {
-        LateBackend backend = new LateBackend();
-        autoCraft = autoCraft(backend);
-        AutoCraftGroup[] group = new AutoCraftGroup[1];
-        Block table = loadedCrafter(group, autoCraft);
-        container(table.getRelative(BlockFace.UP), Material.CHEST).addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
-        Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
-        ticks(20);
-        assertThat(output.isEmpty()).isTrue();
-
-        backend.registered = true;
-        serverFinishesLoading(autoCraft);
-
-        assertThat(group[0].result()).isEqualTo(ItemStack.of(Material.TORCH, 4));
-        assertThat(group[0].recipeKey()).isEqualTo(TORCH);
-        ticks(1);
-        assertThat(output.contains(Material.TORCH, 4)).isTrue();
-    }
-
-    @Test
-    void aRecipeStillMissingWhenTheServerLoadsKeepsItsKeyAndIsRetriedOnTheNextLoad() {
-        LateBackend backend = new LateBackend();
-        autoCraft = autoCraft(backend);
-        AutoCraftGroup[] group = new AutoCraftGroup[1];
-        loadedCrafter(group, autoCraft);
-
-        serverFinishesLoading(autoCraft);
-        assertThat(group[0].hasRecipe()).isFalse();
-        assertThat(group[0].recipeKey()).isEqualTo(TORCH);
-
-        backend.registered = true;
-        server.getPluginManager().callEvent(new ServerLoadEvent(ServerLoadEvent.LoadType.RELOAD));
-        assertThat(group[0].hasRecipe()).isTrue();
-    }
-
-    @Test
-    void aKeyOnlyRecipeRegisteredAfterLoadRebuildsItsMatrixWhenTheServerFinishesLoading() {
-        LateBackend backend = new LateBackend();
-        autoCraft = autoCraft(backend);
-        AutoCraftGroup[] group = new AutoCraftGroup[1];
-        linkedCrafter(group);
-        NamespacedKey key = new NamespacedKey(plugin, "late_torch");
-        group[0].setRecipe(new ItemStack[9], key, null);
-        autoCraft.recipes().resolveLoaded(group[0]);
-        assertThat(group[0].matrixIsEmpty()).isTrue();
-
-        server.addRecipe(new ShapedRecipe(key, ItemStack.of(Material.TORCH, 4)).shape("C", "S")
-                .setIngredient('C', Material.COAL)
-                .setIngredient('S', Material.STICK));
-        backend.registered = true;
-        serverFinishesLoading(autoCraft);
-
-        assertThat(group[0].matrix()[0]).isEqualTo(ItemStack.of(Material.COAL));
-        assertThat(group[0].matrix()[3]).isEqualTo(ItemStack.of(Material.STICK));
-        assertThat(group[0].hasRecipe()).isTrue();
-    }
-
-    @Test
-    void editingAnUnresolvedRecipeStopsItBeingRetried() {
-        LateBackend backend = new LateBackend();
-        autoCraft = autoCraft(backend);
-        AutoCraftGroup[] group = new AutoCraftGroup[1];
-        loadedCrafter(group, autoCraft);
-
-        autoCraft.recipes().setMatrix(group[0], torchMatrix(), null);
-        assertThat(group[0].recipeKey()).isNull();
-
-        backend.registered = true;
-        serverFinishesLoading(autoCraft);
-        assertThat(group[0].hasRecipe()).isFalse();
     }
 
     private void ticks(int count) {
@@ -656,248 +242,8 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         return lock;
     }
 
-    @Test
-    void aLockedInputIsNotDrained() {
-        AutoCraftGroup[] group = new AutoCraftGroup[1];
-        Block table = crafter(group);
-        Inventory locked = container(table.getRelative(BlockFace.UP), Material.CHEST);
-        locked.addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
-        Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
-        Lock lock = lock(locked);
-
-        assertThat(autoCraft.crafter().craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isFalse();
-        assertThat(locked.contains(Material.COAL, 1)).isTrue();
-        assertThat(locked.contains(Material.STICK, 1)).isTrue();
-        assertThat(output.isEmpty()).isTrue();
-        assertThat(lock.seen).singleElement().satisfies(event -> {
-            assertThat(event.getSource()).isEqualTo(locked);
-            assertThat(event.getDestination()).isEqualTo(output);
-        });
-    }
-
-    @Test
-    void aLockedInputIsSkippedForAnAllowedOne() {
-        AutoCraftGroup[] group = new AutoCraftGroup[1];
-        Block table = crafter(group);
-        Inventory locked = container(table.getRelative(BlockFace.UP), Material.CHEST);
-        locked.addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
-        Inventory allowed = container(table.getRelative(BlockFace.EAST), Material.CHEST);
-        allowed.addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
-        Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
-        Lock lock = lock(locked);
-
-        assertThat(autoCraft.crafter().craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isTrue();
-        assertThat(output.contains(Material.TORCH, 4)).isTrue();
-        assertThat(allowed.isEmpty()).isTrue();
-        assertThat(locked.contains(Material.COAL, 1)).isTrue();
-        assertThat(locked.contains(Material.STICK, 1)).isTrue();
-        assertThat(lock.seen).hasSize(2);
-    }
-
-    @Test
-    void aLockedOutputIsNotFilled() {
-        AutoCraftGroup[] group = new AutoCraftGroup[1];
-        Block table = crafter(group);
-        Inventory input = container(table.getRelative(BlockFace.UP), Material.CHEST);
-        input.addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
-        Inventory locked = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
-        lock(locked);
-
-        assertThat(autoCraft.crafter().craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isFalse();
-        assertThat(locked.isEmpty()).isTrue();
-        assertThat(input.contains(Material.COAL, 1)).isTrue();
-    }
-
-    @Test
-    void theProtectionCheckAsksAboutTheProductReachingTheOutput() {
-        AutoCraftGroup[] group = new AutoCraftGroup[1];
-        Block table = crafter(group);
-        Inventory input = container(table.getRelative(BlockFace.UP), Material.CHEST);
-        input.addItem(ItemStack.of(Material.COAL, 2), ItemStack.of(Material.STICK, 2));
-        Block below = table.getRelative(BlockFace.DOWN);
-        Inventory output = container(below, Material.HOPPER);
-        // The filter would refuse coal and stall-avoid if it treated the check as a real move of an ingredient.
-        filter(below, Mode.ALLOW);
-        Lock lock = lock(server.createInventory(null, 9));
-
-        assertThat(autoCraft.crafter().craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isTrue();
-        assertThat(lock.seen).singleElement().isInstanceOf(SyntheticMoveEvent.class).satisfies(event -> {
-            assertThat(event.isCancelled()).isFalse();
-            assertThat(event.getSource()).isEqualTo(input);
-            assertThat(event.getDestination()).isEqualTo(output);
-            assertThat(event.getItem()).isEqualTo(ItemStack.of(Material.TORCH, 4));
-        });
-        assertThat(output.contains(Material.TORCH, 4)).isTrue();
-        assertThat(output.contains(Material.COAL)).isFalse();
-        assertThat(input.contains(Material.COAL, 1)).isTrue();
-        assertThat(input.contains(Material.STICK, 1)).isTrue();
-    }
-
-    @Test
-    void anOutputHopperFilterThatRefusesTheProductStopsTheCraft() {
-        AutoCraftGroup[] group = new AutoCraftGroup[1];
-        Block table = crafter(group);
-        Inventory input = container(table.getRelative(BlockFace.UP), Material.CHEST);
-        input.addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
-        Block below = table.getRelative(BlockFace.DOWN);
-        Inventory output = container(below, Material.HOPPER);
-        filter(below, Mode.DENY);
-
-        assertThat(autoCraft.crafter().craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isFalse();
-        assertThat(output.isEmpty()).isTrue();
-        assertThat(input.contains(Material.COAL, 1)).isTrue();
-        assertThat(input.contains(Material.STICK, 1)).isTrue();
-    }
-
-    @Test
-    void anotherPluginRefusingTheProductStopsTheCraft() {
-        AutoCraftGroup[] group = new AutoCraftGroup[1];
-        Block table = crafter(group);
-        Inventory input = container(table.getRelative(BlockFace.UP), Material.CHEST);
-        input.addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
-        Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
-        server.getPluginManager().registerEvent(InventoryMoveItemEvent.class, new Listener() {}, EventPriority.NORMAL, (_, event) -> {
-            if (event instanceof InventoryMoveItemEvent move && move.getItem().getType() == Material.TORCH) move.setCancelled(true);
-        }, plugin);
-
-        assertThat(autoCraft.crafter().craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isFalse();
-        assertThat(output.isEmpty()).isTrue();
-        assertThat(input.contains(Material.COAL, 1)).isTrue();
-        assertThat(input.contains(Material.STICK, 1)).isTrue();
-    }
-
     private void filter(Block hopper, Mode torches) {
         features().filters().write(hopper, List.of(new HopperFilter(ItemStack.of(Material.TORCH), torches, Match.TYPE)));
-    }
-
-    @Test
-    void aLockedChestLinkInputIsRefusedLikeAVanillaChest() {
-        AutoCraftGroup[] group = new AutoCraftGroup[1];
-        Block table = crafter(group);
-        Block side = table.getRelative(BlockFace.EAST);
-        side.setType(Material.CHEST);
-        links().link(alice, GroupType.CHESTLINK, "mats", side, BlockFace.EAST, true);
-        ChestLinkGroup mats = (ChestLinkGroup) services().groups().find(GroupType.CHESTLINK, alice.getUniqueId(), "mats");
-        mats.inventory().addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
-        container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
-        Inventory linkedChest = ((Container) side.getState(false)).getInventory();
-        Lock lock = lock(linkedChest);
-
-        assertThat(autoCraft.crafter().craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isFalse();
-        assertThat(lock.seen).singleElement().satisfies(event -> assertThat(event.getSource()).isEqualTo(linkedChest));
-        assertThat(mats.inventory().contains(Material.COAL)).isTrue();
-    }
-
-    @Test
-    void editorClicksPlaceGhostItemsAndResolveTheRecipe() {
-        Block table = world.getBlockAt(0, 64, 0);
-        table.setType(Material.CRAFTING_TABLE);
-        links().link(alice, GroupType.AUTOCRAFT, "t", table, BlockFace.NORTH, true);
-        AutoCraftGroup group = (AutoCraftGroup) services().groups().find(GroupType.AUTOCRAFT, alice.getUniqueId(), "t");
-        RecipeEditorHolder editor = editor(group);
-
-        ItemStack[] matrix = editor.click(2, ItemStack.of(Material.COAL, 64));
-        autoCraft.recipes().setMatrix(group, matrix, null);
-        matrix = editor.click(5, ItemStack.of(Material.STICK, 3));
-        autoCraft.recipes().setMatrix(group, matrix, null);
-        editor.render();
-
-        ItemStack result = editor.getInventory().getItem(RecipeEditorHolder.RESULT_SLOT);
-        assertThat(result.getType()).isEqualTo(Material.TORCH);
-        assertThat(result.getAmount()).isEqualTo(4);
-        assertThat(editor.getInventory().getItem(2).getType()).isEqualTo(Material.COAL);
-        assertThat(group.recipeKey()).isEqualTo(NamespacedKey.minecraft("torch"));
-        assertThat(storage().groupStore().isDirty(group)).isTrue();
-        assertThat(editor.click(9, null)).isNull();
-    }
-
-    @Test
-    void matchModesDecideWhichInputsCraft() {
-        AutoCraftGroup[] group = new AutoCraftGroup[1];
-        Block table = crafter(group);
-        Inventory input = container(table.getRelative(BlockFace.UP), Material.CHEST);
-        input.addItem(namedCoal(), ItemStack.of(Material.STICK));
-        container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
-        Node node = services().nodes().get(BlockPos.of(table));
-
-        autoCraft.recipes().setMatch(group[0], 1, SlotMatch.EXACT);
-        assertThat(autoCraft.crafter().craftAt(group[0], node)).isFalse();
-        autoCraft.recipes().setMatch(group[0], 1, SlotMatch.RECIPE);
-        assertThat(autoCraft.crafter().craftAt(group[0], node)).isTrue();
-
-        input.addItem(namedCoal(), ItemStack.of(Material.STICK));
-        autoCraft.recipes().setMatch(group[0], 1, SlotMatch.TYPE);
-        assertThat(autoCraft.crafter().craftAt(group[0], node)).isTrue();
-        assertThat(storage().groupStore().isDirty(group[0])).isTrue();
-    }
-
-    @Test
-    void specialRecipesMatchExactlyUntilASlotIsSetToType() {
-        autoCraft = autoCraft(true);
-        AutoCraftGroup[] group = new AutoCraftGroup[1];
-        Block table = crafter(group);
-        container(table.getRelative(BlockFace.UP), Material.CHEST).addItem(namedCoal(), ItemStack.of(Material.STICK));
-        container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
-        Node node = services().nodes().get(BlockPos.of(table));
-
-        assertThat(autoCraft.recipes().hasRecipeChoice(group[0], 1)).isFalse();
-        assertThat(autoCraft.crafter().craftAt(group[0], node)).isFalse();
-        autoCraft.recipes().setMatch(group[0], 1, SlotMatch.TYPE);
-        assertThat(autoCraft.crafter().craftAt(group[0], node)).isTrue();
-    }
-
-    @Test
-    void rightClickChangesMatchForManagersAndReplacingAGhostResetsIt() {
-        AutoCraftGroup[] group = new AutoCraftGroup[1];
-        crafter(group);
-        RecipeEditorHolder editor = editor(group[0]);
-
-        editor.onClick(alice, 2, null, ClickType.RIGHT);
-        assertThat(group[0].matches()[1]).isEqualTo(SlotMatch.EXACT);
-
-        editor.onClick(server.addPlayer("Bob"), 2, null, ClickType.RIGHT);
-        assertThat(group[0].matches()[1]).isEqualTo(SlotMatch.EXACT);
-
-        editor.onClick(alice, 6, null, ClickType.RIGHT);
-        assertThat(group[0].matches()[5]).isEqualTo(SlotMatch.RECIPE);
-
-        editor.onClick(alice, 2, ItemStack.of(Material.CHARCOAL), ClickType.LEFT);
-        assertThat(group[0].matches()[1]).isEqualTo(SlotMatch.RECIPE);
-    }
-
-    @Test
-    void draggingAnItemPlacesAGhostInEveryMatrixSlotItCovers() {
-        AutoCraftGroup[] group = new AutoCraftGroup[1];
-        crafter(group);
-        RecipeEditorHolder editor = editor(group[0]);
-        ItemStack coal = ItemStack.of(Material.COAL, 32);
-
-        InventoryDragEvent drag = drag(alice, editor, coal, 0, 7, 8, 9, 20);
-        assertThat(drag.isCancelled()).isTrue();
-        @Nullable ItemStack[] matrix = group[0].matrix();
-        assertThat(matrix[6]).isEqualTo(ItemStack.of(Material.COAL));
-        assertThat(matrix[7]).isEqualTo(ItemStack.of(Material.COAL));
-        assertThat(matrix[8]).isEqualTo(ItemStack.of(Material.COAL));
-        assertThat(matrix[4]).isEqualTo(ItemStack.of(Material.STICK));
-        assertThat(coal.getAmount()).isEqualTo(32);
-
-        drag(server.addPlayer("Bob"), editor, ItemStack.of(Material.DIRT), 1, 2);
-        assertThat(group[0].matrix()[0]).isNull();
-    }
-
-    @Test
-    void doubleClickingInYourOwnInventoryCannotCollectTheResultIcon() {
-        AutoCraftGroup[] group = new AutoCraftGroup[1];
-        crafter(group);
-        RecipeEditorHolder editor = editor(group[0]);
-        InventoryView view = alice.openInventory(editor.getInventory());
-        view.setCursor(ItemStack.of(Material.TORCH));
-
-        InventoryClickEvent collect = click(view, ClickType.DOUBLE_CLICK, InventoryAction.COLLECT_TO_CURSOR);
-        assertThat(collect.isCancelled()).isTrue();
-        assertThat(editor.getInventory().getItem(RecipeEditorHolder.RESULT_SLOT).getType()).isEqualTo(Material.TORCH);
-
-        assertThat(click(view, ClickType.LEFT, InventoryAction.PICKUP_ALL).isCancelled()).isFalse();
     }
 
     /** Fires a click on the first slot of the player's own inventory below {@code view} through the real listeners. */
@@ -916,5 +262,690 @@ class AutoCraftIntegrationTest extends PluginTestBase {
         InventoryDragEvent event = new InventoryDragEvent(view, null, cursor, false, placed);
         server.getPluginManager().callEvent(event);
         return event;
+    }
+
+    @Nested
+    class Linking {
+
+        @Test
+        void namedTagOnCraftingTableCreatesAutoCraft() {
+            Block table = world.getBlockAt(0, 64, 0);
+            table.setType(Material.CRAFTING_TABLE);
+            ItemStack tag = ItemStack.of(Material.NAME_TAG);
+            tag.setData(DataComponentTypes.CUSTOM_NAME, Component.text("torches"));
+            alice.getInventory().setItemInMainHand(tag);
+
+            server.getPluginManager()
+                    .callEvent(new PlayerInteractEvent(alice, Action.RIGHT_CLICK_BLOCK, tag, table, BlockFace.NORTH, EquipmentSlot.HAND));
+
+            assertThat(services().groups().find(GroupType.AUTOCRAFT, alice.getUniqueId(), "torches")).isNotNull();
+            assertThat(services().nodes().get(BlockPos.of(table))).isNotNull();
+            assertThat(tag.isEmpty()).isTrue();
+        }
+
+        @Test
+        void theRecipeEditorRefusesAndClosesWhileAutoCraftIsDisabled() {
+            AutoCraftGroup[] group = new AutoCraftGroup[1];
+            Block table = crafter(group);
+            alice.openInventory(editor(group[0]).getInventory());
+
+            reconfigure("features.autocraft", false);
+            assertThat(editorOpen()).isFalse();
+
+            PlayerInteractEvent click = new PlayerInteractEvent(alice, Action.RIGHT_CLICK_BLOCK, null, table, BlockFace.NORTH, EquipmentSlot.HAND);
+            server.getPluginManager().callEvent(click);
+            assertThat(click.useInteractedBlock()).isEqualTo(Event.Result.DENY);
+            assertThat(features().actions().openRemote(alice, group[0])).isFalse();
+            assertThat(editorOpen()).isFalse();
+
+            reconfigure("features.autocraft", true);
+            assertThat(features().actions().openRemote(alice, group[0])).isTrue();
+            assertThat(editorOpen()).isTrue();
+            assertThat(group[0].result()).isEqualTo(ItemStack.of(Material.TORCH, 4));
+        }
+
+        @Test
+        void aCrafterDeniedByAProtectionPluginAtHighestDoesNotOpenTheEditor() {
+            Block table = crafter(new AutoCraftGroup[1]);
+            server.getPluginManager().registerEvent(PlayerInteractEvent.class, new Listener() {}, EventPriority.HIGHEST,
+                    (listener, event) -> ((PlayerInteractEvent) event).setUseInteractedBlock(Event.Result.DENY), MockBukkit.createMockPlugin(), true);
+
+            server.getPluginManager()
+                    .callEvent(new PlayerInteractEvent(alice, Action.RIGHT_CLICK_BLOCK, null, table, BlockFace.NORTH, EquipmentSlot.HAND));
+
+            assertThat(editorOpen()).isFalse();
+        }
+    }
+
+    @Nested
+    class Planner {
+
+        @Test
+        void plannerRespectsStackCountsAndCapacity() {
+            Inventory input = container(world.getBlockAt(5, 64, 5), Material.CHEST);
+            input.setItem(0, ItemStack.of(Material.COAL, 1));
+            Predicate<ItemStack> coal = item -> item.getType() == Material.COAL;
+            List<@Nullable Predicate<ItemStack>> twoCoal = new ArrayList<>(java.util.Collections.nCopies(9, null));
+            twoCoal.set(0, coal);
+            twoCoal.set(1, coal);
+
+            assertThat(CraftPlanner.plan(twoCoal, List.of(input))).isNull();
+            input.setItem(5, ItemStack.of(Material.COAL, 1));
+            assertThat(CraftPlanner.plan(twoCoal, List.of(input))).isNotNull();
+
+            Inventory output = container(world.getBlockAt(6, 64, 5), Material.HOPPER);
+            for (int i = 0; i < 5; i++) output.setItem(i, ItemStack.of(Material.TORCH, 62));
+            assertThat(CraftPlanner.fits(output, List.of(ItemStack.of(Material.TORCH, 4)))).isTrue();
+            assertThat(CraftPlanner.fits(output, List.of(ItemStack.of(Material.TORCH, 11)))).isFalse();
+        }
+
+        @Test
+        void aSlotThatAcceptsMoreGivesWayToAPickierOne() {
+            Inventory input = container(world.getBlockAt(5, 64, 5), Material.CHEST);
+            input.setItem(0, ItemStack.of(Material.OAK_PLANKS, 2));
+            input.setItem(1, ItemStack.of(Material.BIRCH_PLANKS, 1));
+            Predicate<ItemStack> anyPlanks = item -> item.getType() == Material.OAK_PLANKS || item.getType() == Material.BIRCH_PLANKS;
+            Predicate<ItemStack> oak = item -> item.getType() == Material.OAK_PLANKS;
+            List<@Nullable Predicate<ItemStack>> slots = new ArrayList<>(java.util.Collections.nCopies(9, null));
+            slots.set(0, anyPlanks);
+            slots.set(1, oak);
+            slots.set(2, oak);
+
+            CraftPlanner.Plan plan = CraftPlanner.plan(slots, List.of(input));
+
+            assertThat(plan).isNotNull();
+            assertThat(plan.matrix()[0].getType()).isEqualTo(Material.BIRCH_PLANKS);
+            assertThat(plan.matrix()[1].getType()).isEqualTo(Material.OAK_PLANKS);
+            assertThat(plan.matrix()[2].getType()).isEqualTo(Material.OAK_PLANKS);
+            slots.set(3, oak);
+            assertThat(CraftPlanner.plan(slots, List.of(input))).isNull();
+        }
+    }
+
+    @Nested
+    class Crafting {
+
+        @Test
+        void craftsFromAboveIntoHopperBelow() {
+            AutoCraftGroup[] group = new AutoCraftGroup[1];
+            Block table = crafter(group);
+            Inventory input = container(table.getRelative(BlockFace.UP), Material.CHEST);
+            input.addItem(ItemStack.of(Material.COAL, 2), ItemStack.of(Material.STICK, 2));
+            Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
+
+            Node node = services().nodes().get(BlockPos.of(table));
+            assertThat(autoCraft.crafter().craftAt(group[0], node)).isTrue();
+            assertThat(autoCraft.crafter().craftAt(group[0], node)).isTrue();
+            assertThat(autoCraft.crafter().craftAt(group[0], node)).isFalse();
+
+            assertThat(output.contains(Material.TORCH, 8)).isTrue();
+            assertThat(input.contains(Material.COAL)).isFalse();
+            assertThat(group[0].result()).isEqualTo(ItemStack.of(Material.TORCH, 4));
+        }
+
+        @Test
+        void lockedHopperStopsCrafting() {
+            AutoCraftGroup[] group = new AutoCraftGroup[1];
+            Block table = crafter(group);
+            container(table.getRelative(BlockFace.UP), Material.CHEST).addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
+            Block below = table.getRelative(BlockFace.DOWN);
+            container(below, Material.HOPPER);
+            Hopper data = (Hopper) below.getBlockData();
+            data.setEnabled(false);
+            below.setBlockData(data);
+            Node node = services().nodes().get(BlockPos.of(table));
+
+            assertThat(autoCraft.crafter().craftAt(group[0], node)).isFalse();
+            // The "container below crafts only while powered" rule needs redstone, which MockBukkit doesn't implement;
+            // it is covered by the AutoCraft E2E test.
+        }
+
+        @Test
+        void usesAccessibleChestLinkInputs() {
+            AutoCraftGroup[] group = new AutoCraftGroup[1];
+            Block table = crafter(group);
+            Block side = table.getRelative(BlockFace.EAST);
+            side.setType(Material.CHEST);
+            links().link(alice, GroupType.CHESTLINK, "mats", side, BlockFace.EAST, true);
+            ChestLinkGroup mats = (ChestLinkGroup) services().groups().find(GroupType.CHESTLINK, alice.getUniqueId(), "mats");
+            mats.inventory().addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
+            Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
+
+            assertThat(autoCraft.crafter().craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isTrue();
+            assertThat(output.contains(Material.TORCH, 4)).isTrue();
+            assertThat(mats.inventory().isEmpty()).isTrue();
+            assertThat(storage().groupStore().isDirty(mats)).isTrue();
+        }
+
+        @Test
+        void ignoresChestLinkInputsWhileChestLinksAreDisabled() {
+            AutoCraftGroup[] group = new AutoCraftGroup[1];
+            Block table = crafter(group);
+            Block side = table.getRelative(BlockFace.EAST);
+            side.setType(Material.CHEST);
+            links().link(alice, GroupType.CHESTLINK, "mats", side, BlockFace.EAST, true);
+            ChestLinkGroup mats = (ChestLinkGroup) services().groups().find(GroupType.CHESTLINK, alice.getUniqueId(), "mats");
+            mats.inventory().addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
+            Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
+
+            reconfigure("features.chestlinks", false);
+
+            assertThat(autoCraft.crafter().craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isFalse();
+            assertThat(output.isEmpty()).isTrue();
+            assertThat(mats.inventory().contains(Material.COAL)).isTrue();
+        }
+    }
+
+    @Nested
+    class Scheduling {
+
+        @Test
+        void settingTheRecipeCraftsOnTheNextTickThenOncePerInterval() {
+            AutoCraftGroup[] group = new AutoCraftGroup[1];
+            Block table = crafter(group);
+            container(table.getRelative(BlockFace.UP), Material.CHEST).addItem(ItemStack.of(Material.COAL, 2), ItemStack.of(Material.STICK, 2));
+            Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
+
+            ticks(1);
+            assertThat(output.contains(Material.TORCH, 4)).isTrue();
+            ticks(19);
+            assertThat(output.contains(Material.TORCH, 8)).isFalse();
+            ticks(1);
+            assertThat(output.contains(Material.TORCH, 8)).isTrue();
+        }
+
+        @Test
+        void placingALinkItemCraftsOnTheNextTick() {
+            features().handlers().register(autoCraft.handler());
+            AutoCraftGroup[] group = new AutoCraftGroup[1];
+            Block original = crafter(group);
+            ItemStack pickaxe = ItemStack.of(Material.DIAMOND_PICKAXE);
+            pickaxe.addEnchantment(Enchantment.SILK_TOUCH, 1);
+            alice.getInventory().setItemInMainHand(pickaxe);
+            BlockBreakEvent breakEvent = new BlockBreakEvent(original, alice);
+            server.getPluginManager().callEvent(breakEvent);
+            assertThat(breakEvent.isDropItems()).isFalse();
+            ItemStack linkItem = world.getEntitiesByClass(Item.class).iterator().next().getItemStack();
+            assertThat(features().linkItem().read(linkItem)).isEqualTo(new LinkItem.Link(group[0].id(), GroupType.AUTOCRAFT));
+            ticks(1);
+
+            Block placed = world.getBlockAt(9, 64, 9);
+            placed.setType(Material.CRAFTING_TABLE);
+            container(placed.getRelative(BlockFace.UP), Material.CHEST).addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
+            Inventory output = container(placed.getRelative(BlockFace.DOWN), Material.HOPPER);
+            BlockPlaceEvent event = new BlockPlaceEvent(placed, placed.getState(), placed.getRelative(BlockFace.DOWN), linkItem, alice, true,
+                    EquipmentSlot.HAND);
+            server.getPluginManager().callEvent(event);
+            assertThat(event.isCancelled()).isFalse();
+            assertThat(services().nodes().at(placed).groupId()).isEqualTo(group[0].id());
+            assertThat(output.isEmpty()).isTrue();
+
+            ticks(1);
+            assertThat(output.contains(Material.TORCH, 4)).isTrue();
+        }
+
+        @Test
+        void aFailingCrafterBacksOffUntilItsInputChanges() {
+            AutoCraftGroup[] group = new AutoCraftGroup[1];
+            Block table = crafter(group);
+            Inventory input = container(table.getRelative(BlockFace.UP), Material.CHEST);
+            Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
+
+            ticks(1);
+            assertThat(autoCraft.crafter().isBackingOff(BlockPos.of(table))).isTrue();
+            input.addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
+            ticks(5);
+            assertThat(output.isEmpty()).isTrue();
+
+            autoCraft.crafter().inventoryChanged(input);
+            ticks(1);
+            assertThat(output.contains(Material.TORCH, 4)).isTrue();
+            assertThat(autoCraft.crafter().isBackingOff(BlockPos.of(table))).isFalse();
+        }
+
+        @Test
+        void clickingItemsIntoAnOpenInputChestWakesAWaitingCrafter() {
+            AutoCraftGroup[] group = new AutoCraftGroup[1];
+            Block table = crafter(group);
+            Inventory input = container(table.getRelative(BlockFace.UP), Material.CHEST);
+            Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
+            ticks(1);
+
+            InventoryView view = alice.openInventory(input);
+            input.addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
+            AutoCraftListener listener = new AutoCraftListener(services(), links(), autoCraft.editor(), autoCraft.recipes(), autoCraft.crafter());
+            listener.onClick(new InventoryClickEvent(view, InventoryType.SlotType.CONTAINER, 0, ClickType.LEFT, InventoryAction.PLACE_ALL));
+            ticks(1);
+            assertThat(output.contains(Material.TORCH, 4)).isTrue();
+        }
+
+        @Test
+        void placingTheOutputHopperWakesAWaitingCrafter() {
+            AutoCraftGroup[] group = new AutoCraftGroup[1];
+            Block table = crafter(group);
+            container(table.getRelative(BlockFace.UP), Material.CHEST).addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
+            ticks(1);
+
+            Block below = table.getRelative(BlockFace.DOWN);
+            Inventory output = container(below, Material.HOPPER);
+            autoCraft.crafter().blockChanged(below);
+            ticks(1);
+            assertThat(output.contains(Material.TORCH, 4)).isTrue();
+        }
+
+        @Test
+        void itemsReachingAChestLinkInputWakeAWaitingCrafter() {
+            AutoCraftGroup[] group = new AutoCraftGroup[1];
+            Block table = crafter(group);
+            Block side = table.getRelative(BlockFace.EAST);
+            side.setType(Material.CHEST);
+            links().link(alice, GroupType.CHESTLINK, "mats", side, BlockFace.EAST, true);
+            ChestLinkGroup mats = (ChestLinkGroup) services().groups().find(GroupType.CHESTLINK, alice.getUniqueId(), "mats");
+            Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
+            ticks(1);
+
+            mats.inventory().addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
+            autoCraft.crafter().inventoryChanged(mats.inventory());
+            ticks(1);
+            assertThat(output.contains(Material.TORCH, 4)).isTrue();
+        }
+
+        @Test
+        void aCraftThatEmptiesAnotherCraftersFullOutputWakesIt() {
+            AutoCraftGroup[] group = new AutoCraftGroup[1];
+            Block first = linkedCrafter(group);
+            Block shared = first.getRelative(BlockFace.UP);
+            Block second = shared.getRelative(BlockFace.UP);
+            second.setType(Material.CRAFTING_TABLE);
+            links().link(alice, GroupType.AUTOCRAFT, "torches", second, BlockFace.NORTH, true);
+            autoCraft.recipes().setMatrix(group[0], torchMatrix(), null);
+            Inventory between = container(shared, Material.HOPPER);
+            between.setContents(new ItemStack[]{ItemStack.of(Material.COAL), ItemStack.of(Material.STICK), ItemStack.of(Material.DIRT, 64),
+                    ItemStack.of(Material.DIRT, 64), ItemStack.of(Material.DIRT, 64)});
+            container(second.getRelative(BlockFace.UP), Material.CHEST).addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
+            Block below = first.getRelative(BlockFace.DOWN);
+            ticks(1);
+            assertThat(autoCraft.crafter().isBackingOff(BlockPos.of(second))).isTrue();
+
+            Inventory output = container(below, Material.HOPPER);
+            autoCraft.crafter().blockChanged(below);
+            ticks(1);
+            assertThat(output.contains(Material.TORCH, 4)).isTrue();
+            ticks(1);
+            assertThat(between.contains(Material.TORCH, 4)).isTrue();
+        }
+
+        @Test
+        void theSweepFindsCraftersNothingScheduled() {
+            AutoCraftGroup[] group = new AutoCraftGroup[1];
+            Block table = crafter(group);
+            container(table.getRelative(BlockFace.UP), Material.CHEST).addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
+            Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
+            autoCraft = autoCraft(false);
+
+            ticks(19);
+            assertThat(output.isEmpty()).isTrue();
+            ticks(1);
+            assertThat(output.contains(Material.TORCH, 4)).isTrue();
+        }
+
+        @Test
+        void aCraftThatThrowsBacksOffWithoutStallingTheRestOfItsBatch() {
+            autoCraft = autoCraft(new ThrowOnceBackend());
+            AutoCraftGroup[] group = new AutoCraftGroup[1];
+            Block first = crafter(group);
+            Block second = world.getBlockAt(4, 64, 0);
+            second.setType(Material.CRAFTING_TABLE);
+            links().link(alice, GroupType.AUTOCRAFT, "torches", second, BlockFace.NORTH, true);
+            List<Inventory> outputs = new ArrayList<>();
+            for (Block table : List.of(first, second)) {
+                container(table.getRelative(BlockFace.UP), Material.CHEST).addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
+                outputs.add(container(table.getRelative(BlockFace.DOWN), Material.HOPPER));
+            }
+            autoCraft.recipes().setMatrix(group[0], torchMatrix(), null);
+
+            ticks(1);
+            assertThat(outputs).filteredOn(output -> output.contains(Material.TORCH, 4)).hasSize(1);
+            assertThat(List.of(first, second)).filteredOn(table -> autoCraft.crafter().isBackingOff(BlockPos.of(table))).hasSize(1);
+
+            ticks(CraftScheduler.MAX_BACKOFF_TICKS);
+            assertThat(outputs).allMatch(output -> output.contains(Material.TORCH, 4));
+        }
+    }
+
+    @Nested
+    class RecipeResolution {
+
+        @Test
+        void aRecipeThatCannotBeResolvedAtLoadKeepsItsKey() {
+            autoCraft = autoCraft(new LateBackend());
+            AutoCraftGroup[] group = new AutoCraftGroup[1];
+            loadedCrafter(group, autoCraft);
+
+            assertThat(group[0].hasRecipe()).isFalse();
+            assertThat(group[0].recipeKey()).isEqualTo(TORCH);
+            assertThat(group[0].matrix()[4]).isEqualTo(ItemStack.of(Material.STICK));
+        }
+
+        @Test
+        void aRecipeRegisteredAfterLoadResolvesWhenTheServerFinishesLoading() {
+            LateBackend backend = new LateBackend();
+            autoCraft = autoCraft(backend);
+            AutoCraftGroup[] group = new AutoCraftGroup[1];
+            Block table = loadedCrafter(group, autoCraft);
+            container(table.getRelative(BlockFace.UP), Material.CHEST).addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
+            Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
+            ticks(20);
+            assertThat(output.isEmpty()).isTrue();
+
+            backend.registered = true;
+            serverFinishesLoading(autoCraft);
+
+            assertThat(group[0].result()).isEqualTo(ItemStack.of(Material.TORCH, 4));
+            assertThat(group[0].recipeKey()).isEqualTo(TORCH);
+            ticks(1);
+            assertThat(output.contains(Material.TORCH, 4)).isTrue();
+        }
+
+        @Test
+        void aRecipeStillMissingWhenTheServerLoadsKeepsItsKeyAndIsRetriedOnTheNextLoad() {
+            LateBackend backend = new LateBackend();
+            autoCraft = autoCraft(backend);
+            AutoCraftGroup[] group = new AutoCraftGroup[1];
+            loadedCrafter(group, autoCraft);
+
+            serverFinishesLoading(autoCraft);
+            assertThat(group[0].hasRecipe()).isFalse();
+            assertThat(group[0].recipeKey()).isEqualTo(TORCH);
+
+            backend.registered = true;
+            server.getPluginManager().callEvent(new ServerLoadEvent(ServerLoadEvent.LoadType.RELOAD));
+            assertThat(group[0].hasRecipe()).isTrue();
+        }
+
+        @Test
+        void aKeyOnlyRecipeRegisteredAfterLoadRebuildsItsMatrixWhenTheServerFinishesLoading() {
+            LateBackend backend = new LateBackend();
+            autoCraft = autoCraft(backend);
+            AutoCraftGroup[] group = new AutoCraftGroup[1];
+            linkedCrafter(group);
+            NamespacedKey key = new NamespacedKey(plugin, "late_torch");
+            group[0].setRecipe(new ItemStack[9], key, null);
+            autoCraft.recipes().resolveLoaded(group[0]);
+            assertThat(group[0].matrixIsEmpty()).isTrue();
+
+            server.addRecipe(new ShapedRecipe(key, ItemStack.of(Material.TORCH, 4)).shape("C", "S")
+                    .setIngredient('C', Material.COAL)
+                    .setIngredient('S', Material.STICK));
+            backend.registered = true;
+            serverFinishesLoading(autoCraft);
+
+            assertThat(group[0].matrix()[0]).isEqualTo(ItemStack.of(Material.COAL));
+            assertThat(group[0].matrix()[3]).isEqualTo(ItemStack.of(Material.STICK));
+            assertThat(group[0].hasRecipe()).isTrue();
+        }
+
+        @Test
+        void editingAnUnresolvedRecipeStopsItBeingRetried() {
+            LateBackend backend = new LateBackend();
+            autoCraft = autoCraft(backend);
+            AutoCraftGroup[] group = new AutoCraftGroup[1];
+            loadedCrafter(group, autoCraft);
+
+            autoCraft.recipes().setMatrix(group[0], torchMatrix(), null);
+            assertThat(group[0].recipeKey()).isNull();
+
+            backend.registered = true;
+            serverFinishesLoading(autoCraft);
+            assertThat(group[0].hasRecipe()).isFalse();
+        }
+    }
+
+    @Nested
+    class LocksAndProtection {
+
+        @Test
+        void aLockedInputIsNotDrained() {
+            AutoCraftGroup[] group = new AutoCraftGroup[1];
+            Block table = crafter(group);
+            Inventory locked = container(table.getRelative(BlockFace.UP), Material.CHEST);
+            locked.addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
+            Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
+            Lock lock = lock(locked);
+
+            assertThat(autoCraft.crafter().craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isFalse();
+            assertThat(locked.contains(Material.COAL, 1)).isTrue();
+            assertThat(locked.contains(Material.STICK, 1)).isTrue();
+            assertThat(output.isEmpty()).isTrue();
+            assertThat(lock.seen).singleElement().satisfies(event -> {
+                assertThat(event.getSource()).isEqualTo(locked);
+                assertThat(event.getDestination()).isEqualTo(output);
+            });
+        }
+
+        @Test
+        void aLockedInputIsSkippedForAnAllowedOne() {
+            AutoCraftGroup[] group = new AutoCraftGroup[1];
+            Block table = crafter(group);
+            Inventory locked = container(table.getRelative(BlockFace.UP), Material.CHEST);
+            locked.addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
+            Inventory allowed = container(table.getRelative(BlockFace.EAST), Material.CHEST);
+            allowed.addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
+            Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
+            Lock lock = lock(locked);
+
+            assertThat(autoCraft.crafter().craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isTrue();
+            assertThat(output.contains(Material.TORCH, 4)).isTrue();
+            assertThat(allowed.isEmpty()).isTrue();
+            assertThat(locked.contains(Material.COAL, 1)).isTrue();
+            assertThat(locked.contains(Material.STICK, 1)).isTrue();
+            assertThat(lock.seen).hasSize(2);
+        }
+
+        @Test
+        void aLockedOutputIsNotFilled() {
+            AutoCraftGroup[] group = new AutoCraftGroup[1];
+            Block table = crafter(group);
+            Inventory input = container(table.getRelative(BlockFace.UP), Material.CHEST);
+            input.addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
+            Inventory locked = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
+            lock(locked);
+
+            assertThat(autoCraft.crafter().craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isFalse();
+            assertThat(locked.isEmpty()).isTrue();
+            assertThat(input.contains(Material.COAL, 1)).isTrue();
+        }
+
+        @Test
+        void theProtectionCheckAsksAboutTheProductReachingTheOutput() {
+            AutoCraftGroup[] group = new AutoCraftGroup[1];
+            Block table = crafter(group);
+            Inventory input = container(table.getRelative(BlockFace.UP), Material.CHEST);
+            input.addItem(ItemStack.of(Material.COAL, 2), ItemStack.of(Material.STICK, 2));
+            Block below = table.getRelative(BlockFace.DOWN);
+            Inventory output = container(below, Material.HOPPER);
+            // The filter would refuse coal and stall-avoid if it treated the check as a real move of an ingredient.
+            filter(below, Mode.ALLOW);
+            Lock lock = lock(server.createInventory(null, 9));
+
+            assertThat(autoCraft.crafter().craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isTrue();
+            assertThat(lock.seen).singleElement().isInstanceOf(SyntheticMoveEvent.class).satisfies(event -> {
+                assertThat(event.isCancelled()).isFalse();
+                assertThat(event.getSource()).isEqualTo(input);
+                assertThat(event.getDestination()).isEqualTo(output);
+                assertThat(event.getItem()).isEqualTo(ItemStack.of(Material.TORCH, 4));
+            });
+            assertThat(output.contains(Material.TORCH, 4)).isTrue();
+            assertThat(output.contains(Material.COAL)).isFalse();
+            assertThat(input.contains(Material.COAL, 1)).isTrue();
+            assertThat(input.contains(Material.STICK, 1)).isTrue();
+        }
+
+        @Test
+        void anOutputHopperFilterThatRefusesTheProductStopsTheCraft() {
+            AutoCraftGroup[] group = new AutoCraftGroup[1];
+            Block table = crafter(group);
+            Inventory input = container(table.getRelative(BlockFace.UP), Material.CHEST);
+            input.addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
+            Block below = table.getRelative(BlockFace.DOWN);
+            Inventory output = container(below, Material.HOPPER);
+            filter(below, Mode.DENY);
+
+            assertThat(autoCraft.crafter().craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isFalse();
+            assertThat(output.isEmpty()).isTrue();
+            assertThat(input.contains(Material.COAL, 1)).isTrue();
+            assertThat(input.contains(Material.STICK, 1)).isTrue();
+        }
+
+        @Test
+        void anotherPluginRefusingTheProductStopsTheCraft() {
+            AutoCraftGroup[] group = new AutoCraftGroup[1];
+            Block table = crafter(group);
+            Inventory input = container(table.getRelative(BlockFace.UP), Material.CHEST);
+            input.addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
+            Inventory output = container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
+            server.getPluginManager().registerEvent(InventoryMoveItemEvent.class, new Listener() {}, EventPriority.NORMAL, (_, event) -> {
+                if (event instanceof InventoryMoveItemEvent move && move.getItem().getType() == Material.TORCH) move.setCancelled(true);
+            }, plugin);
+
+            assertThat(autoCraft.crafter().craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isFalse();
+            assertThat(output.isEmpty()).isTrue();
+            assertThat(input.contains(Material.COAL, 1)).isTrue();
+            assertThat(input.contains(Material.STICK, 1)).isTrue();
+        }
+
+        @Test
+        void aLockedChestLinkInputIsRefusedLikeAVanillaChest() {
+            AutoCraftGroup[] group = new AutoCraftGroup[1];
+            Block table = crafter(group);
+            Block side = table.getRelative(BlockFace.EAST);
+            side.setType(Material.CHEST);
+            links().link(alice, GroupType.CHESTLINK, "mats", side, BlockFace.EAST, true);
+            ChestLinkGroup mats = (ChestLinkGroup) services().groups().find(GroupType.CHESTLINK, alice.getUniqueId(), "mats");
+            mats.inventory().addItem(ItemStack.of(Material.COAL), ItemStack.of(Material.STICK));
+            container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
+            Inventory linkedChest = ((Container) side.getState(false)).getInventory();
+            Lock lock = lock(linkedChest);
+
+            assertThat(autoCraft.crafter().craftAt(group[0], services().nodes().get(BlockPos.of(table)))).isFalse();
+            assertThat(lock.seen).singleElement().satisfies(event -> assertThat(event.getSource()).isEqualTo(linkedChest));
+            assertThat(mats.inventory().contains(Material.COAL)).isTrue();
+        }
+    }
+
+    @Nested
+    class Editor {
+
+        @Test
+        void editorClicksPlaceGhostItemsAndResolveTheRecipe() {
+            Block table = world.getBlockAt(0, 64, 0);
+            table.setType(Material.CRAFTING_TABLE);
+            links().link(alice, GroupType.AUTOCRAFT, "t", table, BlockFace.NORTH, true);
+            AutoCraftGroup group = (AutoCraftGroup) services().groups().find(GroupType.AUTOCRAFT, alice.getUniqueId(), "t");
+            RecipeEditorHolder editor = editor(group);
+
+            ItemStack[] matrix = editor.click(2, ItemStack.of(Material.COAL, 64));
+            autoCraft.recipes().setMatrix(group, matrix, null);
+            matrix = editor.click(5, ItemStack.of(Material.STICK, 3));
+            autoCraft.recipes().setMatrix(group, matrix, null);
+            editor.render();
+
+            ItemStack result = editor.getInventory().getItem(RecipeEditorHolder.RESULT_SLOT);
+            assertThat(result.getType()).isEqualTo(Material.TORCH);
+            assertThat(result.getAmount()).isEqualTo(4);
+            assertThat(editor.getInventory().getItem(2).getType()).isEqualTo(Material.COAL);
+            assertThat(group.recipeKey()).isEqualTo(NamespacedKey.minecraft("torch"));
+            assertThat(storage().groupStore().isDirty(group)).isTrue();
+            assertThat(editor.click(9, null)).isNull();
+        }
+
+        @Test
+        void matchModesDecideWhichInputsCraft() {
+            AutoCraftGroup[] group = new AutoCraftGroup[1];
+            Block table = crafter(group);
+            Inventory input = container(table.getRelative(BlockFace.UP), Material.CHEST);
+            input.addItem(namedCoal(), ItemStack.of(Material.STICK));
+            container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
+            Node node = services().nodes().get(BlockPos.of(table));
+
+            autoCraft.recipes().setMatch(group[0], 1, SlotMatch.EXACT);
+            assertThat(autoCraft.crafter().craftAt(group[0], node)).isFalse();
+            autoCraft.recipes().setMatch(group[0], 1, SlotMatch.RECIPE);
+            assertThat(autoCraft.crafter().craftAt(group[0], node)).isTrue();
+
+            input.addItem(namedCoal(), ItemStack.of(Material.STICK));
+            autoCraft.recipes().setMatch(group[0], 1, SlotMatch.TYPE);
+            assertThat(autoCraft.crafter().craftAt(group[0], node)).isTrue();
+            assertThat(storage().groupStore().isDirty(group[0])).isTrue();
+        }
+
+        @Test
+        void specialRecipesMatchExactlyUntilASlotIsSetToType() {
+            autoCraft = autoCraft(true);
+            AutoCraftGroup[] group = new AutoCraftGroup[1];
+            Block table = crafter(group);
+            container(table.getRelative(BlockFace.UP), Material.CHEST).addItem(namedCoal(), ItemStack.of(Material.STICK));
+            container(table.getRelative(BlockFace.DOWN), Material.HOPPER);
+            Node node = services().nodes().get(BlockPos.of(table));
+
+            assertThat(autoCraft.recipes().hasRecipeChoice(group[0], 1)).isFalse();
+            assertThat(autoCraft.crafter().craftAt(group[0], node)).isFalse();
+            autoCraft.recipes().setMatch(group[0], 1, SlotMatch.TYPE);
+            assertThat(autoCraft.crafter().craftAt(group[0], node)).isTrue();
+        }
+
+        @Test
+        void rightClickChangesMatchForManagersAndReplacingAGhostResetsIt() {
+            AutoCraftGroup[] group = new AutoCraftGroup[1];
+            crafter(group);
+            RecipeEditorHolder editor = editor(group[0]);
+
+            editor.onClick(alice, 2, null, ClickType.RIGHT);
+            assertThat(group[0].matches()[1]).isEqualTo(SlotMatch.EXACT);
+
+            editor.onClick(server.addPlayer("Bob"), 2, null, ClickType.RIGHT);
+            assertThat(group[0].matches()[1]).isEqualTo(SlotMatch.EXACT);
+
+            editor.onClick(alice, 6, null, ClickType.RIGHT);
+            assertThat(group[0].matches()[5]).isEqualTo(SlotMatch.RECIPE);
+
+            editor.onClick(alice, 2, ItemStack.of(Material.CHARCOAL), ClickType.LEFT);
+            assertThat(group[0].matches()[1]).isEqualTo(SlotMatch.RECIPE);
+        }
+
+        @Test
+        void draggingAnItemPlacesAGhostInEveryMatrixSlotItCovers() {
+            AutoCraftGroup[] group = new AutoCraftGroup[1];
+            crafter(group);
+            RecipeEditorHolder editor = editor(group[0]);
+            ItemStack coal = ItemStack.of(Material.COAL, 32);
+
+            InventoryDragEvent drag = drag(alice, editor, coal, 0, 7, 8, 9, 20);
+            assertThat(drag.isCancelled()).isTrue();
+            @Nullable ItemStack[] matrix = group[0].matrix();
+            assertThat(matrix[6]).isEqualTo(ItemStack.of(Material.COAL));
+            assertThat(matrix[7]).isEqualTo(ItemStack.of(Material.COAL));
+            assertThat(matrix[8]).isEqualTo(ItemStack.of(Material.COAL));
+            assertThat(matrix[4]).isEqualTo(ItemStack.of(Material.STICK));
+            assertThat(coal.getAmount()).isEqualTo(32);
+
+            drag(server.addPlayer("Bob"), editor, ItemStack.of(Material.DIRT), 1, 2);
+            assertThat(group[0].matrix()[0]).isNull();
+        }
+
+        @Test
+        void doubleClickingInYourOwnInventoryCannotCollectTheResultIcon() {
+            AutoCraftGroup[] group = new AutoCraftGroup[1];
+            crafter(group);
+            RecipeEditorHolder editor = editor(group[0]);
+            InventoryView view = alice.openInventory(editor.getInventory());
+            view.setCursor(ItemStack.of(Material.TORCH));
+
+            InventoryClickEvent collect = click(view, ClickType.DOUBLE_CLICK, InventoryAction.COLLECT_TO_CURSOR);
+            assertThat(collect.isCancelled()).isTrue();
+            assertThat(editor.getInventory().getItem(RecipeEditorHolder.RESULT_SLOT).getType()).isEqualTo(Material.TORCH);
+
+            assertThat(click(view, ClickType.LEFT, InventoryAction.PICKUP_ALL).isCancelled()).isFalse();
+        }
     }
 }

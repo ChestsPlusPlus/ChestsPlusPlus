@@ -78,6 +78,15 @@ public abstract class PluginTestBase {
         return features().links();
     }
 
+    /** A world named {@code name} whose chunks enumerate the tile entities the test creates, with chunk (0, 0) loaded. */
+    protected TileEntityWorld tileWorld(String name) {
+        TileEntityWorld world = new TileEntityWorld();
+        world.setName(name);
+        server.addWorld(world);
+        world.loadChunk(0, 0);
+        return world;
+    }
+
     protected ServerMock createServer() {
         return MockBukkit.mock();
     }

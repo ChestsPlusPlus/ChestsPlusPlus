@@ -9,7 +9,6 @@ import com.jamesdpeters.chestsplusplus.link.SyntheticMoveEvent;
 import com.jamesdpeters.chestsplusplus.model.ChestLinkGroup;
 import com.jamesdpeters.chestsplusplus.model.GroupType;
 import com.jamesdpeters.chestsplusplus.testing.PluginTestBase;
-import com.jamesdpeters.chestsplusplus.testing.TileEntityWorld;
 import com.jamesdpeters.chestsplusplus.testing.WallSigns;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -52,11 +51,7 @@ class FilterIntegrationTest extends PluginTestBase {
 
     @BeforeEach
     void setUp() {
-        TileEntityWorld tileWorld = new TileEntityWorld();
-        tileWorld.setName("world");
-        server.addWorld(tileWorld);
-        world = tileWorld;
-        world.loadChunk(0, 0);
+        world = tileWorld("world");
         filters = features().filters();
     }
 
