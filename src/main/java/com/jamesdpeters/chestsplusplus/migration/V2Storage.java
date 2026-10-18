@@ -81,7 +81,7 @@ public final class V2Storage {
         boolean isPublic = Boolean.TRUE.equals(map.get("isPublic"));
         return new V2Data.Group(type, owner, name, isPublic, uuids(map.get("members")), sortMode(map.get("sortMethod")),
                 type == GroupType.CHESTLINK ? items(map.get("inventory")) : null, type == GroupType.AUTOCRAFT ? recipe(map.get("recipe")) : null,
-                locations(map));
+                locations(map, type.displayName() + " " + owner + ":" + name));
     }
 
     private static SortMode sortMode(@Nullable Object value) {
@@ -90,22 +90,26 @@ public final class V2Storage {
     }
 
     /** v2 kept either {@code locationInfo: [LocationInfo{Location}]} or, in older files, {@code locations: [Location]}. */
-    private static List<V2Data.Location> locations(Map<?, ?> map) {
+    private List<V2Data.Location> locations(Map<?, ?> map, String label) {
         List<V2Data.Location> out = new ArrayList<>();
         Object list = map.containsKey("locationInfo") ? map.get("locationInfo") : map.get("locations");
         if (!(list instanceof List<?> entries)) return out;
         for (Object entry : entries) {
             Object location = entry instanceof Map<?, ?> info && info.containsKey("Location") ? info.get("Location") : entry;
             V2Data.Location parsed = location(location);
-            if (parsed != null && !out.contains(parsed)) out.add(parsed);
+            if (parsed == null) problems.add(label + " has a location that could not be read and was skipped: " + location);
+            else if (!out.contains(parsed)) out.add(parsed);
         }
         return out;
     }
 
+    /** Paper 26.1.2 and later save a location's world as {@code world_key}; earlier versions save its name as {@code world}. */
     private static V2Data.@Nullable Location location(@Nullable Object value) {
-        if (!(value instanceof Map<?, ?> map) || !(map.get("world") instanceof String world)) return null;
+        if (!(value instanceof Map<?, ?> map)) return null;
+        Object world = map.containsKey("world_key") ? map.get("world_key") : map.get("world");
+        if (!(world instanceof String name)) return null;
         if (!(map.get("x") instanceof Number x) || !(map.get("y") instanceof Number y) || !(map.get("z") instanceof Number z)) return null;
-        return new V2Data.Location(world, (int) Math.floor(x.doubleValue()), (int) Math.floor(y.doubleValue()), (int) Math.floor(z.doubleValue()));
+        return new V2Data.Location(name, (int) Math.floor(x.doubleValue()), (int) Math.floor(y.doubleValue()), (int) Math.floor(z.doubleValue()));
     }
 
     private static V2Data.@Nullable Recipe recipe(@Nullable Object value) {

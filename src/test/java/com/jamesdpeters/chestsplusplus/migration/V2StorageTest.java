@@ -57,6 +57,15 @@ class V2StorageTest extends PluginTestBase {
     }
 
     @Test
+    void readsWorldKeysAndReportsLocationsWithNoWorld() {
+        V2Data data = V2Storage.parse(V2Fixtures.keyedStorage("minecraft:overworld", "minecraft:schneckenhaus"));
+
+        assertThat(group(data, GroupType.CHESTLINK, "sorter-in").locations()).containsExactly(new V2Data.Location("minecraft:overworld", 0, 64, 0),
+                new V2Data.Location("minecraft:schneckenhaus", 2, 28, 5));
+        assertThat(data.problems()).singleElement().asString().contains("sorter-in", "could not be read");
+    }
+
+    @Test
     void readsTheOldRecipeTypeName() {
         String legacy = V2Fixtures.storage().replace("==: C++Recipe", "==: Recipe");
 

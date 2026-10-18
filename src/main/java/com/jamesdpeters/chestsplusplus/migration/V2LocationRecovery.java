@@ -10,6 +10,7 @@ import com.jamesdpeters.chestsplusplus.model.Node;
 import com.jamesdpeters.chestsplusplus.model.NodeIndex;
 import com.jamesdpeters.chestsplusplus.model.StorageGroup;
 import com.jamesdpeters.chestsplusplus.persistence.Persistence;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bukkit.Chunk;
@@ -58,7 +59,10 @@ public final class V2LocationRecovery implements Listener {
 
     public void finish(Chunk chunk) {
         if (pending.isEmpty()) return;
-        for (LocationRow row : pending.inChunk(chunk.getWorld().getName(), chunk.getChunkKey())) attach(row, chunk);
+        World world = chunk.getWorld();
+        for (String id : List.of(world.getName(), world.getKey().asString())) {
+            for (LocationRow row : pending.inChunk(id, chunk.getChunkKey())) attach(row, chunk);
+        }
     }
 
     private void attach(LocationRow row, Chunk chunk) {

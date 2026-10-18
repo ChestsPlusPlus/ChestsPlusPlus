@@ -24,6 +24,7 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
+import org.bukkit.WorldCreator;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
@@ -261,6 +262,19 @@ class V2MigrationTest extends PluginTestBase {
             assertThat(database.handle().createQuery("SELECT count(*) FROM nodes WHERE group_id = :id").bind("id", group.id()).mapTo(int.class).one())
                     .isEqualTo(1);
         }
+    }
+
+    @Test
+    void locationsSavedByWorldKeyAttachWhenTheirWorldLoads() {
+        NamespacedKey key = new NamespacedKey("custom", "later");
+        ChestLinkGroup group = importUnresolved(key.asString(), 0);
+        World later = server.createWorld(WorldCreator.ofKey(key));
+        Block block = later.getBlockAt(0, 64, 0);
+        block.setType(Material.CHEST);
+        later.loadChunk(0, 0);
+        server.getPluginManager().callEvent(new WorldLoadEvent(later));
+        assertThat(services.nodes().at(block).groupId()).isEqualTo(group.id());
+        assertThat(services.get(V2PendingLocations.class).size()).isZero();
     }
 
     @Test
