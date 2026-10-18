@@ -88,7 +88,7 @@ Run each item on a native 26.3 client against `./gradlew runServer` (or the serv
 
 ## v2 upgrade
 
-A flat world built by ChestsPlusPlus v2 on Paper 1.21.7, with every upgrade case laid out south of spawn, then run on v3. See
+A flat world built by ChestsPlusPlus v2 on Paper 1.21.7 (or 26.3), with every upgrade case laid out south of spawn, then run on v3. See
 [v2-migration.md](v2-migration.md#upgrade-test-bed) for how it's built.
 
 ```bash
@@ -110,6 +110,8 @@ A flat world built by ChestsPlusPlus v2 on Paper 1.21.7, with every upgrade case
 - `runV2Upgrade` starts that folder on v3 with hot-swap. Join with a native 26.3 client under the name you gave (offline mode;
   you are op). `resetV2Upgrade` puts the v2 world back in a few seconds.
 - `runV2Server` runs the same folder on v2 (with ViaVersion, so a current client can join) for adding cases by hand.
+- Add `-Pchestsplusplus.v2Paper=26.3` to all three to build the v2 world on Paper 26.3 instead (`run/v2-upgrade-26.3/`,
+  `fixture-storage-26.3.yml`). The checklist below applies unchanged.
 
 ChestLinks are on z=0, AutoCrafters on z=10 and hopper filters on z=20, facing spawn. A standing sign beside each case names it
 and says what should happen. "Alex" is a second player who never joins.

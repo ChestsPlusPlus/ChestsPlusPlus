@@ -1,5 +1,6 @@
 // The v2 → v3 upgrade test bed (docs/v2-migration.md): a flat world built by ChestsPlusPlus v2 on Paper 1.21.7, then run
 // on v3. The v2Fixture source set is the helper plugin that lays the world out through v2's own classes.
+// -Pchestsplusplus.v2Paper=26.3 (the E2E server's version) builds the v2 world on that Paper instead, in its own folder.
 
 import xyz.jpenilla.runpaper.task.RunServer
 
@@ -11,8 +12,20 @@ plugins {
     id("chestsplusplus.dev-server")
 }
 
-val v2RunDir = layout.projectDirectory.dir("run/v2-upgrade")
-val v2SnapshotDir = layout.projectDirectory.dir("run/v2-upgrade-snapshot")
+val v2Paper: String = providers.gradleProperty("chestsplusplus.v2Paper").getOrElse(libs.versions.v2PaperServer.get())
+val v2OnCurrentPaper = when (v2Paper) {
+    libs.versions.v2PaperServer.get() -> false
+    libs.versions.paperServer.get() -> true
+    else -> throw GradleException(
+        "chestsplusplus.v2Paper=$v2Paper: the v2 test bed runs on ${libs.versions.v2PaperServer.get()} or ${libs.versions.paperServer.get()}"
+    )
+}
+val v2PaperJar = downloaded(if (v2OnCurrentPaper) "downloadE2ePaper" else "downloadV2Paper")
+// ViaVersion lets a current client join 1.21.7; on the current Paper it has nothing to do.
+val v2ClientBridge = if (v2OnCurrentPaper) files() else files(downloaded("downloadViaVersion"))
+val v2Folder = if (v2OnCurrentPaper) "v2-upgrade-$v2Paper" else "v2-upgrade"
+val v2RunDir = layout.projectDirectory.dir("run/$v2Folder")
+val v2SnapshotDir = layout.projectDirectory.dir("run/$v2Folder-snapshot")
 
 tasks.register<BuildV2Jar>("buildV2Jar") {
     group = "v2 upgrade"
@@ -43,10 +56,11 @@ tasks.register<Jar>("v2FixtureJar") {
 
 tasks.register<BuildV2UpgradeFixture>("v2UpgradeFixture") {
     group = "v2 upgrade"
-    description = "Builds run/v2-upgrade: a flat world with every v2 upgrade case, made by v2 on Paper 1.21.7. Needs -Pchestsplusplus.testPlayer=<name>."
+    description = "Builds run/v2-upgrade: a flat world with every v2 upgrade case, made by v2 on Paper 1.21.7 " +
+        "(or -Pchestsplusplus.v2Paper=${libs.versions.paperServer.get()}). Needs -Pchestsplusplus.testPlayer=<name>."
     javaLauncher = serverLauncher
-    serverJar = downloaded("downloadV2Paper")
-    plugins.from(v2Jar(), tasks.named<Jar>("v2FixtureJar").flatMap { it.archiveFile }, downloaded("downloadViaVersion"))
+    serverJar = v2PaperJar
+    plugins.from(v2Jar(), tasks.named<Jar>("v2FixtureJar").flatMap { it.archiveFile }, v2ClientBridge)
     fixtureDirectory = layout.projectDirectory.dir("src/test/v2-upgrade")
     testPlayer = providers.gradleProperty("chestsplusplus.testPlayer")
     otherPlayer = "Alex"
@@ -54,7 +68,9 @@ tasks.register<BuildV2UpgradeFixture>("v2UpgradeFixture") {
     rconPort = 25576
     runDirectory = v2RunDir
     snapshotDirectory = v2SnapshotDir
-    storageFixture = layout.projectDirectory.file("src/test/resources/v2/fixture-storage.yml")
+    storageFixture = layout.projectDirectory.file(
+        if (v2OnCurrentPaper) "src/test/resources/v2/fixture-storage-$v2Paper.yml" else "src/test/resources/v2/fixture-storage.yml"
+    )
 }
 
 tasks.register<ResetV2Upgrade>("resetV2Upgrade") {
@@ -66,11 +82,11 @@ tasks.register<ResetV2Upgrade>("resetV2Upgrade") {
 
 tasks.register<RunServer>("runV2Server") {
     group = "v2 upgrade"
-    description = "Runs the v2 world on v2 (Paper 1.21.7 + ViaVersion, so a current client can join), for adding cases by hand."
+    description = "Runs the v2 world on v2 (Paper $v2Paper, with ViaVersion on 1.21.7 so a current client can join), for adding cases by hand."
     // run-paper needs the version even with a server jar.
-    minecraftVersion(libs.versions.v2PaperServer.get())
-    serverJar(downloaded("downloadV2Paper"))
-    pluginJars.from(v2Jar(), downloaded("downloadViaVersion"))
+    minecraftVersion(v2Paper)
+    serverJar(v2PaperJar)
+    pluginJars.from(v2Jar(), v2ClientBridge)
     runDirectory(v2RunDir.asFile)
     javaLauncher = serverLauncher
     // The AC-missing case's recipe comes from a datapack removed before the upgrade. v2 drops a group whose recipe is gone and

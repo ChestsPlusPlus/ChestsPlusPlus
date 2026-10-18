@@ -154,18 +154,25 @@ Gradle tasks build a flat world with **v2 on Paper 1.21.7**, populate it with ev
 | `resetV2Upgrade` | Restores `run/v2-upgrade/` from the snapshot in a few seconds, to retry the upgrade without rebuilding. |
 | `runV2Server` | Runs the v2 server in the foreground on `run/v2-upgrade/`, for adding cases by hand before upgrading. |
 
+**v2 on Paper 26.3.** Add `-Pchestsplusplus.v2Paper=26.3` to any of these tasks to build and run the v2 world on Paper 26.3 (the
+E2E server's pinned jar) instead. That's a server that kept running v2 after moving to 26.x. It uses its own folders,
+`run/v2-upgrade-26.3/` and its snapshot, and writes `src/test/resources/v2/fixture-storage-26.3.yml`, so both worlds can sit side
+by side. ViaVersion is left out, because a current client joins 26.3 directly. [What differs on 26.3](#v2-on-paper-26x) lists the
+results.
+
 **How `v2UpgradeFixture` works.** It reuses the E2E server tasks with different inputs:
 
 1. Get the pieces:
-   - Paper 1.21.7, pinned in `libs.versions.toml` as `v2PaperServer`/`v2PaperServerBuild`.
+   - Paper 1.21.7, pinned in `libs.versions.toml` as `v2PaperServer`/`v2PaperServerBuild` (or the E2E `paperServer` with
+     `-Pchestsplusplus.v2Paper`).
    - The v2 jar. v2 isn't published anywhere we can download from, so `buildV2Jar` builds it from `master` with Maven. On the
      JDK 25 toolchain it needs a newer Lombok, forced annotation processing, and a `lombok.config` that stops v3's config applying
      to it. `-Pchestsplusplus.v2Jar=<path>` skips the build.
-   - ViaVersion, so you can join the v2 server with your normal client.
+   - ViaVersion, so you can join the 1.21.7 server with your normal client.
 2. Write `server.properties`: the same flat world as E2E, `online-mode=false`, its own ports, and creative mode. Offline mode makes
    UUIDs depend only on the name, so you join both servers with the same name. A v2 `config.yml` with non-default values is copied
    in, so the config migration has something to check.
-3. Start v2 on Java 21 with the `v2-fixture` helper plugin, run `v2fixture build <testPlayer> Alex` over RCON, then `save-all` and
+3. Start v2 on the Java 25 toolchain with the `v2-fixture` helper plugin, run `v2fixture build <testPlayer> Alex` over RCON, then `save-all` and
    stop. v2 writes `storage.yml` itself on disable.
 4. Start v2 again without the helper and wait for it to finish starting. This proves v2 reads its own file back (the task fails on
    a v2 stack trace), and leaves the armour-stand displays v2 spawns.
@@ -202,3 +209,23 @@ The tester is `T`; the second player is `Alex` and never needs to join.
 
 [testing.md](testing.md#v2-upgrade) has these as a checklist. Worlds that aren't loaded, or don't exist, aren't in the fixture,
 because v2 itself can't load a `storage.yml` that names one; `V2ImporterTest` covers both.
+
+### v2 on Paper 26.x
+
+v2 2.15 runs on Paper 26.3 without errors: it builds every case, writes `storage.yml`, and reads it back. Running v2 on 26.3 over
+the 1.21.7 world (an in-place server upgrade) rewrites `storage.yml` into exactly the file a fresh 26.3 build writes. The v3
+upgrade of the 26.3 world gives the same result as the 1.21.7 one, case for case, with the items byte-identical once imported.
+
+| What | 1.21.7 | 26.3 | v3 |
+|---|---|---|---|
+| Location world | `world: world`, `world: world_nether` | `world_key: minecraft:overworld`, `world_key: minecraft:the_nether` | Read since `world_key` support was added; v2 data from 26.x lost every linked block before that |
+| ItemStack | `DataVersion: 4438`, `id`, `count`, `components`, `schema_version: 1` | The same, with `DataVersion: 5023` | Read as is; Bukkit upgrades 1.21.7 items on load |
+| Enchanted, damaged, renamed, potion, written book, filled shulker | Data components | Identical components | All intact after the import on a real server |
+| Recipe keys, parties, members, sort mode | `C++Recipe` namespace + key, `PlayerPartyStorage` | Unchanged | Unchanged |
+| Owner order in the file | Hash order of the players' UUIDs | Same | Doesn't matter |
+| World folders | `world/`, `world_nether/`, `world_the_end/`, each with `uid.dat` | One `world/` with `dimensions/minecraft/<dimension>/`, no `uid.dat`; Paper 26.3 also moves a 1.21.7 world into this layout and drops its `uid.dat` on first start | Keyed worlds resolve only once loaded (see [Worlds that aren't loaded yet](#worlds-that-arent-loaded-yet)); `convert-all` finds the region files under `dimensions/` |
+| Bukkit world names | `world_nether` | Still `world_nether` | The blacklist migrates by name as before |
+| Armour-stand displays | Spawned by v2 | Spawned by v2 | Removed as their chunks load |
+
+Bukkit logs an item it can't deserialise and hands back null instead of throwing. The import reports that item now, rather
+than dropping it and leaving the chest looking empty.

@@ -159,6 +159,15 @@ public final class V2Storage {
         return out;
     }
 
+    /** Enough of a saved object to find it in the file: an item's id and count, say. */
+    private static String describe(Map<String, @Nullable Object> map) {
+        Map<String, @Nullable Object> shown = new LinkedHashMap<>();
+        map.forEach((key, value) -> {
+            if (!(value instanceof Map<?, ?>) && !(value instanceof List<?>) && !key.equals(TYPE_KEY)) shown.put(key, value);
+        });
+        return shown.toString();
+    }
+
     /** Deserialises Bukkit objects from the inside out, as Bukkit's own YAML loader does, leaving v2's types as maps. */
     private @Nullable Object walk(@Nullable Object value) {
         if (value instanceof List<?> list) {
@@ -172,9 +181,13 @@ public final class V2Storage {
         Object type = out.get(TYPE_KEY);
         if (type == null || KEPT_AS_MAPS.contains(type.toString())) return out;
         try {
-            return ConfigurationSerialization.deserializeObject(out);
+            // Bukkit logs a failing deserialize method and returns null, so null is a failure too: an item that disappeared without a
+            // line in the report would look like an empty chest.
+            Object object = ConfigurationSerialization.deserializeObject(out);
+            if (object == null) problems.add("A saved " + type + " could not be read and was skipped: " + describe(out));
+            return object;
         } catch (RuntimeException e) {
-            problems.add("A saved " + type + " could not be read and was skipped (" + e.getMessage() + ")");
+            problems.add("A saved " + type + " could not be read and was skipped (" + e.getMessage() + "): " + describe(out));
             return null;
         }
     }
