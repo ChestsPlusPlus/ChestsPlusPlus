@@ -145,6 +145,21 @@ class V2ImporterTest extends PluginTestBase {
     }
 
     @Test
+    void locationsSavedByWorldKeyAreLinked() {
+        String data = V2Fixtures.keyedStorage(world.getKey().asString(), "minecraft:schneckenhaus");
+
+        ImportReport report = importer.run(V2Storage.parse(data), true);
+
+        ChestLinkGroup sorter = chest(ALICE, "sorter-in");
+        assertThat(nodes.nodesOf(sorter.id())).containsExactly(new Node(at(0, 64, 0), BlockFace.NORTH, sorter.id()));
+        assertThat(pending.forGroup(sorter.id()))
+                .containsExactly(new V2PendingLocations.LocationRow(sorter.id(), "minecraft:schneckenhaus", 2, 28, 5));
+        assertThat(report.nodes()).isOne();
+        assertThat(report.lines()).anyMatch(line -> line.contains("could not be read"))
+                .anyMatch(line -> line.contains("'minecraft:schneckenhaus' wasn't found"));
+    }
+
+    @Test
     void rebuildsTheAutoCraftMatrixFromTheRecipe() {
         importFixture(true);
 

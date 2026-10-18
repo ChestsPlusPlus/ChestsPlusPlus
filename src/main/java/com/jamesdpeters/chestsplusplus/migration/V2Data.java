@@ -12,7 +12,7 @@ import org.jspecify.annotations.Nullable;
 /** Everything a v2 {@code storage.yml} holds, read into plain records. {@code problems} lists entries that could not be read. */
 public record V2Data(List<Group> groups, List<Party> parties, List<String> problems) {
 
-    /** A v2 block position. Worlds are stored by name in v2. */
+    /** A v2 block position. {@code world} is the world's name, or its key ({@code minecraft:overworld}) when Paper 26.1.2 or later saved it. */
     public record Location(String world, int x, int y, int z) {}
 
     /** A v2 AutoCraft recipe: its key, plus the 3x3 items v2 kept only for recipes that are neither shaped nor shapeless. */

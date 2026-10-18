@@ -118,4 +118,60 @@ final class V2Fixtures {
                 """.formatted(ALICE, BOB, location("world", 0, 64, 0), location("lost_world", 5, 64, 5), location("world", 2, 64, 0),
                 location("world", 4, 64, 0), location("world", 6, 64, 0), location("world", 0, 64, 4));
     }
+
+    /**
+     * A file in the shape a v2 server on Paper 26.1.2 or later wrote, where locations name their world by {@code world_key}: Alice's
+     * "sorter-in" with one block in {@code loaded}, one in {@code unloaded} and one with no world at all.
+     */
+    static String keyedStorage(String loaded, String unloaded) {
+        return """
+                chests++:
+                  ==: ConfigStorage
+                  chests:
+                    %1$s:
+                      sorter-in:
+                        ==: ChestLinkStorage
+                        inventory:
+                        - null
+                        - null
+                        locationInfo:
+                        - ==: LocationInfo
+                          Location:
+                            ==: org.bukkit.Location
+                            world_key: %2$s
+                            x: 0.0
+                            y: 64.0
+                            z: 0.0
+                            pitch: 0.0
+                            yaw: 0.0
+                        - ==: LocationInfo
+                          Location:
+                            ==: org.bukkit.Location
+                            world_key: %3$s
+                            x: 2.0
+                            y: 28.0
+                            z: 5.0
+                            pitch: 0.0
+                            yaw: 0.0
+                        - ==: LocationInfo
+                          Location:
+                            ==: org.bukkit.Location
+                            x: 4.0
+                            y: 64.0
+                            z: 0.0
+                            pitch: 0.0
+                            yaw: 0.0
+                        playerUUID: %1$s
+                        members: null
+                        isPublic: false
+                        inventoryName: sorter-in
+                        sortMethod: 'OFF'
+                  autocraftingtables: {}
+                  parties:
+                    %1$s:
+                      ==: PlayerPartyStorage
+                      owner: %1$s
+                      ownedParties: {}
+                """.formatted(ALICE, loaded, unloaded);
+    }
 }

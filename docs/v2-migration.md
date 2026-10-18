@@ -78,7 +78,9 @@ leaves nothing behind, so the next start retries; a crash after it can't import 
 ## Worlds that aren't loaded yet
 
 A v2 location whose world isn't loaded is looked up by the world's `uid.dat`, which covers Multiverse worlds that load after
-ChestsPlusPlus. If the world can't be found at all, the location is kept as **unresolved** and attached when that world and
+ChestsPlusPlus. If v2 last ran on Paper 26.1.2 or later, `storage.yml` names each world by key (`world_key: minecraft:overworld`)
+rather than by name. A keyed world that isn't loaded yet has no `uid.dat` to look up, so its locations stay unresolved until it
+loads. A location with no world at all is skipped, and the report lists it. If the world can't be found at all, the location is kept as **unresolved** and attached when that world and
 chunk load, as long as the group still exists and the block is still the right type and not linked to anything else. Renaming the
 group keeps its unresolved locations; deleting it discards them. `/cpp migrate v2 status` shows how many are left.
 
