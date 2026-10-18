@@ -273,8 +273,8 @@ class V2MigrationTest extends PluginTestBase {
         block.setType(Material.CHEST);
         later.loadChunk(0, 0);
         server.getPluginManager().callEvent(new WorldLoadEvent(later));
-        assertThat(services.nodes().at(block).groupId()).isEqualTo(group.id());
-        assertThat(services.get(V2PendingLocations.class).size()).isZero();
+        assertThat(services().nodes().at(block).groupId()).isEqualTo(group.id());
+        assertThat(migration().models().pending().size()).isZero();
     }
 
     @Test
