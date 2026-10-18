@@ -229,7 +229,7 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         }
 
         @Test
-        void signAcceptsGroupInBracketsAsV2Did() {
+        void signAcceptsGroupInBrackets() {
             sign(alice, chestAt(0, 0), "[ChestLink]", "[ores]");
             server.getScheduler().performTicks(1);
 
