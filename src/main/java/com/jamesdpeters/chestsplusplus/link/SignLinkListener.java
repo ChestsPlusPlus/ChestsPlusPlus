@@ -23,8 +23,8 @@ import org.bukkit.inventory.ItemStack;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Sign → link conversion: a wall sign reading {@code [ChestLink]} / {@code [AutoCraft]} on line 1 and a
- * group ({@code name} or {@code owner:name}) on line 2 links the block it hangs on, then the sign is removed (it
+ * Sign → link conversion: a wall sign reading {@code [ChestLink]} / {@code [AutoCraft]} on line 1 and a group ({@code name} or
+ * {@code owner:name}, optionally in brackets as v2 required) on line 2 links the block it hangs on, then the sign is removed (it
  * becomes the node's display) and given back outside creative (configurable). Runs at MONITOR so every protection plugin has ruled on
  * the sign edit before anything changes. They approved editing the sign, not using the block behind it (lock plugins usually allow
  * signs on locked chests), so the target still gets the protection check.
@@ -46,6 +46,13 @@ public final class SignLinkListener implements Listener {
         };
     }
 
+    static String groupOf(String line) {
+        String trimmed = line.trim();
+        return trimmed.length() >= 2 && trimmed.startsWith("[") && trimmed.endsWith("]")
+                ? trimmed.substring(1, trimmed.length() - 1).trim()
+                : trimmed;
+    }
+
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     void onSignChange(SignChangeEvent event) {
         GroupType type = typeOf(plain(event.line(0)));
@@ -54,7 +61,7 @@ public final class SignLinkListener implements Listener {
         if (!(sign.getBlockData() instanceof WallSign wallSign)) return;
         BlockFace facing = wallSign.getFacing();
         Block target = sign.getRelative(facing.getOppositeFace());
-        String input = plain(event.line(1)).trim();
+        String input = groupOf(plain(event.line(1)));
 
         Player player = event.getPlayer();
         if (links.link(player, type, input, target, facing, false) == null) return;

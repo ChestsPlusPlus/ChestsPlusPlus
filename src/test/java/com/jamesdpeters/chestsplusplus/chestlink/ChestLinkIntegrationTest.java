@@ -229,6 +229,15 @@ class ChestLinkIntegrationTest extends PluginTestBase {
         }
 
         @Test
+        void signAcceptsGroupInBracketsAsV2Did() {
+            sign(alice, chestAt(0, 0), "[ChestLink]", "[ores]");
+            server.getScheduler().performTicks(1);
+
+            assertThat(group(alice, "ores")).isNotNull();
+            assertThat(nextPlain(alice)).contains("Created ChestLink ores");
+        }
+
+        @Test
         void signOfAnyWoodIsGivenBack() {
             WallSigns.write(alice, chestAt(0, 0), "[ChestLink]", "ores", Material.SPRUCE_WALL_SIGN, Material.SPRUCE_SIGN);
             server.getScheduler().performTicks(1);
