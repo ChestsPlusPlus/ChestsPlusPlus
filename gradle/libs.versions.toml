@@ -1,12 +1,12 @@
 [versions]
 # Main code compiles against Paper 26.3. Tests run on 26.2 until MockBukkit ships mockbukkit-v26.3.
-paper = "26.3.build.181-stable"
+paper = "26.3.build.222-stable"
 paperServer = "26.3"
 paperServerBuild = "146"
 # Pinned downloads for the E2E server.
 paperServerUrl = "https://fill-data.papermc.io/v1/objects/406c91eac63e900142207a7cc5feb77413fb3d66813c2b595f096612eb6ad212/paper-26.3-146.jar"
 paperServerSha256 = "406c91eac63e900142207a7cc5feb77413fb3d66813c2b595f096612eb6ad212"
-testPaper = "26.2.build.133-stable"
+testPaper = "26.2.build.134-stable"
 mockbukkit = "4.117.0"
 bstats = "3.2.1"
 jspecify = "1.0.1"
